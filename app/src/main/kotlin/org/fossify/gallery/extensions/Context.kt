@@ -81,6 +81,7 @@ import org.fossify.gallery.R
 import org.fossify.gallery.asynctasks.GetMediaAsynctask
 import org.fossify.gallery.databases.GalleryDatabase
 import org.fossify.gallery.helpers.Config
+import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.GROUP_BY_DATE_TAKEN_DAILY
 import org.fossify.gallery.helpers.GROUP_BY_DATE_TAKEN_MONTHLY
 import org.fossify.gallery.helpers.GROUP_BY_LAST_MODIFIED_DAILY
@@ -549,7 +550,7 @@ fun Context.rescanFolderMediaSync(path: String) {
             ensureBackgroundThread {
                 val media = newMedia.filterIsInstance<Medium>() as ArrayList<Medium>
                 try {
-                    mediaDB.insertAll(media)
+                    mediaDB.insertAll(media.filterNot { CryptoManager.isEncryptedFile(it.path) })
 
                     cached.forEach { thumbnailItem ->
                         if (!newMedia.contains(thumbnailItem)) {
@@ -568,8 +569,8 @@ fun Context.rescanFolderMediaSync(path: String) {
 
 fun Context.storeDirectoryItems(items: ArrayList<Directory>) {
     ensureBackgroundThread {
-        // virtual albums are not cached in the directories table
-        directoryDB.insertAll(items.filterNot { it.isVirtualAlbum() })
+        // virtual albums and encrypted vault albums are not cached in the directories table
+        directoryDB.insertAll(items.filterNot { it.isVirtualAlbum() || CryptoManager.isEncryptedFolderPath(this, it.path) })
     }
 }
 
@@ -586,7 +587,7 @@ fun Context.checkAppendingHidden(
     }
 
     return if (
-        path.doesThisOrParentHaveNoMedia(folderNoMediaStatuses, null)
+        (path.doesThisOrParentHaveNoMedia(folderNoMediaStatuses, null) || CryptoManager.isEncryptedFolder(File(path)) || File(path).name.startsWith('.'))
         && !path.isThisOrParentIncluded(includedFolders)
     ) {
         "$dirName $hidden"
@@ -605,7 +606,12 @@ fun Context.getFolderNameFromPath(path: String): String {
         else -> if (path.isVirtualAlbumPath()) {
             getVirtualAlbumName(path) ?: path
         } else {
-            path.getFilenameFromPath()
+            val folderFile = File(path)
+            if (CryptoManager.isEncryptedFolder(folderFile)) {
+                CryptoManager.getDecryptedFolderName(folderFile) ?: path.getFilenameFromPath()
+            } else {
+                path.getFilenameFromPath()
+            }
         }
     }
 }
@@ -692,11 +698,12 @@ fun Context.loadImageBase(
     crossFadeDuration: Int = THUMBNAIL_FADE_DURATION_MS,
     onError: (() -> Unit)? = null
 ) {
+    val isEncrypted = CryptoManager.isEncryptedFile(path)
     val options = RequestOptions()
         .signature(signature)
         .skipMemoryCache(skipMemoryCacheAtPaths?.contains(path) == true)
         .priority(Priority.LOW)
-        .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+        .diskCacheStrategy(if (isEncrypted) DiskCacheStrategy.NONE else DiskCacheStrategy.RESOURCE)
         .format(DecodeFormat.PREFER_ARGB_8888)
 
     if (cropThumbnails) {
@@ -749,7 +756,7 @@ fun Context.loadImageBase(
             targetBitmap: Target<Drawable>,
             isFirstResource: Boolean
         ): Boolean {
-            if (tryLoadingWithPicasso) {
+            if (tryLoadingWithPicasso && !isEncrypted) {
                 tryLoadingWithPicasso(path, target, cropThumbnails, roundCorners, signature)
             } else {
                 onError?.invoke()
@@ -882,13 +889,17 @@ fun Context.getCachedDirectories(
         }
 
         var filteredDirectories = directories.filter {
-            it.path.shouldFolderBeVisible(
-                excludedPaths = excludedPaths,
-                includedPaths = includedPaths,
-                showHidden = shouldShowHidden,
-                folderNoMediaStatuses = folderNoMediaStatuses
-            ) { path, hasNoMedia ->
-                folderNoMediaStatuses[path] = hasNoMedia
+            if (CryptoManager.isEncryptedFolderPath(this, it.path) && (!shouldShowHidden || !CryptoManager.isVaultUnlocked)) {
+                false
+            } else {
+                it.path.shouldFolderBeVisible(
+                    excludedPaths = excludedPaths,
+                    includedPaths = includedPaths,
+                    showHidden = shouldShowHidden,
+                    folderNoMediaStatuses = folderNoMediaStatuses
+                ) { path, hasNoMedia ->
+                    folderNoMediaStatuses[path] = hasNoMedia
+                }
             }
         } as ArrayList<Directory>
 
@@ -989,8 +1000,8 @@ fun Context.getCachedMedia(
             }
         }
 
-        if (!shouldShowHidden) {
-            media = media.filter { !it.path.contains("/.") } as ArrayList<Medium>
+        if (!shouldShowHidden || !CryptoManager.isVaultUnlocked) {
+            media = media.filter { !it.path.contains("/.") && !CryptoManager.isEncryptedFile(it.path) } as ArrayList<Medium>
         }
 
         val filterMedia = config.filterMedia

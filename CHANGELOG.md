@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Virtual albums: create albums that only reference files from their real folders, so adding a photo to any number of albums never copies it or uses extra disk space
+- On-disk AES-256 vault encryption (`AES-256-GCM` headers + `AES-256-CTR` random-access media streams) for hidden folders and files, including filename/folder name encryption (`.fenc` / `.fvault_` / `.fmeta`), `PBKDF2WithHmacSHA256` (100,000 iterations) key derivation, `RSA-2048 OAEP` public-key wrapping when locked, alphanumeric password support, 2-stage anti-recovery secure file shredding, and a 3x bottom overscroll secret unlock gesture
+
+### Changed
+- Preserve video playback position across ViewPager swipes within the same viewer session, resetting only when exiting back to the gallery grid
+
+### Fixed
+- Fixed randomly sorted albums not reloading media in the viewer after Android reclaims the app process in the background
 
 ## [1.14.1] - 2026-10-23
 ### Changed

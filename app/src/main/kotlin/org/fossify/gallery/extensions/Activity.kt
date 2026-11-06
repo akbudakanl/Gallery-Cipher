@@ -44,6 +44,7 @@ import org.fossify.gallery.dialogs.AllFilesPermissionDialog
 import org.fossify.gallery.dialogs.PickDirectoryDialog
 import org.fossify.gallery.dialogs.ResizeMultipleImagesDialog
 import org.fossify.gallery.dialogs.ResizeWithPathDialog
+import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.DIRECTORY
 import org.fossify.gallery.helpers.RECYCLE_BIN
 import org.fossify.gallery.helpers.TEMP_FOLDER_NAME
@@ -285,6 +286,44 @@ fun BaseSimpleActivity.removeNoMedia(path: String, callback: (() -> Unit)? = nul
 fun BaseSimpleActivity.toggleFileVisibility(oldPath: String, hide: Boolean, callback: ((newPath: String) -> Unit)? = null) {
     val path = oldPath.getParentPath()
     var filename = oldPath.getFilenameFromPath()
+
+    if (hide && config.isHiddenPasswordProtectionOn) {
+        if (CryptoManager.isEncryptedFile(oldPath)) {
+            callback?.invoke(oldPath)
+            return
+        }
+        ensureBackgroundThread {
+            val encryptedFile = CryptoManager.encryptFileToDirectory(
+                context = this,
+                sourceFile = File(oldPath),
+                targetDir = File(path),
+                wipeSource = true,
+                clearCachesNow = true
+            )
+            val resultPath = encryptedFile?.absolutePath ?: oldPath
+            runOnUiThread {
+                callback?.invoke(resultPath)
+            }
+        }
+        return
+    }
+
+    if (!hide && CryptoManager.isEncryptedFile(oldPath)) {
+        ensureBackgroundThread {
+            val decryptedFile = CryptoManager.decryptFileToDirectory(
+                context = this,
+                encryptedFile = File(oldPath),
+                targetDir = File(path),
+                deleteEncryptedSource = true
+            )
+            val resultPath = decryptedFile?.absolutePath ?: oldPath
+            runOnUiThread {
+                callback?.invoke(resultPath)
+            }
+        }
+        return
+    }
+
     if ((hide && filename.startsWith('.')) || (!hide && !filename.startsWith('.'))) {
         callback?.invoke(oldPath)
         return
@@ -317,9 +356,65 @@ fun BaseSimpleActivity.tryCopyMoveFilesTo(fileDirItems: ArrayList<FileDirItem>, 
     val source = fileDirItems[0].getParentPath()
     PickDirectoryDialog(this, source, true, false, true, false) {
         val destination = it
-        handleSAFDialog(source) {
-            if (it) {
-                copyMoveFilesTo(fileDirItems, source.trimEnd('/'), destination, isCopyOperation, true, config.shouldShowHidden, callback)
+        val isDestEncrypted = CryptoManager.isEncryptedFolderPath(this, destination)
+        val hasEncryptedSources = fileDirItems.any { item -> CryptoManager.isEncryptedFile(item.path) }
+
+        if (isDestEncrypted || hasEncryptedSources) {
+            toast(if (isDestEncrypted) R.string.encrypting_files else R.string.decrypting_files)
+            ensureBackgroundThread {
+                val destDir = File(destination)
+                var anyPlaintextWiped = false
+                for (item in fileDirItems) {
+                    val srcFile = File(item.path)
+                    if (!srcFile.exists()) continue
+
+                    if (isDestEncrypted && !CryptoManager.isEncryptedFile(srcFile.name)) {
+                        CryptoManager.encryptFileToDirectory(
+                            context = this,
+                            sourceFile = srcFile,
+                            targetDir = destDir,
+                            wipeSource = !isCopyOperation,
+                            clearCachesNow = false
+                        )
+                        if (!isCopyOperation) {
+                            anyPlaintextWiped = true
+                        }
+                    } else if (!isDestEncrypted && CryptoManager.isEncryptedFile(srcFile.name)) {
+                        CryptoManager.decryptFileToDirectory(
+                            context = this,
+                            encryptedFile = srcFile,
+                            targetDir = destDir,
+                            deleteEncryptedSource = !isCopyOperation
+                        )
+                    } else {
+                        // Encrypted-to-encrypted or normal-to-normal within a mixed batch
+                        val targetFile = File(destDir, srcFile.name)
+                        if (srcFile.absolutePath != targetFile.absolutePath) {
+                            srcFile.copyTo(targetFile, overwrite = true)
+                            targetFile.setLastModified(srcFile.lastModified())
+                            if (!isCopyOperation) {
+                                if (CryptoManager.isEncryptedFile(srcFile.name)) {
+                                    srcFile.delete()
+                                } else {
+                                    CryptoManager.secureWipeAndDeleteFile(this, srcFile)
+                                    anyPlaintextWiped = true
+                                }
+                            }
+                        }
+                    }
+                }
+                if (anyPlaintextWiped) {
+                    CryptoManager.clearAppImageCaches(this)
+                }
+                runOnUiThread {
+                    callback(destination)
+                }
+            }
+        } else {
+            handleSAFDialog(source) {
+                if (it) {
+                    copyMoveFilesTo(fileDirItems, source.trimEnd('/'), destination, isCopyOperation, true, config.shouldShowHidden, callback)
+                }
             }
         }
     }

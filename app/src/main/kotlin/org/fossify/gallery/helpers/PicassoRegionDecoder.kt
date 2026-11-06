@@ -16,7 +16,12 @@ class PicassoRegionDecoder(
 
     override fun init(context: Context, uri: Uri): Point {
         val newUri = Uri.parse(uri.toString().replace("%", "%25").replace("#", "%23"))
-        val inputStream = context.contentResolver.openInputStream(newUri)
+        val rawPath = newUri.path ?: uri.toString().removePrefix("file://")
+        val inputStream = if (CryptoManager.isEncryptedFile(rawPath)) {
+            CryptoManager.openDecryptedContentStream(java.io.File(rawPath))
+        } else {
+            context.contentResolver.openInputStream(newUri)
+        }
         decoder = BitmapRegionDecoder.newInstance(inputStream!!, false)
         return Point(decoder!!.width, decoder!!.height)
     }

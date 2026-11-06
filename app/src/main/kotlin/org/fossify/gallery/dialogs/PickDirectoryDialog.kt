@@ -79,14 +79,7 @@ class PickDirectoryDialog(
         builder.apply {
             activity.setupDialogStuff(binding.root, this, org.fossify.commons.R.string.select_destination) { alertDialog ->
                 dialog = alertDialog
-                binding.directoriesShowHidden.beVisibleIf(!context.config.shouldShowHidden)
-                binding.directoriesShowHidden.setOnClickListener {
-                    activity.handleHiddenFolderPasswordProtection {
-                        binding.directoriesShowHidden.beGone()
-                        showHidden = true
-                        fetchDirectories(true)
-                    }
-                }
+                binding.directoriesShowHidden.beGone()
 
                 alertDialog.onBackPressedDispatcher.addCallback(alertDialog) {
                     if (searchView.isSearchOpen) {

@@ -234,25 +234,8 @@ class SettingsActivity : SimpleActivity() {
     }
 
     private fun setupShowHiddenItems() {
-        if (isRPlus() && !isExternalStorageManager()) {
-            binding.settingsShowHiddenItems.text =
-                "${getString(org.fossify.commons.R.string.show_hidden_items)} (${getString(org.fossify.commons.R.string.no_permission)})"
-        } else {
-            binding.settingsShowHiddenItems.setText(org.fossify.commons.R.string.show_hidden_items)
-        }
-
-        binding.settingsShowHiddenItems.isChecked = config.showHiddenMedia
-        binding.settingsShowHiddenItemsHolder.setOnClickListener {
-            if (isRPlus() && !isExternalStorageManager()) {
-                GrantAllFilesDialog(this)
-            } else if (config.showHiddenMedia) {
-                toggleHiddenItems()
-            } else {
-                handleHiddenFolderPasswordProtection {
-                    toggleHiddenItems()
-                }
-            }
-        }
+        config.showHiddenMedia = false
+        binding.settingsShowHiddenItemsHolder.beGone()
     }
 
     private fun toggleHiddenItems() {
@@ -393,7 +376,7 @@ class SettingsActivity : SimpleActivity() {
         binding.settingsHiddenItemPasswordProtection.isChecked = config.isHiddenPasswordProtectionOn
         binding.settingsHiddenItemPasswordProtectionHolder.setOnClickListener {
             val tabToShow = if (config.isHiddenPasswordProtectionOn) config.hiddenProtectionType else SHOW_ALL_TABS
-            SecurityDialog(this, config.hiddenPasswordHash, tabToShow) { hash, type, success ->
+            VaultSecurityDialog(this, config.hiddenPasswordHash, tabToShow, minimalist = false) { hash, type, success ->
                 if (success) {
                     val hasPasswordProtection = config.isHiddenPasswordProtectionOn
                     binding.settingsHiddenItemPasswordProtection.isChecked = !hasPasswordProtection
@@ -405,6 +388,9 @@ class SettingsActivity : SimpleActivity() {
                         val confirmationTextId = if (config.hiddenProtectionType == PROTECTION_FINGERPRINT)
                             org.fossify.commons.R.string.fingerprint_setup_successfully else org.fossify.commons.R.string.protection_setup_successfully
                         ConfirmationDialog(this, "", confirmationTextId, org.fossify.commons.R.string.ok, 0) { }
+                    } else {
+                        config.temporarilyShowHidden = false
+                        CryptoManager.lockVault()
                     }
                 }
             }

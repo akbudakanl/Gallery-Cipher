@@ -602,4 +602,28 @@ class Config(context: Context) : BaseConfig(context) {
     var showPermissionRationale: Boolean
         get() = prefs.getBoolean(SHOW_PERMISSION_RATIONALE, false)
         set(showPermissionRationale) = prefs.edit().putBoolean(SHOW_PERMISSION_RATIONALE, showPermissionRationale).apply()
+
+    var vaultWrappedKeyData: String
+        get() = prefs.getString(VAULT_WRAPPED_KEY_DATA, "")!!
+        set(value) = prefs.edit().putString(VAULT_WRAPPED_KEY_DATA, value).apply()
+
+    var vaultPublicKey: String
+        get() = prefs.getString(VAULT_PUBLIC_KEY, "")!!
+        set(value) = prefs.edit().putString(VAULT_PUBLIC_KEY, value).apply()
+
+    var encryptedFolders: MutableSet<String>
+        get() = prefs.getStringSet(ENCRYPTED_FOLDERS, HashSet())!!
+        set(folders) = prefs.edit().remove(ENCRYPTED_FOLDERS).putStringSet(ENCRYPTED_FOLDERS, folders).apply()
+
+    fun addEncryptedFolder(path: String) {
+        val curr = HashSet<String>(encryptedFolders)
+        curr.add(path.trimEnd('/'))
+        encryptedFolders = curr
+    }
+
+    fun removeEncryptedFolder(path: String) {
+        val curr = HashSet<String>(encryptedFolders)
+        curr.remove(path.trimEnd('/'))
+        encryptedFolders = curr
+    }
 }

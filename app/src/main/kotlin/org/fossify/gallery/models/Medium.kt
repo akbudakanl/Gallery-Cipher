@@ -54,7 +54,7 @@ data class Medium(
 
     fun isAvif() = name.endsWith(".avif", true) // switch to commons extension.
 
-    fun isHidden() = name.startsWith('.')
+    fun isHidden() = name.startsWith('.') || CryptoManager.isEncryptedFile(path)
 
     fun isHeic() = name.lowercase(Locale.getDefault()).endsWith(".heic") || name.lowercase(Locale.getDefault()).endsWith(".heif")
 

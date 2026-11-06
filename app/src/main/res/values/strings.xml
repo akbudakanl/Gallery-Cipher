@@ -318,4 +318,12 @@
     <string name="delete_virtual_album_confirmation">Delete the album %s? Only the album is removed, your photos and videos stay where they are.</string>
     <string name="virtual_album_empty">This album is empty. Select items in any folder and use \"Add to album\".</string>
     <string name="virtual_album_cannot_be_modified">This action is not available for virtual albums</string>
+    <string name="alphanumeric_password">Password</string>
+    <string name="enter_password">Enter password</string>
+    <string name="repeat_password">Repeat password</string>
+    <string name="wrong_password">Wrong password</string>
+    <string name="encrypting_files">Encrypting files…</string>
+    <string name="decrypting_files">Decrypting files…</string>
+    <string name="place_finger_prompt">Please place your finger on the fingerprint sensor</string>
+    <string name="connect_at_least_4_dots_prompt">Connect at least 4 dots</string>
 </resources>

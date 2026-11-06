@@ -84,6 +84,7 @@ import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.getBottomActionsHeight
 import org.fossify.gallery.extensions.sendFakeClick
 import org.fossify.gallery.helpers.ColorModeHelper
+import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.HIGH_TILE_DPI
 import org.fossify.gallery.helpers.LOW_TILE_DPI
 import org.fossify.gallery.helpers.MAX_ZOOM_EQUALITY_TOLERANCE
@@ -438,6 +439,10 @@ class PhotoFragment : ViewPagerFragment() {
     private fun loadGif() {
         try {
             val pathToLoad = getPathToLoad(mMedium)
+            if (CryptoManager.isEncryptedFile(pathToLoad)) {
+                loadWithGlide(pathToLoad, false)
+                return
+            }
             val source = if (pathToLoad.startsWith("content://") || pathToLoad.startsWith("file://")) {
                 InputSource.UriSource(requireContext().contentResolver, Uri.parse(pathToLoad))
             } else {
@@ -462,6 +467,7 @@ class PhotoFragment : ViewPagerFragment() {
         if (context != null) {
             Glide.with(requireContext())
                 .`as`(PictureDrawable::class.java)
+                .diskCacheStrategy(if (CryptoManager.isEncryptedFile(mMedium.path)) DiskCacheStrategy.NONE else DiskCacheStrategy.AUTOMATIC)
                 .listener(SvgSoftwareLayerSetter())
                 .load(mMedium.path)
                 .into(binding.gesturesView)
@@ -470,6 +476,10 @@ class PhotoFragment : ViewPagerFragment() {
 
     private fun loadAPNG() {
         if (context != null) {
+            if (CryptoManager.isEncryptedFile(mMedium.path)) {
+                loadWithGlide(mMedium.path, false)
+                return
+            }
             val drawable = APNGDrawable.fromFile(mMedium.path)
             binding.gesturesView.setImageDrawable(drawable)
         }
@@ -477,6 +487,10 @@ class PhotoFragment : ViewPagerFragment() {
 
     private fun loadAVIF() {
         if (context != null) {
+            if (CryptoManager.isEncryptedFile(mMedium.path)) {
+                loadWithGlide(mMedium.path, false)
+                return
+            }
             val drawable = AVIFDrawable.fromFile(mMedium.path)
             if (drawable.intrinsicWidth == 0 || drawable.intrinsicHeight == 0) {
                 loadBitmap()
@@ -491,7 +505,7 @@ class PhotoFragment : ViewPagerFragment() {
         mHasInitialZoom = false
         if (context == null) return
         val path = getFilePathToShow()
-        if (path.isWebP()) {
+        if (path.isWebP() && !CryptoManager.isEncryptedFile(path)) {
             val drawable = WebPDrawable.fromFile(path)
             if (drawable.intrinsicWidth == 0) {
                 loadWithGlide(path, addZoomableView)
@@ -505,11 +519,12 @@ class PhotoFragment : ViewPagerFragment() {
 
     private fun loadWithGlide(path: String, addZoomableView: Boolean) {
         val priority = if (mIsFragmentVisible) Priority.IMMEDIATE else Priority.NORMAL
+        val isEncrypted = CryptoManager.isEncryptedFile(path)
         val options = RequestOptions()
             .signature(mMedium.getKey())
             .format(DecodeFormat.PREFER_ARGB_8888)
             .priority(priority)
-            .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+            .diskCacheStrategy(if (isEncrypted) DiskCacheStrategy.NONE else DiskCacheStrategy.RESOURCE)
             .fitCenter()
             .run {
                 if (mCurrentRotationDegrees != 0) {
@@ -858,6 +873,13 @@ class PhotoFragment : ViewPagerFragment() {
 
         try {
             val path = getFilePathToShow()
+            if (CryptoManager.isEncryptedFile(path)) {
+                CryptoManager.openDecryptedContentStream(File(path))?.use { stream ->
+                    val exif = androidx.exifinterface.media.ExifInterface(stream)
+                    orient = exif.getAttributeInt(TAG_ORIENTATION, defaultOrientation)
+                }
+                return orient
+            }
             orient = if (path.startsWith("content:/")) {
                 val inputStream = requireContext().contentResolver.openInputStream(Uri.parse(path))
                 val exif = ExifInterface()

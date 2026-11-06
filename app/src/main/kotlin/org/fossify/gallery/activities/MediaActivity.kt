@@ -88,6 +88,7 @@ import org.fossify.gallery.extensions.showRecycleBinEmptyingDialog
 import org.fossify.gallery.extensions.showRestoreConfirmationDialog
 import org.fossify.gallery.extensions.tryDeleteFileDirItem
 import org.fossify.gallery.extensions.updateWidgets
+import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.DIRECTORY
 import org.fossify.gallery.helpers.GET_ANY_INTENT
 import org.fossify.gallery.helpers.GET_IMAGE_INTENT
@@ -289,6 +290,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
                 config.temporarilyShowHidden = false
                 config.tempSkipDeleteConfirmation = false
                 config.tempSkipRecycleBin = false
+                CryptoManager.lockVault()
             }, SHOW_TEMP_HIDDEN_DURATION)
         } else {
             mTempShowHiddenHandler.removeCallbacksAndMessages(null)
@@ -301,6 +303,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             config.temporarilyShowHidden = false
             config.tempSkipDeleteConfirmation = false
             config.tempSkipRecycleBin = false
+            CryptoManager.lockVault()
             unregisterFileUpdateListener()
             GalleryDatabase.destroyInstance()
         }
@@ -349,7 +352,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
                 !mShowAll && mPath != RECYCLE_BIN && mPath != FAVORITES && !mPath.isVirtualAlbumPath()
             findItem(R.id.open_recycle_bin).isVisible = config.useRecycleBin && mPath != RECYCLE_BIN
 
-            findItem(R.id.temporarily_show_hidden).isVisible = !config.shouldShowHidden
+            findItem(R.id.temporarily_show_hidden).isVisible = false
             findItem(R.id.stop_showing_hidden).isVisible =
                 (!isRPlus() || isExternalStorageManager()) && config.temporarilyShowHidden
 
@@ -804,6 +807,9 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     private fun toggleTemporarilyShowHidden(show: Boolean) {
         mLoadedInitialPhotos = false
         config.temporarilyShowHidden = show
+        if (!show) {
+            CryptoManager.lockVault()
+        }
         getMedia()
         refreshMenuItems()
     }

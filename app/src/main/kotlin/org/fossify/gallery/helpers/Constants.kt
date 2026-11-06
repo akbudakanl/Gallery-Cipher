@@ -106,6 +106,16 @@ const val SEARCH_ALL_FILES_BY_DEFAULT = "search_all_files_by_default"
 const val LAST_EXPORTED_FAVORITES_FOLDER = "last_exported_favorites_folder"
 const val SHOW_PERMISSION_RATIONALE = "show_permission_rationale"
 
+// AES-256 Vault Encryption
+const val PROTECTION_PASSWORD = 3
+const val VAULT_WRAPPED_KEY_DATA = "vault_wrapped_key_data"
+const val VAULT_PUBLIC_KEY = "vault_public_key"
+const val ENCRYPTED_FOLDERS = "encrypted_folders"
+const val ENCRYPTED_FILE_EXT = ".fenc"
+const val ENCRYPTED_FILE_PREFIX = ".fv_"
+const val ENCRYPTED_FOLDER_PREFIX = ".fvault_"
+const val ENCRYPTED_FOLDER_META_FILE = ".fmeta"
+
 // slideshow
 const val SLIDESHOW_INTERVAL = "slideshow_interval"
 const val SLIDESHOW_INCLUDE_VIDEOS = "slideshow_include_videos"

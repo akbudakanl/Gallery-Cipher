@@ -79,8 +79,10 @@ import org.fossify.gallery.extensions.getFriendlyMessage
 import org.fossify.gallery.extensions.launchGesturePlayer
 import org.fossify.gallery.extensions.parseFileChannel
 import org.fossify.gallery.helpers.Config
+import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.EXOPLAYER_MAX_BUFFER_MS
 import org.fossify.gallery.helpers.EXOPLAYER_MIN_BUFFER_MS
+import org.fossify.gallery.helpers.EncryptedMediaDataSource
 import org.fossify.gallery.helpers.FAST_FORWARD_VIDEO_MS
 import org.fossify.gallery.helpers.MEDIUM
 import org.fossify.gallery.helpers.SHOULD_INIT_FRAGMENT
@@ -280,7 +282,10 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         }
 
         storeStateVariables()
-        Glide.with(context).load(mMedium.path).into(binding.videoPreview)
+        Glide.with(context)
+            .load(mMedium.path)
+            .diskCacheStrategy(if (CryptoManager.isEncryptedFile(mMedium.path)) com.bumptech.glide.load.engine.DiskCacheStrategy.NONE else com.bumptech.glide.load.engine.DiskCacheStrategy.AUTOMATIC)
+            .into(binding.videoPreview)
 
         // setMenuVisibility is not called at VideoActivity (third party intent)
         if (!mIsFragmentVisible && activity is VideoActivity) {
@@ -478,27 +483,35 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         if (shouldSkipInit) return
 
         val isContentUri = mMedium.path.startsWith("content://")
+        val isEncrypted = CryptoManager.isEncryptedFile(mMedium.path)
         val uri = if (isContentUri) Uri.parse(mMedium.path) else Uri.fromFile(File(mMedium.path))
-        val dataSpec = DataSpec(uri)
-        val fileDataSource = if (isContentUri) {
-            ContentDataSource(requireContext())
+
+        val mediaSource: MediaSource = if (isEncrypted) {
+            val factory = EncryptedMediaDataSource.Factory()
+            ProgressiveMediaSource.Factory(factory)
+                .createMediaSource(MediaItem.fromUri(uri))
         } else {
-            FileDataSource()
-        }
+            val dataSpec = DataSpec(uri)
+            val fileDataSource = if (isContentUri) {
+                ContentDataSource(requireContext())
+            } else {
+                FileDataSource()
+            }
 
-        try {
-            fileDataSource.open(dataSpec)
-        } catch (e: Exception) {
+            try {
+                fileDataSource.open(dataSpec)
+            } catch (e: Exception) {
+                fileDataSource.close()
+                activity?.showErrorToast(e)
+                return
+            }
+
+            val factory = DataSource.Factory { fileDataSource }
+            val source = ProgressiveMediaSource.Factory(factory)
+                .createMediaSource(MediaItem.fromUri(fileDataSource.uri!!))
             fileDataSource.close()
-            activity?.showErrorToast(e)
-            return
+            source
         }
-
-        val factory = DataSource.Factory { fileDataSource }
-        val mediaSource: MediaSource = ProgressiveMediaSource.Factory(factory)
-            .createMediaSource(MediaItem.fromUri(fileDataSource.uri!!))
-
-        fileDataSource.close()
 
         mPlayOnPrepared = true
 
@@ -885,7 +898,11 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
 
     private fun setupVideoDuration() {
         ensureBackgroundThread {
-            mDuration = context?.getDuration(mMedium.path)?.times(1000L)?.coerceAtLeast(0L) ?: 0L
+            mDuration = if (CryptoManager.isEncryptedFile(mMedium.path)) {
+                (CryptoManager.readMetadata(File(mMedium.path))?.videoDuration ?: 0).times(1000L).coerceAtLeast(0L)
+            } else {
+                context?.getDuration(mMedium.path)?.times(1000L)?.coerceAtLeast(0L) ?: 0L
+            }
 
             activity?.runOnUiThread {
                 setupTimeHolder()
@@ -969,7 +986,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
     }
 
     private fun setVideoSize() {
-        if (activity == null || mConfig.gestureVideoPlayer) return
+        if (activity == null || mConfig.gestureVideoPlayer || mVideoSize.x <= 0 || mVideoSize.y <= 0) return
 
         val videoProportion = mVideoSize.x.toFloat() / mVideoSize.y.toFloat()
         val display = requireActivity().windowManager.defaultDisplay

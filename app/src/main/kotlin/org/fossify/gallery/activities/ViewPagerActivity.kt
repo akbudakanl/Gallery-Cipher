@@ -150,6 +150,7 @@ import org.fossify.gallery.helpers.BOTTOM_ACTION_SLIDESHOW
 import org.fossify.gallery.helpers.BOTTOM_ACTION_TOGGLE_FAVORITE
 import org.fossify.gallery.helpers.BOTTOM_ACTION_TOGGLE_VISIBILITY
 import org.fossify.gallery.helpers.ColorModeHelper
+import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.DefaultPageTransformer
 import org.fossify.gallery.helpers.FadePageTransformer
 import org.fossify.gallery.helpers.GO_TO_NEXT_ITEM
@@ -820,7 +821,11 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
 
     private fun toggleFileVisibility(hide: Boolean, callback: (() -> Unit)? = null) {
         toggleFileVisibility(getCurrentPath(), hide) {
-            val newFileName = it.getFilenameFromPath()
+            val newFileName = if (CryptoManager.isEncryptedFile(it)) {
+                CryptoManager.readMetadata(File(it))?.originalName ?: it.getFilenameFromPath()
+            } else {
+                it.getFilenameFromPath()
+            }
             binding.mediumViewerToolbar.title = newFileName
 
             getCurrentMedium()!!.apply {

@@ -91,6 +91,7 @@ import org.fossify.gallery.extensions.mediaDB
 import org.fossify.gallery.extensions.removeNoMedia
 import org.fossify.gallery.extensions.showRecycleBinEmptyingDialog
 import org.fossify.gallery.extensions.tryCopyMoveFilesTo
+import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.DIRECTORY
 import org.fossify.gallery.helpers.FOLDER_MEDIA_CNT_BRACKETS
 import org.fossify.gallery.helpers.FOLDER_MEDIA_CNT_LINE
@@ -274,10 +275,14 @@ class DirectoryAdapter(
 
     private fun checkHideBtnVisibility(menu: Menu, selectedPaths: ArrayList<String>) {
         menu.findItem(R.id.cab_hide).isVisible =
-            (!isRPlus() || isExternalStorageManager()) && selectedPaths.any { !it.doesThisOrParentHaveNoMedia(HashMap(), null) }
+            (!isRPlus() || isExternalStorageManager()) && selectedPaths.any {
+                !it.doesThisOrParentHaveNoMedia(HashMap(), null) && !CryptoManager.isEncryptedFolderPath(activity, it)
+            }
 
         menu.findItem(R.id.cab_unhide).isVisible =
-            (!isRPlus() || isExternalStorageManager()) && selectedPaths.any { it.doesThisOrParentHaveNoMedia(HashMap(), null) }
+            (!isRPlus() || isExternalStorageManager()) && selectedPaths.any {
+                it.doesThisOrParentHaveNoMedia(HashMap(), null) || CryptoManager.isEncryptedFolderPath(activity, it)
+            }
     }
 
     private fun checkPinBtnVisibility(menu: Menu, selectedPaths: ArrayList<String>) {
@@ -394,7 +399,7 @@ class DirectoryAdapter(
                 }
             }
         } else {
-            if (selectedPaths.any { it.isThisOrParentFolderHidden() }) {
+            if (selectedPaths.any { !CryptoManager.isEncryptedFolderPath(activity, it) && it.isThisOrParentFolderHidden() }) {
                 ConfirmationDialog(activity, "", R.string.cant_unhide_folder, org.fossify.commons.R.string.ok, 0) {}
                 return
             }
@@ -403,7 +408,16 @@ class DirectoryAdapter(
                 val path = it
                 activity.handleLockedFolderOpening(path) { success ->
                     if (success) {
-                        if (path.containsNoMedia()) {
+                        if (CryptoManager.isEncryptedFolderPath(activity, path)) {
+                            activity.toast(R.string.decrypting_files)
+                            ensureBackgroundThread {
+                                CryptoManager.decryptFolder(activity, path)
+                                activity.runOnUiThread {
+                                    listener?.refreshItems()
+                                    finishActMode()
+                                }
+                            }
+                        } else if (path.containsNoMedia()) {
                             activity.removeNoMedia(path) {
                                 if (config.shouldShowHidden) {
                                     updateFolderNames()
@@ -476,6 +490,43 @@ class DirectoryAdapter(
     }
 
     private fun hideFolder(path: String) {
+        if (config.isHiddenPasswordProtectionOn) {
+            activity.toast(R.string.encrypting_files)
+            ensureBackgroundThread {
+                val newEncryptedPath = CryptoManager.encryptFolder(activity, path)
+                if (config.shouldShowHidden && CryptoManager.isVaultUnlocked) {
+                    activity.runOnUiThread {
+                        finishActMode()
+                        listener?.refreshItems()
+                    }
+                } else {
+                    val affectedPositions = ArrayList<Int>()
+                    val includedFolders = config.includedFolders
+                    val newDirs = dirs.filterIndexed { index, directory ->
+                        val removeDir = (directory.path == path || directory.path == newEncryptedPath || directory.path.doesThisOrParentHaveNoMedia(HashMap(), null)) &&
+                            !includedFolders.contains(directory.path)
+                        if (removeDir) {
+                            affectedPositions.add(index)
+                        }
+                        !removeDir
+                    } as ArrayList<Directory>
+
+                    activity.runOnUiThread {
+                        affectedPositions.sortedDescending().forEach {
+                            notifyItemRemoved(it)
+                        }
+
+                        currentDirectoriesHash = newDirs.hashCode()
+                        dirs = newDirs
+
+                        finishActMode()
+                        listener?.updateDirectories(newDirs)
+                    }
+                }
+            }
+            return
+        }
+
         activity.addNoMedia(path) {
             if (config.shouldShowHidden) {
                 updateFolderNames()
@@ -621,12 +672,13 @@ class DirectoryAdapter(
             val filter = config.filterMedia
             File(it).listFiles()?.filter {
                 !File(it.absolutePath).isDirectory &&
-                    it.absolutePath.isMediaFile() && (showHidden || !it.name.startsWith('.')) &&
-                    ((it.isImageFast() && filter and TYPE_IMAGES != 0) ||
-                        (it.isVideoFast() && filter and TYPE_VIDEOS != 0) ||
-                        (it.isGif() && filter and TYPE_GIFS != 0) ||
-                        (it.isRawFast() && filter and TYPE_RAWS != 0) ||
-                        (it.isSvg() && filter and TYPE_SVGS != 0))
+                    (CryptoManager.isEncryptedFile(it.name) ||
+                        (it.absolutePath.isMediaFile() && (showHidden || !it.name.startsWith('.')) &&
+                            ((it.isImageFast() && filter and TYPE_IMAGES != 0) ||
+                                (it.isVideoFast() && filter and TYPE_VIDEOS != 0) ||
+                                (it.isGif() && filter and TYPE_GIFS != 0) ||
+                                (it.isRawFast() && filter and TYPE_RAWS != 0) ||
+                                (it.isSvg() && filter and TYPE_SVGS != 0))))
             }?.mapTo(paths) { it.absolutePath }
         }
 

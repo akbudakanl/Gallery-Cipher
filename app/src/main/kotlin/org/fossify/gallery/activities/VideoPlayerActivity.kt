@@ -77,9 +77,11 @@ import org.fossify.gallery.extensions.openPath
 import org.fossify.gallery.extensions.shareMediumPath
 import org.fossify.gallery.extensions.showSystemUI
 import org.fossify.gallery.fragments.PlaybackSpeedFragment
+import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.DRAG_THRESHOLD
 import org.fossify.gallery.helpers.EXOPLAYER_MAX_BUFFER_MS
 import org.fossify.gallery.helpers.EXOPLAYER_MIN_BUFFER_MS
+import org.fossify.gallery.helpers.EncryptedMediaDataSource
 import org.fossify.gallery.helpers.FAST_FORWARD_VIDEO_MS
 import org.fossify.gallery.helpers.GO_TO_NEXT_ITEM
 import org.fossify.gallery.helpers.GO_TO_PREV_ITEM
@@ -254,7 +256,12 @@ open class VideoPlayerActivity : BaseViewerActivity(), SeekBar.OnSeekBarChangeLi
 
     private fun initPlayer() {
         mUri = intent.data ?: return
-        binding.videoToolbar.title = getFilenameFromUri(mUri!!)
+        val rawPath = mUri?.path ?: ""
+        binding.videoToolbar.title = if (CryptoManager.isEncryptedFile(rawPath)) {
+            CryptoManager.readMetadata(java.io.File(rawPath))?.originalName ?: getFilenameFromUri(mUri!!)
+        } else {
+            getFilenameFromUri(mUri!!)
+        }
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
 
@@ -368,17 +375,24 @@ open class VideoPlayerActivity : BaseViewerActivity(), SeekBar.OnSeekBarChangeLi
     }
 
     private fun initExoPlayer() {
-        val dataSpec = DataSpec(mUri!!)
-        val fileDataSource = ContentDataSource(applicationContext)
-        try {
-            fileDataSource.open(dataSpec)
-        } catch (e: Exception) {
-            showErrorToast(e)
-        }
+        val rawPath = mUri?.path ?: ""
+        val mediaSource: MediaSource = if (CryptoManager.isEncryptedFile(rawPath)) {
+            val factory = EncryptedMediaDataSource.Factory()
+            ProgressiveMediaSource.Factory(factory)
+                .createMediaSource(MediaItem.fromUri(mUri!!))
+        } else {
+            val dataSpec = DataSpec(mUri!!)
+            val fileDataSource = ContentDataSource(applicationContext)
+            try {
+                fileDataSource.open(dataSpec)
+            } catch (e: Exception) {
+                showErrorToast(e)
+            }
 
-        val factory = DataSource.Factory { fileDataSource }
-        val mediaSource: MediaSource = ProgressiveMediaSource.Factory(factory)
-            .createMediaSource(MediaItem.fromUri(fileDataSource.uri!!))
+            val factory = DataSource.Factory { fileDataSource }
+            ProgressiveMediaSource.Factory(factory)
+                .createMediaSource(MediaItem.fromUri(fileDataSource.uri!!))
+        }
 
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(

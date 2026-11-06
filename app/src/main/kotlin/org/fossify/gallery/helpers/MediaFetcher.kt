@@ -130,8 +130,12 @@ class MediaFetcher(val context: Context) {
             }
 
             distinctPaths.filter {
-                it.shouldFolderBeVisible(excludedPaths, includedPaths, shouldShowHidden, folderNoMediaStatuses) { path, hasNoMedia ->
-                    folderNoMediaStatuses[path] = hasNoMedia
+                if (CryptoManager.isEncryptedFolderPath(context, it) && (!shouldShowHidden || !CryptoManager.isVaultUnlocked)) {
+                    false
+                } else {
+                    it.shouldFolderBeVisible(excludedPaths, includedPaths, shouldShowHidden, folderNoMediaStatuses) { path, hasNoMedia ->
+                        folderNoMediaStatuses[path] = hasNoMedia
+                    }
                 }
             }.toMutableList() as ArrayList<String>
         } catch (e: Exception) {
@@ -273,6 +277,29 @@ class MediaFetcher(val context: Context) {
             addFolder(foldersToScan, it)
         }
 
+        if (config.shouldShowHidden && CryptoManager.isVaultUnlocked) {
+            config.encryptedFolders.forEach { encFolder ->
+                if (context.getDoesFilePathExist(encFolder, OTGPath)) {
+                    foldersToScan.add(encFolder)
+                }
+            }
+            val parentsToCheck = HashSet<String>()
+            parentsToCheck.add(Environment.getExternalStorageDirectory().absolutePath)
+            parentsToCheck.add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).absolutePath)
+            parentsToCheck.add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).absolutePath)
+            parentsToCheck.add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath)
+            foldersToScan.forEach { folderPath ->
+                File(folderPath).parent?.let { parentsToCheck.add(it) }
+            }
+            parentsToCheck.forEach { parentPath ->
+                File(parentPath).listFiles()?.forEach { child ->
+                    if (child.isDirectory && CryptoManager.isEncryptedFolder(child)) {
+                        foldersToScan.add(child.absolutePath)
+                    }
+                }
+            }
+        }
+
         return foldersToScan.toMutableSet() as LinkedHashSet<String>
     }
 
@@ -320,6 +347,37 @@ class MediaFetcher(val context: Context) {
             }
 
             var path = file.absolutePath
+            if (CryptoManager.isEncryptedFile(file.name)) {
+                if (!showHidden || !CryptoManager.isVaultUnlocked) {
+                    continue
+                }
+                val meta = CryptoManager.readMetadata(file) ?: continue
+                val encType = meta.mediaType
+                if (encType == TYPE_VIDEOS && (isPickImage || filterMedia and TYPE_VIDEOS == 0)) continue
+                if (encType == TYPE_IMAGES && (isPickVideo || filterMedia and TYPE_IMAGES == 0)) continue
+                if (encType == TYPE_GIFS && filterMedia and TYPE_GIFS == 0) continue
+                if (encType == TYPE_RAWS && filterMedia and TYPE_RAWS == 0) continue
+                if (encType == TYPE_SVGS && filterMedia and TYPE_SVGS == 0) continue
+
+                val isFavorite = favoritePaths.contains(path)
+                val medium = Medium(
+                    null,
+                    meta.originalName,
+                    path,
+                    file.parent ?: folder,
+                    meta.lastModified,
+                    meta.dateTaken,
+                    meta.originalSize,
+                    encType,
+                    meta.videoDuration,
+                    isFavorite,
+                    0L,
+                    0L
+                )
+                media.add(medium)
+                continue
+            }
+
             var isPortrait = false
             val isImage = path.isImageFast()
             val isVideo = if (isImage) false else path.isVideoFast()

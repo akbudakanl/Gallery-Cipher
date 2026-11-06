@@ -8,6 +8,7 @@ import android.os.Handler
 import android.provider.MediaStore
 import android.provider.MediaStore.Images
 import android.provider.MediaStore.Video
+import android.view.MotionEvent
 import android.view.ViewGroup
 import android.widget.RelativeLayout
 import android.widget.Toast
@@ -86,6 +87,7 @@ import org.fossify.gallery.dialogs.ChangeSortingDialog
 import org.fossify.gallery.dialogs.ChangeViewTypeDialog
 import org.fossify.gallery.dialogs.FilterMediaDialog
 import org.fossify.gallery.dialogs.GrantAllFilesDialog
+import org.fossify.gallery.dialogs.VaultSecurityDialog
 import org.fossify.gallery.extensions.addTempFolderIfNeeded
 import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.createDirectoryFromMedia
@@ -116,6 +118,7 @@ import org.fossify.gallery.extensions.tryDeleteFileDirItem
 import org.fossify.gallery.extensions.updateDBDirectory
 import org.fossify.gallery.extensions.updateWidgets
 import org.fossify.gallery.helpers.DIRECTORY
+import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.GET_ANY_INTENT
 import org.fossify.gallery.helpers.GET_IMAGE_INTENT
 import org.fossify.gallery.helpers.GET_VIDEO_INTENT
@@ -198,6 +201,12 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     private var mStoredTextColor = 0
     private var mStoredPrimaryColor = 0
     private var mStoredStyleString = ""
+    private var mBottomOverscrollCount = 0
+    private var mLastBottomOverscrollTime = 0L
+    private var mBottomGestureStartedAtBottom = false
+    private var mBottomGestureStartY = 0f
+    private var mBottomGestureCountedInThisTouch = false
+    private var mIsVaultDialogShowing = false
     private val binding by viewBinding(ActivityMainBinding::inflate)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -210,6 +219,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             config.temporarilyShowExcluded = false
             config.tempSkipDeleteConfirmation = false
             config.tempSkipRecycleBin = false
+            CryptoManager.lockVault()
             removeTempFolder()
             checkRecycleBinItems()
             startNewPhotoFetcher()
@@ -235,6 +245,8 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         setupEdgeToEdge(
             padBottomImeAndSystem = listOf(binding.directoriesGrid)
         )
+
+        setupSecretVaultScrollTrigger()
 
         binding.directoriesRefreshLayout.setOnRefreshListener { getDirectories() }
         storeStateVariables()
@@ -370,6 +382,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                 config.temporarilyShowExcluded = false
                 config.tempSkipDeleteConfirmation = false
                 config.tempSkipRecycleBin = false
+                CryptoManager.lockVault()
             }, SHOW_TEMP_HIDDEN_DURATION)
         } else {
             mTempShowHiddenHandler.removeCallbacksAndMessages(null)
@@ -383,6 +396,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             config.temporarilyShowExcluded = false
             config.tempSkipDeleteConfirmation = false
             config.tempSkipRecycleBin = false
+            CryptoManager.lockVault()
             mTempShowHiddenHandler.removeCallbacksAndMessages(null)
             removeTempFolder()
             unregisterFileUpdateListener()
@@ -462,7 +476,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         }
 
         binding.mainMenu.requireToolbar().menu.apply {
-            findItem(R.id.temporarily_show_hidden).isVisible = !config.shouldShowHidden
+            findItem(R.id.temporarily_show_hidden).isVisible = false
             findItem(R.id.stop_showing_hidden).isVisible =
                 (!isRPlus() || isExternalStorageManager()) && config.temporarilyShowHidden
 
@@ -699,23 +713,95 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         }
     }
 
+    private fun setupSecretVaultScrollTrigger() {
+        val minSwipePx = 48f * resources.displayMetrics.density
+        binding.directoriesGrid.addOnItemTouchListener(object : RecyclerView.SimpleOnItemTouchListener() {
+            override fun onInterceptTouchEvent(rv: RecyclerView, e: MotionEvent): Boolean {
+                if (mIsVaultDialogShowing) {
+                    return false
+                }
+                when (e.actionMasked) {
+                    MotionEvent.ACTION_DOWN -> {
+                        val atBottom = !rv.canScrollVertically(1)
+                        mBottomGestureStartedAtBottom = atBottom
+                        mBottomGestureStartY = e.rawY
+                        mBottomGestureCountedInThisTouch = false
+                        if (!atBottom) {
+                            mBottomOverscrollCount = 0
+                        }
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        if (mBottomGestureStartedAtBottom && !mBottomGestureCountedInThisTouch) {
+                            if (rv.canScrollVertically(1)) {
+                                mBottomGestureStartedAtBottom = false
+                                mBottomOverscrollCount = 0
+                            } else {
+                                val deltaY = mBottomGestureStartY - e.rawY
+                                if (deltaY >= minSwipePx) {
+                                    mBottomGestureCountedInThisTouch = true
+                                    val now = System.currentTimeMillis()
+                                    if (now - mLastBottomOverscrollTime > 4000L) {
+                                        mBottomOverscrollCount = 0
+                                    }
+                                    mBottomOverscrollCount++
+                                    mLastBottomOverscrollTime = now
+                                    if (mBottomOverscrollCount >= 3) {
+                                        mBottomOverscrollCount = 0
+                                        triggerSecretVaultMenu()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                return false
+            }
+        })
+    }
+
+    private fun triggerSecretVaultMenu() {
+        if (config.temporarilyShowHidden) {
+            toggleTemporarilyShowHidden(false)
+            return
+        }
+
+        if (isRPlus() && !isExternalStorageManager()) {
+            GrantAllFilesDialog(this)
+            return
+        }
+
+        if (config.isHiddenPasswordProtectionOn) {
+            mIsVaultDialogShowing = true
+            VaultSecurityDialog(
+                activity = this,
+                requiredHash = config.hiddenPasswordHash,
+                showTabIndex = config.hiddenProtectionType,
+                minimalist = true
+            ) { _, _, success ->
+                mIsVaultDialogShowing = false
+                if (success) {
+                    toggleTemporarilyShowHidden(true)
+                }
+            }
+        } else {
+            toggleTemporarilyShowHidden(true)
+        }
+    }
+
     private fun tryToggleTemporarilyShowHidden() {
         if (config.temporarilyShowHidden) {
             toggleTemporarilyShowHidden(false)
         } else {
-            if (isRPlus() && !isExternalStorageManager()) {
-                GrantAllFilesDialog(this)
-            } else {
-                handleHiddenFolderPasswordProtection {
-                    toggleTemporarilyShowHidden(true)
-                }
-            }
+            triggerSecretVaultMenu()
         }
     }
 
     private fun toggleTemporarilyShowHidden(show: Boolean) {
         mLoadedInitialPhotos = false
         config.temporarilyShowHidden = show
+        if (!show) {
+            CryptoManager.lockVault()
+        }
         binding.directoriesGrid.adapter = null
         getDirectories()
         refreshMenuItems()
