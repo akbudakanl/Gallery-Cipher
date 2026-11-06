@@ -28,12 +28,7 @@ import org.fossify.commons.views.MySearchMenu
 import org.fossify.gallery.R
 import org.fossify.gallery.adapters.DirectoryAdapter
 import org.fossify.gallery.databinding.DialogDirectoryPickerBinding
-import org.fossify.gallery.extensions.addTempFolderIfNeeded
-import org.fossify.gallery.extensions.config
-import org.fossify.gallery.extensions.getCachedDirectories
-import org.fossify.gallery.extensions.getDirsToShow
-import org.fossify.gallery.extensions.getDistinctPath
-import org.fossify.gallery.extensions.getSortedDirectories
+import org.fossify.gallery.extensions.*
 import org.fossify.gallery.models.Directory
 
 class PickDirectoryDialog(
@@ -43,6 +38,8 @@ class PickDirectoryDialog(
     val showFavoritesBin: Boolean,
     val isPickingCopyMoveDestination: Boolean,
     val isPickingFolderForWidget: Boolean,
+    val isCopyOperation: Boolean = false,
+    val isHiddenCopySource: Boolean = false,
     val callback: (path: String) -> Unit
 ) {
     private var dialog: AlertDialog? = null
@@ -175,7 +172,12 @@ class PickDirectoryDialog(
     }
 
     private fun fetchDirectories(forceShowHiddenAndExcluded: Boolean) {
-        activity.getCachedDirectories(forceShowHidden = forceShowHiddenAndExcluded, forceShowExcluded = forceShowHiddenAndExcluded) {
+        val includeVirtual = isPickingCopyMoveDestination && isCopyOperation
+        activity.getCachedDirectories(
+            forceShowHidden = forceShowHiddenAndExcluded,
+            forceShowExcluded = forceShowHiddenAndExcluded,
+            includeVirtualAlbums = includeVirtual
+        ) {
             if (it.isNotEmpty()) {
                 it.forEach {
                     it.subfoldersMediaCount = it.mediaCnt
@@ -183,7 +185,12 @@ class PickDirectoryDialog(
 
                 activity.runOnUiThread {
                     allDirectories.clear()
-                    gotDirectories(activity.addTempFolderIfNeeded(it))
+                    val dirs = if (isPickingCopyMoveDestination && isCopyOperation) {
+                        it
+                    } else {
+                        activity.addTempFolderIfNeeded(it)
+                    }
+                    gotDirectories(dirs)
                 }
             }
         }
@@ -191,6 +198,14 @@ class PickDirectoryDialog(
 
     private fun showOtherFolder() {
         activity.hideKeyboard(searchEditText)
+        if (isPickingCopyMoveDestination && isCopyOperation) {
+            dialog?.dismiss()
+            CreateVirtualAlbumDialog(activity, isHidden = isHiddenCopySource) { albumId ->
+                callback(getVirtualAlbumPath(albumId))
+            }
+            return
+        }
+
         FilePickerDialog(
             activity,
             activity.getDefaultCopyDestinationPath(showHidden, sourcePath),
@@ -225,6 +240,20 @@ class PickDirectoryDialog(
         val adapter = DirectoryAdapter(activity, dirs.clone() as ArrayList<Directory>, null, binding.directoriesGrid, true) {
             val clickedDir = it as Directory
             val path = clickedDir.path
+            if (clickedDir.isVirtualAlbum()) {
+                if (!isCopyOperation) {
+                    activity.toast(R.string.virtual_album_cannot_be_modified)
+                    return@DirectoryAdapter
+                }
+                if (isPickingCopyMoveDestination && path.trimEnd('/') == sourcePath.trimEnd('/')) {
+                    activity.toast(org.fossify.commons.R.string.source_and_destination_same)
+                    return@DirectoryAdapter
+                }
+                callback(path)
+                dialog?.dismiss()
+                return@DirectoryAdapter
+            }
+
             if (clickedDir.subfoldersCount == 1 || !activity.config.groupDirectSubfolders) {
                 if (isPickingCopyMoveDestination && path.trimEnd('/') == sourcePath) {
                     activity.toast(org.fossify.commons.R.string.source_and_destination_same)

@@ -82,7 +82,6 @@ import org.fossify.gallery.R
 import org.fossify.gallery.adapters.DirectoryAdapter
 import org.fossify.gallery.databases.GalleryDatabase
 import org.fossify.gallery.databinding.ActivityMainBinding
-import org.fossify.gallery.dialogs.CreateVirtualAlbumDialog
 import org.fossify.gallery.dialogs.ChangeSortingDialog
 import org.fossify.gallery.dialogs.ChangeViewTypeDialog
 import org.fossify.gallery.dialogs.FilterMediaDialog
@@ -98,13 +97,15 @@ import org.fossify.gallery.extensions.getDirectorySortingValue
 import org.fossify.gallery.extensions.getDirsToShow
 import org.fossify.gallery.extensions.getDistinctPath
 import org.fossify.gallery.extensions.getFavoritePaths
-import org.fossify.gallery.extensions.isVirtualAlbum
 import org.fossify.gallery.extensions.getNoMediaFoldersSync
 import org.fossify.gallery.extensions.getOTGFolderChildrenNames
 import org.fossify.gallery.extensions.getSortedDirectories
 import org.fossify.gallery.extensions.handleExcludedFolderPasswordProtection
 import org.fossify.gallery.extensions.handleMediaManagementPrompt
 import org.fossify.gallery.extensions.isDownloadsFolder
+import org.fossify.gallery.extensions.isPathHiddenOrEncrypted
+import org.fossify.gallery.extensions.isVirtualAlbum
+import org.fossify.gallery.extensions.isVirtualAlbumPath
 import org.fossify.gallery.extensions.launchAbout
 import org.fossify.gallery.extensions.launchCamera
 import org.fossify.gallery.extensions.launchSettings
@@ -117,8 +118,8 @@ import org.fossify.gallery.extensions.storeDirectoryItems
 import org.fossify.gallery.extensions.tryDeleteFileDirItem
 import org.fossify.gallery.extensions.updateDBDirectory
 import org.fossify.gallery.extensions.updateWidgets
-import org.fossify.gallery.helpers.DIRECTORY
 import org.fossify.gallery.helpers.CryptoManager
+import org.fossify.gallery.helpers.DIRECTORY
 import org.fossify.gallery.helpers.GET_ANY_INTENT
 import org.fossify.gallery.helpers.GET_IMAGE_INTENT
 import org.fossify.gallery.helpers.GET_VIDEO_INTENT
@@ -521,7 +522,6 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                 R.id.temporarily_show_excluded -> tryToggleTemporarilyShowExcluded()
                 R.id.stop_showing_excluded -> tryToggleTemporarilyShowExcluded()
                 R.id.create_new_folder -> createNewFolder()
-                R.id.create_virtual_album -> createVirtualAlbum()
                 R.id.open_recycle_bin -> openRecycleBin()
                 R.id.column_count -> changeColumnCount()
                 R.id.set_as_default_folder -> setAsDefaultFolder()
@@ -989,12 +989,6 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         }
     }
 
-    private fun createVirtualAlbum() {
-        CreateVirtualAlbumDialog(this) {
-            refreshItems()
-        }
-    }
-
     private fun createNewFolder() {
         FilePickerDialog(this, internalStoragePath, false, config.shouldShowHidden, false, true) {
             CreateNewFolderDialog(this, it) {
@@ -1351,10 +1345,10 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
                 // update directories and media files in the local db, delete invalid items. Intentionally creating a new thread
                 updateDBDirectory(directory)
-                if (!directory.isRecycleBin() && !directory.areFavorites() && !directory.isVirtualAlbum()) {
+                if (!directory.isRecycleBin() && !directory.areFavorites() && !directory.isVirtualAlbum() && !CryptoManager.isEncryptedFolderPath(this, directory.path)) {
                     Thread {
                         try {
-                            mediaDB.insertAll(curMedia)
+                            mediaDB.insertAll(curMedia.filterNot { isPathHiddenOrEncrypted(it.path) })
                         } catch (ignored: Exception) {
                         }
                     }.start()
@@ -1464,15 +1458,17 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             setupAdapter(dirs)
 
             // make sure to create a new thread for these operations, dont just use the common bg thread
-            Thread {
-                try {
-                    directoryDB.insert(newDir)
-                    if (folder != RECYCLE_BIN && folder != FAVORITES) {
-                        mediaDB.insertAll(newMedia)
+            if (!newDir.isVirtualAlbum() && !CryptoManager.isEncryptedFolderPath(this, folder)) {
+                Thread {
+                    try {
+                        directoryDB.insert(newDir)
+                        if (folder != RECYCLE_BIN && folder != FAVORITES) {
+                            mediaDB.insertAll(newMedia.filterNot { isPathHiddenOrEncrypted(it.path) })
+                        }
+                    } catch (ignored: Exception) {
                     }
-                } catch (ignored: Exception) {
-                }
-            }.start()
+                }.start()
+            }
         }
 
         mLoadedInitialPhotos = true
@@ -1493,9 +1489,9 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         val excludedFolders = config.excludedFolders
         val everShownFolders = config.everShownFolders.toMutableSet() as HashSet<String>
 
-        // do not add excluded folders and their subfolders at everShownFolders
+        // do not add excluded folders, virtual albums, or encrypted folders at everShownFolders
         dirs.filter { dir ->
-            return@filter !excludedFolders.any { dir.path.startsWith(it) }
+            !dir.isVirtualAlbum() && !CryptoManager.isEncryptedFolderPath(this, dir.path) && !excludedFolders.any { dir.path.startsWith(it) }
         }.mapTo(everShownFolders) { it.path }
 
         try {
@@ -1666,6 +1662,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                 val hasMediaFile = children?.any {
                     it != null && (
                             it.isMediaFile()
+                                    || CryptoManager.isEncryptedFile(it)
                                     || (it.startsWith("img_", true)
                                     && File(it).isDirectory)
                             )
@@ -1816,7 +1813,9 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                 files.sortBy { !it.isDirectory }
                 for (file in files) {
                     if (file.isDirectory && !file.startsWith("${config.internalStoragePath}/Android")) {
-                        folders.addAll(getFoldersWithMedia(file.absolutePath))
+                        if (!CryptoManager.isEncryptedFolder(file)) {
+                            folders.addAll(getFoldersWithMedia(file.absolutePath))
+                        }
                     } else if (file.isFile && file.isMediaFile()) {
                         folders.add(file.parent ?: "")
                         break

@@ -64,6 +64,7 @@ import org.fossify.gallery.dialogs.ChangeSortingDialog
 import org.fossify.gallery.dialogs.ChangeViewTypeDialog
 import org.fossify.gallery.dialogs.FilterMediaDialog
 import org.fossify.gallery.dialogs.GrantAllFilesDialog
+import org.fossify.gallery.extensions.canAccessHiddenVirtualAlbums
 import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.deleteDBPath
 import org.fossify.gallery.extensions.directoryDB
@@ -71,6 +72,8 @@ import org.fossify.gallery.extensions.emptyAndDisableTheRecycleBin
 import org.fossify.gallery.extensions.emptyTheRecycleBin
 import org.fossify.gallery.extensions.favoritesDB
 import org.fossify.gallery.extensions.getVirtualAlbumName
+import org.fossify.gallery.extensions.isHiddenVirtualAlbumPath
+import org.fossify.gallery.extensions.isPathHiddenOrEncrypted
 import org.fossify.gallery.extensions.isVirtualAlbumPath
 import org.fossify.gallery.extensions.getCachedMedia
 import org.fossify.gallery.extensions.getHumanizedFilename
@@ -202,6 +205,13 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
 
     override fun onResume() {
         super.onResume()
+        val requiresVault = (mPath.isVirtualAlbumPath() && isHiddenVirtualAlbumPath(mPath)) ||
+            (mPath.isNotEmpty() && !mPath.isVirtualAlbumPath() && CryptoManager.isEncryptedFolderPath(this, mPath))
+        if (requiresVault && !canAccessHiddenVirtualAlbums()) {
+            finish()
+            return
+        }
+
         updateMenuColors()
         if (mStoredAnimateGifs != config.animateGifs) {
             getMediaAdapter()?.updateAnimateGifs(config.animateGifs)
@@ -470,6 +480,10 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             if (mPath.isVirtualAlbumPath() && !mShowAll) {
                 // the album name lives in the database, it cannot be read on the main thread
                 ensureBackgroundThread {
+                    if (isHiddenVirtualAlbumPath(mPath) && !canAccessHiddenVirtualAlbums()) {
+                        runOnUiThread { finish() }
+                        return@ensureBackgroundThread
+                    }
                     val albumName = getVirtualAlbumName(mPath) ?: ""
                     runOnUiThread {
                         if (!isDestroyed && !isFinishing) {
@@ -809,6 +823,12 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
         config.temporarilyShowHidden = show
         if (!show) {
             CryptoManager.lockVault()
+            if ((mPath.isVirtualAlbumPath() && isHiddenVirtualAlbumPath(mPath)) ||
+                (mPath.isNotEmpty() && !mPath.isVirtualAlbumPath() && CryptoManager.isEncryptedFolderPath(this, mPath))
+            ) {
+                finish()
+                return
+            }
         }
         getMedia()
         refreshMenuItems()
@@ -1058,15 +1078,18 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
 
         mLatestMediaId = getLatestMediaId()
         mLatestMediaDateId = getLatestMediaByDateId()
-        if (!isFromCache) {
+        if (!isFromCache && !mPath.isVirtualAlbumPath()) {
             val mediaToInsert = mMedia
-                .filter { it is Medium && it.deletedTS == 0L }.map { it as Medium }
-            Thread {
-                try {
-                    mediaDB.insertAll(mediaToInsert)
-                } catch (e: Exception) {
-                }
-            }.start()
+                .filter { it is Medium && it.deletedTS == 0L && !isPathHiddenOrEncrypted(it.path) }
+                .map { it as Medium }
+            if (mediaToInsert.isNotEmpty()) {
+                Thread {
+                    try {
+                        mediaDB.insertAll(mediaToInsert)
+                    } catch (e: Exception) {
+                    }
+                }.start()
+            }
         }
     }
 

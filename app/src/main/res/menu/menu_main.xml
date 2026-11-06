@@ -54,11 +54,6 @@
         android:title="@string/set_as_default_folder"
         app:showAsAction="never" />
     <item
-        android:id="@+id/create_virtual_album"
-        android:showAsAction="never"
-        android:title="@string/create_virtual_album"
-        app:showAsAction="never" />
-    <item
         android:id="@+id/create_new_folder"
         android:showAsAction="never"
         android:title="@string/create_new_folder"

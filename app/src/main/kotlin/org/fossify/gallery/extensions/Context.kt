@@ -533,12 +533,18 @@ fun Context.getNoMediaFoldersSync(): ArrayList<String> {
 }
 
 fun Context.rescanFolderMedia(path: String) {
+    if (path.isVirtualAlbumPath()) {
+        return
+    }
     ensureBackgroundThread {
         rescanFolderMediaSync(path)
     }
 }
 
 fun Context.rescanFolderMediaSync(path: String) {
+    if (path.isVirtualAlbumPath()) {
+        return
+    }
     getCachedMedia(path) { cached ->
         GetMediaAsynctask(
             context = applicationContext,
@@ -550,7 +556,7 @@ fun Context.rescanFolderMediaSync(path: String) {
             ensureBackgroundThread {
                 val media = newMedia.filterIsInstance<Medium>() as ArrayList<Medium>
                 try {
-                    mediaDB.insertAll(media.filterNot { CryptoManager.isEncryptedFile(it.path) })
+                    mediaDB.insertAll(media.filterNot { isPathHiddenOrEncrypted(it.path) })
 
                     cached.forEach { thumbnailItem ->
                         if (!newMedia.contains(thumbnailItem)) {
@@ -975,7 +981,7 @@ fun Context.getCachedMedia(
         val virtualAlbumId = path.getVirtualAlbumId()
         if (virtualAlbumId != null) {
             try {
-                media.addAll(virtualAlbumsDB.getValidMedia(virtualAlbumId))
+                media.addAll(getVirtualAlbumMedia(virtualAlbumId))
             } catch (ignored: Exception) {
             }
         }
@@ -992,7 +998,7 @@ fun Context.getCachedMedia(
         }
 
         val shouldShowHidden = config.shouldShowHidden
-        foldersToScan.filter { path.isNotEmpty() || !config.isFolderProtected(it) }.forEach {
+        foldersToScan.filter { !it.isVirtualAlbumPath() && (path.isNotEmpty() || !config.isFolderProtected(it)) }.forEach {
             try {
                 val currMedia = mediaDB.getMediaFromPath(it)
                 media.addAll(currMedia)
@@ -1076,14 +1082,21 @@ fun Context.updateDBMediaPath(oldPath: String, newPath: String) {
     val newFilename = newPath.getFilenameFromPath()
     val newParentPath = newPath.getParentPath()
     try {
-        mediaDB.updateMedium(newFilename, newPath, newParentPath, oldPath)
+        if (!isPathHiddenOrEncrypted(newPath)) {
+            mediaDB.updateMedium(newFilename, newPath, newParentPath, oldPath)
+        } else {
+            mediaDB.deleteMediumPath(oldPath)
+        }
         favoritesDB.updateFavorite(newFilename, newPath, newParentPath, oldPath)
-        virtualAlbumsDB.updateItemPath(newFilename, newPath, newParentPath, oldPath)
+        virtualAlbumsDB.updateItemPath(oldPath, newPath, newFilename, newParentPath)
     } catch (ignored: Exception) {
     }
 }
 
 fun Context.updateDBDirectory(directory: Directory) {
+    if (directory.isVirtualAlbum() || CryptoManager.isEncryptedFolderPath(this, directory.path)) {
+        return
+    }
     try {
         directoryDB.updateDirectory(
             path = directory.path,
@@ -1237,7 +1250,7 @@ fun Context.parseFileChannel(
 
 fun Context.addPathToDB(path: String) {
     ensureBackgroundThread {
-        if (!getDoesFilePathExist(path)) {
+        if (!getDoesFilePathExist(path) || isPathHiddenOrEncrypted(path)) {
             return@ensureBackgroundThread
         }
 
@@ -1372,6 +1385,9 @@ fun Context.getDirectorySortingValue(
 }
 
 fun Context.updateDirectoryPath(path: String) {
+    if (path.isVirtualAlbumPath() || CryptoManager.isEncryptedFolderPath(this, path)) {
+        return
+    }
     val mediaFetcher = MediaFetcher(applicationContext)
     val getImagesOnly = false
     val getVideosOnly = false

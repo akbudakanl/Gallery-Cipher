@@ -274,6 +274,7 @@
     <string name="new_virtual_album">Yeni albüm…</string>
     <string name="rename_virtual_album">Albümü yeniden adlandır</string>
     <string name="album_name">Albüm adı</string>
+    <string name="virtual_folder_name">Virtual Klasör adı</string>
     <string name="virtual_album_name_empty">Albüm adı boş olamaz</string>
     <string name="virtual_album_exists">Bu adda bir albüm zaten var</string>
     <string name="add_to_virtual_album">Albüme ekle</string>
@@ -282,7 +283,7 @@
     <string name="already_in_virtual_album">Zaten \"%s\" albümünde</string>
     <string name="removed_from_virtual_album">Albümden çıkarıldı</string>
     <string name="delete_virtual_album_confirmation">%s albümü silinsin mi? Yalnızca albüm silinir, fotoğraf ve videolarınız yerinde kalır.</string>
-    <string name="virtual_album_empty">Bu albüm boş. Herhangi bir klasörde öğeleri seçip \"Albüme ekle\" seçeneğini kullanın.</string>
+    <string name="virtual_album_empty">Bu albüm boş. Herhangi bir klasörde öğeleri seçip \"Kopyala\" seçeneğini kullanın.</string>
     <string name="virtual_album_cannot_be_modified">Bu işlem sanal albümler için kullanılamaz</string>
     <string name="alphanumeric_password">Şifre</string>
     <string name="enter_password">Şifre girin</string>

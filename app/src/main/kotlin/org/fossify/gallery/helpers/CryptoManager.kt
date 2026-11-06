@@ -14,6 +14,8 @@ import org.fossify.commons.helpers.*
 import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.directoryDB
 import org.fossify.gallery.extensions.mediaDB
+import org.fossify.gallery.extensions.updateVirtualAlbumItemPath
+import org.fossify.gallery.extensions.virtualAlbumsDB
 import java.io.*
 import java.math.BigInteger
 import java.security.KeyFactory
@@ -55,6 +57,7 @@ object CryptoManager {
     private const val VERSION_ASYMMETRIC: Byte = 2
     private const val META_MAGIC_SYM = "FVLTMETA"
     private const val META_MAGIC_ASYM = "FVLTMET2"
+    private const val VAULT_STR_PREFIX = "FVSTR1:"
     private const val PBKDF2_ITERATIONS = 100_000
     private const val KEY_LENGTH_BITS = 256
     private const val RSA_KEY_BITS = 2048
@@ -192,7 +195,114 @@ object CryptoManager {
         context.config.hiddenPasswordHash = marker
         context.config.hiddenProtectionType = protectionType
         context.config.isHiddenPasswordProtectionOn = true
+
+        // Ensure any existing hidden virtual albums have their names encrypted in SQLite
+        ensureBackgroundThread {
+            try {
+                context.virtualAlbumsDB.getAllAlbums().filter { it.isHidden && !isEncryptedVaultString(it.name) }.forEach { album ->
+                    val albumId = album.id ?: return@forEach
+                    val encName = encryptStringForVault(context, album.name)
+                    context.virtualAlbumsDB.updateAlbumVisibilityAndName(albumId, true, encName)
+                }
+            } catch (_: Exception) {
+            }
+        }
+
         return marker
+    }
+
+    fun isEncryptedVaultString(text: String): Boolean {
+        return text.startsWith(VAULT_STR_PREFIX)
+    }
+
+    fun encryptStringForVault(context: Context, plainText: String): String {
+        if (isEncryptedVaultString(plainText)) return plainText
+        val masterKey = unlockedMasterKey
+        if (masterKey != null) {
+            val iv = ByteArray(GCM_IV_LENGTH).also { secureRandom.nextBytes(it) }
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(masterKey, "AES"), GCMParameterSpec(GCM_TAG_BITS, iv))
+            val encrypted = cipher.doFinal(plainText.toByteArray(Charsets.UTF_8))
+            val payload = ByteArrayOutputStream().use { baos ->
+                DataOutputStream(baos).use { dos ->
+                    dos.writeByte(VERSION_SYMMETRIC.toInt())
+                    dos.write(iv)
+                    dos.writeInt(encrypted.size)
+                    dos.write(encrypted)
+                }
+                baos.toByteArray()
+            }
+            return VAULT_STR_PREFIX + Base64.encodeToString(payload, Base64.NO_WRAP)
+        }
+
+        val pubKeyB64 = context.config.vaultPublicKey
+        if (pubKeyB64.isNotEmpty()) {
+            return try {
+                val pubKeyBytes = Base64.decode(pubKeyB64, Base64.NO_WRAP)
+                val ephemeralKey = ByteArray(32).also { secureRandom.nextBytes(it) }
+                val wrappedKey = wrapKeyWithPublicKey(pubKeyBytes, ephemeralKey)
+                val iv = ByteArray(GCM_IV_LENGTH).also { secureRandom.nextBytes(it) }
+                val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+                cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(ephemeralKey, "AES"), GCMParameterSpec(GCM_TAG_BITS, iv))
+                val encrypted = cipher.doFinal(plainText.toByteArray(Charsets.UTF_8))
+                ephemeralKey.fill(0)
+
+                val payload = ByteArrayOutputStream().use { baos ->
+                    DataOutputStream(baos).use { dos ->
+                        dos.writeByte(VERSION_ASYMMETRIC.toInt())
+                        dos.writeInt(wrappedKey.size)
+                        dos.write(wrappedKey)
+                        dos.write(iv)
+                        dos.writeInt(encrypted.size)
+                        dos.write(encrypted)
+                    }
+                    baos.toByteArray()
+                }
+                VAULT_STR_PREFIX + Base64.encodeToString(payload, Base64.NO_WRAP)
+            } catch (_: Exception) {
+                plainText
+            }
+        }
+        return plainText
+    }
+
+    fun decryptStringFromVault(storedText: String): String? {
+        if (!isEncryptedVaultString(storedText)) return storedText
+        val masterKey = unlockedMasterKey ?: return null
+        val b64 = storedText.removePrefix(VAULT_STR_PREFIX)
+        return try {
+            val raw = Base64.decode(b64, Base64.NO_WRAP)
+            DataInputStream(ByteArrayInputStream(raw)).use { dis ->
+                val version = dis.readByte()
+                val aesKey: ByteArray = when (version) {
+                    VERSION_SYMMETRIC -> masterKey
+                    VERSION_ASYMMETRIC -> {
+                        val privKey = unlockedPrivateKey ?: return null
+                        val wrappedLen = dis.readInt()
+                        if (wrappedLen <= 0 || wrappedLen > 2048) return null
+                        val wrappedKey = ByteArray(wrappedLen)
+                        dis.readFully(wrappedKey)
+                        unwrapKeyWithPrivateKey(privKey, wrappedKey)
+                    }
+                    else -> return null
+                }
+                val iv = ByteArray(GCM_IV_LENGTH)
+                dis.readFully(iv)
+                val len = dis.readInt()
+                if (len <= 0 || len > 8192) return null
+                val encrypted = ByteArray(len)
+                dis.readFully(encrypted)
+                val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+                cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(aesKey, "AES"), GCMParameterSpec(GCM_TAG_BITS, iv))
+                val plain = String(cipher.doFinal(encrypted), Charsets.UTF_8)
+                if (version == VERSION_ASYMMETRIC) {
+                    aesKey.fill(0)
+                }
+                plain
+            }
+        } catch (_: Exception) {
+            null
+        }
     }
 
     fun unlockWithSecret(context: Context, secret: String): Boolean {
@@ -509,6 +619,7 @@ object CryptoManager {
         }
 
         return try {
+            val sourcePath = sourceFile.absolutePath
             FileOutputStream(encryptedFile).use { fos ->
                 BufferedOutputStream(fos, 64 * 1024).use { bos ->
                     DataOutputStream(bos).use { dos ->
@@ -563,6 +674,7 @@ object CryptoManager {
             }
 
             if (wipeSource) {
+                context.updateVirtualAlbumItemPath(sourcePath, encryptedFile.absolutePath)
                 secureWipeAndDeleteFile(context, sourceFile)
             }
             if (clearCachesNow) {
@@ -606,6 +718,7 @@ object CryptoManager {
         }
 
         return try {
+            val encPath = encryptedFile.absolutePath
             openDecryptedContentStream(encryptedFile, 0L)?.use { cis ->
                 FileOutputStream(outFile).use { fos ->
                     BufferedOutputStream(fos, 64 * 1024).use { bos ->
@@ -623,8 +736,9 @@ object CryptoManager {
             outFile.setLastModified(meta.lastModified)
 
             if (deleteEncryptedSource) {
-                metadataCache.remove(encryptedFile.absolutePath)?.fileKey?.fill(0)
-                context.mediaDB.deleteMediumPath(encryptedFile.absolutePath)
+                context.updateVirtualAlbumItemPath(encPath, outFile.absolutePath)
+                metadataCache.remove(encPath)?.fileKey?.fill(0)
+                context.mediaDB.deleteMediumPath(encPath)
                 encryptedFile.delete()
             }
             context.rescanPaths(arrayListOf(outFile.absolutePath))
@@ -706,6 +820,16 @@ object CryptoManager {
                             metadataCache[newKey] = meta
                         }
                     }
+                    // Update any virtual album items pointing inside the old folder path
+                    try {
+                        val oldPrefix = folder.absolutePath.trimEnd('/') + "/"
+                        val newPrefix = finalFolder.absolutePath.trimEnd('/') + "/"
+                        context.virtualAlbumsDB.getAllItems().filter { it.fullPath.startsWith(oldPrefix) }.forEach { item ->
+                            val newItemPath = newPrefix + item.fullPath.removePrefix(oldPrefix)
+                            context.updateVirtualAlbumItemPath(item.fullPath, newItemPath)
+                        }
+                    } catch (_: Exception) {
+                    }
                     // Update pinned/included/everShown folder references
                     if (context.config.pinnedFolders.contains(folder.absolutePath)) {
                         context.config.removePinnedFolders(setOf(folder.absolutePath))
@@ -718,6 +842,23 @@ object CryptoManager {
                     }
                 }
             }
+        }
+
+        // Any virtual album referencing items inside this newly encrypted folder must also be marked hidden
+        try {
+            val prefix = finalFolder.absolutePath.trimEnd('/') + "/"
+            val affectedAlbumIds = context.virtualAlbumsDB.getAllItems()
+                .filter { it.fullPath.startsWith(prefix) || isEncryptedFile(it.fullPath) }
+                .map { it.albumId }
+                .toSet()
+            for (albumId in affectedAlbumIds) {
+                val album = context.virtualAlbumsDB.getAlbumById(albumId) ?: continue
+                if (!album.isHidden || !isEncryptedVaultString(album.name)) {
+                    val encName = encryptStringForVault(context, album.name)
+                    context.virtualAlbumsDB.updateAlbumVisibilityAndName(albumId, true, encName)
+                }
+            }
+        } catch (_: Exception) {
         }
 
         context.config.removeEncryptedFolder(folder.absolutePath)
@@ -769,6 +910,15 @@ object CryptoManager {
                 }
                 if (folder.renameTo(targetFolder)) {
                     finalFolder = targetFolder
+                    try {
+                        val oldPrefix = folder.absolutePath.trimEnd('/') + "/"
+                        val newPrefix = finalFolder.absolutePath.trimEnd('/') + "/"
+                        context.virtualAlbumsDB.getAllItems().filter { it.fullPath.startsWith(oldPrefix) }.forEach { item ->
+                            val newItemPath = newPrefix + item.fullPath.removePrefix(oldPrefix)
+                            context.updateVirtualAlbumItemPath(item.fullPath, newItemPath)
+                        }
+                    } catch (_: Exception) {
+                    }
                     if (context.config.pinnedFolders.contains(folder.absolutePath)) {
                         context.config.removePinnedFolders(setOf(folder.absolutePath))
                         context.config.addPinnedFolders(setOf(finalFolder.absolutePath))

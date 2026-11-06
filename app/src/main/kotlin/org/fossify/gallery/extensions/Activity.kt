@@ -354,8 +354,41 @@ fun BaseSimpleActivity.tryCopyMoveFilesTo(fileDirItems: ArrayList<FileDirItem>, 
     }
 
     val source = fileDirItems[0].getParentPath()
-    PickDirectoryDialog(this, source, true, false, true, false) {
+    val isHiddenCopySource = isPathHiddenOrEncrypted(source) || fileDirItems.any { isPathHiddenOrEncrypted(it.path) }
+
+    PickDirectoryDialog(
+        activity = this,
+        sourcePath = source,
+        showOtherFolderButton = true,
+        showFavoritesBin = false,
+        isPickingCopyMoveDestination = true,
+        isPickingFolderForWidget = false,
+        isCopyOperation = isCopyOperation,
+        isHiddenCopySource = isHiddenCopySource
+    ) {
         val destination = it
+        if (destination.isVirtualAlbumPath()) {
+            if (!isCopyOperation) {
+                toast(R.string.virtual_album_cannot_be_modified)
+                return@PickDirectoryDialog
+            }
+            val albumId = destination.getVirtualAlbumId() ?: return@PickDirectoryDialog
+            ensureBackgroundThread {
+                val added = addFileDirItemsToVirtualAlbum(
+                    albumId = albumId,
+                    fileDirItems = fileDirItems,
+                    forceMarkAlbumHidden = isHiddenCopySource
+                )
+                val albumName = getVirtualAlbumName(destination) ?: ""
+                runOnUiThread {
+                    val msgRes = if (added > 0) R.string.added_to_virtual_album else R.string.already_in_virtual_album
+                    toast(getString(msgRes, albumName))
+                    callback(destination)
+                }
+            }
+            return@PickDirectoryDialog
+        }
+
         val isDestEncrypted = CryptoManager.isEncryptedFolderPath(this, destination)
         val hasEncryptedSources = fileDirItems.any { item -> CryptoManager.isEncryptedFile(item.path) }
 
@@ -390,9 +423,11 @@ fun BaseSimpleActivity.tryCopyMoveFilesTo(fileDirItems: ArrayList<FileDirItem>, 
                         // Encrypted-to-encrypted or normal-to-normal within a mixed batch
                         val targetFile = File(destDir, srcFile.name)
                         if (srcFile.absolutePath != targetFile.absolutePath) {
+                            val oldSrcPath = srcFile.absolutePath
                             srcFile.copyTo(targetFile, overwrite = true)
                             targetFile.setLastModified(srcFile.lastModified())
                             if (!isCopyOperation) {
+                                updateVirtualAlbumItemPath(oldSrcPath, targetFile.absolutePath)
                                 if (CryptoManager.isEncryptedFile(srcFile.name)) {
                                     srcFile.delete()
                                 } else {

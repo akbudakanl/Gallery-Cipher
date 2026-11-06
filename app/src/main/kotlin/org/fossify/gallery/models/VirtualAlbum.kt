@@ -2,15 +2,17 @@ package org.fossify.gallery.models
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/**
- * A user created virtual album. It owns no files: its content is a list of path references
- * stored in [VirtualAlbumItem], so adding a file to any number of albums never duplicates it on disk.
- */
-@Entity(tableName = "virtual_albums")
+@Entity(
+    tableName = "virtual_albums",
+    indices = [Index(value = ["name"], unique = true)]
+)
 data class VirtualAlbum(
-    @PrimaryKey(autoGenerate = true) var id: Long?,
+    @PrimaryKey(autoGenerate = true) var id: Long? = null,
     @ColumnInfo(name = "name") var name: String,
-    @ColumnInfo(name = "created_ts") var createdTS: Long
+    @ColumnInfo(name = "created_ts") var createdTs: Long = System.currentTimeMillis() / 1000L,
+    @ColumnInfo(name = "thumbnail") var thumbnail: String = "",
+    @ColumnInfo(name = "is_hidden") var isHidden: Boolean = false
 )

@@ -72,20 +72,20 @@ import org.fossify.gallery.dialogs.ConfirmDeleteFolderDialog
 import org.fossify.gallery.dialogs.ExcludeFolderDialog
 import org.fossify.gallery.dialogs.PickMediumDialog
 import org.fossify.gallery.dialogs.RenameVirtualAlbumDialog
-import org.fossify.gallery.extensions.deleteVirtualAlbum
-import org.fossify.gallery.extensions.getVirtualAlbumId
-import org.fossify.gallery.extensions.isVirtualAlbum
-import org.fossify.gallery.extensions.isVirtualAlbumPath
 import org.fossify.gallery.extensions.addNoMedia
 import org.fossify.gallery.extensions.checkAppendingHidden
 import org.fossify.gallery.extensions.config
+import org.fossify.gallery.extensions.deleteVirtualAlbum
 import org.fossify.gallery.extensions.directoryDB
 import org.fossify.gallery.extensions.emptyAndDisableTheRecycleBin
 import org.fossify.gallery.extensions.emptyTheRecycleBin
 import org.fossify.gallery.extensions.favoritesDB
 import org.fossify.gallery.extensions.fixDateTaken
 import org.fossify.gallery.extensions.getShortcutImage
+import org.fossify.gallery.extensions.getVirtualAlbumId
 import org.fossify.gallery.extensions.isThisOrParentFolderHidden
+import org.fossify.gallery.extensions.isVirtualAlbum
+import org.fossify.gallery.extensions.isVirtualAlbumPath
 import org.fossify.gallery.extensions.loadImage
 import org.fossify.gallery.extensions.mediaDB
 import org.fossify.gallery.extensions.removeNoMedia
@@ -685,9 +685,11 @@ class DirectoryAdapter(
         val fileDirItems = paths.map { FileDirItem(it, it.getFilenameFromPath()) } as ArrayList<FileDirItem>
         activity.tryCopyMoveFilesTo(fileDirItems, isCopyOperation) {
             val destinationPath = it
-            val newPaths = fileDirItems.map { "$destinationPath/${it.name}" }.toMutableList() as ArrayList<String>
-            activity.rescanPaths(newPaths) {
-                activity.fixDateTaken(newPaths, false)
+            if (!destinationPath.isVirtualAlbumPath()) {
+                val newPaths = fileDirItems.map { "$destinationPath/${it.name}" }.toMutableList() as ArrayList<String>
+                activity.rescanPaths(newPaths) {
+                    activity.fixDateTaken(newPaths, false)
+                }
             }
 
             config.tempFolderPath = ""

@@ -15,15 +15,12 @@ import org.fossify.commons.extensions.showKeyboard
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.gallery.R
-import org.fossify.gallery.extensions.createVirtualAlbum
-import org.fossify.gallery.extensions.getVirtualAlbums
-import org.fossify.gallery.extensions.renameVirtualAlbum
-import org.fossify.gallery.extensions.virtualAlbumNameExists
+import org.fossify.gallery.extensions.*
 
 private fun Activity.buildAlbumNameField(initialText: String): Pair<FrameLayout, AppCompatEditText> {
     val padding = (20 * resources.displayMetrics.density).toInt()
     val editText = AppCompatEditText(this).apply {
-        hint = getString(R.string.album_name)
+        hint = getString(R.string.virtual_folder_name)
         inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
         imeOptions = EditorInfo.IME_ACTION_DONE
         setSingleLine(true)
@@ -39,15 +36,19 @@ private fun Activity.buildAlbumNameField(initialText: String): Pair<FrameLayout,
     return container to editText
 }
 
-/** Asks for a name and creates a new, empty virtual album. [callback] receives the id of the new album. */
-class CreateVirtualAlbumDialog(val activity: Activity, val callback: (albumId: Long) -> Unit) {
+/** Asks for a name and creates a new virtual album. [callback] receives the id of the new album. */
+class CreateVirtualAlbumDialog(
+    val activity: Activity,
+    val isHidden: Boolean = false,
+    val callback: (albumId: Long) -> Unit
+) {
     init {
         val (container, editText) = activity.buildAlbumNameField("")
         activity.getAlertDialogBuilder()
             .setPositiveButton(org.fossify.commons.R.string.ok, null)
             .setNegativeButton(org.fossify.commons.R.string.cancel, null)
             .apply {
-                activity.setupDialogStuff(container, this, R.string.create_virtual_album) { alertDialog ->
+                activity.setupDialogStuff(container, this, titleId = 0) { alertDialog ->
                     alertDialog.showKeyboard(editText)
                     alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                         val name = editText.text.toString().trim()
@@ -62,7 +63,7 @@ class CreateVirtualAlbumDialog(val activity: Activity, val callback: (albumId: L
                                 return@ensureBackgroundThread
                             }
 
-                            val albumId = activity.createVirtualAlbum(name)
+                            val albumId = activity.createVirtualAlbum(name, isHidden = isHidden)
                             activity.runOnUiThread {
                                 if (albumId == -1L) {
                                     activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
@@ -129,19 +130,26 @@ class RenameVirtualAlbumDialog(
 class PickVirtualAlbumDialog(
     val activity: Activity,
     val excludedAlbumId: Long? = null,
+    val isHiddenSource: Boolean = false,
     val callback: (albumId: Long, albumName: String) -> Unit
 ) {
     private var dialog: AlertDialog? = null
 
     init {
         ensureBackgroundThread {
-            val albums = activity.getVirtualAlbums().filter { it.id != null && it.id != excludedAlbumId }
+            val canAccessHidden = activity.canAccessHiddenVirtualAlbums()
+            val albums = activity.getVirtualAlbums()
+                .filter { it.id != null && it.id != excludedAlbumId && (!it.isHidden || canAccessHidden) }
+                .mapNotNull { album ->
+                    val name = activity.getResolvedVirtualAlbumName(album) ?: return@mapNotNull null
+                    album.id!! to name
+                }
             activity.runOnUiThread {
                 if (activity.isFinishing || activity.isDestroyed) {
                     return@runOnUiThread
                 }
 
-                show(albums.map { it.id!! to it.name })
+                show(albums)
             }
         }
     }
@@ -154,9 +162,9 @@ class PickVirtualAlbumDialog(
             setOnItemClickListener { _, _, position, _ ->
                 dialog?.dismiss()
                 if (position == albums.size) {
-                    CreateVirtualAlbumDialog(activity) { albumId ->
+                    CreateVirtualAlbumDialog(activity, isHidden = isHiddenSource) { albumId ->
                         ensureBackgroundThread {
-                            val name = activity.getVirtualAlbums().firstOrNull { it.id == albumId }?.name ?: ""
+                            val name = activity.getVirtualAlbumName(getVirtualAlbumPath(albumId)) ?: ""
                             activity.runOnUiThread { callback(albumId, name) }
                         }
                     }

@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import org.fossify.gallery.interfaces.*
 import org.fossify.gallery.models.*
 
-@Database(entities = [Directory::class, Medium::class, Widget::class, DateTaken::class, Favorite::class, VirtualAlbum::class, VirtualAlbumItem::class], version = 11)
+@Database(entities = [Directory::class, Medium::class, Widget::class, DateTaken::class, Favorite::class, VirtualAlbum::class, VirtualAlbumItem::class], version = 12)
 abstract class GalleryDatabase : RoomDatabase() {
 
     abstract fun DirectoryDao(): DirectoryDao
@@ -40,6 +40,7 @@ abstract class GalleryDatabase : RoomDatabase() {
                             .addMigrations(MIGRATION_8_9)
                             .addMigrations(MIGRATION_9_10)
                             .addMigrations(MIGRATION_10_11)
+                            .addMigrations(MIGRATION_11_12)
                             .build()
                     }
                 }
@@ -91,20 +92,25 @@ abstract class GalleryDatabase : RoomDatabase() {
 
         private val MIGRATION_9_10 = object : Migration(9, 10) {
             override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE media ADD COLUMN media_store_id INTEGER default 0 NOT NULL")
+                database.execSQL("ALTER TABLE media ADD COLUMN is_favorite INTEGER default 0 NOT NULL")
             }
         }
 
         private val MIGRATION_10_11 = object : Migration(10, 11) {
             override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("CREATE TABLE IF NOT EXISTS `virtual_albums` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT NOT NULL, `created_ts` INTEGER NOT NULL)")
-                database.execSQL(
-                    "CREATE TABLE IF NOT EXISTS `virtual_album_items` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `album_id` INTEGER NOT NULL, " +
-                        "`full_path` TEXT NOT NULL, `filename` TEXT NOT NULL, `parent_path` TEXT NOT NULL, `added_ts` INTEGER NOT NULL, " +
-                        "FOREIGN KEY(`album_id`) REFERENCES `virtual_albums`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"
-                )
-                database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_virtual_album_items_album_id_full_path` ON `virtual_album_items` (`album_id`, `full_path`)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS `index_virtual_album_items_full_path` ON `virtual_album_items` (`full_path`)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `virtual_albums` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT NOT NULL, `created_ts` INTEGER NOT NULL, `thumbnail` TEXT NOT NULL)")
+                database.execSQL("CREATE UNIQUE INDEX `index_virtual_albums_name` ON `virtual_albums` (`name`)")
+
+                database.execSQL("CREATE TABLE IF NOT EXISTS `virtual_album_items` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `album_id` INTEGER NOT NULL, `full_path` TEXT NOT NULL, `filename` TEXT NOT NULL, `parent_path` TEXT NOT NULL, `added_ts` INTEGER NOT NULL, FOREIGN KEY(`album_id`) REFERENCES `virtual_albums`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)")
+                database.execSQL("CREATE UNIQUE INDEX `index_virtual_album_items_album_id_full_path` ON `virtual_album_items` (`album_id`, `full_path`)")
+                database.execSQL("CREATE INDEX `index_virtual_album_items_album_id` ON `virtual_album_items` (`album_id`)")
+                database.execSQL("CREATE INDEX `index_virtual_album_items_full_path` ON `virtual_album_items` (`full_path`)")
+            }
+        }
+
+        private val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE virtual_albums ADD COLUMN is_hidden INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

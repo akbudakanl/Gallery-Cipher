@@ -101,11 +101,6 @@
         android:title="@string/remove_from_favorites"
         app:showAsAction="ifRoom" />
     <item
-        android:id="@+id/menu_add_to_virtual_album"
-        android:showAsAction="never"
-        android:title="@string/add_to_virtual_album"
-        app:showAsAction="never" />
-    <item
         android:id="@+id/menu_remove_from_virtual_album"
         android:showAsAction="never"
         android:title="@string/remove_from_virtual_album"
