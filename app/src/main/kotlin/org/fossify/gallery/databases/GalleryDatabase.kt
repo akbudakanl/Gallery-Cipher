@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import org.fossify.gallery.interfaces.*
 import org.fossify.gallery.models.*
 
-@Database(entities = [Directory::class, Medium::class, Widget::class, DateTaken::class, Favorite::class], version = 10)
+@Database(entities = [Directory::class, Medium::class, Widget::class, DateTaken::class, Favorite::class, VirtualAlbum::class, VirtualAlbumItem::class], version = 11)
 abstract class GalleryDatabase : RoomDatabase() {
 
     abstract fun DirectoryDao(): DirectoryDao
@@ -21,6 +21,8 @@ abstract class GalleryDatabase : RoomDatabase() {
     abstract fun DateTakensDao(): DateTakensDao
 
     abstract fun FavoritesDao(): FavoritesDao
+
+    abstract fun VirtualAlbumsDao(): VirtualAlbumsDao
 
     companion object {
         private var db: GalleryDatabase? = null
@@ -37,6 +39,7 @@ abstract class GalleryDatabase : RoomDatabase() {
                             .addMigrations(MIGRATION_7_8)
                             .addMigrations(MIGRATION_8_9)
                             .addMigrations(MIGRATION_9_10)
+                            .addMigrations(MIGRATION_10_11)
                             .build()
                     }
                 }
@@ -89,6 +92,19 @@ abstract class GalleryDatabase : RoomDatabase() {
         private val MIGRATION_9_10 = object : Migration(9, 10) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE media ADD COLUMN media_store_id INTEGER default 0 NOT NULL")
+            }
+        }
+
+        private val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("CREATE TABLE IF NOT EXISTS `virtual_albums` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT NOT NULL, `created_ts` INTEGER NOT NULL)")
+                database.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `virtual_album_items` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `album_id` INTEGER NOT NULL, " +
+                        "`full_path` TEXT NOT NULL, `filename` TEXT NOT NULL, `parent_path` TEXT NOT NULL, `added_ts` INTEGER NOT NULL, " +
+                        "FOREIGN KEY(`album_id`) REFERENCES `virtual_albums`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"
+                )
+                database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_virtual_album_items_album_id_full_path` ON `virtual_album_items` (`album_id`, `full_path`)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_virtual_album_items_full_path` ON `virtual_album_items` (`full_path`)")
             }
         }
     }

@@ -98,12 +98,17 @@ import org.fossify.gallery.adapters.MyPagerAdapter
 import org.fossify.gallery.asynctasks.GetMediaAsynctask
 import org.fossify.gallery.databinding.ActivityMediumBinding
 import org.fossify.gallery.dialogs.DeleteWithRememberDialog
+import org.fossify.gallery.dialogs.PickVirtualAlbumDialog
 import org.fossify.gallery.dialogs.SaveAsDialog
 import org.fossify.gallery.dialogs.SlideshowDialog
 import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.favoritesDB
 import org.fossify.gallery.extensions.fixDateTaken
+import org.fossify.gallery.extensions.addMediaToVirtualAlbum
 import org.fossify.gallery.extensions.getFavoritePaths
+import org.fossify.gallery.extensions.getVirtualAlbumId
+import org.fossify.gallery.extensions.isVirtualAlbumPath
+import org.fossify.gallery.extensions.removePathsFromVirtualAlbum
 import org.fossify.gallery.extensions.getShortcutImage
 import org.fossify.gallery.extensions.handleMediaManagementPrompt
 import org.fossify.gallery.extensions.hideSystemUI
@@ -160,6 +165,7 @@ import org.fossify.gallery.helpers.ROTATE_BY_DEVICE_ROTATION
 import org.fossify.gallery.helpers.ROTATE_BY_SYSTEM_SETTING
 import org.fossify.gallery.helpers.SHOW_ALL
 import org.fossify.gallery.helpers.SHOW_FAVORITES
+import org.fossify.gallery.helpers.SHOW_VIRTUAL_ALBUM
 import org.fossify.gallery.helpers.SHOW_NEXT_ITEM
 import org.fossify.gallery.helpers.SHOW_PREV_ITEM
 import org.fossify.gallery.helpers.SHOW_RECYCLE_BIN
@@ -314,6 +320,8 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
 
                 findItem(R.id.menu_remove_from_favorites).isVisible =
                     currentMedium.isFavorite && visibleBottomActions and BOTTOM_ACTION_TOGGLE_FAVORITE == 0 && !currentMedium.getIsInRecycleBin()
+                findItem(R.id.menu_add_to_virtual_album).isVisible = !currentMedium.getIsInRecycleBin()
+                findItem(R.id.menu_remove_from_virtual_album).isVisible = mDirectory.isVirtualAlbumPath()
 
                 findItem(R.id.menu_restore_file).isVisible = currentMedium.path.startsWith(recycleBinPath)
                 findItem(R.id.menu_create_shortcut).isVisible = true
@@ -366,6 +374,8 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
                 R.id.menu_rotate_one_eighty -> rotateImage(180)
                 R.id.menu_add_to_favorites -> toggleFavorite()
                 R.id.menu_remove_from_favorites -> toggleFavorite()
+                R.id.menu_add_to_virtual_album -> addCurrentToVirtualAlbum()
+                R.id.menu_remove_from_virtual_album -> removeCurrentFromVirtualAlbum()
                 R.id.menu_restore_file -> restoreFile()
                 R.id.menu_force_portrait -> toggleOrientation(SCREEN_ORIENTATION_PORTRAIT)
                 R.id.menu_force_landscape -> toggleOrientation(SCREEN_ORIENTATION_LANDSCAPE)
@@ -484,8 +494,10 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
 
         val isShowingFavorites = intent.getBooleanExtra(SHOW_FAVORITES, false)
         val isShowingRecycleBin = intent.getBooleanExtra(SHOW_RECYCLE_BIN, false)
+        val virtualAlbumPath = intent.getStringExtra(SHOW_VIRTUAL_ALBUM) ?: ""
         mDirectory = when {
             isShowingFavorites -> FAVORITES
+            virtualAlbumPath.isVirtualAlbumPath() -> virtualAlbumPath
             isShowingRecycleBin -> RECYCLE_BIN
             else -> mPath.getParentPath()
         }
@@ -501,7 +513,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         }
 
         // show the selected image asap, while loading the rest in the background to allow swiping between them. Might be needed at third party intents
-        if (mMediaFiles.isEmpty() && mPath.isNotEmpty() && mDirectory != FAVORITES) {
+        if (mMediaFiles.isEmpty() && mPath.isNotEmpty() && mDirectory != FAVORITES && !mDirectory.isVirtualAlbumPath()) {
             val filename = mPath.getFilenameFromPath()
             val folder = mPath.getParentPath()
             val type = getTypeFromPath(mPath)
@@ -1066,6 +1078,31 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
 
         binding.bottomActions.bottomRotate.beVisibleIf(config.visibleBottomActions and BOTTOM_ACTION_ROTATE != 0 && getCurrentMedium()?.isImage() == true)
         binding.bottomActions.bottomChangeOrientation.setImageResource(getChangeOrientationIcon())
+    }
+
+    private fun addCurrentToVirtualAlbum() {
+        val medium = getCurrentMedium() ?: return
+        PickVirtualAlbumDialog(this, mDirectory.getVirtualAlbumId()) { albumId, albumName ->
+            ensureBackgroundThread {
+                val addedCount = addMediaToVirtualAlbum(albumId, listOf(medium))
+                val messageId = if (addedCount > 0) R.string.added_to_virtual_album else R.string.already_in_virtual_album
+                runOnUiThread {
+                    toast(String.format(getString(messageId), albumName))
+                }
+            }
+        }
+    }
+
+    private fun removeCurrentFromVirtualAlbum() {
+        val albumId = mDirectory.getVirtualAlbumId() ?: return
+        val path = getCurrentPath()
+        ensureBackgroundThread {
+            removePathsFromVirtualAlbum(albumId, listOf(path))
+            runOnUiThread {
+                toast(R.string.removed_from_virtual_album)
+                refreshViewPager()
+            }
+        }
     }
 
     private fun toggleFavorite() {

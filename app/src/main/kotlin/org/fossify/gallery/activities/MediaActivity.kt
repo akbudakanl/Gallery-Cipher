@@ -70,6 +70,8 @@ import org.fossify.gallery.extensions.directoryDB
 import org.fossify.gallery.extensions.emptyAndDisableTheRecycleBin
 import org.fossify.gallery.extensions.emptyTheRecycleBin
 import org.fossify.gallery.extensions.favoritesDB
+import org.fossify.gallery.extensions.getVirtualAlbumName
+import org.fossify.gallery.extensions.isVirtualAlbumPath
 import org.fossify.gallery.extensions.getCachedMedia
 import org.fossify.gallery.extensions.getHumanizedFilename
 import org.fossify.gallery.extensions.isDownloadsFolder
@@ -101,6 +103,7 @@ import org.fossify.gallery.helpers.SET_WALLPAPER_INTENT
 import org.fossify.gallery.helpers.SHOW_ALL
 import org.fossify.gallery.helpers.SHOW_FAVORITES
 import org.fossify.gallery.helpers.SHOW_RECYCLE_BIN
+import org.fossify.gallery.helpers.SHOW_VIRTUAL_ALBUM
 import org.fossify.gallery.helpers.SHOW_TEMP_HIDDEN_DURATION
 import org.fossify.gallery.helpers.SKIP_AUTHENTICATION
 import org.fossify.gallery.helpers.SLIDESHOW_START_ON_ENTER
@@ -343,14 +346,14 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             findItem(R.id.open_camera).isVisible = mShowAll
             findItem(R.id.about).isVisible = mShowAll
             findItem(R.id.create_new_folder).isVisible =
-                !mShowAll && mPath != RECYCLE_BIN && mPath != FAVORITES
+                !mShowAll && mPath != RECYCLE_BIN && mPath != FAVORITES && !mPath.isVirtualAlbumPath()
             findItem(R.id.open_recycle_bin).isVisible = config.useRecycleBin && mPath != RECYCLE_BIN
 
             findItem(R.id.temporarily_show_hidden).isVisible = !config.shouldShowHidden
             findItem(R.id.stop_showing_hidden).isVisible =
                 (!isRPlus() || isExternalStorageManager()) && config.temporarilyShowHidden
 
-            findItem(R.id.set_as_default_folder).isVisible = !isDefaultFolder
+            findItem(R.id.set_as_default_folder).isVisible = !isDefaultFolder && !mPath.isVirtualAlbumPath()
             findItem(R.id.unset_as_default_folder).isVisible = isDefaultFolder
 
             val viewType = config.getFolderViewType(if (mShowAll) SHOW_ALL else mPath)
@@ -461,20 +464,35 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
 
     private fun tryLoadGallery() {
         requestMediaPermissions {
-            val dirName = when (mPath) {
-                FAVORITES -> getString(org.fossify.commons.R.string.favorites)
-                RECYCLE_BIN -> getString(org.fossify.commons.R.string.recycle_bin)
-                config.OTGPath -> getString(org.fossify.commons.R.string.usb)
-                else -> getHumanizedFilename(mPath)
-            }
-
-            val searchHint = if (mShowAll) {
-                getString(org.fossify.commons.R.string.search_files)
+            if (mPath.isVirtualAlbumPath() && !mShowAll) {
+                // the album name lives in the database, it cannot be read on the main thread
+                ensureBackgroundThread {
+                    val albumName = getVirtualAlbumName(mPath) ?: ""
+                    runOnUiThread {
+                        if (!isDestroyed && !isFinishing) {
+                            binding.mediaMenu.updateHintText(
+                                getString(org.fossify.commons.R.string.search_in_placeholder, albumName)
+                            )
+                        }
+                    }
+                }
             } else {
-                getString(org.fossify.commons.R.string.search_in_placeholder, dirName)
+                val dirName = when (mPath) {
+                    FAVORITES -> getString(org.fossify.commons.R.string.favorites)
+                    RECYCLE_BIN -> getString(org.fossify.commons.R.string.recycle_bin)
+                    config.OTGPath -> getString(org.fossify.commons.R.string.usb)
+                    else -> getHumanizedFilename(mPath)
+                }
+
+                val searchHint = if (mShowAll) {
+                    getString(org.fossify.commons.R.string.search_files)
+                } else {
+                    getString(org.fossify.commons.R.string.search_in_placeholder, dirName)
+                }
+
+                binding.mediaMenu.updateHintText(searchHint)
             }
 
-            binding.mediaMenu.updateHintText(searchHint)
             if (!mShowAll) {
                 binding.mediaMenu.toggleForceArrowBackIcon(true)
                 binding.mediaMenu.onNavigateBackClickListener = {
@@ -704,7 +722,8 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
                             if (mPath == FAVORITES && getDoesFilePathExist(it.path)) {
                                 favoritesDB.deleteFavoritePath(it.path)
                                 mediaDB.updateFavorite(it.path, false)
-                            } else {
+                            } else if (!mPath.isVirtualAlbumPath()) {
+                                // items disappearing from a virtual album were only un-referenced, the files are still valid
                                 mediaDB.deleteMediumPath(it.path)
                             }
                         }
@@ -718,6 +737,16 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
 
     private fun isDirEmpty(): Boolean {
         return if (mMedia.isEmpty() && config.filterMedia > 0) {
+            if (mPath.isVirtualAlbumPath()) {
+                // an empty virtual album is a valid state, show a hint instead of closing the screen
+                binding.mediaGrid.adapter = null
+                binding.mediaEmptyTextPlaceholder.setText(R.string.virtual_album_empty)
+                binding.mediaEmptyTextPlaceholder.beVisible()
+                binding.mediaEmptyTextPlaceholder2.beGone()
+                binding.mediaFastscroller.beGone()
+                return true
+            }
+
             if (mPath != FAVORITES && mPath != RECYCLE_BIN) {
                 deleteDirectoryIfEmpty()
                 deleteDBDirectory()
@@ -985,6 +1014,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             putExtra(PATH, path)
             putExtra(SHOW_ALL, mShowAll)
             putExtra(SHOW_FAVORITES, mPath == FAVORITES)
+            putExtra(SHOW_VIRTUAL_ALBUM, if (mPath.isVirtualAlbumPath()) mPath else "")
             putExtra(SHOW_RECYCLE_BIN, mPath == RECYCLE_BIN)
             putExtra(IS_FROM_GALLERY, true)
             startActivity(this)

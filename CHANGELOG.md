@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Virtual albums: create albums that only reference files from their real folders, so adding a photo to any number of albums never copies it or uses extra disk space
 
 ## [1.14.1] - 2026-10-23
 ### Changed

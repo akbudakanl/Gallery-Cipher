@@ -57,6 +57,11 @@ import org.fossify.gallery.databinding.ThumbnailSectionBinding
 import org.fossify.gallery.databinding.VideoItemGridBinding
 import org.fossify.gallery.databinding.VideoItemListBinding
 import org.fossify.gallery.dialogs.DeleteWithRememberDialog
+import org.fossify.gallery.dialogs.PickVirtualAlbumDialog
+import org.fossify.gallery.extensions.addMediaToVirtualAlbum
+import org.fossify.gallery.extensions.getVirtualAlbumId
+import org.fossify.gallery.extensions.isVirtualAlbumPath
+import org.fossify.gallery.extensions.removePathsFromVirtualAlbum
 import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.fixDateTaken
 import org.fossify.gallery.extensions.getShortcutImage
@@ -189,6 +194,8 @@ class MediaAdapter(
         menu.apply {
             findItem(R.id.cab_rename).isVisible = !isInRecycleBin
             findItem(R.id.cab_add_to_favorites).isVisible = !isInRecycleBin
+            findItem(R.id.cab_add_to_virtual_album).isVisible = !isInRecycleBin
+            findItem(R.id.cab_remove_from_virtual_album).isVisible = path.isVirtualAlbumPath()
             findItem(R.id.cab_fix_date_taken).isVisible = !isInRecycleBin
             findItem(R.id.cab_move_to).isVisible = !isInRecycleBin
             findItem(R.id.cab_open_with).isVisible = isOneItemSelected
@@ -218,6 +225,8 @@ class MediaAdapter(
             R.id.cab_unhide -> toggleFileVisibility(false)
             R.id.cab_add_to_favorites -> toggleFavorites(true)
             R.id.cab_remove_from_favorites -> toggleFavorites(false)
+            R.id.cab_add_to_virtual_album -> addToVirtualAlbum()
+            R.id.cab_remove_from_virtual_album -> removeFromVirtualAlbum()
             R.id.cab_restore_recycle_bin_files -> restoreFiles()
             R.id.cab_share -> shareMedia()
             R.id.cab_rotate_right -> rotateSelection(90)
@@ -382,6 +391,34 @@ class MediaAdapter(
                 activity.updateFavorite(it.path, add)
             }
             activity.runOnUiThread {
+                listener?.refreshItems()
+                finishActMode()
+            }
+        }
+    }
+
+    private fun addToVirtualAlbum() {
+        val selectedMedia = ArrayList(getSelectedItems())
+        PickVirtualAlbumDialog(activity, path.getVirtualAlbumId()) { albumId, albumName ->
+            ensureBackgroundThread {
+                val addedCount = activity.addMediaToVirtualAlbum(albumId, selectedMedia)
+                val messageId = if (addedCount > 0) R.string.added_to_virtual_album else R.string.already_in_virtual_album
+                activity.runOnUiThread {
+                    activity.toast(String.format(activity.getString(messageId), albumName))
+                    listener?.refreshItems()
+                    finishActMode()
+                }
+            }
+        }
+    }
+
+    private fun removeFromVirtualAlbum() {
+        val albumId = path.getVirtualAlbumId() ?: return
+        val paths = getSelectedPaths()
+        ensureBackgroundThread {
+            activity.removePathsFromVirtualAlbum(albumId, paths)
+            activity.runOnUiThread {
+                activity.toast(R.string.removed_from_virtual_album)
                 listener?.refreshItems()
                 finishActMode()
             }

@@ -81,6 +81,7 @@ import org.fossify.gallery.R
 import org.fossify.gallery.adapters.DirectoryAdapter
 import org.fossify.gallery.databases.GalleryDatabase
 import org.fossify.gallery.databinding.ActivityMainBinding
+import org.fossify.gallery.dialogs.CreateVirtualAlbumDialog
 import org.fossify.gallery.dialogs.ChangeSortingDialog
 import org.fossify.gallery.dialogs.ChangeViewTypeDialog
 import org.fossify.gallery.dialogs.FilterMediaDialog
@@ -95,6 +96,7 @@ import org.fossify.gallery.extensions.getDirectorySortingValue
 import org.fossify.gallery.extensions.getDirsToShow
 import org.fossify.gallery.extensions.getDistinctPath
 import org.fossify.gallery.extensions.getFavoritePaths
+import org.fossify.gallery.extensions.isVirtualAlbum
 import org.fossify.gallery.extensions.getNoMediaFoldersSync
 import org.fossify.gallery.extensions.getOTGFolderChildrenNames
 import org.fossify.gallery.extensions.getSortedDirectories
@@ -505,6 +507,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                 R.id.temporarily_show_excluded -> tryToggleTemporarilyShowExcluded()
                 R.id.stop_showing_excluded -> tryToggleTemporarilyShowExcluded()
                 R.id.create_new_folder -> createNewFolder()
+                R.id.create_virtual_album -> createVirtualAlbum()
                 R.id.open_recycle_bin -> openRecycleBin()
                 R.id.column_count -> changeColumnCount()
                 R.id.set_as_default_folder -> setAsDefaultFolder()
@@ -632,7 +635,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         val getImages = mIsPickImageIntent || mIsGetImageContentIntent
         val getVideos = mIsPickVideoIntent || mIsGetVideoContentIntent
 
-        getCachedDirectories(getVideos && !getImages, getImages && !getVideos) {
+        getCachedDirectories(getVideos && !getImages, getImages && !getVideos, includeVirtualAlbums = true) {
             gotDirectories(addTempFolderIfNeeded(it))
         }
     }
@@ -897,6 +900,12 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             }
         } else {
             mZoomListener = null
+        }
+    }
+
+    private fun createVirtualAlbum() {
+        CreateVirtualAlbumDialog(this) {
+            refreshItems()
         }
     }
 
@@ -1212,10 +1221,18 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                 )
 
                 val newDir = if (curMedia.isEmpty()) {
-                    if (directory.path != tempFolderPath) {
-                        dirPathsToRemove.add(directory.path)
+                    if (directory.isVirtualAlbum()) {
+                        // empty virtual albums must stay visible, only reset their stats
+                        directory.copy(
+                            tmb = "", mediaCnt = 0, size = 0L, types = 0,
+                            subfoldersCount = 0, subfoldersMediaCount = 0
+                        )
+                    } else {
+                        if (directory.path != tempFolderPath) {
+                            dirPathsToRemove.add(directory.path)
+                        }
+                        directory
                     }
-                    directory
                 } else {
                     createDirectoryFromMedia(
                         path = directory.path,
@@ -1248,7 +1265,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
                 // update directories and media files in the local db, delete invalid items. Intentionally creating a new thread
                 updateDBDirectory(directory)
-                if (!directory.isRecycleBin() && !directory.areFavorites()) {
+                if (!directory.isRecycleBin() && !directory.areFavorites() && !directory.isVirtualAlbum()) {
                     Thread {
                         try {
                             mediaDB.insertAll(curMedia)
@@ -1257,7 +1274,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                     }.start()
                 }
 
-                if (!directory.isRecycleBin()) {
+                if (!directory.isRecycleBin() && !directory.isVirtualAlbum()) {
                     getCachedMedia(directory.path, getVideosOnly, getImagesOnly) {
                         val mediaToDelete = ArrayList<Medium>()
                         it.forEach {
@@ -1549,7 +1566,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     private fun checkInvalidDirectories(dirs: ArrayList<Directory>) {
         val invalidDirs = ArrayList<Directory>()
         val OTGPath = config.OTGPath
-        dirs.filter { !it.areFavorites() && !it.isRecycleBin() }.forEach {
+        dirs.filter { !it.areFavorites() && !it.isRecycleBin() && !it.isVirtualAlbum() }.forEach {
             if (!getDoesFilePathExist(it.path, OTGPath)) {
                 invalidDirs.add(it)
             } else if (it.path != config.tempFolderPath && (!isRPlus() || isExternalStorageManager())) {

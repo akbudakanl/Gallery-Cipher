@@ -71,6 +71,11 @@ import org.fossify.gallery.databinding.DirectoryItemListBinding
 import org.fossify.gallery.dialogs.ConfirmDeleteFolderDialog
 import org.fossify.gallery.dialogs.ExcludeFolderDialog
 import org.fossify.gallery.dialogs.PickMediumDialog
+import org.fossify.gallery.dialogs.RenameVirtualAlbumDialog
+import org.fossify.gallery.extensions.deleteVirtualAlbum
+import org.fossify.gallery.extensions.getVirtualAlbumId
+import org.fossify.gallery.extensions.isVirtualAlbum
+import org.fossify.gallery.extensions.isVirtualAlbumPath
 import org.fossify.gallery.extensions.addNoMedia
 import org.fossify.gallery.extensions.checkAppendingHidden
 import org.fossify.gallery.extensions.config
@@ -191,6 +196,20 @@ class DirectoryAdapter(
 
             checkHideBtnVisibility(this, selectedPaths)
             checkPinBtnVisibility(this, selectedPaths)
+
+            // virtual albums are not real folders: they cannot be hidden, excluded, locked, copied, moved or inspected on disk
+            if (selectedPaths.any { it.isVirtualAlbumPath() }) {
+                findItem(R.id.cab_rename).isVisible = isOneItemSelected
+                findItem(R.id.cab_hide).isVisible = false
+                findItem(R.id.cab_unhide).isVisible = false
+                findItem(R.id.cab_exclude).isVisible = false
+                findItem(R.id.cab_lock).isVisible = false
+                findItem(R.id.cab_unlock).isVisible = false
+                findItem(R.id.cab_copy_to).isVisible = false
+                findItem(R.id.cab_move_to).isVisible = false
+                findItem(R.id.cab_create_shortcut).isVisible = false
+                findItem(R.id.cab_properties).isVisible = false
+            }
         }
     }
 
@@ -309,6 +328,15 @@ class DirectoryAdapter(
     private fun renameDir() {
         if (selectedKeys.size == 1) {
             val firstDir = getFirstSelectedItem() ?: return
+            if (firstDir.isVirtualAlbum()) {
+                val albumId = firstDir.path.getVirtualAlbumId() ?: return
+                RenameVirtualAlbumDialog(activity, albumId, firstDir.name) {
+                    listener?.refreshItems()
+                    finishActMode()
+                }
+                return
+            }
+
             val sourcePath = firstDir.path
             val dir = File(sourcePath)
             if (activity.isAStorageRootFolder(dir.absolutePath)) {
@@ -649,6 +677,17 @@ class DirectoryAdapter(
     }
 
     private fun askConfirmDelete() {
+        val selectedVirtualAlbums = getSelectedItems().filter { it.isVirtualAlbum() }
+        if (selectedVirtualAlbums.isNotEmpty()) {
+            if (selectedVirtualAlbums.size != selectedKeys.size) {
+                // never mix deleting real folders with removing virtual albums
+                activity.toast(R.string.virtual_album_cannot_be_modified)
+            } else {
+                confirmDeleteVirtualAlbums(selectedVirtualAlbums)
+            }
+            return
+        }
+
         when {
             config.isDeletePasswordProtectionOn -> activity.handleDeletePasswordProtection {
                 deleteFolders()
@@ -688,6 +727,35 @@ class DirectoryAdapter(
                 val warning = resources.getQuantityString(org.fossify.commons.R.plurals.delete_warning, itemsCnt, itemsCnt)
                 ConfirmDeleteFolderDialog(activity, question, warning) {
                     deleteFolders()
+                }
+            }
+        }
+    }
+
+    private fun confirmDeleteVirtualAlbums(albums: List<Directory>) {
+        val items = if (albums.size == 1) {
+            "\"${albums.first().name}\""
+        } else {
+            resources.getQuantityString(org.fossify.commons.R.plurals.delete_items, albums.size, albums.size)
+        }
+
+        val question = String.format(resources.getString(R.string.delete_virtual_album_confirmation), items)
+        ConfirmationDialog(
+            activity,
+            question,
+            0,
+            org.fossify.commons.R.string.yes,
+            org.fossify.commons.R.string.no
+        ) {
+            ensureBackgroundThread {
+                // only the album and its references are removed, the files themselves are never touched
+                albums.forEach { album ->
+                    album.path.getVirtualAlbumId()?.let { activity.deleteVirtualAlbum(it) }
+                }
+
+                activity.runOnUiThread {
+                    finishActMode()
+                    listener?.refreshItems()
                 }
             }
         }

@@ -126,6 +126,10 @@ const val SLIDESHOW_ANIMATION_FADE = 2
 
 const val RECYCLE_BIN = "recycle_bin"
 const val SHOW_FAVORITES = "show_favorites"
+const val SHOW_VIRTUAL_ALBUM = "show_virtual_album"
+
+// virtual albums use a slash-less pseudo path, same as FAVORITES and RECYCLE_BIN, followed by the album id
+const val VIRTUAL_ALBUM_PREFIX = "virtual_album_"
 const val SHOW_RECYCLE_BIN = "show_recycle_bin"
 const val IS_IN_RECYCLE_BIN = "is_in_recycle_bin"
 const val SHOW_NEXT_ITEM = "show_next_item"

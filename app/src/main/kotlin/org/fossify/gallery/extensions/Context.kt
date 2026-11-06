@@ -365,7 +365,7 @@ fun Context.getDirectParentSubfolders(
     val foldersWithoutMediaFiles = ArrayList<String>()
 
     for (path in folders) {
-        if (path == RECYCLE_BIN || path == FAVORITES) {
+        if (path == RECYCLE_BIN || path == FAVORITES || path.isVirtualAlbumPath()) {
             continue
         }
 
@@ -431,6 +431,11 @@ fun Context.getDirectParentSubfolders(
 
     if (currentPathPrefix.isEmpty() && folders.contains(FAVORITES)) {
         currentPaths.add(FAVORITES)
+    }
+
+    // virtual albums are not part of the folder hierarchy, always show them at the top level
+    if (currentPathPrefix.isEmpty()) {
+        folders.filter { it.isVirtualAlbumPath() }.forEach { currentPaths.add(it) }
     }
 
     if (folders.size == currentPaths.size) {
@@ -563,7 +568,8 @@ fun Context.rescanFolderMediaSync(path: String) {
 
 fun Context.storeDirectoryItems(items: ArrayList<Directory>) {
     ensureBackgroundThread {
-        directoryDB.insertAll(items)
+        // virtual albums are not cached in the directories table
+        directoryDB.insertAll(items.filterNot { it.isVirtualAlbum() })
     }
 }
 
@@ -596,7 +602,11 @@ fun Context.getFolderNameFromPath(path: String): String {
         otgPath -> getString(org.fossify.commons.R.string.usb)
         FAVORITES -> getString(org.fossify.commons.R.string.favorites)
         RECYCLE_BIN -> getString(org.fossify.commons.R.string.recycle_bin)
-        else -> path.getFilenameFromPath()
+        else -> if (path.isVirtualAlbumPath()) {
+            getVirtualAlbumName(path) ?: path
+        } else {
+            path.getFilenameFromPath()
+        }
     }
 }
 
@@ -834,6 +844,7 @@ fun Context.getCachedDirectories(
     getImagesOnly: Boolean = false,
     forceShowHidden: Boolean = false,
     forceShowExcluded: Boolean = false,
+    includeVirtualAlbums: Boolean = false,
     callback: (ArrayList<Directory>) -> Unit,
 ) {
     ensureBackgroundThread {
@@ -851,6 +862,9 @@ fun Context.getCachedDirectories(
         if (!config.showRecycleBinAtFolders) {
             directories.removeAll { it.isRecycleBin() }
         }
+
+        // virtual albums are always built from their own tables, never from the directories cache
+        directories.removeAll { it.isVirtualAlbum() }
 
         val shouldShowHidden = config.shouldShowHidden || forceShowHidden
         val excludedPaths = if (config.temporarilyShowExcluded || forceShowExcluded) {
@@ -914,7 +928,12 @@ fun Context.getCachedDirectories(
         }
 
         val clone = filteredDirectories.clone() as ArrayList<Directory>
-        callback(clone.distinctBy { it.path.getDistinctPath() } as ArrayList<Directory>)
+        val result = clone.distinctBy { it.path.getDistinctPath() } as ArrayList<Directory>
+        if (includeVirtualAlbums) {
+            result.addAll(getVirtualAlbumDirectories())
+        }
+
+        callback(result)
         removeInvalidDBDirectories(filteredDirectories)
     }
 }
@@ -940,6 +959,14 @@ fun Context.getCachedMedia(
 
         if (path == RECYCLE_BIN) {
             media.addAll(getUpdatedDeletedMedia())
+        }
+
+        val virtualAlbumId = path.getVirtualAlbumId()
+        if (virtualAlbumId != null) {
+            try {
+                media.addAll(virtualAlbumsDB.getValidMedia(virtualAlbumId))
+            } catch (ignored: Exception) {
+            }
         }
 
         if (config.filterMedia and TYPE_PORTRAITS != 0) {
@@ -1005,6 +1032,10 @@ fun Context.getCachedMedia(
                         mediaToDelete.filter { it.isFavorite }.forEach {
                             favoritesDB.deleteFavoritePath(it.path)
                         }
+
+                        mediaToDelete.forEach {
+                            deleteVirtualAlbumItemFromAllAlbums(it.path)
+                        }
                     } catch (ignored: Exception) {
                     }
                 }
@@ -1036,6 +1067,7 @@ fun Context.updateDBMediaPath(oldPath: String, newPath: String) {
     try {
         mediaDB.updateMedium(newFilename, newPath, newParentPath, oldPath)
         favoritesDB.updateFavorite(newFilename, newPath, newParentPath, oldPath)
+        virtualAlbumsDB.updateItemPath(newFilename, newPath, newParentPath, oldPath)
     } catch (ignored: Exception) {
     }
 }

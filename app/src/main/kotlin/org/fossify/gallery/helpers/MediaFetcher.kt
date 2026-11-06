@@ -43,7 +43,7 @@ class MediaFetcher(val context: Context) {
                 curMedia.addAll(newMedia)
             }
         } else {
-            if (curPath != FAVORITES && curPath != RECYCLE_BIN && isRPlus() && !isExternalStorageManager()) {
+            if (curPath != FAVORITES && curPath != RECYCLE_BIN && !curPath.isVirtualAlbumPath() && isRPlus() && !isExternalStorageManager()) {
                 if (android11Files?.containsKey(curPath.lowercase(Locale.getDefault())) == true) {
                     curMedia.addAll(android11Files[curPath.lowercase(Locale.getDefault())]!!)
                 } else if (android11Files == null) {
@@ -60,9 +60,11 @@ class MediaFetcher(val context: Context) {
                     favoritePaths, getVideoDurations, lastModifieds.clone() as HashMap<String, Long>, dateTakens.clone() as HashMap<String, Long>
                 )
 
-                if (curPath == FAVORITES && isRPlus() && !isExternalStorageManager()) {
+                val isVirtualAlbum = curPath.isVirtualAlbumPath()
+                if ((curPath == FAVORITES || isVirtualAlbum) && isRPlus() && !isExternalStorageManager()) {
+                    val referencedPaths = if (isVirtualAlbum) context.getVirtualAlbumPaths(curPath) else favoritePaths
                     val files =
-                        getAndroid11FolderMedia(isPickImage, isPickVideo, favoritePaths, true, getProperDateTaken, dateTakens.clone() as HashMap<String, Long>)
+                        getAndroid11FolderMedia(isPickImage, isPickVideo, referencedPaths, true, getProperDateTaken, dateTakens.clone() as HashMap<String, Long>)
                     newMedia.forEach { newMedium ->
                         for ((folder, media) in files) {
                             media.forEach { medium ->
@@ -304,9 +306,10 @@ class MediaFetcher(val context: Context) {
         val showPortraits = filterMedia and TYPE_PORTRAITS != 0
         val fileSizes = if (checkProperFileSize || checkFileExistence) getFolderSizes(folder) else HashMap()
 
-        val files = when (folder) {
-            FAVORITES -> favoritePaths.filter { showHidden || !it.contains("/.") }.map { File(it) }.toMutableList() as ArrayList<File>
-            RECYCLE_BIN -> deletedMedia.map { File(it.path) }.toMutableList() as ArrayList<File>
+        val files = when {
+            folder == FAVORITES -> favoritePaths.filter { showHidden || !it.contains("/.") }.map { File(it) }.toMutableList() as ArrayList<File>
+            folder == RECYCLE_BIN -> deletedMedia.map { File(it.path) }.toMutableList() as ArrayList<File>
+            folder.isVirtualAlbumPath() -> context.getVirtualAlbumPaths(folder).filter { showHidden || !it.contains("/.") }.map { File(it) }.toMutableList() as ArrayList<File>
             else -> File(folder).listFiles()?.toMutableList() ?: return media
         }
 
@@ -610,7 +613,7 @@ class MediaFetcher(val context: Context) {
 
     fun getFolderDateTakens(folder: String): HashMap<String, Long> {
         val dateTakens = HashMap<String, Long>()
-        if (folder != FAVORITES) {
+        if (folder != FAVORITES && !folder.isVirtualAlbumPath()) {
             val projection = arrayOf(
                 Images.Media.DISPLAY_NAME,
                 Images.Media.DATE_TAKEN
@@ -633,7 +636,7 @@ class MediaFetcher(val context: Context) {
         }
 
         val dateTakenValues = try {
-            if (folder == FAVORITES) {
+            if (folder == FAVORITES || folder.isVirtualAlbumPath()) {
                 context.dateTakensDB.getAllDateTakens()
             } else {
                 context.dateTakensDB.getDateTakensFromPath(folder)
@@ -683,7 +686,7 @@ class MediaFetcher(val context: Context) {
 
     fun getFolderLastModifieds(folder: String): HashMap<String, Long> {
         val lastModifieds = HashMap<String, Long>()
-        if (folder != FAVORITES) {
+        if (folder != FAVORITES && !folder.isVirtualAlbumPath()) {
             val projection = arrayOf(
                 Images.Media.DISPLAY_NAME,
                 Images.Media.DATE_MODIFIED
@@ -736,7 +739,7 @@ class MediaFetcher(val context: Context) {
 
     private fun getFolderSizes(folder: String): HashMap<String, Long> {
         val sizes = HashMap<String, Long>()
-        if (folder != FAVORITES) {
+        if (folder != FAVORITES && !folder.isVirtualAlbumPath()) {
             val projection = arrayOf(
                 Images.Media.DISPLAY_NAME,
                 Images.Media.SIZE
