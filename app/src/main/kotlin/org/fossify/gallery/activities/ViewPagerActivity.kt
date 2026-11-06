@@ -214,6 +214,10 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     private var mIsOrientationLocked = false
 
     private var mMediaFiles = ArrayList<Medium>()
+    // MediaActivity keeps the album in a process-local cache. After Android reclaims the
+    // process while this activity is in the background, that cache is empty and we must
+    // reload the album even when random sorting would normally preserve the cached order.
+    private var mHasCachedAlbumMedia = false
     private var mFavoritePaths = ArrayList<String>()
     private var mIgnoredPaths = ArrayList<String>()
     private var mOriginalBrightness: Float? = null
@@ -238,6 +242,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
 
         window.decorView.setBackgroundColor(getProperBackgroundColor())
         (MediaActivity.mMedia.clone() as ArrayList<ThumbnailItem>).filterIsInstanceTo(mMediaFiles, Medium::class.java)
+        mHasCachedAlbumMedia = mMediaFiles.isNotEmpty()
 
         requestMediaPermissions {
             initViewPager(
@@ -1355,7 +1360,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
 
     private fun refreshViewPager(refetchPosition: Boolean = false) {
         val isRandomSorting = config.getFolderSorting(mDirectory) and SORT_BY_RANDOM != 0
-        if (!isRandomSorting || isExternalIntent()) {
+        if (!isRandomSorting || isExternalIntent() || !mHasCachedAlbumMedia) {
             GetMediaAsynctask(applicationContext, mDirectory, isPickImage = false, isPickVideo = false, showAll = mShowAll) {
                 gotMedia(it, refetchViewPagerPosition = refetchPosition)
             }.execute()
