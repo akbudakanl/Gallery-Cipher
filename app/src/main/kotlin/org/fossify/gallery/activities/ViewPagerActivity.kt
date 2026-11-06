@@ -220,6 +220,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     private var mHasCachedAlbumMedia = false
     private var mFavoritePaths = ArrayList<String>()
     private var mIgnoredPaths = ArrayList<String>()
+    private val mVideoPlaybackPositions = mutableMapOf<String, Long>()
     private var mOriginalBrightness: Float? = null
 
     private val binding by viewBinding(ActivityMediumBinding::inflate)
@@ -1475,6 +1476,12 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     override fun isSlideShowActive() = mIsSlideshowActive
 
     override fun isFullScreen() = mIsFullScreen
+
+    override fun saveVideoPlaybackPosition(path: String, position: Long) {
+        mVideoPlaybackPositions[path] = position
+    }
+
+    override fun getVideoPlaybackPosition(path: String) = mVideoPlaybackPositions[path]
 
     override fun goToPrevItem() {
         binding.viewPager.setCurrentItem(binding.viewPager.currentItem - 1, false)

@@ -39,6 +39,14 @@ abstract class ViewPagerFragment : Fragment() {
         fun isSlideShowActive(): Boolean
 
         fun isFullScreen(): Boolean
+
+        /**
+         * Keeps a video position while this viewer is open, even when ViewPager
+         * destroys an off-screen fragment.
+         */
+        fun saveVideoPlaybackPosition(path: String, position: Long) {}
+
+        fun getVideoPlaybackPosition(path: String): Long? = null
     }
 
     fun getMediumExtendedDetails(medium: Medium): String {

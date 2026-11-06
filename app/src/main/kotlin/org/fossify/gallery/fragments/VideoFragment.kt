@@ -360,6 +360,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         if (mStoredRememberLastVideoPosition) {
             restoreLastVideoSavedPosition()
         }
+        restoreSessionPlaybackPosition()
 
         return mView
     }
@@ -850,6 +851,20 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         mPlayPauseButton.setImageResource(org.fossify.commons.R.drawable.ic_play_outline_vector)
         activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         mPositionAtPause = mExoPlayer?.currentPosition ?: 0L
+        listener?.saveVideoPlaybackPosition(mMedium.path, mPositionAtPause)
+    }
+
+    private fun restoreSessionPlaybackPosition() {
+        val position = listener?.getVideoPlaybackPosition(mMedium.path) ?: return
+        if (position <= 0L) {
+            return
+        }
+
+        // The player is initialized asynchronously. Keep this separately so
+        // setupVideoDuration() cannot overwrite it before the player is ready.
+        mCurrTime = position
+        mPositionWhenInit = position
+        mPositionAtPause = position
     }
 
     private fun videoEnded(): Boolean {
