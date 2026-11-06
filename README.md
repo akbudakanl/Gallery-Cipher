@@ -1,3 +1,5 @@
+Fossify-Gallery-Cipher is a security-hardened personal fork of [Fossify Gallery](https://github.com/FossifyOrg/Gallery). licensed under GPLv3. See FORK_CHANGELOG.md for details.
+
 # Fossify Gallery
 
 <img alt="Logo" src="graphics/icon.webp" width="120" />
