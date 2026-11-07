@@ -255,12 +255,12 @@ object CryptoManager {
     }
 
     fun findVaultRoot(context: Context): File? {
-        cachedVaultRoot?.let { if (it.exists() && File(it, VAULT_HEADER_FILE).exists()) return it }
+        cachedVaultRoot?.let { if (it.exists() && it.isDirectory) return it }
 
         val storedPath = context.config.vaultRootPath
         if (storedPath.isNotEmpty()) {
             val dir = File(storedPath)
-            if (dir.exists() && File(dir, VAULT_HEADER_FILE).exists()) {
+            if (dir.exists() && dir.isDirectory) {
                 cachedVaultRoot = dir
                 return dir
             }
@@ -279,7 +279,7 @@ object CryptoManager {
             if (root.exists() && root.isDirectory) {
                 val children = root.listFiles() ?: continue
                 for (child in children) {
-                    if (child.isDirectory && File(child, VAULT_HEADER_FILE).exists()) {
+                    if (child.isDirectory && (File(child, VAULT_HEADER_FILE).exists() || (File(child, NOMEDIA).exists() && child.listFiles()?.any { isEncryptedFolder(it) } == true))) {
                         context.config.vaultRootPath = child.absolutePath
                         cachedVaultRoot = child
                         vaultRootSearchDone = false
@@ -370,8 +370,9 @@ object CryptoManager {
                 dos.write(iv)
                 dos.writeInt(wrappedBundle.size)
                 dos.write(wrappedBundle)
+                dos.flush()
+                fos.fd.sync()
             }
-            fos.fd.sync()
         }
     }
 
@@ -750,6 +751,8 @@ object CryptoManager {
                     dos.write(iv)
                     dos.writeInt(encryptedName.size)
                     dos.write(encryptedName)
+                    dos.flush()
+                    fos.fd.sync()
                 }
             }
             folderNameCache[folder.absolutePath] = originalName
@@ -774,14 +777,20 @@ object CryptoManager {
                     dos.write(iv)
                     dos.writeInt(encryptedName.size)
                     dos.write(encryptedName)
+                    dos.flush()
+                    fos.fd.sync()
                 }
             }
+            folderNameCache[folder.absolutePath] = originalName
         }
     }
 
     fun getDecryptedFolderName(folder: File): String? {
         folderNameCache[folder.absolutePath]?.let { return it }
-        val masterKey = unlockedMasterKey ?: return null
+        val masterKey = unlockedMasterKey
+        val privKey = unlockedPrivateKey
+        if (masterKey == null && privKey == null) return null
+
         val metaFile = when {
             File(folder, VAULT_SUBFOLDER_META_FILE).exists() -> File(folder, VAULT_SUBFOLDER_META_FILE)
             File(folder, ENCRYPTED_FOLDER_META_FILE).exists() -> File(folder, ENCRYPTED_FOLDER_META_FILE)
@@ -789,22 +798,33 @@ object CryptoManager {
         }
 
         return try {
-            FileInputStream(metaFile).use { fis ->
-                DataInputStream(fis).use { dis ->
-                    val magicBytes = ByteArray(META_MAGIC_SYM.length.coerceAtLeast(META_MAGIC_V2.length))
-                    val readLen = if (metaFile.name == VAULT_SUBFOLDER_META_FILE) META_MAGIC_V2.length else META_MAGIC_SYM.length
-                    dis.readFully(magicBytes, 0, readLen)
-                    val magic = String(magicBytes, 0, readLen, Charsets.US_ASCII)
+            BufferedInputStream(FileInputStream(metaFile)).use { bis ->
+                bis.mark(16)
+                val headerBytes = ByteArray(8)
+                val bytesRead = bis.read(headerBytes, 0, 8)
+                if (bytesRead < 7) return null
+                val str7 = String(headerBytes, 0, 7, Charsets.US_ASCII)
+                val str8 = if (bytesRead >= 8) String(headerBytes, 0, 8, Charsets.US_ASCII) else ""
 
+                bis.reset()
+                val (magic, skipLen) = when {
+                    str8 == META_MAGIC_ASYM -> Pair(META_MAGIC_ASYM, 8)
+                    str8 == META_MAGIC_SYM -> Pair(META_MAGIC_SYM, 8)
+                    str7 == META_MAGIC_V2 -> Pair(META_MAGIC_V2, 7)
+                    else -> return null
+                }
+                bis.skip(skipLen.toLong())
+
+                DataInputStream(bis).use { dis ->
                     val aesKey: ByteArray = when (magic) {
-                        META_MAGIC_V2, META_MAGIC_SYM -> masterKey
+                        META_MAGIC_V2, META_MAGIC_SYM -> masterKey ?: return null
                         META_MAGIC_ASYM -> {
-                            val privKey = unlockedPrivateKey ?: return null
+                            val pk = privKey ?: return null
                             val wrappedLen = dis.readInt()
                             if (wrappedLen <= 0 || wrappedLen > 2048) return null
                             val wrappedKey = ByteArray(wrappedLen)
                             dis.readFully(wrappedKey)
-                            unwrapKeyWithPrivateKey(privKey, wrappedKey)
+                            unwrapKeyWithPrivateKey(pk, wrappedKey)
                         }
                         else -> return null
                     }
@@ -1016,9 +1036,10 @@ object CryptoManager {
                         poly1305.doFinal(macTag, 0)
                         dos.write(macTag)
                         dos.flush()
+                        bos.flush()
+                        fos.fd.sync()
                     }
                 }
-                fos.fd.sync()
             }
 
             encryptedFile.setLastModified(lastModified)
@@ -1098,8 +1119,8 @@ object CryptoManager {
                             bos.write(buffer, 0, read)
                         }
                         bos.flush()
+                        fos.fd.sync()
                     }
-                    fos.fd.sync()
                 }
             } ?: return null
 
@@ -1124,21 +1145,82 @@ object CryptoManager {
      * 1. Creates a random subfolder inside the master vault root.
      * 2. Writes .nomedia in the subfolder.
      * 3. Writes encrypted subfolder metadata (.meta) storing the original album name with MEK.
-     * 4. Encrypts all media files into random hex .bin files and shreds the originals.
-     * 5. Deletes original plaintext folder.
+     * 4. Encrypts all media files into random hex .bin files (transactional: NO source files are deleted if any file fails).
+     * 5. Only once ALL files are verified encrypted, securely wipes the originals and deletes the plaintext folder.
      */
     fun encryptFolder(
         context: Context,
         folderPath: String,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
-    ): String {
+    ): String? {
         val folder = File(folderPath)
         if (!folder.exists() || !folder.isDirectory) return folderPath
+
+        if (unlockedMasterKey == null && context.config.vaultPublicKey.isEmpty()) {
+            return null
+        }
 
         val originalFolderName = getDecryptedFolderName(folder) ?: folder.name
         val vaultRoot = getOrCreateVaultRoot(context)
 
-        // 1. Move any subfolders directly to internal storage so they remain unencrypted and unhidden
+        val filesToEncrypt = folder.listFiles()?.filter { file ->
+            file.isFile &&
+                file.name != NOMEDIA &&
+                file.name != ENCRYPTED_FOLDER_META_FILE &&
+                file.name != VAULT_SUBFOLDER_META_FILE &&
+                file.name != VAULT_HEADER_FILE &&
+                !isEncryptedFile(file.name)
+        } ?: emptyList()
+
+        var subfolder = File(vaultRoot, randomHex(6))
+        while (subfolder.exists()) {
+            subfolder = File(vaultRoot, randomHex(6))
+        }
+        if (!subfolder.mkdirs()) return null
+
+        val noMedia = File(subfolder, NOMEDIA)
+        if (!noMedia.exists()) {
+            try { noMedia.createNewFile() } catch (_: Exception) {}
+        }
+
+        writeEncryptedFolderMeta(context, subfolder, originalFolderName)
+
+        val total = filesToEncrypt.size
+        onProgress?.invoke(0, total)
+
+        val encryptedPairs = ArrayList<Pair<File, File>>()
+        var failed = false
+
+        for ((index, file) in filesToEncrypt.withIndex()) {
+            val enc = encryptFileToDirectory(
+                context = context,
+                sourceFile = file,
+                targetDir = subfolder,
+                wipeSource = false,
+                clearCachesNow = false
+            )
+            if (enc != null && enc.exists() && enc.length() > 0L) {
+                encryptedPairs.add(Pair(file, enc))
+            } else {
+                failed = true
+                break
+            }
+            onProgress?.invoke(index + 1, total)
+        }
+
+        // ROLLBACK IF ENCRYPTION FAILED ON ANY FILE
+        if (failed || encryptedPairs.size != filesToEncrypt.size) {
+            subfolder.deleteRecursively()
+            return null
+        }
+
+        // ALL FILES ENCRYPTED SUCCESSFULLY! WIPE AND DELETE ORIGINAL MEDIA FILES:
+        for ((sourceFile, encFile) in encryptedPairs) {
+            context.updateVirtualAlbumItemPath(sourceFile.absolutePath, encFile.absolutePath)
+            secureWipeAndDeleteFile(context, sourceFile)
+        }
+
+        // Move subfolders directly to internal storage (if any)
         val internalStorageRoot = File(context.internalStoragePath)
         val movedSubfolderPaths = ArrayList<String>()
 
@@ -1190,42 +1272,6 @@ object CryptoManager {
             context.rescanPaths(pathsToRescan)
         }
 
-        var subfolder = File(vaultRoot, randomHex(6))
-        while (subfolder.exists()) {
-            subfolder = File(vaultRoot, randomHex(6))
-        }
-        subfolder.mkdirs()
-
-        val noMedia = File(subfolder, NOMEDIA)
-        if (!noMedia.exists()) {
-            try { noMedia.createNewFile() } catch (_: Exception) {}
-        }
-
-        writeEncryptedFolderMeta(context, subfolder, originalFolderName)
-
-        val filesToEncrypt = folder.listFiles()?.filter { file ->
-            file.isFile &&
-                file.name != NOMEDIA &&
-                file.name != ENCRYPTED_FOLDER_META_FILE &&
-                file.name != VAULT_SUBFOLDER_META_FILE &&
-                file.name != VAULT_HEADER_FILE &&
-                !isEncryptedFile(file.name)
-        } ?: emptyList()
-
-        val total = filesToEncrypt.size
-        onProgress?.invoke(0, total)
-
-        for ((index, file) in filesToEncrypt.withIndex()) {
-            encryptFileToDirectory(
-                context = context,
-                sourceFile = file,
-                targetDir = subfolder,
-                wipeSource = true,
-                clearCachesNow = false
-            )
-            onProgress?.invoke(index + 1, total)
-        }
-
         // Delete original plaintext folder
         try {
             val oldNoMedia = File(folder, NOMEDIA)
@@ -1275,7 +1321,7 @@ object CryptoManager {
         context: Context,
         folderPath: String,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
-    ): String {
+    ): String? {
         val folder = File(folderPath)
         if (!folder.exists() || !folder.isDirectory) return folderPath
         if (!isVaultUnlocked) return folderPath
@@ -1289,7 +1335,7 @@ object CryptoManager {
             targetFolder = File(picturesDir, "${originalFolderName}_$idx")
             idx++
         }
-        targetFolder.mkdirs()
+        if (!targetFolder.mkdirs() && !targetFolder.exists()) return null
 
         val filesToDecrypt = folder.listFiles()?.filter {
             it.isFile && isEncryptedFile(it.name)
@@ -1298,14 +1344,38 @@ object CryptoManager {
         val total = filesToDecrypt.size
         onProgress?.invoke(0, total)
 
+        val decryptedPairs = ArrayList<Pair<File, File>>()
+        var failed = false
+
         for ((index, file) in filesToDecrypt.withIndex()) {
-            decryptFileToDirectory(
+            val decrypted = decryptFileToDirectory(
                 context = context,
                 encryptedFile = file,
                 targetDir = targetFolder,
-                deleteEncryptedSource = true
+                deleteEncryptedSource = false
             )
+            if (decrypted != null && decrypted.exists() && decrypted.length() > 0L) {
+                decryptedPairs.add(Pair(file, decrypted))
+            } else {
+                failed = true
+                break
+            }
             onProgress?.invoke(index + 1, total)
+        }
+
+        // ROLLBACK IF DECRYPTION FAILED
+        if (failed || decryptedPairs.size != filesToDecrypt.size) {
+            targetFolder.deleteRecursively()
+            return null
+        }
+
+        // ALL FILES DECRYPTED! Now delete encrypted files:
+        for ((encFile, decryptedFile) in decryptedPairs) {
+            val encPath = encFile.absolutePath
+            context.updateVirtualAlbumItemPath(encPath, decryptedFile.absolutePath)
+            metadataCache.remove(encPath)?.fileKey?.fill(0)
+            context.mediaDB.deleteMediumPath(encPath)
+            encFile.delete()
         }
 
         try {
