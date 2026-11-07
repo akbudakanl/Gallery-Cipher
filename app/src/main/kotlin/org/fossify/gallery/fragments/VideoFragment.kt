@@ -315,7 +315,12 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
 
         if (!mIsPanorama) {
             if (savedInstanceState != null) {
-                mCurrTime = savedInstanceState.getLong(PROGRESS, 0L)
+                val savedProgress = savedInstanceState.getLong(PROGRESS, 0L)
+                if (savedProgress > 0L) {
+                    mCurrTime = savedProgress
+                    mPositionWhenInit = savedProgress
+                    mPositionAtPause = savedProgress
+                }
             }
 
             mWasFragmentInit = true
@@ -361,12 +366,11 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
             }
         }
 
-        setupVideoDuration()
         if (mStoredRememberLastVideoPosition) {
             restoreLastVideoSavedPosition()
         }
         restoreSessionPlaybackPosition()
-
+        setupVideoDuration()
         return mView
     }
 
@@ -857,13 +861,14 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         }
 
         mIsPlaying = false
-        if (!videoEnded()) {
+        val ended = videoEnded()
+        if (!ended) {
             mExoPlayer?.playWhenReady = false
         }
 
         mPlayPauseButton.setImageResource(org.fossify.commons.R.drawable.ic_play_outline_vector)
         activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        mPositionAtPause = mExoPlayer?.currentPosition ?: 0L
+        mPositionAtPause = if (ended) 0L else (mExoPlayer?.currentPosition ?: 0L)
         listener?.saveVideoPlaybackPosition(mMedium.path, mPositionAtPause)
     }
 
@@ -873,17 +878,15 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
             return
         }
 
-        // The player is initialized asynchronously. Keep this separately so
-        // setupVideoDuration() cannot overwrite it before the player is ready.
         mCurrTime = position
         mPositionWhenInit = position
         mPositionAtPause = position
     }
 
     private fun videoEnded(): Boolean {
-        val currentPos = mExoPlayer?.currentPosition ?: 0
-        val duration = mExoPlayer?.duration ?: 0
-        return currentPos != 0L && currentPos >= duration
+        val currentPos = mExoPlayer?.currentPosition ?: 0L
+        val duration = mExoPlayer?.duration ?: 0L
+        return currentPos > 0L && duration > 0L && currentPos >= duration
     }
 
     private fun setPosition(milliseconds: Long) {
@@ -906,7 +909,13 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
 
             activity?.runOnUiThread {
                 setupTimeHolder()
-                setPosition(0)
+                val targetPosition = when {
+                    mPositionWhenInit > 0L -> mPositionWhenInit
+                    mPositionAtPause > 0L -> mPositionAtPause
+                    mCurrTime > 0L -> mCurrTime
+                    else -> 0L
+                }
+                setPosition(targetPosition)
             }
         }
     }
@@ -922,24 +931,26 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
             }
         }
 
-        if (mPositionWhenInit != 0L && !mWasPlayerInited) {
-            setPosition(mPositionWhenInit)
-            mPositionWhenInit = 0
+        val targetSeekPos = when {
+            mPositionWhenInit != 0L && !mWasPlayerInited -> mPositionWhenInit
+            mPositionAtPause != 0L -> mPositionAtPause
+            else -> 0L
+        }
+
+        if (targetSeekPos != 0L) {
+            setPosition(targetSeekPos)
+            mPositionWhenInit = 0L
+            mPositionAtPause = 0L
         }
 
         mIsPlayerPrepared = true
         if (mPlayOnPrepared && !mIsPlaying) {
-            if (mPositionAtPause != 0L) {
-                mExoPlayer?.seekTo(mPositionAtPause)
-                mPositionAtPause = 0L
-            }
             updatePlaybackSpeed(mConfig.playbackSpeed)
             playVideo()
         }
         mWasPlayerInited = true
         mPlayOnPrepared = false
     }
-
     private fun videoCompleted() {
         if (!isAdded || mExoPlayer == null) {
             return
