@@ -611,6 +611,10 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getString(VAULT_PUBLIC_KEY, "")!!
         set(value) = prefs.edit().putString(VAULT_PUBLIC_KEY, value).apply()
 
+    var vaultRootPath: String
+        get() = prefs.getString(VAULT_ROOT_PATH, "")!!
+        set(value) = prefs.edit().putString(VAULT_ROOT_PATH, value).apply()
+
     var encryptedFolders: MutableSet<String>
         get() = prefs.getStringSet(ENCRYPTED_FOLDERS, HashSet())!!
         set(folders) = prefs.edit().remove(ENCRYPTED_FOLDERS).putStringSet(ENCRYPTED_FOLDERS, folders).apply()

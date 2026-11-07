@@ -278,6 +278,14 @@ class MediaFetcher(val context: Context) {
         }
 
         if (config.shouldShowHidden && CryptoManager.isVaultUnlocked) {
+            val vaultRoot = CryptoManager.findVaultRoot(context)
+            if (vaultRoot != null && vaultRoot.exists()) {
+                vaultRoot.listFiles()?.forEach { child ->
+                    if (child.isDirectory && CryptoManager.isEncryptedFolder(child)) {
+                        foldersToScan.add(child.absolutePath)
+                    }
+                }
+            }
             config.encryptedFolders.forEach { encFolder ->
                 if (context.getDoesFilePathExist(encFolder, OTGPath)) {
                     foldersToScan.add(encFolder)

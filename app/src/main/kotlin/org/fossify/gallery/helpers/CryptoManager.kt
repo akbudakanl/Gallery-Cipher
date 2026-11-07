@@ -8,6 +8,8 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.util.Base64
 import com.bumptech.glide.Glide
+import org.bouncycastle.crypto.generators.Argon2BytesGenerator
+import org.bouncycastle.crypto.params.Argon2Parameters
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.*
@@ -52,12 +54,22 @@ data class EncryptedFileMetadata(
 )
 
 object CryptoManager {
-    private const val MAGIC = "FVLTENC1"
+    private const val MAGIC_V1 = "FVLTENC1"
+    private const val MAGIC_V2 = "FGVLTENC"
     private const val VERSION_SYMMETRIC: Byte = 1
     private const val VERSION_ASYMMETRIC: Byte = 2
     private const val META_MAGIC_SYM = "FVLTMETA"
     private const val META_MAGIC_ASYM = "FVLTMET2"
+    private const val META_MAGIC_V2 = "FGMETA2"
+    private const val VAULT_HEADER_MAGIC = "FGVLT2"
     private const val VAULT_STR_PREFIX = "FVSTR1:"
+
+    // Argon2id Parameters (Memory-Hard Key Derivation)
+    private const val ARGON2_MEMORY_KB = 32768 // 32 MB RAM cost
+    private const val ARGON2_ITERATIONS = 3
+    private const val ARGON2_PARALLELISM = 2
+    private const val ARGON2_SALT_LENGTH = 16
+
     private const val PBKDF2_ITERATIONS = 100_000
     private const val KEY_LENGTH_BITS = 256
     private const val RSA_KEY_BITS = 2048
@@ -91,13 +103,16 @@ object CryptoManager {
     }
 
     fun isEncryptedFile(path: String): Boolean {
-        return path.endsWith(ENCRYPTED_FILE_EXT, ignoreCase = true)
+        return path.endsWith(ENCRYPTED_BIN_EXT, ignoreCase = true) ||
+            path.endsWith(ENCRYPTED_FILE_EXT, ignoreCase = true)
     }
 
     fun isEncryptedFolder(folder: File): Boolean {
-        return folder.name.startsWith(ENCRYPTED_FOLDER_PREFIX) ||
+        if (!folder.exists() || !folder.isDirectory) return false
+        return File(folder, VAULT_SUBFOLDER_META_FILE).exists() ||
             File(folder, ENCRYPTED_FOLDER_META_FILE).exists() ||
-            (folder.exists() && folder.isDirectory && folder.list { _, name -> name.endsWith(ENCRYPTED_FILE_EXT, true) }?.isNotEmpty() == true)
+            folder.name.startsWith(ENCRYPTED_FOLDER_PREFIX) ||
+            (folder.list { _, name -> isEncryptedFile(name) }?.isNotEmpty() == true)
     }
 
     fun isEncryptedFolderPath(context: Context, folderPath: String): Boolean {
@@ -105,10 +120,103 @@ object CryptoManager {
         if (context.config.encryptedFolders.contains(clean)) {
             return true
         }
+        val vaultRoot = findVaultRoot(context)
+        if (vaultRoot != null && clean.startsWith(vaultRoot.absolutePath.trimEnd('/'))) {
+            return true
+        }
         return isEncryptedFolder(File(clean))
     }
 
-    // ==================== KEY MANAGEMENT (PURE PBKDF2 + RSA-2048 OAEP, NO KEYSTORE) ====================
+    fun hasExistingVault(context: Context): Boolean {
+        if (context.config.vaultWrappedKeyData.isNotEmpty()) return true
+        return findVaultRoot(context) != null
+    }
+
+    // ==================== MASTER VAULT ROOT (STEALTH CONSOLIDATED CONTAINER) ====================
+
+    fun getOrCreateVaultRoot(context: Context): File {
+        val storedPath = context.config.vaultRootPath
+        if (storedPath.isNotEmpty()) {
+            val dir = File(storedPath)
+            if (dir.exists() && dir.isDirectory) {
+                return dir
+            }
+        }
+
+        val existing = findVaultRoot(context)
+        if (existing != null) {
+            context.config.vaultRootPath = existing.absolutePath
+            return existing
+        }
+
+        val externalRoot = Environment.getExternalStorageDirectory()
+        var randomName = randomHex(6)
+        var newDir = File(externalRoot, randomName)
+        while (newDir.exists()) {
+            randomName = randomHex(6)
+            newDir = File(externalRoot, randomName)
+        }
+        newDir.mkdirs()
+
+        val noMedia = File(newDir, NOMEDIA)
+        if (!noMedia.exists()) {
+            try { noMedia.createNewFile() } catch (_: Exception) {}
+        }
+
+        context.config.vaultRootPath = newDir.absolutePath
+        return newDir
+    }
+
+    fun findVaultRoot(context: Context): File? {
+        val storedPath = context.config.vaultRootPath
+        if (storedPath.isNotEmpty()) {
+            val dir = File(storedPath)
+            if (dir.exists() && File(dir, VAULT_HEADER_FILE).exists()) {
+                return dir
+            }
+        }
+
+        val candidates = listOfNotNull(
+            Environment.getExternalStorageDirectory(),
+            File("/storage/emulated/0"),
+            context.sdCardPath.takeIf { it.isNotEmpty() }?.let { File(it) }
+        )
+        for (root in candidates) {
+            if (root.exists() && root.isDirectory) {
+                val children = root.listFiles() ?: continue
+                for (child in children) {
+                    if (child.isDirectory && File(child, VAULT_HEADER_FILE).exists()) {
+                        context.config.vaultRootPath = child.absolutePath
+                        return child
+                    }
+                }
+            }
+        }
+        return null
+    }
+
+    // ==================== KEY MANAGEMENT (ARGON2id + AES-256-GCM + RSA-2048) ====================
+
+    fun deriveKeyArgon2id(
+        secret: String,
+        salt: ByteArray,
+        memoryKb: Int = ARGON2_MEMORY_KB,
+        iterations: Int = ARGON2_ITERATIONS,
+        parallelism: Int = ARGON2_PARALLELISM
+    ): SecretKeySpec {
+        val builder = Argon2Parameters.Builder(Argon2Parameters.ARGON2_id)
+            .withVersion(Argon2Parameters.ARGON2_VERSION_13)
+            .withSalt(salt)
+            .withIterations(iterations)
+            .withMemoryAsKB(memoryKb)
+            .withParallelism(parallelism)
+        val generator = Argon2BytesGenerator()
+        generator.init(builder.build())
+        val keyBytes = ByteArray(32)
+        val secretBytes = secret.toByteArray(Charsets.UTF_8)
+        generator.generateBytes(secretBytes, keyBytes, 0, keyBytes.size)
+        return SecretKeySpec(keyBytes, "AES")
+    }
 
     private fun deriveWrappingKey(secret: String, salt: ByteArray): SecretKeySpec {
         val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
@@ -141,11 +249,96 @@ object CryptoManager {
         return cipher.doFinal(wrappedKey)
     }
 
+    private fun writeVaultHeader(
+        headerFile: File,
+        salt: ByteArray,
+        memoryKb: Int,
+        iterations: Int,
+        parallelism: Int,
+        iv: ByteArray,
+        wrappedBundle: ByteArray
+    ) {
+        FileOutputStream(headerFile).use { fos ->
+            DataOutputStream(fos).use { dos ->
+                dos.write(VAULT_HEADER_MAGIC.toByteArray(Charsets.US_ASCII))
+                dos.writeByte(2) // Version 2
+                dos.writeByte(1) // KDF: 1 = Argon2id
+                dos.writeInt(iterations)
+                dos.writeInt(memoryKb)
+                dos.writeInt(parallelism)
+                dos.writeInt(salt.size)
+                dos.write(salt)
+                dos.write(iv)
+                dos.writeInt(wrappedBundle.size)
+                dos.write(wrappedBundle)
+            }
+            fos.fd.sync()
+        }
+    }
+
+    private fun unlockFromHeaderFile(context: Context, headerFile: File, secret: String): Boolean {
+        if (!headerFile.exists()) return false
+        return try {
+            FileInputStream(headerFile).use { fis ->
+                DataInputStream(BufferedInputStream(fis)).use { dis ->
+                    val magicBytes = ByteArray(VAULT_HEADER_MAGIC.length)
+                    dis.readFully(magicBytes)
+                    if (String(magicBytes, Charsets.US_ASCII) != VAULT_HEADER_MAGIC) return false
+
+                    val version = dis.readByte()
+                    val kdfType = dis.readByte()
+                    val iterations = dis.readInt()
+                    val memoryKb = dis.readInt()
+                    val parallelism = dis.readInt()
+                    val saltLen = dis.readInt()
+                    if (saltLen <= 0 || saltLen > 256) return false
+                    val salt = ByteArray(saltLen)
+                    dis.readFully(salt)
+                    val iv = ByteArray(GCM_IV_LENGTH)
+                    dis.readFully(iv)
+                    val wrappedLen = dis.readInt()
+                    if (wrappedLen <= 0 || wrappedLen > 65536) return false
+                    val wrapped = ByteArray(wrappedLen)
+                    dis.readFully(wrapped)
+
+                    val wrappingKey = if (kdfType == 1.toByte()) {
+                        deriveKeyArgon2id(secret, salt, memoryKb, iterations, parallelism)
+                    } else {
+                        deriveWrappingKey(secret, salt)
+                    }
+
+                    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+                    cipher.init(Cipher.DECRYPT_MODE, wrappingKey, GCMParameterSpec(GCM_TAG_BITS, iv))
+                    val bundle = cipher.doFinal(wrapped)
+
+                    DataInputStream(ByteArrayInputStream(bundle)).use { bdis ->
+                        val masterKey = ByteArray(32)
+                        bdis.readFully(masterKey)
+                        val privLen = bdis.readInt()
+                        val privBytes = ByteArray(privLen)
+                        bdis.readFully(privBytes)
+                        val privKey = KeyFactory.getInstance("RSA")
+                            .generatePrivate(PKCS8EncodedKeySpec(privBytes))
+                        privBytes.fill(0)
+                        unlockedMasterKey = masterKey
+                        unlockedPrivateKey = privKey
+                    }
+                    bundle.fill(0)
+
+                    context.config.hiddenPasswordHash = "argon2id_aes256_gcm_v2"
+                    context.config.isHiddenPasswordProtectionOn = true
+                    true
+                }
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     /**
      * Initializes or updates the user's hidden item password/PIN/pattern credentials.
-     * Both the 256-bit MasterKey and the RSA-2048 PrivateKey are encrypted strictly with a key
-     * derived from the user's secret via PBKDF2WithHmacSHA256 (100,000 iterations) + AES-256-GCM.
-     * Only the RSA-2048 PublicKey is stored in plain form so folders can still be encrypted while locked.
+     * Uses Argon2id (32 MB, 3 iterations, 2 threads) + AES-256-GCM.
+     * The master bundle (MasterKey + PrivateKey) is written directly to .vault in the root folder.
      */
     fun setupOrUpdateCredentials(context: Context, secret: String, protectionType: Int): String {
         val masterKey = unlockedMasterKey ?: ByteArray(32).also { secureRandom.nextBytes(it) }
@@ -176,22 +369,28 @@ object CryptoManager {
             baos.toByteArray()
         }
 
-        val salt = ByteArray(16).also { secureRandom.nextBytes(it) }
-        val wrappingKey = deriveWrappingKey(secret, salt)
+        val salt = ByteArray(ARGON2_SALT_LENGTH).also { secureRandom.nextBytes(it) }
+        val wrappingKey = deriveKeyArgon2id(secret, salt, ARGON2_MEMORY_KB, ARGON2_ITERATIONS, ARGON2_PARALLELISM)
         val iv = ByteArray(GCM_IV_LENGTH).also { secureRandom.nextBytes(it) }
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, wrappingKey, GCMParameterSpec(GCM_TAG_BITS, iv))
         val wrapped = cipher.doFinal(bundle)
         bundle.fill(0)
 
+        // Write vault root header (.vault) on disk for full multi-device portability
+        val vaultRoot = getOrCreateVaultRoot(context)
+        val vaultHeader = File(vaultRoot, VAULT_HEADER_FILE)
+        writeVaultHeader(vaultHeader, salt, ARGON2_MEMORY_KB, ARGON2_ITERATIONS, ARGON2_PARALLELISM, iv, wrapped)
+
         val data = Base64.encodeToString(salt, Base64.NO_WRAP) + ":" +
             Base64.encodeToString(iv, Base64.NO_WRAP) + ":" +
             Base64.encodeToString(wrapped, Base64.NO_WRAP)
         context.config.vaultWrappedKeyData = data
+        context.config.vaultRootPath = vaultRoot.absolutePath
 
         unlockedMasterKey = masterKey.copyOf()
         unlockedPrivateKey = privateKey
-        val marker = "pbkdf2_aes256_gcm_v1"
+        val marker = "argon2id_aes256_gcm_v2"
         context.config.hiddenPasswordHash = marker
         context.config.hiddenProtectionType = protectionType
         context.config.isHiddenPasswordProtectionOn = true
@@ -306,6 +505,20 @@ object CryptoManager {
     }
 
     fun unlockWithSecret(context: Context, secret: String): Boolean {
+        // 1. Try to find vault root from disk (enables unlocking a transferred vault on a new device!)
+        val vaultRoot = findVaultRoot(context)
+        if (vaultRoot != null) {
+            val headerFile = File(vaultRoot, VAULT_HEADER_FILE)
+            if (headerFile.exists()) {
+                val unlocked = unlockFromHeaderFile(context, headerFile, secret)
+                if (unlocked) {
+                    context.config.vaultRootPath = vaultRoot.absolutePath
+                    return true
+                }
+            }
+        }
+
+        // 2. Fallback to SharedPreferences wrappedData (PBKDF2 or cached Argon2id)
         val wrappedData = context.config.vaultWrappedKeyData
         if (wrappedData.isNotEmpty()) {
             try {
@@ -314,35 +527,50 @@ object CryptoManager {
                     val salt = Base64.decode(parts[0], Base64.NO_WRAP)
                     val iv = Base64.decode(parts[1], Base64.NO_WRAP)
                     val ciphertext = Base64.decode(parts[2], Base64.NO_WRAP)
-                    val wrappingKey = deriveWrappingKey(secret, salt)
-                    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-                    cipher.init(Cipher.DECRYPT_MODE, wrappingKey, GCMParameterSpec(GCM_TAG_BITS, iv))
-                    val bundle = cipher.doFinal(ciphertext)
 
-                    if (bundle.size == 32) {
-                        // Legacy bundle with only 32-byte MasterKey: upgrade to include RSA-2048 keypair
-                        unlockedMasterKey = bundle
+                    // Try Argon2id first
+                    var bundle: ByteArray? = try {
+                        val wrappingKey = deriveKeyArgon2id(secret, salt)
+                        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+                        cipher.init(Cipher.DECRYPT_MODE, wrappingKey, GCMParameterSpec(GCM_TAG_BITS, iv))
+                        cipher.doFinal(ciphertext)
+                    } catch (_: Exception) {
+                        null
+                    }
+
+                    // Fallback to PBKDF2
+                    if (bundle == null) {
+                        bundle = try {
+                            val wrappingKey = deriveWrappingKey(secret, salt)
+                            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+                            cipher.init(Cipher.DECRYPT_MODE, wrappingKey, GCMParameterSpec(GCM_TAG_BITS, iv))
+                            cipher.doFinal(ciphertext)
+                        } catch (_: Exception) {
+                            null
+                        }
+                    }
+
+                    if (bundle != null) {
+                        DataInputStream(ByteArrayInputStream(bundle)).use { dis ->
+                            val masterKey = ByteArray(32)
+                            dis.readFully(masterKey)
+                            val privLen = dis.readInt()
+                            val privBytes = ByteArray(privLen)
+                            dis.readFully(privBytes)
+                            val privKey = KeyFactory.getInstance("RSA")
+                                .generatePrivate(PKCS8EncodedKeySpec(privBytes))
+                            privBytes.fill(0)
+                            unlockedMasterKey = masterKey
+                            unlockedPrivateKey = privKey
+                        }
+                        bundle.fill(0)
+
+                        // Upgrade to Argon2id + write .vault in vault root if needed
                         setupOrUpdateCredentials(context, secret, context.config.hiddenProtectionType)
                         return true
                     }
-
-                    DataInputStream(ByteArrayInputStream(bundle)).use { dis ->
-                        val masterKey = ByteArray(32)
-                        dis.readFully(masterKey)
-                        val privLen = dis.readInt()
-                        val privBytes = ByteArray(privLen)
-                        dis.readFully(privBytes)
-                        val privKey = KeyFactory.getInstance("RSA")
-                            .generatePrivate(PKCS8EncodedKeySpec(privBytes))
-                        privBytes.fill(0)
-                        unlockedMasterKey = masterKey
-                        unlockedPrivateKey = privKey
-                    }
-                    bundle.fill(0)
-                    return true
                 }
-            } catch (e: Exception) {
-                return false
+            } catch (_: Exception) {
             }
         }
 
@@ -362,31 +590,10 @@ object CryptoManager {
         return bytes.joinToString("") { "%02x".format(it) }
     }
 
-    // ==================== FOLDER NAME ENCRYPTION (.fvault_ & .fmeta) ====================
-
-    private val SYSTEM_PROTECTED_FOLDER_NAMES = setOf(
-        "0", "dcim", "camera", "pictures", "download", "downloads", "movies", "music", "documents", "screenshots", "whatsapp", "telegram"
-    )
-
-    private fun canRenameFolderOnDisk(folder: File): Boolean {
-        val parent = folder.parentFile ?: return false
-        val internalRoot = Environment.getExternalStorageDirectory().absolutePath.trimEnd('/')
-        if (folder.absolutePath.trimEnd('/').equals(internalRoot, ignoreCase = true)) {
-            return false
-        }
-        if (folder.name.startsWith(ENCRYPTED_FOLDER_PREFIX)) {
-            return false
-        }
-        if (folder.name.lowercase(Locale.ROOT) in SYSTEM_PROTECTED_FOLDER_NAMES &&
-            parent.absolutePath.trimEnd('/').equals(internalRoot, ignoreCase = true)
-        ) {
-            return false
-        }
-        return true
-    }
+    // ==================== FOLDER METADATA ENCRYPTION (.meta & .fmeta) ====================
 
     private fun writeEncryptedFolderMeta(context: Context, folder: File, originalName: String) {
-        val metaFile = File(folder, ENCRYPTED_FOLDER_META_FILE)
+        val metaFile = File(folder, VAULT_SUBFOLDER_META_FILE)
         val masterKey = unlockedMasterKey
         if (masterKey != null) {
             val iv = ByteArray(GCM_IV_LENGTH).also { secureRandom.nextBytes(it) }
@@ -396,7 +603,7 @@ object CryptoManager {
 
             FileOutputStream(metaFile).use { fos ->
                 DataOutputStream(fos).use { dos ->
-                    dos.write(META_MAGIC_SYM.toByteArray(Charsets.US_ASCII))
+                    dos.write(META_MAGIC_V2.toByteArray(Charsets.US_ASCII))
                     dos.write(iv)
                     dos.writeInt(encryptedName.size)
                     dos.write(encryptedName)
@@ -432,17 +639,22 @@ object CryptoManager {
     fun getDecryptedFolderName(folder: File): String? {
         folderNameCache[folder.absolutePath]?.let { return it }
         val masterKey = unlockedMasterKey ?: return null
-        val metaFile = File(folder, ENCRYPTED_FOLDER_META_FILE)
-        if (!metaFile.exists()) return null
+        val metaFile = when {
+            File(folder, VAULT_SUBFOLDER_META_FILE).exists() -> File(folder, VAULT_SUBFOLDER_META_FILE)
+            File(folder, ENCRYPTED_FOLDER_META_FILE).exists() -> File(folder, ENCRYPTED_FOLDER_META_FILE)
+            else -> return null
+        }
 
         return try {
             FileInputStream(metaFile).use { fis ->
                 DataInputStream(fis).use { dis ->
-                    val magicBytes = ByteArray(META_MAGIC_SYM.length)
-                    dis.readFully(magicBytes)
-                    val magic = String(magicBytes, Charsets.US_ASCII)
+                    val magicBytes = ByteArray(META_MAGIC_SYM.length.coerceAtLeast(META_MAGIC_V2.length))
+                    val readLen = if (metaFile.name == VAULT_SUBFOLDER_META_FILE) META_MAGIC_V2.length else META_MAGIC_SYM.length
+                    dis.readFully(magicBytes, 0, readLen)
+                    val magic = String(magicBytes, 0, readLen, Charsets.US_ASCII)
+
                     val aesKey: ByteArray = when (magic) {
-                        META_MAGIC_SYM -> masterKey
+                        META_MAGIC_V2, META_MAGIC_SYM -> masterKey
                         META_MAGIC_ASYM -> {
                             val privKey = unlockedPrivateKey ?: return null
                             val wrappedLen = dis.readInt()
@@ -536,16 +748,14 @@ object CryptoManager {
         }
     }
 
-    private fun randomHex(bytesCount: Int = 8): String {
+    fun randomHex(bytesCount: Int = 8): String {
         val bytes = ByteArray(bytesCount)
         secureRandom.nextBytes(bytes)
         return bytes.joinToString("") { "%02x".format(it) }
     }
 
     /**
-     * Encrypts a single plaintext media file into targetDir as `.fv_<hex>.fenc`.
-     * Uses unlockedMasterKey if the vault is currently unlocked, or generates a random 256-bit ephemeral AES key
-     * wrapped with the RSA-2048 PublicKey (`RSA/ECB/OAEPWithSHA-256AndMGF1Padding`) if locked.
+     * Encrypts a single plaintext media file into targetDir as random hex .bin.
      */
     fun encryptFileToDirectory(
         context: Context,
@@ -587,7 +797,6 @@ object CryptoManager {
         val videoDuration = if (mediaType == TYPE_VIDEOS) (context.getDuration(sourceFile.absolutePath) ?: 0) else 0
         val thumbBytes = generateEmbeddedThumbnail(sourceFile, mediaType)
 
-        // Build plaintext header
         val headerPlainBytes = ByteArrayOutputStream().use { baos ->
             DataOutputStream(baos).use { dos ->
                 dos.writeUTF(originalName)
@@ -613,9 +822,9 @@ object CryptoManager {
         val contentCipher = Cipher.getInstance("AES/CTR/NoPadding")
         contentCipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(fileKey, "AES"), IvParameterSpec(contentIv))
 
-        var encryptedFile = File(targetDir, "$ENCRYPTED_FILE_PREFIX${randomHex(8)}$ENCRYPTED_FILE_EXT")
+        var encryptedFile = File(targetDir, "${randomHex(8)}$ENCRYPTED_BIN_EXT")
         while (encryptedFile.exists()) {
-            encryptedFile = File(targetDir, "$ENCRYPTED_FILE_PREFIX${randomHex(8)}$ENCRYPTED_FILE_EXT")
+            encryptedFile = File(targetDir, "${randomHex(8)}$ENCRYPTED_BIN_EXT")
         }
 
         return try {
@@ -623,7 +832,7 @@ object CryptoManager {
             FileOutputStream(encryptedFile).use { fos ->
                 BufferedOutputStream(fos, 64 * 1024).use { bos ->
                     DataOutputStream(bos).use { dos ->
-                        dos.write(MAGIC.toByteArray(Charsets.US_ASCII))
+                        dos.write(MAGIC_V2.toByteArray(Charsets.US_ASCII))
                         dos.writeByte(versionByte.toInt())
                         if (rsaWrappedKey != null) {
                             dos.writeInt(rsaWrappedKey.size)
@@ -657,7 +866,7 @@ object CryptoManager {
             encryptedFile.setLastModified(lastModified)
 
             if (masterKey != null) {
-                val payloadOffset = (MAGIC.length + 1 + GCM_IV_LENGTH + 4 + encryptedHeader.size + CTR_IV_LENGTH).toLong()
+                val payloadOffset = (MAGIC_V2.length + 1 + GCM_IV_LENGTH + 4 + encryptedHeader.size + CTR_IV_LENGTH).toLong()
                 metadataCache[encryptedFile.absolutePath] = EncryptedFileMetadata(
                     originalName = originalName,
                     lastModified = lastModified,
@@ -688,10 +897,6 @@ object CryptoManager {
         }
     }
 
-    /**
-     * Decrypts a `.fenc` file to targetDir with its original filename.
-     * Requires the vault to be unlocked (`unlockedMasterKey != null`).
-     */
     fun decryptFileToDirectory(
         context: Context,
         encryptedFile: File,
@@ -750,127 +955,69 @@ object CryptoManager {
     }
 
     /**
-     * Encrypts an entire folder in place:
-     * 1. Adds `.nomedia`
-     * 2. Encrypts all media files inside into `.fv_<hex>.fenc` and securely shreds the originals
-     * 3. Stores original folder name in `.fmeta` and renames the folder to `.fvault_<hex>` (if not a system root folder)
-     * 4. Purges MediaStore & Glide/Picasso caches.
+     * Encrypts an entire folder into the master random vault root directory as a randomized subfolder:
+     * 1. Creates a random subfolder inside the master vault root.
+     * 2. Writes .nomedia in the subfolder.
+     * 3. Writes encrypted subfolder metadata (.meta) storing the original album name with MEK.
+     * 4. Encrypts all media files into random hex .bin files and shreds the originals.
+     * 5. Deletes original plaintext folder.
      */
     fun encryptFolder(context: Context, folderPath: String): String {
         val folder = File(folderPath)
         if (!folder.exists() || !folder.isDirectory) return folderPath
 
         val originalFolderName = getDecryptedFolderName(folder) ?: folder.name
+        val vaultRoot = getOrCreateVaultRoot(context)
 
-        // Ensure .nomedia exists so Android MediaStore never indexes the folder
-        val noMediaFile = File(folder, NOMEDIA)
-        if (!noMediaFile.exists()) {
-            try {
-                noMediaFile.createNewFile()
-            } catch (_: Exception) {
-            }
+        var subfolder = File(vaultRoot, randomHex(6))
+        while (subfolder.exists()) {
+            subfolder = File(vaultRoot, randomHex(6))
+        }
+        subfolder.mkdirs()
+
+        val noMedia = File(subfolder, NOMEDIA)
+        if (!noMedia.exists()) {
+            try { noMedia.createNewFile() } catch (_: Exception) {}
         }
 
-        // Write encrypted folder metadata (.fmeta) if not already written
-        if (!File(folder, ENCRYPTED_FOLDER_META_FILE).exists()) {
-            try {
-                writeEncryptedFolderMeta(context, folder, originalFolderName)
-            } catch (_: Exception) {
-            }
-        }
+        writeEncryptedFolderMeta(context, subfolder, originalFolderName)
 
-        // Encrypt every plaintext media file in the folder
         val files = folder.listFiles() ?: emptyArray()
         for (file in files) {
             if (file.isFile &&
                 file.name != NOMEDIA &&
                 file.name != ENCRYPTED_FOLDER_META_FILE &&
+                file.name != VAULT_SUBFOLDER_META_FILE &&
+                file.name != VAULT_HEADER_FILE &&
                 !isEncryptedFile(file.name) &&
                 (file.name.isMediaFile() || file.name.isRawFast() || file.name.isSvg())
             ) {
                 encryptFileToDirectory(
                     context = context,
                     sourceFile = file,
-                    targetDir = folder,
+                    targetDir = subfolder,
                     wipeSource = true,
                     clearCachesNow = false
                 )
             }
         }
 
-        // Rename folder on disk to .fvault_<hex> if allowed
-        var finalFolder = folder
-        if (canRenameFolderOnDisk(folder)) {
-            val parent = folder.parentFile
-            if (parent != null) {
-                var targetFolder = File(parent, "$ENCRYPTED_FOLDER_PREFIX${randomHex(6)}")
-                while (targetFolder.exists()) {
-                    targetFolder = File(parent, "$ENCRYPTED_FOLDER_PREFIX${randomHex(6)}")
-                }
-                if (folder.renameTo(targetFolder)) {
-                    finalFolder = targetFolder
-                    folderNameCache.remove(folder.absolutePath)
-                    if (isVaultUnlocked) {
-                        folderNameCache[finalFolder.absolutePath] = originalFolderName
-                    }
-                    metadataCache.keys.filter { it.startsWith(folder.absolutePath + "/") }.forEach { oldKey ->
-                        val meta = metadataCache.remove(oldKey)
-                        if (meta != null) {
-                            val newKey = finalFolder.absolutePath + oldKey.removePrefix(folder.absolutePath)
-                            metadataCache[newKey] = meta
-                        }
-                    }
-                    // Update any virtual album items pointing inside the old folder path
-                    try {
-                        val oldPrefix = folder.absolutePath.trimEnd('/') + "/"
-                        val newPrefix = finalFolder.absolutePath.trimEnd('/') + "/"
-                        context.virtualAlbumsDB.getAllItems().filter { it.fullPath.startsWith(oldPrefix) }.forEach { item ->
-                            val newItemPath = newPrefix + item.fullPath.removePrefix(oldPrefix)
-                            context.updateVirtualAlbumItemPath(item.fullPath, newItemPath)
-                        }
-                    } catch (_: Exception) {
-                    }
-                    // Update pinned/included/everShown folder references
-                    if (context.config.pinnedFolders.contains(folder.absolutePath)) {
-                        context.config.removePinnedFolders(setOf(folder.absolutePath))
-                        context.config.addPinnedFolders(setOf(finalFolder.absolutePath))
-                    }
-                    val everShown = HashSet(context.config.everShownFolders)
-                    if (everShown.remove(folder.absolutePath)) {
-                        everShown.add(finalFolder.absolutePath)
-                        context.config.everShownFolders = everShown
-                    }
-                }
-            }
-        }
-
-        // Any virtual album referencing items inside this newly encrypted folder must also be marked hidden
+        // Delete original plaintext folder
         try {
-            val prefix = finalFolder.absolutePath.trimEnd('/') + "/"
-            val affectedAlbumIds = context.virtualAlbumsDB.getAllItems()
-                .filter { it.fullPath.startsWith(prefix) || isEncryptedFile(it.fullPath) }
-                .map { it.albumId }
-                .toSet()
-            for (albumId in affectedAlbumIds) {
-                val album = context.virtualAlbumsDB.getAlbumById(albumId) ?: continue
-                if (!album.isHidden || !isEncryptedVaultString(album.name)) {
-                    val encName = encryptStringForVault(context, album.name)
-                    context.virtualAlbumsDB.updateAlbumVisibilityAndName(albumId, true, encName)
-                }
-            }
-        } catch (_: Exception) {
-        }
+            folder.deleteRecursively()
+        } catch (_: Exception) {}
 
         context.config.removeEncryptedFolder(folder.absolutePath)
-        context.config.addEncryptedFolder(finalFolder.absolutePath)
+        context.config.addEncryptedFolder(subfolder.absolutePath)
         context.directoryDB.deleteDirPath(folder.absolutePath)
+        folderNameCache[subfolder.absolutePath] = originalFolderName
         clearAppImageCaches(context)
-        return finalFolder.absolutePath
+
+        return subfolder.absolutePath
     }
 
     /**
-     * Decrypts an encrypted folder back to its original folder name and original plaintext files.
-     * Requires the vault to be unlocked (`unlockedMasterKey != null`).
+     * Decrypts an encrypted subfolder back to plaintext inside Pictures/<originalFolderName>.
      */
     fun decryptFolder(context: Context, folderPath: String): String {
         val folder = File(folderPath)
@@ -879,68 +1026,40 @@ object CryptoManager {
 
         val originalFolderName = getDecryptedFolderName(folder) ?: folder.name
 
-        // Decrypt all .fenc files inside
+        val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+        var targetFolder = File(picturesDir, originalFolderName)
+        var idx = 1
+        while (targetFolder.exists()) {
+            targetFolder = File(picturesDir, "${originalFolderName}_$idx")
+            idx++
+        }
+        targetFolder.mkdirs()
+
         val files = folder.listFiles() ?: emptyArray()
         for (file in files) {
             if (file.isFile && isEncryptedFile(file.name)) {
                 decryptFileToDirectory(
                     context = context,
                     encryptedFile = file,
-                    targetDir = folder,
+                    targetDir = targetFolder,
                     deleteEncryptedSource = true
                 )
             }
         }
 
-        // Remove .fmeta and .nomedia
-        File(folder, ENCRYPTED_FOLDER_META_FILE).delete()
-        File(folder, NOMEDIA).delete()
+        try {
+            folder.deleteRecursively()
+        } catch (_: Exception) {}
         folderNameCache.remove(folder.absolutePath)
 
-        // Rename .fvault_<hex> back to originalFolderName
-        var finalFolder = folder
-        if (folder.name.startsWith(ENCRYPTED_FOLDER_PREFIX) && originalFolderName != folder.name) {
-            val parent = folder.parentFile
-            if (parent != null) {
-                var targetFolder = File(parent, originalFolderName)
-                var idx = 1
-                while (targetFolder.exists() && targetFolder.absolutePath != folder.absolutePath) {
-                    targetFolder = File(parent, "${originalFolderName}_$idx")
-                    idx++
-                }
-                if (folder.renameTo(targetFolder)) {
-                    finalFolder = targetFolder
-                    try {
-                        val oldPrefix = folder.absolutePath.trimEnd('/') + "/"
-                        val newPrefix = finalFolder.absolutePath.trimEnd('/') + "/"
-                        context.virtualAlbumsDB.getAllItems().filter { it.fullPath.startsWith(oldPrefix) }.forEach { item ->
-                            val newItemPath = newPrefix + item.fullPath.removePrefix(oldPrefix)
-                            context.updateVirtualAlbumItemPath(item.fullPath, newItemPath)
-                        }
-                    } catch (_: Exception) {
-                    }
-                    if (context.config.pinnedFolders.contains(folder.absolutePath)) {
-                        context.config.removePinnedFolders(setOf(folder.absolutePath))
-                        context.config.addPinnedFolders(setOf(finalFolder.absolutePath))
-                    }
-                    val everShown = HashSet(context.config.everShownFolders)
-                    if (everShown.remove(folder.absolutePath)) {
-                        everShown.add(finalFolder.absolutePath)
-                        context.config.everShownFolders = everShown
-                    }
-                }
-            }
-        }
-
         context.config.removeEncryptedFolder(folder.absolutePath)
-        context.config.removeEncryptedFolder(finalFolder.absolutePath)
         context.directoryDB.deleteDirPath(folder.absolutePath)
 
-        val restoredPaths = finalFolder.listFiles()?.filter { it.isFile }?.map { it.absolutePath } ?: emptyList()
+        val restoredPaths = targetFolder.listFiles()?.filter { it.isFile }?.map { it.absolutePath } ?: emptyList()
         if (restoredPaths.isNotEmpty()) {
             context.rescanPaths(ArrayList(restoredPaths))
         }
-        return finalFolder.absolutePath
+        return targetFolder.absolutePath
     }
 
     // ==================== ON-THE-FLY HEADER & STREAM DECRYPTION ====================
@@ -953,9 +1072,10 @@ object CryptoManager {
         return try {
             FileInputStream(file).use { fis ->
                 DataInputStream(BufferedInputStream(fis, 8192)).use { dis ->
-                    val magicBytes = ByteArray(MAGIC.length)
+                    val magicBytes = ByteArray(8)
                     dis.readFully(magicBytes)
-                    if (String(magicBytes, Charsets.US_ASCII) != MAGIC) return null
+                    val magicStr = String(magicBytes, Charsets.US_ASCII)
+                    if (magicStr != MAGIC_V2 && magicStr != MAGIC_V1) return null
 
                     val version = dis.readByte()
                     var extraHeaderBytes = 0
@@ -996,7 +1116,7 @@ object CryptoManager {
                         val originalSize = hdis.readLong()
                         val mediaType = hdis.readInt()
                         val videoDuration = hdis.readInt()
-                        val payloadOffset = (MAGIC.length + 1 + extraHeaderBytes + GCM_IV_LENGTH + 4 + encHeaderLen + CTR_IV_LENGTH).toLong()
+                        val payloadOffset = (8 + 1 + extraHeaderBytes + GCM_IV_LENGTH + 4 + encHeaderLen + CTR_IV_LENGTH).toLong()
 
                         val meta = EncryptedFileMetadata(
                             originalName = originalName,
@@ -1019,9 +1139,6 @@ object CryptoManager {
         }
     }
 
-    /**
-     * Reads and decrypts the embedded thumbnail bytes from the `.fenc` header in memory.
-     */
     fun readEmbeddedThumbnailBytes(file: File): ByteArray? {
         val meta = readMetadata(file) ?: return null
         if (!file.exists() || !file.isFile) return null
@@ -1029,9 +1146,10 @@ object CryptoManager {
         return try {
             FileInputStream(file).use { fis ->
                 DataInputStream(BufferedInputStream(fis, 8192)).use { dis ->
-                    val magicBytes = ByteArray(MAGIC.length)
+                    val magicBytes = ByteArray(8)
                     dis.readFully(magicBytes)
-                    if (String(magicBytes, Charsets.US_ASCII) != MAGIC) return null
+                    val magicStr = String(magicBytes, Charsets.US_ASCII)
+                    if (magicStr != MAGIC_V2 && magicStr != MAGIC_V1) return null
 
                     val version = dis.readByte()
                     if (version == VERSION_ASYMMETRIC) {
@@ -1075,9 +1193,6 @@ object CryptoManager {
         }
     }
 
-    /**
-     * Increments a 16-byte AES-CTR IV/Counter by `blockOffset` (128-bit big-endian addition).
-     */
     fun incrementCounter(baseIv: ByteArray, blockOffset: Long): ByteArray {
         if (blockOffset == 0L) return baseIv.copyOf()
         val counterInt = BigInteger(1, baseIv).add(BigInteger.valueOf(blockOffset))
@@ -1088,10 +1203,6 @@ object CryptoManager {
         return result
     }
 
-    /**
-     * Opens a streaming AES-256-CTR decrypted InputStream starting at `startOffset` within the original payload.
-     * Supports O(1) random-access seeking for ExoPlayer and zero-disk-write decoding for Glide/Picasso.
-     */
     fun openDecryptedContentStream(
         file: File,
         startOffset: Long = 0L
@@ -1132,18 +1243,13 @@ object CryptoManager {
         }
     }
 
-    // ==================== ANTI-RECOVERY / SECURE WIPE (MEASURES 1 & 2) ====================
+    // ==================== ANTI-RECOVERY / SECURE WIPE ====================
 
-    /**
-     * Measure 1: Purges all traces of a plaintext file from Android MediaStore, system thumbnail tables,
-     * and the internal Room database.
-     */
     fun purgeTracesForFile(context: Context, plaintextPath: String) {
         try {
             val contentResolver = context.contentResolver
             val filesUri = MediaStore.Files.getContentUri("external")
 
-            // Query MediaStore _ID before deleting so we can also purge system thumbnail tables
             val projection = arrayOf(MediaStore.MediaColumns._ID)
             val selection = "${MediaStore.MediaColumns.DATA} = ?"
             val selectionArgs = arrayOf(plaintextPath)
@@ -1183,9 +1289,6 @@ object CryptoManager {
         }
     }
 
-    /**
-     * Measure 1 (Part 2): Clears Glide and Picasso disk caches so no unencrypted thumbnail remains in app cache.
-     */
     fun clearAppImageCaches(context: Context) {
         val appContext = context.applicationContext
         ensureBackgroundThread {
@@ -1208,19 +1311,12 @@ object CryptoManager {
         }
     }
 
-    /**
-     * Measure 2: Overwrites the plaintext file bytes on disk using RandomAccessFile("rws") + fd.sync(),
-     * truncates its length to 0, renames it to a single-character dummy name to scrub directory entry metadata,
-     * and finally deletes it.
-     */
     fun secureWipeAndDeleteFile(context: Context, file: File) {
         if (!file.exists()) return
         val originalPath = file.absolutePath
 
-        // Measure 1: Remove from MediaStore, system thumbnails, and app DB
         purgeTracesForFile(context, originalPath)
 
-        // Measure 2: Overwrite file blocks on disk, truncate to 0, rename to dummy name, delete
         try {
             val length = file.length()
             if (length > 0L) {
@@ -1236,7 +1332,6 @@ object CryptoManager {
                             remaining -= toWrite
                         }
                     } else {
-                        // For huge videos (>64 MB), wipe first 16 MB, middle 8 MB, and last 8 MB
                         val headSize = 16L * 1024L * 1024L
                         val midSize = 8L * 1024L * 1024L
                         val tailSize = 8L * 1024L * 1024L
@@ -1263,7 +1358,6 @@ object CryptoManager {
         } catch (_: Exception) {
         }
 
-        // Scrub the filename in the directory entry before unlinking
         var fileToDelete = file
         try {
             val parent = file.parentFile

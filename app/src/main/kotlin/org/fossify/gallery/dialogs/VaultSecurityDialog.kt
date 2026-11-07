@@ -23,7 +23,7 @@ class VaultSecurityDialog(
 ) {
     private var dialog: AlertDialog? = null
     private val binding = DialogVaultSecurityBinding.inflate(activity.layoutInflater)
-    private val isSetupMode = requiredHash.isEmpty() || showTabIndex == SHOW_ALL_TABS
+    private val isSetupMode = !CryptoManager.hasExistingVault(activity) && (requiredHash.isEmpty() || showTabIndex == SHOW_ALL_TABS)
 
     private var currentType: Int = when {
         showTabIndex == PROTECTION_PIN || showTabIndex == PROTECTION_PASSWORD -> showTabIndex

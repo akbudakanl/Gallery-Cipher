@@ -770,7 +770,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             return
         }
 
-        if (config.isHiddenPasswordProtectionOn) {
+        if (config.isHiddenPasswordProtectionOn || CryptoManager.hasExistingVault(this)) {
             mIsVaultDialogShowing = true
             VaultSecurityDialog(
                 activity = this,
