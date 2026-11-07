@@ -325,7 +325,7 @@ fun Context.deleteVirtualAlbum(albumId: Long) {
     try {
         val album = virtualAlbumsDB.getAlbumById(albumId)
         if (album != null) {
-            VirtualAlbumSyncManager.deleteAlbumFile(album)
+            VirtualAlbumSyncManager.deleteAlbumFile(this, album)
         }
         virtualAlbumsDB.deleteAlbumById(albumId)
         directoryDB.deleteDirPath(getVirtualAlbumPath(albumId))

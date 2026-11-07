@@ -92,17 +92,41 @@ class VirtualAlbumSyncTest {
 
     @Test
     fun testSafeFileNameGeneration() {
-        val normalAlbum = VirtualAlbum(id = 1L, name = "Resimler", isHidden = false)
-        val normalFileName = VirtualAlbumSyncManager.getAlbumFileName(normalAlbum)
+        val normalFileName = VirtualAlbumSyncManager.getPublicAlbumFileName("Resimler", 1L)
         assertEquals("Resimler.json", normalFileName)
 
-        val specialCharsAlbum = VirtualAlbum(id = 2L, name = "Tatil / 2026 : Yaz ?", isHidden = false)
-        val specialFileName = VirtualAlbumSyncManager.getAlbumFileName(specialCharsAlbum)
+        val specialFileName = VirtualAlbumSyncManager.getPublicAlbumFileName("Tatil / 2026 : Yaz ?", 2L)
         assertEquals("Tatil _ 2026 _ Yaz _.json", specialFileName)
 
-        val hiddenAlbum = VirtualAlbum(id = 42L, name = "FVSTR1:secret", isHidden = true)
-        val hiddenFileName = VirtualAlbumSyncManager.getAlbumFileName(hiddenAlbum)
-        assertEquals("hidden_album_42.json", hiddenFileName)
+        val hiddenFileName = VirtualAlbumSyncManager.getHiddenAlbumFileName("Gizli Albüm")
+        assertTrue(hiddenFileName.startsWith("fva_"))
+        assertTrue(hiddenFileName.endsWith(".json"))
+        assertFalse(hiddenFileName.contains("Gizli Albüm"))
+        // Deterministic check
+        assertEquals(hiddenFileName, VirtualAlbumSyncManager.getHiddenAlbumFileName("Gizli Albüm"))
+    }
+
+    @Test
+    fun testStealthHiddenAlbumWrapper() {
+        // Stealth hidden albums store opaque outer JSON with encrypted payload
+        val fakeEncryptedPayload = "v2:argon2id_aes256_gcm:ciphertext123456789"
+        val outerBackup = VirtualAlbumBackup(
+            version = 2,
+            isHidden = true,
+            encryptedPayload = fakeEncryptedPayload
+        )
+
+        val outerJson = Gson().toJson(outerBackup)
+        // Ensure album name and item paths are not present in outer JSON
+        assertFalse(outerJson.contains("Resimler"))
+        assertFalse(outerJson.contains("fullPath"))
+        assertFalse(outerJson.contains("mediaPaths"))
+        assertTrue(outerJson.contains("encryptedPayload"))
+
+        val parsed = Gson().fromJson(outerJson, VirtualAlbumBackup::class.java)
+        assertTrue(parsed.isHidden)
+        assertEquals(fakeEncryptedPayload, parsed.encryptedPayload)
+        assertNull(parsed.name)
     }
 
     @Test

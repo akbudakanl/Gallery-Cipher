@@ -54,6 +54,9 @@ import org.fossify.commons.extensions.showErrorToast
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.helpers.FAVORITES
 import org.fossify.commons.helpers.NOMEDIA
+import org.fossify.commons.helpers.PROTECTION_PATTERN
+import org.fossify.commons.helpers.PROTECTION_PIN
+import org.fossify.gallery.helpers.PROTECTION_PASSWORD
 import org.fossify.commons.helpers.SHOW_ALL_TABS
 import org.fossify.commons.helpers.SORT_BY_CUSTOM
 import org.fossify.commons.helpers.VIEW_TYPE_LIST
@@ -460,6 +463,27 @@ class DirectoryAdapter(
             return
         }
 
+        if (!CryptoManager.isVaultUnlocked) {
+            val initialType = CryptoManager.getVaultProtectionType(activity)
+                ?: if (config.hiddenProtectionType in listOf(PROTECTION_PIN, PROTECTION_PASSWORD, PROTECTION_PATTERN)) {
+                    config.hiddenProtectionType
+                } else {
+                    PROTECTION_PATTERN
+                }
+            VaultSecurityDialog(
+                activity = activity,
+                requiredHash = config.hiddenPasswordHash,
+                showTabIndex = initialType,
+                minimalist = true
+            ) { _, type, success ->
+                if (success) {
+                    config.hiddenProtectionType = type
+                    hideFolders(paths)
+                }
+            }
+            return
+        }
+
         val totalFilesCount = paths.sumOf { path ->
             File(path).listFiles()?.count {
                 it.isFile && it.name != NOMEDIA && !CryptoManager.isEncryptedFile(it.name)
@@ -548,6 +572,27 @@ class DirectoryAdapter(
         if (!config.isHiddenPasswordProtectionOn && !CryptoManager.hasExistingVault(activity)) {
             VaultSecurityDialog(activity, "", SHOW_ALL_TABS, minimalist = false) { _, _, success ->
                 if (success) {
+                    hideFolder(path)
+                }
+            }
+            return
+        }
+
+        if (!CryptoManager.isVaultUnlocked) {
+            val initialType = CryptoManager.getVaultProtectionType(activity)
+                ?: if (config.hiddenProtectionType in listOf(PROTECTION_PIN, PROTECTION_PASSWORD, PROTECTION_PATTERN)) {
+                    config.hiddenProtectionType
+                } else {
+                    PROTECTION_PATTERN
+                }
+            VaultSecurityDialog(
+                activity = activity,
+                requiredHash = config.hiddenPasswordHash,
+                showTabIndex = initialType,
+                minimalist = true
+            ) { _, type, success ->
+                if (success) {
+                    config.hiddenProtectionType = type
                     hideFolder(path)
                 }
             }
