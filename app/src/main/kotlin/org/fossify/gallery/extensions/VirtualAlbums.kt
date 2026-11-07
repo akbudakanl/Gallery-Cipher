@@ -446,7 +446,11 @@ fun Context.getVirtualAlbumDirectories(): ArrayList<Directory> {
 
     for (album in albums) {
         val albumId = album.id ?: continue
-        if (album.isHidden && !canAccessHidden) {
+        if (config.temporarilyShowHidden) {
+            if (!album.isHidden || !canAccessHidden) {
+                continue
+            }
+        } else if (album.isHidden) {
             continue
         }
         val resolvedName = getResolvedVirtualAlbumName(album) ?: continue

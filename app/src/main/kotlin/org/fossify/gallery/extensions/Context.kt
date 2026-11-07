@@ -626,6 +626,58 @@ fun Context.getFolderNameFromPath(path: String): String {
     }
 }
 
+fun Context.isFolderOrAlbumHidden(
+    path: String,
+    folderNoMediaStatuses: HashMap<String, Boolean>? = null
+): Boolean {
+    if (path.isEmpty() || path == FAVORITES || path == RECYCLE_BIN) {
+        return false
+    }
+
+    if (path.isVirtualAlbumPath()) {
+        return isHiddenVirtualAlbumPath(path)
+    }
+
+    if (CryptoManager.isEncryptedFolderPath(this, path)) {
+        return true
+    }
+
+    val file = File(path)
+    if (CryptoManager.isEncryptedFolder(file)) {
+        return true
+    }
+
+    if (file.name.startsWith('.') || path.contains("/.")) {
+        return true
+    }
+
+    if (path.isThisOrParentFolderHidden()) {
+        return true
+    }
+
+    val noMediaPath = "$path/$NOMEDIA"
+    if (folderNoMediaStatuses != null && folderNoMediaStatuses.containsKey(noMediaPath)) {
+        if (folderNoMediaStatuses[noMediaPath] == true) {
+            return true
+        }
+    } else if (file.exists() && File(file, NOMEDIA).exists()) {
+        folderNoMediaStatuses?.put(noMediaPath, true)
+        return true
+    }
+
+    val statuses = folderNoMediaStatuses ?: HashMap()
+    if (path.doesThisOrParentHaveNoMedia(statuses, null)) {
+        return true
+    }
+
+    return false
+}
+
+fun Context.isFolderOrAlbumHidden(
+    directory: Directory,
+    folderNoMediaStatuses: HashMap<String, Boolean>? = null
+): Boolean = isFolderOrAlbumHidden(directory.path, folderNoMediaStatuses)
+
 fun Context.loadImage(
     type: Int,
     path: String,
@@ -946,6 +998,13 @@ fun Context.getCachedDirectories(
                     it.name.removeSuffix(hiddenString).trim()
                 }
             }
+        }
+
+        val isSecretVaultMode = config.temporarilyShowHidden && !forceShowHidden
+        if (isSecretVaultMode) {
+            filteredDirectories = filteredDirectories.filter {
+                isFolderOrAlbumHidden(it.path, folderNoMediaStatuses)
+            } as ArrayList<Directory>
         }
 
         val clone = filteredDirectories.clone() as ArrayList<Directory>

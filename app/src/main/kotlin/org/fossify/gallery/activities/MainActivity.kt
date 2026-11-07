@@ -106,6 +106,7 @@ import org.fossify.gallery.extensions.getSortedDirectories
 import org.fossify.gallery.extensions.handleExcludedFolderPasswordProtection
 import org.fossify.gallery.extensions.handleMediaManagementPrompt
 import org.fossify.gallery.extensions.isDownloadsFolder
+import org.fossify.gallery.extensions.isFolderOrAlbumHidden
 import org.fossify.gallery.extensions.isPathHiddenOrEncrypted
 import org.fossify.gallery.extensions.isVirtualAlbum
 import org.fossify.gallery.extensions.isVirtualAlbumPath
@@ -1193,6 +1194,10 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     }
 
     private fun gotDirectories(newDirs: ArrayList<Directory>) {
+        val isSecretVaultMode = config.temporarilyShowHidden
+        if (isSecretVaultMode) {
+            newDirs.removeAll { !isFolderOrAlbumHidden(it.path) }
+        }
         mIsGettingDirs = false
         mShouldStopFetching = false
 
@@ -1238,7 +1243,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         val dateTakens = mLastMediaFetcher!!.getDateTakens()
 
         if (
-            config.showRecycleBinAtFolders
+            !isSecretVaultMode && config.showRecycleBinAtFolders
             && !config.showRecycleBinLast
             && !dirs.map { it.path }.contains(RECYCLE_BIN)
         ) {
@@ -1256,7 +1261,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             }
         }
 
-        if (dirs.map { it.path }.contains(FAVORITES)) {
+        if (!isSecretVaultMode && dirs.map { it.path }.contains(FAVORITES)) {
             if (mediaDB.getFavoritesCount() > 0) {
                 val favorites = Directory().apply {
                     path = FAVORITES
@@ -1412,6 +1417,9 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
         // check the remaining folders which were not cached at all yet
         for (folder in foldersToScan) {
+            if (isSecretVaultMode && !isFolderOrAlbumHidden(folder)) {
+                continue
+            }
             if (mShouldStopFetching || isDestroyed || isFinishing) {
                 return
             }
@@ -1498,6 +1506,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
         val excludedFolders = config.excludedFolders
         val everShownFolders = config.everShownFolders.toMutableSet() as HashSet<String>
+        if (!isSecretVaultMode) {
 
         // do not add excluded folders, virtual albums, or encrypted folders at everShownFolders
         dirs.filter { dir ->
@@ -1514,6 +1523,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             config.everShownFolders = everShownFolders
         } catch (e: Exception) {
             config.everShownFolders = HashSet()
+        }
         }
 
         mDirs = dirs.clone() as ArrayList<Directory>
@@ -1546,7 +1556,11 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         binding.directoriesEmptyPlaceholder.beVisibleIf(dirs.isEmpty() && mLoadedInitialPhotos)
         binding.directoriesEmptyPlaceholder2.beVisibleIf(dirs.isEmpty() && mLoadedInitialPhotos)
 
-        if (binding.mainMenu.isSearchOpen) {
+        if (config.temporarilyShowHidden) {
+            binding.directoriesEmptyPlaceholder.text =
+                getString(org.fossify.commons.R.string.no_items_found)
+            binding.directoriesEmptyPlaceholder2.beGone()
+        } else if (binding.mainMenu.isSearchOpen) {
             binding.directoriesEmptyPlaceholder.text =
                 getString(org.fossify.commons.R.string.no_items_found)
             binding.directoriesEmptyPlaceholder2.beGone()
@@ -1585,7 +1599,12 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         forceRecreate: Boolean = false
     ) {
         val currAdapter = binding.directoriesGrid.adapter
-        val distinctDirs = dirs
+        val filtered = if (config.temporarilyShowHidden) {
+            dirs.filter { isFolderOrAlbumHidden(it.path) }
+        } else {
+            dirs
+        }
+        val distinctDirs = filtered
             .distinctBy { it.path.getDistinctPath() }
             .toMutableList() as ArrayList<Directory>
 

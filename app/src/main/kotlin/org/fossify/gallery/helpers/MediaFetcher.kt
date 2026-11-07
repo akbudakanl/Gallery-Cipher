@@ -129,9 +129,12 @@ class MediaFetcher(val context: Context) {
                 folderNoMediaStatuses["$folder/$NOMEDIA"] = true
             }
 
+            val isSecretVaultMode = config.temporarilyShowHidden
             distinctPaths.filter {
                 if (CryptoManager.isEncryptedFolderPath(context, it) && (!shouldShowHidden || !CryptoManager.isVaultUnlocked)) {
                     false
+                } else if (isSecretVaultMode) {
+                    context.isFolderOrAlbumHidden(it, folderNoMediaStatuses)
                 } else {
                     it.shouldFolderBeVisible(excludedPaths, includedPaths, shouldShowHidden, folderNoMediaStatuses) { path, hasNoMedia ->
                         folderNoMediaStatuses[path] = hasNoMedia
@@ -291,6 +294,16 @@ class MediaFetcher(val context: Context) {
                     foldersToScan.add(encFolder)
                 }
             }
+            val noMediaFolders = context.getNoMediaFoldersSync()
+            noMediaFolders.forEach { noMediaFolder ->
+                if (context.getDoesFilePathExist(noMediaFolder, OTGPath)) {
+                    foldersToScan.add(noMediaFolder)
+                }
+            }
+        }
+
+        if (config.temporarilyShowHidden) {
+            foldersToScan.retainAll { context.isFolderOrAlbumHidden(it) }
         }
 
         return foldersToScan.toMutableSet() as LinkedHashSet<String>
