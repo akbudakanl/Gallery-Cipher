@@ -1393,9 +1393,6 @@ object CryptoManager {
             if (!deletedDir) {
                 deletedDir = context.tryFastDocumentDelete(folder.absolutePath, true)
             }
-            if (!deletedDir && context is BaseSimpleActivity) {
-                context.deleteFile(folder.toFileDirItem(context), allowDeleteFolder = true, isDeletingMultipleFiles = false)
-            }
         } catch (_: Exception) {}
 
         context.config.removeEncryptedFolder(folder.absolutePath)
@@ -1911,9 +1908,6 @@ object CryptoManager {
         var deleted = file.delete()
         if (!deleted) {
             deleted = context.tryFastDocumentDelete(originalPath, false)
-        }
-        if (!deleted && context is BaseSimpleActivity) {
-            context.deleteFile(file.toFileDirItem(context), allowDeleteFolder = false, isDeletingMultipleFiles = true)
         }
 
         purgeTracesForFile(context, originalPath)

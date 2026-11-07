@@ -22,6 +22,7 @@ import org.fossify.commons.extensions.hideKeyboard
 import org.fossify.commons.extensions.isGone
 import org.fossify.commons.extensions.isInDownloadDir
 import org.fossify.commons.extensions.isRestrictedWithSAFSdk30
+import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.extensions.setupDialogStuff
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.helpers.VIEW_TYPE_GRID
@@ -185,15 +186,13 @@ class PickDirectoryDialog(
                     it.subfoldersMediaCount = it.mediaCnt
                 }
 
-                activity.runOnUiThread {
-                    allDirectories.clear()
-                    val dirs = if (isPickingCopyMoveDestination && isCopyOperation) {
-                        it
-                    } else {
-                        activity.addTempFolderIfNeeded(it)
-                    }
-                    gotDirectories(dirs)
+                allDirectories.clear()
+                val dirs = if (isPickingCopyMoveDestination && isCopyOperation) {
+                    it
+                } else {
+                    activity.addTempFolderIfNeeded(it)
                 }
+                gotDirectories(dirs)
             }
         }
     }
@@ -201,23 +200,27 @@ class PickDirectoryDialog(
     private fun showOtherFolder() {
         activity.hideKeyboard(searchEditText)
         if (isPickingCopyMoveDestination && isCopyOperation) {
-            val effectiveSource = activity.resolveEffectiveSourcePhysicalPath(sourcePath)
-            val items = arrayListOf(
-                RadioItem(1, activity.getString(R.string.create_virtual_album)),
-                RadioItem(2, activity.getString(R.string.other_folder))
-            )
-            RadioGroupDialog(activity, items) { selected ->
-                if (selected == 1) {
-                    dialog?.dismiss()
-                    CreateVirtualAlbumDialog(
-                        activity = activity,
-                        isHidden = isHiddenCopySource,
-                        parentPhysicalPath = effectiveSource
-                    ) { albumId ->
-                        callback(getVirtualAlbumPath(albumId))
+            ensureBackgroundThread {
+                val effectiveSource = activity.resolveEffectiveSourcePhysicalPath(sourcePath)
+                activity.runOnUiThread {
+                    val items = arrayListOf(
+                        RadioItem(1, activity.getString(R.string.create_virtual_album)),
+                        RadioItem(2, activity.getString(R.string.other_folder))
+                    )
+                    RadioGroupDialog(activity, items) { selected ->
+                        if (selected == 1) {
+                            dialog?.dismiss()
+                            CreateVirtualAlbumDialog(
+                                activity = activity,
+                                isHidden = isHiddenCopySource,
+                                parentPhysicalPath = effectiveSource
+                            ) { albumId ->
+                                callback(getVirtualAlbumPath(albumId))
+                            }
+                        } else {
+                            openPhysicalFolderPicker(effectiveSource)
+                        }
                     }
-                } else {
-                    openPhysicalFolderPicker(effectiveSource)
                 }
             }
             return
@@ -249,88 +252,92 @@ class PickDirectoryDialog(
     }
 
     private fun gotDirectories(newDirs: ArrayList<Directory>) {
-        if (allDirectories.isEmpty()) {
-            allDirectories = newDirs.clone() as ArrayList<Directory>
-        }
-
-        val effectiveSource = if (isPickingCopyMoveDestination && isCopyOperation) {
-            activity.resolveEffectiveSourcePhysicalPath(sourcePath)
-        } else {
-            sourcePath
-        }
-
-        val distinctDirs = newDirs.filter { dir ->
-            if (!showFavoritesBin && (dir.isRecycleBin() || dir.areFavorites())) {
-                return@filter false
+        ensureBackgroundThread {
+            if (allDirectories.isEmpty()) {
+                allDirectories = newDirs.clone() as ArrayList<Directory>
             }
 
-            if (isPickingCopyMoveDestination && isCopyOperation) {
-                if (dir.isVirtualAlbum()) {
-                    val albumId = dir.path.getVirtualAlbumId() ?: return@filter false
-                    val albumOwner = activity.getVirtualAlbumOwnerPhysicalPath(albumId)
-                    if (albumOwner.isNotEmpty()) {
-                        return@filter albumOwner.equals(effectiveSource, ignoreCase = true) && dir.path != sourcePath
-                    }
-                    return@filter dir.path != sourcePath
-                } else if (sourcePath.isVirtualAlbumPath()) {
-                    if (effectiveSource.isNotEmpty() && dir.path.trimEnd('/').equals(effectiveSource.trimEnd('/'), ignoreCase = true)) {
-                        return@filter false
-                    }
-                }
+            val effectiveSource = if (isPickingCopyMoveDestination && isCopyOperation) {
+                activity.resolveEffectiveSourcePhysicalPath(sourcePath)
+            } else {
+                sourcePath
             }
 
-            true
-        }.distinctBy { it.path.getDistinctPath() }.toMutableList() as ArrayList<Directory>
-        val sortedDirs = activity.getSortedDirectories(distinctDirs)
-        val dirs = activity.getDirsToShow(sortedDirs, allDirectories, currentPathPrefix).clone() as ArrayList<Directory>
-        if (dirs.hashCode() == shownDirectories.hashCode()) {
-            return
-        }
-
-        shownDirectories = dirs
-        val adapter = DirectoryAdapter(activity, dirs.clone() as ArrayList<Directory>, null, binding.directoriesGrid, true) {
-            val clickedDir = it as Directory
-            val path = clickedDir.path
-            if (clickedDir.isVirtualAlbum()) {
-                if (!isCopyOperation) {
-                    activity.toast(R.string.virtual_album_cannot_be_modified)
-                    return@DirectoryAdapter
+            val distinctDirs = newDirs.filter { dir ->
+                if (!showFavoritesBin && (dir.isRecycleBin() || dir.areFavorites())) {
+                    return@filter false
                 }
-                if (isPickingCopyMoveDestination && path.trimEnd('/') == sourcePath.trimEnd('/')) {
-                    activity.toast(org.fossify.commons.R.string.source_and_destination_same)
-                    return@DirectoryAdapter
-                }
-                callback(path)
-                dialog?.dismiss()
-                return@DirectoryAdapter
-            }
 
-            if (clickedDir.subfoldersCount == 1 || !activity.config.groupDirectSubfolders) {
-                if (isPickingCopyMoveDestination && path.trimEnd('/') == sourcePath) {
-                    activity.toast(org.fossify.commons.R.string.source_and_destination_same)
-                    return@DirectoryAdapter
-                } else if (isPickingCopyMoveDestination && activity.isRestrictedWithSAFSdk30(path) && !activity.isInDownloadDir(path)) {
-                    activity.toast(org.fossify.commons.R.string.system_folder_copy_restriction, Toast.LENGTH_LONG)
-                    return@DirectoryAdapter
-                } else {
-                    activity.handleLockedFolderOpening(path) { success ->
-                        if (success) {
-                            callback(path)
+                if (isPickingCopyMoveDestination && isCopyOperation) {
+                    if (dir.isVirtualAlbum()) {
+                        val albumId = dir.path.getVirtualAlbumId() ?: return@filter false
+                        val albumOwner = activity.getVirtualAlbumOwnerPhysicalPath(albumId)
+                        if (albumOwner.isNotEmpty()) {
+                            return@filter albumOwner.equals(effectiveSource, ignoreCase = true) && dir.path != sourcePath
+                        }
+                        return@filter dir.path != sourcePath
+                    } else if (sourcePath.isVirtualAlbumPath()) {
+                        if (effectiveSource.isNotEmpty() && dir.path.trimEnd('/').equals(effectiveSource.trimEnd('/'), ignoreCase = true)) {
+                            return@filter false
                         }
                     }
-                    dialog?.dismiss()
                 }
-            } else {
-                currentPathPrefix = path
-                openedSubfolders.add(path)
-                gotDirectories(allDirectories)
-            }
-        }
 
-        val scrollHorizontally = activity.config.scrollHorizontally && isGridViewType
-        binding.apply {
-            directoriesGrid.adapter = adapter
-            directoriesFastscroller.setScrollVertically(!scrollHorizontally)
+                true
+            }.distinctBy { it.path.getDistinctPath() }.toMutableList() as ArrayList<Directory>
+            val sortedDirs = activity.getSortedDirectories(distinctDirs)
+            val dirs = activity.getDirsToShow(sortedDirs, allDirectories, currentPathPrefix).clone() as ArrayList<Directory>
+            if (dirs.hashCode() == shownDirectories.hashCode()) {
+                return@ensureBackgroundThread
+            }
+
+            shownDirectories = dirs
+            activity.runOnUiThread {
+                val adapter = DirectoryAdapter(activity, dirs.clone() as ArrayList<Directory>, null, binding.directoriesGrid, true) {
+                    val clickedDir = it as Directory
+                    val path = clickedDir.path
+                    if (clickedDir.isVirtualAlbum()) {
+                        if (!isCopyOperation) {
+                            activity.toast(R.string.virtual_album_cannot_be_modified)
+                            return@DirectoryAdapter
+                        }
+                        if (isPickingCopyMoveDestination && path.trimEnd('/') == sourcePath.trimEnd('/')) {
+                            activity.toast(org.fossify.commons.R.string.source_and_destination_same)
+                            return@DirectoryAdapter
+                        }
+                        callback(path)
+                        dialog?.dismiss()
+                        return@DirectoryAdapter
+                    }
+
+                    if (clickedDir.subfoldersCount == 1 || !activity.config.groupDirectSubfolders) {
+                        if (isPickingCopyMoveDestination && path.trimEnd('/') == sourcePath) {
+                            activity.toast(org.fossify.commons.R.string.source_and_destination_same)
+                            return@DirectoryAdapter
+                        } else if (isPickingCopyMoveDestination && activity.isRestrictedWithSAFSdk30(path) && !activity.isInDownloadDir(path)) {
+                            activity.toast(org.fossify.commons.R.string.system_folder_copy_restriction, Toast.LENGTH_LONG)
+                            return@DirectoryAdapter
+                        } else {
+                            activity.handleLockedFolderOpening(path) { success ->
+                                if (success) {
+                                    callback(path)
+                                }
+                            }
+                            dialog?.dismiss()
+                        }
+                    } else {
+                        currentPathPrefix = path
+                        openedSubfolders.add(path)
+                        gotDirectories(allDirectories)
+                    }
+                }
+
+                val scrollHorizontally = activity.config.scrollHorizontally && isGridViewType
+                binding.apply {
+                    directoriesGrid.adapter = adapter
+                    directoriesFastscroller.setScrollVertically(!scrollHorizontally)
+                }
+            }
         }
     }
 }

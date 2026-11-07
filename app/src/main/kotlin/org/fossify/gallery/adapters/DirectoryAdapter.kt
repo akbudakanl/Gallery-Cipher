@@ -512,7 +512,9 @@ class DirectoryAdapter(
                 }
             }
             activity.runOnUiThread {
-                progressDialog.dismiss()
+                try {
+                    progressDialog.dismiss()
+                } catch (_: Exception) {}
                 if (allSuccess) {
                     activity.toast(R.string.folder_encrypted_successfully)
                 } else {
@@ -613,7 +615,9 @@ class DirectoryAdapter(
                 }
             }
             activity.runOnUiThread {
-                progressDialog.dismiss()
+                try {
+                    progressDialog.dismiss()
+                } catch (_: Exception) {}
                 if (result != null) {
                     activity.toast(R.string.folder_encrypted_successfully)
                 } else {

@@ -42,7 +42,9 @@ class CryptoProgressDialog(
     }
 
     fun dismiss() {
-        dialog?.dismiss()
+        try {
+            dialog?.dismiss()
+        } catch (_: Exception) {}
         dialog = null
     }
 }

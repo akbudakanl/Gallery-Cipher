@@ -33,6 +33,7 @@ abstract class GalleryDatabase : RoomDatabase() {
                     if (db == null) {
                         db = Room.databaseBuilder(context.applicationContext, GalleryDatabase::class.java, "gallery.db")
                             .fallbackToDestructiveMigration()
+                            .allowMainThreadQueries()
                             .addMigrations(MIGRATION_4_5)
                             .addMigrations(MIGRATION_5_6)
                             .addMigrations(MIGRATION_6_7)

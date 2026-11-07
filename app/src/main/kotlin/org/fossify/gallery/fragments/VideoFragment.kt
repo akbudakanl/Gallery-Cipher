@@ -282,6 +282,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         }
 
         storeStateVariables()
+        binding.videoPlayOutline.beGone()
         Glide.with(context)
             .load(mMedium.path)
             .diskCacheStrategy(if (CryptoManager.isEncryptedFile(mMedium.path)) com.bumptech.glide.load.engine.DiskCacheStrategy.NONE else com.bumptech.glide.load.engine.DiskCacheStrategy.AUTOMATIC)
@@ -517,6 +518,14 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
             source
         }
 
+        val initialPosition = when {
+            mPositionWhenInit > 0L -> mPositionWhenInit
+            mPositionAtPause > 0L -> mPositionAtPause
+            mCurrTime > 0L -> mCurrTime
+            else -> 0L
+        }
+
+        val shouldAutoplay = mConfig.autoplayVideos && mIsFragmentVisible
         mPlayOnPrepared = true
 
         val loadControl = DefaultLoadControl.Builder()
@@ -540,6 +549,9 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
                 }
                 setPlaybackSpeed(mConfig.playbackSpeed)
                 setMediaSource(mediaSource)
+                if (initialPosition > 0L) {
+                    seekTo(initialPosition)
+                }
                 setAudioAttributes(
                     AudioAttributes
                         .Builder()
@@ -552,6 +564,13 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
                     setVideoSurface(Surface(mTextureView.surfaceTexture))
                 }
 
+                if (shouldAutoplay) {
+                    playWhenReady = true
+                    mWasVideoStarted = true
+                    mPlayPauseButton.setImageResource(org.fossify.commons.R.drawable.ic_pause_outline_vector)
+                    activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                }
+
                 initListeners()
             }
 
@@ -560,6 +579,11 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
 
     private fun ExoPlayer.initListeners() {
         addListener(object : Player.Listener {
+            override fun onRenderedFirstFrame() {
+                binding.videoPreview.beGone()
+                binding.videoPlayOutline.beGone()
+            }
+
             override fun onPositionDiscontinuity(
                 oldPosition: Player.PositionInfo,
                 newPosition: Player.PositionInfo,
@@ -595,7 +619,6 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
                         fadeIn()
                     } else {
                         beGone()
-                        binding.videoPlayOutline.beVisible()
                     }
                 }
             }
@@ -819,10 +842,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
             return
         }
 
-        if (binding.videoPreview.isVisible()) {
-            binding.videoPreview.beGone()
-            initExoPlayer()
-        }
+        binding.videoPlayOutline.beGone()
 
         val wasEnded = videoEnded()
         if (wasEnded) {
@@ -922,34 +942,26 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
 
     private fun videoPrepared() {
         if (mDuration == 0L) {
-            mDuration = mExoPlayer!!.duration
+            mDuration = mExoPlayer?.duration ?: 0L
             setupTimeHolder()
-            setPosition(mCurrTime)
+            val currentPos = mExoPlayer?.currentPosition ?: mCurrTime
+            mSeekBar.progress = currentPos.toInt()
+            mCurrTimeView.text = currentPos.getFormattedDuration()
 
-            if (mIsFragmentVisible && (mConfig.autoplayVideos)) {
+            if (mIsFragmentVisible && mConfig.autoplayVideos && !mIsPlaying) {
                 playVideo()
             }
         }
 
-        val targetSeekPos = when {
-            mPositionWhenInit != 0L && !mWasPlayerInited -> mPositionWhenInit
-            mPositionAtPause != 0L -> mPositionAtPause
-            else -> 0L
-        }
-
-        if (targetSeekPos != 0L) {
-            setPosition(targetSeekPos)
-            mPositionWhenInit = 0L
-            mPositionAtPause = 0L
-        }
-
         mIsPlayerPrepared = true
-        if (mPlayOnPrepared && !mIsPlaying) {
+        if (mPlayOnPrepared && !mIsPlaying && mIsFragmentVisible && mConfig.autoplayVideos) {
             updatePlaybackSpeed(mConfig.playbackSpeed)
             playVideo()
         }
         mWasPlayerInited = true
         mPlayOnPrepared = false
+        binding.videoPreview.beGone()
+        binding.videoPlayOutline.beGone()
     }
     private fun videoCompleted() {
         if (!isAdded || mExoPlayer == null) {

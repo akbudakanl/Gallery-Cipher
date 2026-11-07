@@ -488,22 +488,22 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     private fun refreshMenuItems() {
         if (!mIsThirdPartyIntent) {
             binding.mainMenu.requireToolbar().menu.apply {
-                findItem(R.id.column_count).isVisible = config.viewTypeFolders == VIEW_TYPE_GRID
-                findItem(R.id.set_as_default_folder).isVisible = !config.defaultFolder.isEmpty()
-                findItem(R.id.open_recycle_bin).isVisible =
+                findItem(R.id.column_count)?.isVisible = config.viewTypeFolders == VIEW_TYPE_GRID
+                findItem(R.id.set_as_default_folder)?.isVisible = !config.defaultFolder.isEmpty()
+                findItem(R.id.open_recycle_bin)?.isVisible =
                     config.useRecycleBin && !config.showRecycleBinAtFolders
-                findItem(R.id.more_apps_from_us).isVisible =
+                findItem(R.id.more_apps_from_us)?.isVisible =
                     resources.getBoolean(org.fossify.commons.R.bool.is_google_play_build)
             }
         }
 
         binding.mainMenu.requireToolbar().menu.apply {
-            findItem(R.id.temporarily_show_hidden).isVisible = false
-            findItem(R.id.stop_showing_hidden).isVisible =
+            findItem(R.id.temporarily_show_hidden)?.isVisible = false
+            findItem(R.id.stop_showing_hidden)?.isVisible =
                 (!isRPlus() || isExternalStorageManager()) && config.temporarilyShowHidden
 
-            findItem(R.id.temporarily_show_excluded).isVisible = !config.temporarilyShowExcluded
-            findItem(R.id.stop_showing_excluded).isVisible = config.temporarilyShowExcluded
+            findItem(R.id.temporarily_show_excluded)?.isVisible = !config.temporarilyShowExcluded
+            findItem(R.id.stop_showing_excluded)?.isVisible = config.temporarilyShowExcluded
         }
     }
 
@@ -782,6 +782,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
     private fun updateVaultModeUi() {
         runOnUiThread {
+            if (isDestroyed || isFinishing) return@runOnUiThread
             if (mIsSecretVaultView) {
                 binding.mainMenu.updateHintText(getString(R.string.secret_vault))
             } else {
@@ -1412,7 +1413,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                     }.start()
                 }
 
-                if (!directory.isRecycleBin() && !directory.isVirtualAlbum()) {
+                if (!directory.isRecycleBin() && !directory.isVirtualAlbum() && !CryptoManager.isEncryptedFolderPath(this, directory.path)) {
                     getCachedMedia(directory.path, getVideosOnly, getImagesOnly) {
                         val mediaToDelete = ArrayList<Medium>()
                         it.forEach {
@@ -1635,57 +1636,60 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             }
         }
 
-        binding.directoriesEmptyPlaceholder2.underlineText()
+        if (binding.directoriesEmptyPlaceholder2.visibility == android.view.View.VISIBLE) {
+            binding.directoriesEmptyPlaceholder2.underlineText()
+        }
         binding.directoriesFastscroller.beVisibleIf(binding.directoriesEmptyPlaceholder.isGone())
     }
 
     private fun setupAdapter(
         dirs: ArrayList<Directory>,
-        textToSearch: String = binding.mainMenu.getCurrentQuery(),
+        textToSearch: String? = null,
         forceRecreate: Boolean = false
     ) {
-        val currAdapter = binding.directoriesGrid.adapter
-        val filtered = if (mIsSecretVaultView) {
-            dirs.filter { isEncryptedVaultAlbum(it.path) }
-        } else {
-            dirs
-        }
-        val distinctDirs = filtered
-            .distinctBy { it.path.getDistinctPath() }
-            .toMutableList() as ArrayList<Directory>
+        val dirsCopy = ArrayList(dirs)
+        runOnUiThread {
+            if (isDestroyed || isFinishing) return@runOnUiThread
+            val query = textToSearch ?: binding.mainMenu.getCurrentQuery()
+            val currAdapter = binding.directoriesGrid.adapter
+            val filtered = if (mIsSecretVaultView) {
+                dirsCopy.filter { isEncryptedVaultAlbum(it.path) }
+            } else {
+                dirsCopy
+            }
+            val distinctDirs = ArrayList(filtered.distinctBy { it.path.getDistinctPath() })
 
-        val sortedDirs = getSortedDirectories(distinctDirs)
-        var dirsToShow = getDirsToShow(
-            dirs = sortedDirs,
-            allDirs = mDirs,
-            currentPathPrefix = mCurrentPathPrefix
-        ).clone() as ArrayList<Directory>
+            val sortedDirs = getSortedDirectories(distinctDirs)
+            var dirsToShow = ArrayList(getDirsToShow(
+                dirs = sortedDirs,
+                allDirs = mDirs,
+                currentPathPrefix = mCurrentPathPrefix
+            ))
 
-        if (currAdapter == null || forceRecreate) {
-            mDirsIgnoringSearch = dirs
-            initZoomListener()
-            DirectoryAdapter(
-                this,
-                dirsToShow,
-                this,
-                binding.directoriesGrid,
-                isPickIntent(intent) || isGetAnyContentIntent(intent),
-                binding.directoriesRefreshLayout
-            ) {
-                val clickedDir = it as Directory
-                val path = clickedDir.path
-                if (clickedDir.subfoldersCount == 1 || !config.groupDirectSubfolders) {
-                    if (path != config.tempFolderPath) {
-                        itemClicked(path)
+            if (currAdapter == null || forceRecreate) {
+                mDirsIgnoringSearch = dirsCopy
+                initZoomListener()
+                DirectoryAdapter(
+                    this,
+                    dirsToShow,
+                    this,
+                    binding.directoriesGrid,
+                    isPickIntent(intent) || isGetAnyContentIntent(intent),
+                    binding.directoriesRefreshLayout
+                ) {
+                    val clickedDir = it as Directory
+                    val path = clickedDir.path
+                    if (clickedDir.subfoldersCount == 1 || !config.groupDirectSubfolders) {
+                        if (path != config.tempFolderPath) {
+                            itemClicked(path)
+                        }
+                    } else {
+                        mCurrentPathPrefix = path
+                        mOpenedSubfolders.add(path)
+                        setupAdapter(mDirs, "")
                     }
-                } else {
-                    mCurrentPathPrefix = path
-                    mOpenedSubfolders.add(path)
-                    setupAdapter(mDirs, "")
-                }
-            }.apply {
-                setupZoomListener(mZoomListener)
-                runOnUiThread {
+                }.apply {
+                    setupZoomListener(mZoomListener)
                     binding.directoriesGrid.adapter = this
                     setupScrollDirection()
 
@@ -1693,25 +1697,23 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                         binding.directoriesGrid.scheduleLayoutAnimation()
                     }
                 }
-            }
-        } else {
-            runOnUiThread {
-                if (textToSearch.isNotEmpty()) {
-                    dirsToShow = dirsToShow
-                        .filter { it.name.contains(textToSearch, true) }
-                        .sortedBy { !it.name.startsWith(textToSearch, true) }
-                        .toMutableList() as ArrayList
+            } else {
+                if (query.isNotEmpty()) {
+                    dirsToShow = ArrayList(dirsToShow
+                        .filter { it.name.contains(query, true) }
+                        .sortedBy { !it.name.startsWith(query, true) })
                 }
                 checkPlaceholderVisibility(dirsToShow)
 
                 (binding.directoriesGrid.adapter as? DirectoryAdapter)?.updateDirs(dirsToShow)
             }
-        }
 
-        // recyclerview sometimes becomes empty at init/update, triggering an invisible refresh like this seems to work fine
-        binding.directoriesGrid.postDelayed({
-            binding.directoriesGrid.scrollBy(0, 0)
-        }, 500)
+            binding.directoriesGrid.postDelayed({
+                if (!isDestroyed && !isFinishing) {
+                    binding.directoriesGrid.scrollBy(0, 0)
+                }
+            }, 500)
+        }
     }
 
     private fun setupScrollDirection() {

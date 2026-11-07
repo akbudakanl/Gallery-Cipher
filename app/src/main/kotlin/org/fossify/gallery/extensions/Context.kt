@@ -297,7 +297,7 @@ fun Context.getDirsToShow(
 private fun Context.addParentWithoutMediaFiles(into: ArrayList<Directory>, path: String): Boolean {
     val isSortingAscending = config.sorting.isSortingAscending()
     val subDirs = into.filter { File(it.path).parent.equals(path, true) } as ArrayList<Directory>
-    val newDirId = max(1000L, into.maxOf { it.id ?: 0L })
+    val newDirId = max(1000L, into.maxOfOrNull { it.id ?: 0L } ?: 0L)
     if (subDirs.isNotEmpty()) {
         val lastModified = if (isSortingAscending) {
             subDirs.minByOrNull { it.modified }?.modified
@@ -590,20 +590,7 @@ fun Context.checkAppendingHidden(
     includedFolders: MutableSet<String>,
     noMediaFolders: ArrayList<String>
 ): String {
-    val dirName = getFolderNameFromPath(path)
-    val folderNoMediaStatuses = HashMap<String, Boolean>()
-    noMediaFolders.forEach { folder ->
-        folderNoMediaStatuses["$folder/$NOMEDIA"] = true
-    }
-
-    return if (
-        (path.doesThisOrParentHaveNoMedia(folderNoMediaStatuses, null) || CryptoManager.isEncryptedFolder(File(path)) || File(path).name.startsWith('.'))
-        && !path.isThisOrParentIncluded(includedFolders)
-    ) {
-        "$dirName $hidden"
-    } else {
-        dirName
-    }
+    return getFolderNameFromPath(path)
 }
 
 fun Context.getFolderNameFromPath(path: String): String {
@@ -1002,32 +989,18 @@ fun Context.getCachedDirectories(
         if (shouldShowHidden) {
             val hiddenString = resources.getString(R.string.hidden)
             filteredDirectories.forEach {
-                val noMediaPath = "${it.path}/$NOMEDIA"
-                val hasNoMedia = if (folderNoMediaStatuses.keys.contains(noMediaPath)) {
-                    folderNoMediaStatuses[noMediaPath]!!
-                } else {
-                    it.path.doesThisOrParentHaveNoMedia(folderNoMediaStatuses) { path, hasNoMedia ->
-                        val newPath = "$path/$NOMEDIA"
-                        folderNoMediaStatuses[newPath] = hasNoMedia
-                    }
-                }
-
-                it.name = if (hasNoMedia && !it.path.isThisOrParentIncluded(includedPaths)) {
-                    "${it.name.removeSuffix(hiddenString).trim()} $hiddenString"
-                } else {
-                    it.name.removeSuffix(hiddenString).trim()
-                }
+                it.name = it.name.removeSuffix(hiddenString).trim()
             }
         }
 
         if (isSecretVaultView) {
-            filteredDirectories = filteredDirectories.filter {
+            filteredDirectories = ArrayList(filteredDirectories.filter {
                 isEncryptedVaultAlbum(it.path)
-            } as ArrayList<Directory>
+            })
         }
 
-        val clone = filteredDirectories.clone() as ArrayList<Directory>
-        val result = clone.distinctBy { it.path.getDistinctPath() } as ArrayList<Directory>
+        val clone = ArrayList(filteredDirectories)
+        val result = ArrayList(clone.distinctBy { it.path.getDistinctPath() })
         if (includeVirtualAlbums) {
             result.addAll(getVirtualAlbumDirectories(isSecretVaultView = isSecretVaultView))
         }
