@@ -119,6 +119,9 @@ const val ENCRYPTED_FILE_EXT = ".fenc"
 const val ENCRYPTED_FILE_PREFIX = ".fv_"
 const val ENCRYPTED_FOLDER_PREFIX = ".fvault_"
 const val ENCRYPTED_FOLDER_META_FILE = ".fmeta"
+const val CIPHER_ROOT_DIR_NAME = "Cipher"
+const val CIPHER_VIRTUAL_ALBUMS_DIR_NAME = "Virtual Album Saves"
+const val CIPHER_SECRETS_DIR_NAME = "Cipher_Secrets"
 
 // slideshow
 const val SLIDESHOW_INTERVAL = "slideshow_interval"

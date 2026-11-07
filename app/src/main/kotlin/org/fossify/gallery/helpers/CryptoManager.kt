@@ -208,9 +208,75 @@ object CryptoManager {
         return isEnc
     }
 
+    fun getDocumentsDirectory(): File {
+        return try {
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+        } catch (_: Throwable) {
+            null
+        } ?: try {
+            File(Environment.getExternalStorageDirectory(), "Documents")
+        } catch (_: Throwable) {
+            File("/storage/emulated/0/Documents")
+        }
+    }
+
+    fun getDefaultVaultRoot(): File {
+        val cipherDir = File(getDocumentsDirectory(), CIPHER_ROOT_DIR_NAME)
+        return File(cipherDir, CIPHER_SECRETS_DIR_NAME)
+    }
+
+    fun getExistingCipherSecretsDir(context: Context): File? {
+        val standardDir = getDefaultVaultRoot()
+        if (standardDir.exists() && standardDir.isDirectory && (File(standardDir, VAULT_HEADER_FILE).exists() || standardDir.listFiles()?.isNotEmpty() == true)) {
+            return standardDir
+        }
+
+        val docDir = File(getDocumentsDirectory(), CIPHER_SECRETS_DIR_NAME)
+        if (docDir.exists() && docDir.isDirectory && (File(docDir, VAULT_HEADER_FILE).exists() || docDir.listFiles()?.isNotEmpty() == true)) {
+            return docDir
+        }
+
+        val storedPath = context.config.vaultRootPath
+        if (storedPath.isNotEmpty()) {
+            val dir = File(storedPath)
+            if (dir.exists() && dir.isDirectory && (File(dir, VAULT_HEADER_FILE).exists() || dir.listFiles()?.isNotEmpty() == true)) {
+                return dir
+            }
+        }
+
+        val found = findVaultRoot(context)
+        if (found != null && found.exists() && (File(found, VAULT_HEADER_FILE).exists() || found.listFiles()?.isNotEmpty() == true)) {
+            return found
+        }
+
+        return null
+    }
+
+    fun deleteExistingVault(context: Context) {
+        val vaultDir = getExistingCipherSecretsDir(context) ?: findVaultRoot(context)
+        if (vaultDir != null && vaultDir.exists()) {
+            try {
+                vaultDir.deleteRecursively()
+            } catch (_: Exception) {}
+        }
+
+        lockVault()
+        unlockedMasterKey = null
+        unlockedPrivateKey = null
+        cachedVaultRoot = null
+        vaultRootSearchDone = false
+        encryptedFolderCache.clear()
+
+        context.config.vaultRootPath = ""
+        context.config.vaultWrappedKeyData = ""
+        context.config.vaultPublicKey = ""
+        context.config.hiddenPasswordHash = ""
+        context.config.isHiddenPasswordProtectionOn = false
+    }
+
     fun hasExistingVault(context: Context): Boolean {
         if (context.config.vaultWrappedKeyData.isNotEmpty()) return true
-        return findVaultRoot(context) != null
+        return getExistingCipherSecretsDir(context) != null
     }
 
     // ==================== MASTER VAULT ROOT (STEALTH CONSOLIDATED CONTAINER) ====================
@@ -234,14 +300,10 @@ object CryptoManager {
             return existing
         }
 
-        val externalRoot = Environment.getExternalStorageDirectory()
-        var randomName = randomHex(6)
-        var newDir = File(externalRoot, randomName)
-        while (newDir.exists()) {
-            randomName = randomHex(6)
-            newDir = File(externalRoot, randomName)
+        val newDir = getDefaultVaultRoot()
+        if (!newDir.exists()) {
+            newDir.mkdirs()
         }
-        newDir.mkdirs()
 
         val noMedia = File(newDir, NOMEDIA)
         if (!noMedia.exists()) {
@@ -266,11 +328,44 @@ object CryptoManager {
             }
         }
 
+        val standardDir = getDefaultVaultRoot()
+        if (standardDir.exists() && standardDir.isDirectory) {
+            if (File(standardDir, VAULT_HEADER_FILE).exists() || File(standardDir, NOMEDIA).exists() || standardDir.listFiles()?.isNotEmpty() == true) {
+                context.config.vaultRootPath = standardDir.absolutePath
+                cachedVaultRoot = standardDir
+                vaultRootSearchDone = false
+                return standardDir
+            }
+        }
+
+        val docDir = File(getDocumentsDirectory(), CIPHER_SECRETS_DIR_NAME)
+        if (docDir.exists() && docDir.isDirectory) {
+            if (File(docDir, VAULT_HEADER_FILE).exists() || File(docDir, NOMEDIA).exists() || docDir.listFiles()?.isNotEmpty() == true) {
+                val targetDir = if (!standardDir.exists()) {
+                    try {
+                        standardDir.parentFile?.mkdirs()
+                        if (docDir.renameTo(standardDir)) standardDir else docDir
+                    } catch (_: Exception) {
+                        docDir
+                    }
+                } else {
+                    docDir
+                }
+                context.config.vaultRootPath = targetDir.absolutePath
+                cachedVaultRoot = targetDir
+                vaultRootSearchDone = false
+                return targetDir
+            }
+        }
+
         if (vaultRootSearchDone) {
             return null
         }
 
+        val documentsDir = getDocumentsDirectory()
         val candidates = listOfNotNull(
+            documentsDir,
+            File(documentsDir, CIPHER_ROOT_DIR_NAME),
             Environment.getExternalStorageDirectory(),
             File("/storage/emulated/0"),
             context.sdCardPath.takeIf { it.isNotEmpty() }?.let { File(it) }

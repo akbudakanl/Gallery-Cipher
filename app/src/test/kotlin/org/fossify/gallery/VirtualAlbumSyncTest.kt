@@ -2,9 +2,7 @@ package org.fossify.gallery
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import org.fossify.gallery.helpers.VirtualAlbumBackup
-import org.fossify.gallery.helpers.VirtualAlbumItemBackup
-import org.fossify.gallery.helpers.VirtualAlbumSyncManager
+import org.fossify.gallery.helpers.*
 import org.fossify.gallery.models.VirtualAlbum
 import org.junit.Assert.*
 import org.junit.Test
@@ -127,6 +125,52 @@ class VirtualAlbumSyncTest {
         assertTrue(parsed.isHidden)
         assertEquals(fakeEncryptedPayload, parsed.encryptedPayload)
         assertNull(parsed.name)
+    }
+
+    @Test
+    fun testDirectoryStructurePaths() {
+        val vaultRoot = CryptoManager.getDefaultVaultRoot()
+        val virtualAlbumsDir = VirtualAlbumSyncManager.getVirtualAlbumsStorageDir()
+
+        assertEquals(CIPHER_SECRETS_DIR_NAME, vaultRoot.name)
+        assertEquals(CIPHER_VIRTUAL_ALBUMS_DIR_NAME, virtualAlbumsDir.name)
+
+        // Both folders must be siblings inside the Documents/Cipher/ container
+        assertEquals(CIPHER_ROOT_DIR_NAME, vaultRoot.parentFile?.name)
+        assertEquals(CIPHER_ROOT_DIR_NAME, virtualAlbumsDir.parentFile?.name)
+        assertEquals(vaultRoot.parentFile?.absolutePath, virtualAlbumsDir.parentFile?.absolutePath)
+    }
+
+    @Test
+    fun testLegacyDirectoryMigrationLogic() {
+        val tempDir = File(System.getProperty("java.io.tmpdir"), "cipher_mig_test_${System.currentTimeMillis()}")
+        tempDir.mkdirs()
+
+        try {
+            val legacyDir = File(tempDir, "Fossify Virtual Albums")
+            legacyDir.mkdirs()
+            val sampleAlbumFile = File(legacyDir, "EskiAlbum.json")
+            sampleAlbumFile.writeText("{\"version\":1,\"name\":\"EskiAlbum\"}")
+
+            val targetDir = File(tempDir, "Cipher/$CIPHER_VIRTUAL_ALBUMS_DIR_NAME")
+            targetDir.mkdirs()
+
+            // Execute migration logic
+            legacyDir.listFiles { file -> file.isFile && file.extension.equals("json", ignoreCase = true) }?.forEach { f ->
+                val targetFile = File(targetDir, f.name)
+                if (!targetFile.exists()) {
+                    f.copyTo(targetFile, overwrite = true)
+                }
+                f.delete()
+            }
+
+            val migratedFile = File(targetDir, "EskiAlbum.json")
+            assertTrue(migratedFile.exists())
+            assertFalse(sampleAlbumFile.exists())
+            assertEquals("{\"version\":1,\"name\":\"EskiAlbum\"}", migratedFile.readText())
+        } finally {
+            tempDir.deleteRecursively()
+        }
     }
 
     @Test

@@ -376,27 +376,73 @@ class SettingsActivity : SimpleActivity() {
         binding.settingsHiddenItemPasswordProtection.isChecked = config.isHiddenPasswordProtectionOn
         binding.settingsHiddenItemPasswordProtectionHolder.setOnClickListener {
             val wasProtectionOn = config.isHiddenPasswordProtectionOn
-            val tabToShow = if (wasProtectionOn) {
-                CryptoManager.getVaultProtectionType(this) ?: config.hiddenProtectionType
-            } else {
-                SHOW_ALL_TABS
-            }
-            VaultSecurityDialog(this, config.hiddenPasswordHash, tabToShow, minimalist = false) { hash, type, success ->
-                if (success) {
-                    val turnOn = !wasProtectionOn
-                    binding.settingsHiddenItemPasswordProtection.isChecked = turnOn
-                    config.isHiddenPasswordProtectionOn = turnOn
-                    config.hiddenPasswordHash = if (turnOn) hash else ""
-                    config.hiddenProtectionType = type
-
-                    if (turnOn) {
-                        val confirmationTextId = if (config.hiddenProtectionType == PROTECTION_FINGERPRINT)
-                            org.fossify.commons.R.string.fingerprint_setup_successfully else org.fossify.commons.R.string.protection_setup_successfully
-                        ConfirmationDialog(this, "", confirmationTextId, org.fossify.commons.R.string.ok, 0) { }
-                    } else {
+            if (wasProtectionOn) {
+                val tabToShow = CryptoManager.getVaultProtectionType(this) ?: config.hiddenProtectionType
+                VaultSecurityDialog(this, config.hiddenPasswordHash, tabToShow, minimalist = false) { _, _, success ->
+                    if (success) {
+                        binding.settingsHiddenItemPasswordProtection.isChecked = false
+                        config.isHiddenPasswordProtectionOn = false
+                        config.hiddenPasswordHash = ""
                         config.temporarilyShowHidden = false
                         CryptoManager.lockVault()
                     }
+                }
+            } else {
+                val existingVaultDir = CryptoManager.getExistingCipherSecretsDir(this)
+                if (existingVaultDir != null) {
+                    val builder = getAlertDialogBuilder()
+                        .setMessage(getString(R.string.access_existing_cipher_secrets_prompt))
+                        .setPositiveButton(org.fossify.commons.R.string.yes) { _, _ ->
+                            promptUnlockExistingVault()
+                        }
+                        .setNegativeButton(org.fossify.commons.R.string.no) { _, _ ->
+                            DeleteCipherSecretsDialog(this) {
+                                CryptoManager.deleteExistingVault(this)
+                                promptCreateNewVaultPassword()
+                            }
+                        }
+                    builder.show()
+                } else {
+                    promptCreateNewVaultPassword()
+                }
+            }
+        }
+    }
+
+    private fun promptUnlockExistingVault() {
+        val tabToShow = CryptoManager.getVaultProtectionType(this) ?: config.hiddenProtectionType
+        VaultSecurityDialog(this, config.hiddenPasswordHash, tabToShow, minimalist = false) { hash, type, success ->
+            if (success) {
+                binding.settingsHiddenItemPasswordProtection.isChecked = true
+                config.isHiddenPasswordProtectionOn = true
+                config.hiddenPasswordHash = if (hash.isNotEmpty()) hash else "argon2id_aes256_gcm_v2"
+                config.hiddenProtectionType = type
+
+                val confirmationTextId = if (config.hiddenProtectionType == PROTECTION_FINGERPRINT)
+                    org.fossify.commons.R.string.fingerprint_setup_successfully else org.fossify.commons.R.string.protection_setup_successfully
+                ConfirmationDialog(this, "", confirmationTextId, org.fossify.commons.R.string.ok, 0) { }
+
+                ensureBackgroundThread {
+                    VirtualAlbumSyncManager.syncVirtualAlbums(this, force = true)
+                }
+            }
+        }
+    }
+
+    private fun promptCreateNewVaultPassword() {
+        VaultSecurityDialog(this, "", SHOW_ALL_TABS, minimalist = false) { hash, type, success ->
+            if (success) {
+                binding.settingsHiddenItemPasswordProtection.isChecked = true
+                config.isHiddenPasswordProtectionOn = true
+                config.hiddenPasswordHash = hash
+                config.hiddenProtectionType = type
+
+                val confirmationTextId = if (config.hiddenProtectionType == PROTECTION_FINGERPRINT)
+                    org.fossify.commons.R.string.fingerprint_setup_successfully else org.fossify.commons.R.string.protection_setup_successfully
+                ConfirmationDialog(this, "", confirmationTextId, org.fossify.commons.R.string.ok, 0) { }
+
+                ensureBackgroundThread {
+                    VirtualAlbumSyncManager.syncVirtualAlbums(this, force = true)
                 }
             }
         }

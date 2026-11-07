@@ -44,16 +44,9 @@ object VirtualAlbumSyncManager {
 
     fun getVirtualAlbumsStorageDir(): File {
         customStorageDirForTest?.let { return it }
-        val documentsDir = try {
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
-        } catch (_: Throwable) {
-            null
-        } ?: try {
-            File(Environment.getExternalStorageDirectory(), "Documents")
-        } catch (_: Throwable) {
-            File("/storage/emulated/0/Documents")
-        }
-        return File(documentsDir, ALBUMS_DIR_NAME)
+        val documentsDir = CryptoManager.getDocumentsDirectory()
+        val cipherDir = File(documentsDir, CIPHER_ROOT_DIR_NAME)
+        return File(cipherDir, CIPHER_VIRTUAL_ALBUMS_DIR_NAME)
     }
 
     fun getVaultStorageDir(context: Context): File {
@@ -233,10 +226,29 @@ object VirtualAlbumSyncManager {
             emptyList()
         }
 
+        // 0. Automatically migrate legacy saves from Documents/Fossify Virtual Albums
+        try {
+            val documentsDir = CryptoManager.getDocumentsDirectory()
+            val legacyDir = File(documentsDir, "Fossify Virtual Albums")
+            if (legacyDir.exists() && legacyDir.isDirectory) {
+                val targetDir = getVirtualAlbumsStorageDir()
+                if (!targetDir.exists()) {
+                    targetDir.mkdirs()
+                }
+                legacyDir.listFiles { file -> file.isFile && file.extension.equals("json", ignoreCase = true) }?.forEach { f ->
+                    val targetFile = File(targetDir, f.name)
+                    if (!targetFile.exists()) {
+                        f.copyTo(targetFile, overwrite = true)
+                    }
+                    f.delete()
+                }
+            }
+        } catch (_: Exception) {}
+
         val publicDir = getVirtualAlbumsStorageDir()
         val gson = Gson()
 
-        // 1. Restore public non-hidden albums from Documents/Fossify Virtual Albums/
+        // 1. Restore public non-hidden albums from Documents/Cipher/Virtual Album Saves/
         if (publicDir.exists() && publicDir.isDirectory) {
             val jsonFiles = publicDir.listFiles { file -> file.isFile && file.extension.equals("json", ignoreCase = true) } ?: emptyArray()
             for (file in jsonFiles) {

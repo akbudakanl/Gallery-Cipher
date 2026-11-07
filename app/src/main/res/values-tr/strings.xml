@@ -297,4 +297,7 @@
     <string name="decrypting_files">Şifre çözülüyor…</string>
     <string name="place_finger_prompt">Lütfen parmağınızı parmak izi sensörüne yerleştirin</string>
     <string name="connect_at_least_4_dots_prompt">En az 4 noktayı birleştirin</string>
+    <string name="access_existing_cipher_secrets_prompt">Mevcut Cipher_Secrets klasörünüze erişmek istiyor musunuz?</string>
+    <string name="delete_and_recreate_cipher_secrets_prompt">Mevcut Cipher_Secrets klasörü silinecek ve yenisi oluşturulacak, emin misiniz?</string>
+    <string name="confirm_checkbox_label">Onaylıyorum</string>
 </resources>
