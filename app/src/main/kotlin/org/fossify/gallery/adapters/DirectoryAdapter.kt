@@ -53,6 +53,7 @@ import org.fossify.commons.extensions.rescanPaths
 import org.fossify.commons.extensions.showErrorToast
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.helpers.FAVORITES
+import org.fossify.commons.helpers.NOMEDIA
 import org.fossify.commons.helpers.SHOW_ALL_TABS
 import org.fossify.commons.helpers.SORT_BY_CUSTOM
 import org.fossify.commons.helpers.VIEW_TYPE_LIST
@@ -69,6 +70,7 @@ import org.fossify.gallery.databinding.DirectoryItemGridRoundedCornersBinding
 import org.fossify.gallery.databinding.DirectoryItemGridSquareBinding
 import org.fossify.gallery.databinding.DirectoryItemListBinding
 import org.fossify.gallery.dialogs.ConfirmDeleteFolderDialog
+import org.fossify.gallery.dialogs.CryptoProgressDialog
 import org.fossify.gallery.dialogs.ExcludeFolderDialog
 import org.fossify.gallery.dialogs.PickMediumDialog
 import org.fossify.gallery.dialogs.RenameVirtualAlbumDialog
@@ -410,10 +412,21 @@ class DirectoryAdapter(
                 activity.handleLockedFolderOpening(path) { success ->
                     if (success) {
                         if (CryptoManager.isEncryptedFolderPath(activity, path)) {
-                            activity.toast(R.string.decrypting_files)
+                            val folder = File(path)
+                            val filesToDecrypt = folder.listFiles()?.filter {
+                                it.isFile && CryptoManager.isEncryptedFile(it.name)
+                            } ?: emptyList()
+
+                            val progressDialog = CryptoProgressDialog(activity, filesToDecrypt.size, R.string.decrypting_folder)
                             ensureBackgroundThread {
-                                CryptoManager.decryptFolder(activity, path)
+                                CryptoManager.decryptFolder(activity, path) { current, total ->
+                                    activity.runOnUiThread {
+                                        progressDialog.updateProgress(current, total)
+                                    }
+                                }
                                 activity.runOnUiThread {
+                                    progressDialog.dismiss()
+                                    activity.toast(R.string.folder_decrypted_successfully)
                                     listener?.refreshItems()
                                     finishActMode()
                                 }
@@ -437,6 +450,40 @@ class DirectoryAdapter(
     }
 
     private fun hideFolders(paths: ArrayList<String>) {
+        if (config.isHiddenPasswordProtectionOn || CryptoManager.hasExistingVault(activity)) {
+            val totalFilesCount = paths.sumOf { path ->
+                File(path).listFiles()?.count {
+                    it.isFile && it.name != NOMEDIA && !CryptoManager.isEncryptedFile(it.name)
+                } ?: 0
+            }
+
+            val progressDialog = CryptoProgressDialog(activity, totalFilesCount, R.string.encrypting_folder)
+
+            ensureBackgroundThread {
+                var globalProcessed = 0
+                for (path in paths) {
+                    var folderLastCurrent = 0
+                    CryptoManager.encryptFolder(activity, path) { current, _ ->
+                        val diff = current - folderLastCurrent
+                        if (diff > 0) {
+                            globalProcessed += diff
+                            folderLastCurrent = current
+                            activity.runOnUiThread {
+                                progressDialog.updateProgress(globalProcessed, totalFilesCount)
+                            }
+                        }
+                    }
+                }
+                activity.runOnUiThread {
+                    progressDialog.dismiss()
+                    activity.toast(R.string.folder_encrypted_successfully)
+                    finishActMode()
+                    listener?.refreshItems()
+                }
+            }
+            return
+        }
+
         for (path in paths) {
             activity.handleLockedFolderOpening(path) { success ->
                 if (success) {
@@ -492,10 +539,22 @@ class DirectoryAdapter(
 
     private fun hideFolder(path: String) {
         if (config.isHiddenPasswordProtectionOn || CryptoManager.hasExistingVault(activity)) {
-            activity.toast(R.string.encrypting_files)
+            val folder = File(path)
+            val filesToEncrypt = folder.listFiles()?.filter {
+                it.isFile && it.name != NOMEDIA && !CryptoManager.isEncryptedFile(it.name)
+            } ?: emptyList()
+
+            val progressDialog = CryptoProgressDialog(activity, filesToEncrypt.size, R.string.encrypting_folder)
+
             ensureBackgroundThread {
-                CryptoManager.encryptFolder(activity, path)
+                CryptoManager.encryptFolder(activity, path) { current, total ->
+                    activity.runOnUiThread {
+                        progressDialog.updateProgress(current, total)
+                    }
+                }
                 activity.runOnUiThread {
+                    progressDialog.dismiss()
+                    activity.toast(R.string.folder_encrypted_successfully)
                     finishActMode()
                     listener?.refreshItems()
                 }

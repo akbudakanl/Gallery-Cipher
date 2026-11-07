@@ -92,7 +92,8 @@ data class EncryptedFileMetadata(
     val contentIv: ByteArray,
     val fileKey: ByteArray,
     val version: Byte = 1,
-    val isMacAuthenticated: Boolean = false
+    val isMacAuthenticated: Boolean = false,
+    val thumbnailBytes: ByteArray? = null
 )
 
 object CryptoManager {
@@ -145,9 +146,19 @@ object CryptoManager {
 
     private val metadataCache = ConcurrentHashMap<String, EncryptedFileMetadata>()
     private val folderNameCache = ConcurrentHashMap<String, String>()
+    private val encryptedFolderCache = ConcurrentHashMap<String, Boolean>()
+
+    @Volatile
+    private var cachedVaultRoot: File? = null
+    @Volatile
+    private var vaultRootSearchDone = false
 
     val isVaultUnlocked: Boolean
         get() = unlockedMasterKey != null
+
+    fun invalidateFolderCache() {
+        encryptedFolderCache.clear()
+    }
 
     fun lockVault() {
         unlockedMasterKey?.fill(0)
@@ -156,6 +167,7 @@ object CryptoManager {
         metadataCache.values.forEach { it.fileKey.fill(0) }
         metadataCache.clear()
         folderNameCache.clear()
+        encryptedFolderCache.clear()
     }
 
     fun isEncryptedFile(path: String): Boolean {
@@ -167,20 +179,33 @@ object CryptoManager {
         if (!folder.exists() || !folder.isDirectory) return false
         return File(folder, VAULT_SUBFOLDER_META_FILE).exists() ||
             File(folder, ENCRYPTED_FOLDER_META_FILE).exists() ||
-            folder.name.startsWith(ENCRYPTED_FOLDER_PREFIX) ||
-            (folder.list { _, name -> isEncryptedFile(name) }?.isNotEmpty() == true)
+            folder.name.startsWith(ENCRYPTED_FOLDER_PREFIX)
     }
 
     fun isEncryptedFolderPath(context: Context, folderPath: String): Boolean {
         val clean = folderPath.trimEnd('/')
+        if (clean.isEmpty()) return false
+
+        encryptedFolderCache[clean]?.let { return it }
+
         if (context.config.encryptedFolders.contains(clean)) {
+            encryptedFolderCache[clean] = true
             return true
         }
+
         val vaultRoot = findVaultRoot(context)
-        if (vaultRoot != null && clean.startsWith(vaultRoot.absolutePath.trimEnd('/'))) {
-            return true
+        if (vaultRoot != null) {
+            val rootPath = vaultRoot.absolutePath.trimEnd('/')
+            if (clean == rootPath || clean.startsWith("$rootPath/")) {
+                encryptedFolderCache[clean] = true
+                return true
+            }
         }
-        return isEncryptedFolder(File(clean))
+
+        val folder = File(clean)
+        val isEnc = isEncryptedFolder(folder)
+        encryptedFolderCache[clean] = isEnc
+        return isEnc
     }
 
     fun hasExistingVault(context: Context): Boolean {
@@ -191,10 +216,13 @@ object CryptoManager {
     // ==================== MASTER VAULT ROOT (STEALTH CONSOLIDATED CONTAINER) ====================
 
     fun getOrCreateVaultRoot(context: Context): File {
+        cachedVaultRoot?.let { if (it.exists() && it.isDirectory) return it }
+
         val storedPath = context.config.vaultRootPath
         if (storedPath.isNotEmpty()) {
             val dir = File(storedPath)
             if (dir.exists() && dir.isDirectory) {
+                cachedVaultRoot = dir
                 return dir
             }
         }
@@ -202,6 +230,7 @@ object CryptoManager {
         val existing = findVaultRoot(context)
         if (existing != null) {
             context.config.vaultRootPath = existing.absolutePath
+            cachedVaultRoot = existing
             return existing
         }
 
@@ -220,16 +249,25 @@ object CryptoManager {
         }
 
         context.config.vaultRootPath = newDir.absolutePath
+        cachedVaultRoot = newDir
+        vaultRootSearchDone = false
         return newDir
     }
 
     fun findVaultRoot(context: Context): File? {
+        cachedVaultRoot?.let { if (it.exists() && File(it, VAULT_HEADER_FILE).exists()) return it }
+
         val storedPath = context.config.vaultRootPath
         if (storedPath.isNotEmpty()) {
             val dir = File(storedPath)
             if (dir.exists() && File(dir, VAULT_HEADER_FILE).exists()) {
+                cachedVaultRoot = dir
                 return dir
             }
+        }
+
+        if (vaultRootSearchDone) {
+            return null
         }
 
         val candidates = listOfNotNull(
@@ -243,11 +281,14 @@ object CryptoManager {
                 for (child in children) {
                     if (child.isDirectory && File(child, VAULT_HEADER_FILE).exists()) {
                         context.config.vaultRootPath = child.absolutePath
+                        cachedVaultRoot = child
+                        vaultRootSearchDone = false
                         return child
                     }
                 }
             }
         }
+        vaultRootSearchDone = true
         return null
     }
 
@@ -486,6 +527,9 @@ object CryptoManager {
             Base64.encodeToString(wrapped, Base64.NO_WRAP)
         context.config.vaultWrappedKeyData = data
         context.config.vaultRootPath = vaultRoot.absolutePath
+        cachedVaultRoot = vaultRoot
+        vaultRootSearchDone = false
+        encryptedFolderCache.clear()
 
         unlockedMasterKey = masterKey.copyOf()
         unlockedPrivateKey = privateKey
@@ -992,7 +1036,8 @@ object CryptoManager {
                     contentIv = contentIv,
                     fileKey = fileKey.copyOf(),
                     version = versionByte,
-                    isMacAuthenticated = true
+                    isMacAuthenticated = true,
+                    thumbnailBytes = if (thumbBytes.isNotEmpty()) thumbBytes else null
                 )
             } else {
                 fileKey.fill(0)
@@ -1082,7 +1127,11 @@ object CryptoManager {
      * 4. Encrypts all media files into random hex .bin files and shreds the originals.
      * 5. Deletes original plaintext folder.
      */
-    fun encryptFolder(context: Context, folderPath: String): String {
+    fun encryptFolder(
+        context: Context,
+        folderPath: String,
+        onProgress: ((current: Int, total: Int) -> Unit)? = null
+    ): String {
         val folder = File(folderPath)
         if (!folder.exists() || !folder.isDirectory) return folderPath
 
@@ -1154,28 +1203,36 @@ object CryptoManager {
 
         writeEncryptedFolderMeta(context, subfolder, originalFolderName)
 
-        val files = folder.listFiles() ?: emptyArray()
-        for (file in files) {
-            if (file.isFile &&
+        val filesToEncrypt = folder.listFiles()?.filter { file ->
+            file.isFile &&
                 file.name != NOMEDIA &&
                 file.name != ENCRYPTED_FOLDER_META_FILE &&
                 file.name != VAULT_SUBFOLDER_META_FILE &&
                 file.name != VAULT_HEADER_FILE &&
                 !isEncryptedFile(file.name)
+        } ?: emptyList()
 
-            ) {
-                encryptFileToDirectory(
-                    context = context,
-                    sourceFile = file,
-                    targetDir = subfolder,
-                    wipeSource = true,
-                    clearCachesNow = false
-                )
-            }
+        val total = filesToEncrypt.size
+        onProgress?.invoke(0, total)
+
+        for ((index, file) in filesToEncrypt.withIndex()) {
+            encryptFileToDirectory(
+                context = context,
+                sourceFile = file,
+                targetDir = subfolder,
+                wipeSource = true,
+                clearCachesNow = false
+            )
+            onProgress?.invoke(index + 1, total)
         }
 
         // Delete original plaintext folder
         try {
+            val oldNoMedia = File(folder, NOMEDIA)
+            if (!oldNoMedia.exists()) {
+                try { oldNoMedia.createNewFile() } catch (_: Exception) {}
+            }
+
             val contentResolver = context.contentResolver
             val filesUri = MediaStore.Files.getContentUri("external")
             contentResolver.delete(
@@ -1183,12 +1240,20 @@ object CryptoManager {
                 "${MediaStore.MediaColumns.DATA} LIKE ?",
                 arrayOf("${folder.absolutePath}%")
             )
-            if (!folder.deleteRecursively()) {
-                (context as? BaseSimpleActivity)?.deleteFileBg(
-                    folder.toFileDirItem(context),
-                    allowDeleteFolder = true,
-                    isDeletingMultipleFiles = false
-                )
+
+            folder.listFiles()?.forEach { child ->
+                try { child.delete() } catch (_: Exception) {}
+            }
+
+            var deletedDir = folder.delete()
+            if (!deletedDir) {
+                deletedDir = folder.deleteRecursively()
+            }
+            if (!deletedDir) {
+                deletedDir = context.tryFastDocumentDelete(folder.absolutePath, true)
+            }
+            if (!deletedDir && context is BaseSimpleActivity) {
+                context.deleteFile(folder.toFileDirItem(context), allowDeleteFolder = true, isDeletingMultipleFiles = false)
             }
         } catch (_: Exception) {}
 
@@ -1196,6 +1261,8 @@ object CryptoManager {
         context.config.addEncryptedFolder(subfolder.absolutePath)
         context.directoryDB.deleteDirPath(folder.absolutePath)
         folderNameCache[subfolder.absolutePath] = originalFolderName
+        encryptedFolderCache[folder.absolutePath] = false
+        encryptedFolderCache[subfolder.absolutePath] = true
         clearAppImageCaches(context)
 
         return subfolder.absolutePath
@@ -1204,7 +1271,11 @@ object CryptoManager {
     /**
      * Decrypts an encrypted subfolder back to plaintext inside Pictures/<originalFolderName>.
      */
-    fun decryptFolder(context: Context, folderPath: String): String {
+    fun decryptFolder(
+        context: Context,
+        folderPath: String,
+        onProgress: ((current: Int, total: Int) -> Unit)? = null
+    ): String {
         val folder = File(folderPath)
         if (!folder.exists() || !folder.isDirectory) return folderPath
         if (!isVaultUnlocked) return folderPath
@@ -1220,16 +1291,21 @@ object CryptoManager {
         }
         targetFolder.mkdirs()
 
-        val files = folder.listFiles() ?: emptyArray()
-        for (file in files) {
-            if (file.isFile && isEncryptedFile(file.name)) {
-                decryptFileToDirectory(
-                    context = context,
-                    encryptedFile = file,
-                    targetDir = targetFolder,
-                    deleteEncryptedSource = true
-                )
-            }
+        val filesToDecrypt = folder.listFiles()?.filter {
+            it.isFile && isEncryptedFile(it.name)
+        } ?: emptyList()
+
+        val total = filesToDecrypt.size
+        onProgress?.invoke(0, total)
+
+        for ((index, file) in filesToDecrypt.withIndex()) {
+            decryptFileToDirectory(
+                context = context,
+                encryptedFile = file,
+                targetDir = targetFolder,
+                deleteEncryptedSource = true
+            )
+            onProgress?.invoke(index + 1, total)
         }
 
         try {
@@ -1252,6 +1328,8 @@ object CryptoManager {
 
         context.config.removeEncryptedFolder(folder.absolutePath)
         context.directoryDB.deleteDirPath(folder.absolutePath)
+        encryptedFolderCache[folder.absolutePath] = false
+        encryptedFolderCache[targetFolder.absolutePath] = false
 
         val restoredPaths = targetFolder.listFiles()?.filter { it.isFile }?.map { it.absolutePath } ?: emptyList()
         if (restoredPaths.isNotEmpty()) {
@@ -1327,6 +1405,18 @@ object CryptoManager {
                         val originalSize = hdis.readLong()
                         val mediaType = hdis.readInt()
                         val videoDuration = hdis.readInt()
+                        val thumbBytes = try {
+                            if (hdis.available() >= 4) {
+                                val thumbLen = hdis.readInt()
+                                if (thumbLen in 1..(5 * 1024 * 1024) && hdis.available() >= thumbLen) {
+                                    val tb = ByteArray(thumbLen)
+                                    hdis.readFully(tb)
+                                    tb
+                                } else null
+                            } else null
+                        } catch (_: Exception) {
+                            null
+                        }
                         val payloadOffset = (8 + 1 + extraHeaderBytes + GCM_IV_LENGTH + 4 + encHeaderLen + CTR_IV_LENGTH).toLong()
 
                         val meta = EncryptedFileMetadata(
@@ -1340,7 +1430,8 @@ object CryptoManager {
                             contentIv = contentIv,
                             fileKey = fileKey,
                             version = version,
-                            isMacAuthenticated = isMacAuth
+                            isMacAuthenticated = isMacAuth,
+                            thumbnailBytes = thumbBytes
                         )
                         metadataCache[file.absolutePath] = meta
                         meta
@@ -1354,6 +1445,9 @@ object CryptoManager {
 
     fun readEmbeddedThumbnailBytes(file: File): ByteArray? {
         val meta = readMetadata(file) ?: return null
+        if (meta.thumbnailBytes != null && meta.thumbnailBytes.isNotEmpty()) {
+            return meta.thumbnailBytes
+        }
         if (!file.exists() || !file.isFile) return null
 
         return try {
@@ -1608,12 +1702,10 @@ object CryptoManager {
         if (!file.exists()) return
         val originalPath = file.absolutePath
 
-        purgeTracesForFile(context, originalPath)
-
         try {
             val length = file.length()
             if (length > 0L) {
-                RandomAccessFile(file, "rws").use { raf ->
+                RandomAccessFile(file, "rw").use { raf ->
                     val chunk = ByteArray(64 * 1024)
                     val fullWipeThreshold = 64L * 1024L * 1024L // 64 MB
                     if (length <= fullWipeThreshold) {
@@ -1651,24 +1743,14 @@ object CryptoManager {
         } catch (_: Exception) {
         }
 
-        var fileToDelete = file
-        try {
-            val parent = file.parentFile
-            if (parent != null) {
-                val dummyFile = File(parent, "0")
-                if (!dummyFile.exists() && file.renameTo(dummyFile)) {
-                    fileToDelete = dummyFile
-                }
-            }
-        } catch (_: Exception) {
+        var deleted = file.delete()
+        if (!deleted) {
+            deleted = context.tryFastDocumentDelete(originalPath, false)
+        }
+        if (!deleted && context is BaseSimpleActivity) {
+            context.deleteFile(file.toFileDirItem(context), allowDeleteFolder = false, isDeletingMultipleFiles = true)
         }
 
-        if (!fileToDelete.delete()) {
-            (context as? BaseSimpleActivity)?.deleteFileBg(
-                fileToDelete.toFileDirItem(context),
-                allowDeleteFolder = false,
-                isDeletingMultipleFiles = true
-            )
-        }
+        purgeTracesForFile(context, originalPath)
     }
 }

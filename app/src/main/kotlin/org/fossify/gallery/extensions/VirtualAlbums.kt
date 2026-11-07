@@ -52,16 +52,17 @@ fun Context.isPathHiddenOrEncrypted(path: String): Boolean {
     if (path.isVirtualAlbumPath()) {
         return isHiddenVirtualAlbumPath(path)
     }
-    if (CryptoManager.isEncryptedFile(path) ||
-        CryptoManager.isEncryptedFolderPath(this, path) ||
-        CryptoManager.isEncryptedFolderPath(this, path.getParentPath())
-    ) {
+    if (CryptoManager.isEncryptedFile(path)) {
         return true
     }
     if (path.contains("/.")) {
         return true
     }
-    return path.doesThisOrParentHaveNoMedia(HashMap(), null)
+    val parent = path.getParentPath()
+    if (parent.isNotEmpty() && CryptoManager.isEncryptedFolderPath(this, parent)) {
+        return true
+    }
+    return false
 }
 
 fun Context.getResolvedVirtualAlbumName(album: VirtualAlbum): String? {

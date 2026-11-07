@@ -291,21 +291,6 @@ class MediaFetcher(val context: Context) {
                     foldersToScan.add(encFolder)
                 }
             }
-            val parentsToCheck = HashSet<String>()
-            parentsToCheck.add(Environment.getExternalStorageDirectory().absolutePath)
-            parentsToCheck.add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).absolutePath)
-            parentsToCheck.add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).absolutePath)
-            parentsToCheck.add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath)
-            foldersToScan.forEach { folderPath ->
-                File(folderPath).parent?.let { parentsToCheck.add(it) }
-            }
-            parentsToCheck.forEach { parentPath ->
-                File(parentPath).listFiles()?.forEach { child ->
-                    if (child.isDirectory && CryptoManager.isEncryptedFolder(child)) {
-                        foldersToScan.add(child.absolutePath)
-                    }
-                }
-            }
         }
 
         return foldersToScan.toMutableSet() as LinkedHashSet<String>
