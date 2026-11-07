@@ -334,4 +334,6 @@
     <string name="access_existing_cipher_secrets_prompt">Do you want to access your existing Cipher_Secrets folder?</string>
     <string name="delete_and_recreate_cipher_secrets_prompt">Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure?</string>
     <string name="confirm_checkbox_label">I confirm</string>
+    <string name="secret_vault">Secret Vault</string>
+    <string name="secret_vault_empty">Secret Vault is empty</string>
 </resources>

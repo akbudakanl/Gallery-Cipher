@@ -300,4 +300,6 @@
     <string name="access_existing_cipher_secrets_prompt">Mevcut Cipher_Secrets klasörünüze erişmek istiyor musunuz?</string>
     <string name="delete_and_recreate_cipher_secrets_prompt">Mevcut Cipher_Secrets klasörü silinecek ve yenisi oluşturulacak, emin misiniz?</string>
     <string name="confirm_checkbox_label">Onaylıyorum</string>
+    <string name="secret_vault">Gizli Kasa</string>
+    <string name="secret_vault_empty">Gizli Kasa boş</string>
 </resources>

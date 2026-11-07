@@ -22,7 +22,7 @@ import java.io.File
 import java.util.Calendar
 import java.util.Locale
 
-class MediaFetcher(val context: Context) {
+class MediaFetcher(val context: Context, var isSecretVaultView: Boolean = false) {
     var shouldStop = false
 
     // on Android 11 we fetch all files at once from MediaStore and have it split by folder, use it if available
@@ -129,12 +129,11 @@ class MediaFetcher(val context: Context) {
                 folderNoMediaStatuses["$folder/$NOMEDIA"] = true
             }
 
-            val isSecretVaultMode = config.temporarilyShowHidden
             distinctPaths.filter {
                 if (CryptoManager.isEncryptedFolderPath(context, it) && (!shouldShowHidden || !CryptoManager.isVaultUnlocked)) {
                     false
-                } else if (isSecretVaultMode) {
-                    context.isFolderOrAlbumHidden(it, folderNoMediaStatuses)
+                } else if (isSecretVaultView) {
+                    context.isEncryptedVaultAlbum(it)
                 } else {
                     it.shouldFolderBeVisible(excludedPaths, includedPaths, shouldShowHidden, folderNoMediaStatuses) { path, hasNoMedia ->
                         folderNoMediaStatuses[path] = hasNoMedia
@@ -302,8 +301,8 @@ class MediaFetcher(val context: Context) {
             }
         }
 
-        if (config.temporarilyShowHidden) {
-            foldersToScan.retainAll { context.isFolderOrAlbumHidden(it) }
+        if (isSecretVaultView) {
+            foldersToScan.retainAll { context.isEncryptedVaultAlbum(it) }
         }
 
         return foldersToScan.toMutableSet() as LinkedHashSet<String>

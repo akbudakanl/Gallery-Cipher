@@ -541,7 +541,7 @@ fun Context.deleteVirtualAlbumItemFromAllAlbums(path: String) {
  * Hidden virtual albums are strictly omitted unless `canAccessHiddenVirtualAlbums()` is true.
  * Empty albums are included too, otherwise a freshly created album could not be found. Must run on a background thread.
  */
-fun Context.getVirtualAlbumDirectories(): ArrayList<Directory> {
+fun Context.getVirtualAlbumDirectories(isSecretVaultView: Boolean = false): ArrayList<Directory> {
     VirtualAlbumSyncManager.syncVirtualAlbums(this)
     val directories = ArrayList<Directory>()
     val albums = getVirtualAlbums()
@@ -558,11 +558,11 @@ fun Context.getVirtualAlbumDirectories(): ArrayList<Directory> {
 
     for (album in albums) {
         val albumId = album.id ?: continue
-        if (config.temporarilyShowHidden) {
+        if (isSecretVaultView) {
             if (!album.isHidden || !canAccessHidden) {
                 continue
             }
-        } else if (album.isHidden) {
+        } else if (album.isHidden && !canAccessHidden) {
             continue
         }
         val resolvedName = getResolvedVirtualAlbumName(album) ?: continue

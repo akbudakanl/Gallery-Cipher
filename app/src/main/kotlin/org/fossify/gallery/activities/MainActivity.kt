@@ -107,6 +107,7 @@ import org.fossify.gallery.extensions.handleExcludedFolderPasswordProtection
 import org.fossify.gallery.extensions.handleMediaManagementPrompt
 import org.fossify.gallery.extensions.isDownloadsFolder
 import org.fossify.gallery.extensions.isFolderOrAlbumHidden
+import org.fossify.gallery.extensions.isEncryptedVaultAlbum
 import org.fossify.gallery.extensions.isPathHiddenOrEncrypted
 import org.fossify.gallery.extensions.isVirtualAlbum
 import org.fossify.gallery.extensions.isVirtualAlbumPath
@@ -212,6 +213,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     private var mBottomGestureStartY = 0f
     private var mBottomGestureCountedInThisTouch = false
     private var mIsVaultDialogShowing = false
+    private var mIsSecretVaultView = false
     private val binding by viewBinding(ActivityMainBinding::inflate)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -219,6 +221,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         setContentView(binding.root)
         appLaunched(BuildConfig.APPLICATION_ID)
 
+        mIsSecretVaultView = false
         if (savedInstanceState == null) {
             config.temporarilyShowHidden = false
             config.temporarilyShowExcluded = false
@@ -314,6 +317,10 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         mDateFormat = config.dateFormat
         mTimeFormat = getTimeFormat()
 
+        if (!config.temporarilyShowHidden || !CryptoManager.isVaultUnlocked) {
+            mIsSecretVaultView = false
+        }
+        updateVaultModeUi()
         refreshMenuItems()
 
         if (mStoredAnimateGifs != config.animateGifs) {
@@ -383,11 +390,13 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
         if (config.temporarilyShowHidden || config.tempSkipDeleteConfirmation || config.temporarilyShowExcluded) {
             mTempShowHiddenHandler.postDelayed({
+                mIsSecretVaultView = false
                 config.temporarilyShowHidden = false
                 config.temporarilyShowExcluded = false
                 config.tempSkipDeleteConfirmation = false
                 config.tempSkipRecycleBin = false
                 CryptoManager.lockVault()
+                CryptoManager.clearAppImageCaches(this)
             }, SHOW_TEMP_HIDDEN_DURATION)
         } else {
             mTempShowHiddenHandler.removeCallbacksAndMessages(null)
@@ -397,11 +406,13 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     override fun onDestroy() {
         super.onDestroy()
         if (!isChangingConfigurations) {
+            mIsSecretVaultView = false
             config.temporarilyShowHidden = false
             config.temporarilyShowExcluded = false
             config.tempSkipDeleteConfirmation = false
             config.tempSkipRecycleBin = false
             CryptoManager.lockVault()
+            CryptoManager.clearAppImageCaches(this)
             mTempShowHiddenHandler.removeCallbacksAndMessages(null)
             removeTempFolder()
             unregisterFileUpdateListener()
@@ -416,6 +427,12 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     override fun onBackPressedCompat(): Boolean {
         return if (binding.mainMenu.isSearchOpen) {
             binding.mainMenu.closeSearch()
+            true
+        } else if (mIsSecretVaultView) {
+            mIsSecretVaultView = false
+            updateVaultModeUi()
+            binding.directoriesGrid.adapter = null
+            getDirectories()
             true
         } else if (config.groupDirectSubfolders) {
             if (mCurrentPathPrefix.isEmpty()) {
@@ -653,7 +670,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         val getImages = mIsPickImageIntent || mIsGetImageContentIntent
         val getVideos = mIsPickVideoIntent || mIsGetVideoContentIntent
 
-        getCachedDirectories(getVideos && !getImages, getImages && !getVideos, includeVirtualAlbums = true) {
+        getCachedDirectories(getVideos && !getImages, getImages && !getVideos, includeVirtualAlbums = true, isSecretVaultView = mIsSecretVaultView) {
             gotDirectories(addTempFolderIfNeeded(it))
         }
     }
@@ -763,9 +780,29 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         })
     }
 
+    private fun updateVaultModeUi() {
+        runOnUiThread {
+            if (mIsSecretVaultView) {
+                binding.mainMenu.updateHintText(getString(R.string.secret_vault))
+            } else {
+                if (config.searchAllFilesByDefault) {
+                    binding.mainMenu.updateHintText(getString(org.fossify.commons.R.string.search_files))
+                } else {
+                    binding.mainMenu.updateHintText(getString(org.fossify.commons.R.string.search_folders))
+                }
+            }
+        }
+    }
+
     private fun triggerSecretVaultMenu() {
-        if (config.temporarilyShowHidden) {
-            toggleTemporarilyShowHidden(false)
+        if (config.temporarilyShowHidden && CryptoManager.isVaultUnlocked) {
+            if (!mIsSecretVaultView) {
+                mIsSecretVaultView = true
+                toast(R.string.secret_vault)
+                updateVaultModeUi()
+                binding.directoriesGrid.adapter = null
+                getDirectories()
+            }
             return
         }
 
@@ -791,10 +828,14 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                 mIsVaultDialogShowing = false
                 if (success) {
                     config.hiddenProtectionType = type
+                    mIsSecretVaultView = true
+                    toast(R.string.secret_vault)
                     toggleTemporarilyShowHidden(true)
                 }
             }
         } else {
+            mIsSecretVaultView = true
+            toast(R.string.secret_vault)
             toggleTemporarilyShowHidden(true)
         }
     }
@@ -811,8 +852,11 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         mLoadedInitialPhotos = false
         config.temporarilyShowHidden = show
         if (!show) {
+            mIsSecretVaultView = false
             CryptoManager.lockVault()
+            CryptoManager.clearAppImageCaches(this)
         }
+        updateVaultModeUi()
         binding.directoriesGrid.adapter = null
         getDirectories()
         refreshMenuItems()
@@ -1194,9 +1238,8 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     }
 
     private fun gotDirectories(newDirs: ArrayList<Directory>) {
-        val isSecretVaultMode = config.temporarilyShowHidden
-        if (isSecretVaultMode) {
-            newDirs.removeAll { !isFolderOrAlbumHidden(it.path) }
+        if (mIsSecretVaultView) {
+            newDirs.retainAll { isEncryptedVaultAlbum(it.path) }
         }
         mIsGettingDirs = false
         mShouldStopFetching = false
@@ -1226,7 +1269,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
         // cached folders have been loaded, recheck folders one by one starting with the first displayed
         mLastMediaFetcher?.shouldStop = true
-        mLastMediaFetcher = MediaFetcher(applicationContext)
+        mLastMediaFetcher = MediaFetcher(applicationContext, isSecretVaultView = mIsSecretVaultView)
         val getImages = mIsPickImageIntent || mIsGetImageContentIntent
         val getVideos = mIsPickVideoIntent || mIsGetVideoContentIntent
         val getImagesOnly = getImages && !getVideos
@@ -1243,7 +1286,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         val dateTakens = mLastMediaFetcher!!.getDateTakens()
 
         if (
-            !isSecretVaultMode && config.showRecycleBinAtFolders
+            !mIsSecretVaultView && config.showRecycleBinAtFolders
             && !config.showRecycleBinLast
             && !dirs.map { it.path }.contains(RECYCLE_BIN)
         ) {
@@ -1261,7 +1304,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             }
         }
 
-        if (!isSecretVaultMode && dirs.map { it.path }.contains(FAVORITES)) {
+        if (!mIsSecretVaultView && dirs.map { it.path }.contains(FAVORITES)) {
             if (mediaDB.getFavoritesCount() > 0) {
                 val favorites = Directory().apply {
                     path = FAVORITES
@@ -1417,7 +1460,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
         // check the remaining folders which were not cached at all yet
         for (folder in foldersToScan) {
-            if (isSecretVaultMode && !isFolderOrAlbumHidden(folder)) {
+            if (mIsSecretVaultView && !isEncryptedVaultAlbum(folder)) {
                 continue
             }
             if (mShouldStopFetching || isDestroyed || isFinishing) {
@@ -1506,7 +1549,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
         val excludedFolders = config.excludedFolders
         val everShownFolders = config.everShownFolders.toMutableSet() as HashSet<String>
-        if (!isSecretVaultMode) {
+        if (!mIsSecretVaultView) {
 
         // do not add excluded folders, virtual albums, or encrypted folders at everShownFolders
         dirs.filter { dir ->
@@ -1556,7 +1599,10 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         binding.directoriesEmptyPlaceholder.beVisibleIf(dirs.isEmpty() && mLoadedInitialPhotos)
         binding.directoriesEmptyPlaceholder2.beVisibleIf(dirs.isEmpty() && mLoadedInitialPhotos)
 
-        if (config.temporarilyShowHidden) {
+        if (mIsSecretVaultView) {
+            binding.directoriesEmptyPlaceholder.text = getString(R.string.secret_vault_empty)
+            binding.directoriesEmptyPlaceholder2.beGone()
+        } else if (config.temporarilyShowHidden) {
             binding.directoriesEmptyPlaceholder.text =
                 getString(org.fossify.commons.R.string.no_items_found)
             binding.directoriesEmptyPlaceholder2.beGone()
@@ -1599,8 +1645,8 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         forceRecreate: Boolean = false
     ) {
         val currAdapter = binding.directoriesGrid.adapter
-        val filtered = if (config.temporarilyShowHidden) {
-            dirs.filter { isFolderOrAlbumHidden(it.path) }
+        val filtered = if (mIsSecretVaultView) {
+            dirs.filter { isEncryptedVaultAlbum(it.path) }
         } else {
             dirs
         }

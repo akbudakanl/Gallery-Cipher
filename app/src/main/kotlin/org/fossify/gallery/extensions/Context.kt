@@ -678,6 +678,25 @@ fun Context.isFolderOrAlbumHidden(
     folderNoMediaStatuses: HashMap<String, Boolean>? = null
 ): Boolean = isFolderOrAlbumHidden(directory.path, folderNoMediaStatuses)
 
+fun Context.isEncryptedVaultAlbum(path: String): Boolean {
+    if (path.isEmpty() || path == FAVORITES || path == RECYCLE_BIN) {
+        return false
+    }
+
+    if (path.isVirtualAlbumPath()) {
+        return isHiddenVirtualAlbumPath(path)
+    }
+
+    if (CryptoManager.isEncryptedFolderPath(this, path)) {
+        return true
+    }
+
+    val file = File(path)
+    return CryptoManager.isEncryptedFolder(file)
+}
+
+fun Context.isEncryptedVaultAlbum(directory: Directory): Boolean = isEncryptedVaultAlbum(directory.path)
+
 fun Context.loadImage(
     type: Int,
     path: String,
@@ -914,6 +933,7 @@ fun Context.getCachedDirectories(
     forceShowHidden: Boolean = false,
     forceShowExcluded: Boolean = false,
     includeVirtualAlbums: Boolean = false,
+    isSecretVaultView: Boolean = false,
     callback: (ArrayList<Directory>) -> Unit,
 ) {
     ensureBackgroundThread {
@@ -1000,17 +1020,16 @@ fun Context.getCachedDirectories(
             }
         }
 
-        val isSecretVaultMode = config.temporarilyShowHidden && !forceShowHidden
-        if (isSecretVaultMode) {
+        if (isSecretVaultView) {
             filteredDirectories = filteredDirectories.filter {
-                isFolderOrAlbumHidden(it.path, folderNoMediaStatuses)
+                isEncryptedVaultAlbum(it.path)
             } as ArrayList<Directory>
         }
 
         val clone = filteredDirectories.clone() as ArrayList<Directory>
         val result = clone.distinctBy { it.path.getDistinctPath() } as ArrayList<Directory>
         if (includeVirtualAlbums) {
-            result.addAll(getVirtualAlbumDirectories())
+            result.addAll(getVirtualAlbumDirectories(isSecretVaultView = isSecretVaultView))
         }
 
         callback(result)
