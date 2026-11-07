@@ -20,6 +20,7 @@ data class VirtualAlbumBackup(
     @SerializedName(value = "createdTs", alternate = ["created_ts"]) val createdTs: Long? = null,
     @SerializedName(value = "isHidden", alternate = ["is_hidden"]) val isHidden: Boolean = false,
     @SerializedName("items") val items: List<VirtualAlbumItemBackup>? = null,
+    @SerializedName(value = "parentPhysicalPath", alternate = ["parent_physical_path", "sourcePath", "source_path"]) val parentPhysicalPath: String? = null,
     @SerializedName(value = "mediaPaths", alternate = ["media_paths"]) val mediaPaths: List<String>? = null,
     @SerializedName(value = "encryptedPayload", alternate = ["encrypted_payload", "encrypted_data"]) val encryptedPayload: String? = null
 )
@@ -125,6 +126,7 @@ object VirtualAlbumSyncManager {
                     name = album.name,
                     createdTs = album.createdTs,
                     isHidden = true,
+                    parentPhysicalPath = album.parentPhysicalPath,
                     items = backupItems
                 )
                 val innerJson = gson.toJson(innerBackup)
@@ -159,6 +161,7 @@ object VirtualAlbumSyncManager {
                     name = album.name,
                     createdTs = album.createdTs,
                     isHidden = false,
+                    parentPhysicalPath = album.parentPhysicalPath,
                     items = backupItems
                 )
 
@@ -271,6 +274,11 @@ object VirtualAlbumSyncManager {
                     val isHidden = backup.isHidden
                     val createdTs = backup.createdTs ?: file.lastModified()
 
+                    val parentPhysicalPath = backup.parentPhysicalPath?.trim()?.ifEmpty { null }
+                        ?: backup.items?.firstOrNull()?.fullPath?.getParentPath()
+                        ?: backup.mediaPaths?.firstOrNull()?.getParentPath()
+                        ?: ""
+
                     var album = dao.getAlbumByName(albumName)
                     if (album == null) {
                         val newId = dao.insertAlbum(
@@ -279,12 +287,16 @@ object VirtualAlbumSyncManager {
                                 name = albumName,
                                 createdTs = createdTs,
                                 thumbnail = "",
-                                isHidden = isHidden
+                                isHidden = isHidden,
+                                parentPhysicalPath = parentPhysicalPath
                             )
                         )
                         if (newId > 0) {
                             album = dao.getAlbumById(newId)
                         }
+                    } else if (album.parentPhysicalPath.isEmpty() && parentPhysicalPath.isNotEmpty()) {
+                        album.id?.let { dao.updateAlbumParentPhysicalPath(it, parentPhysicalPath) }
+                        album.parentPhysicalPath = parentPhysicalPath
                     }
 
                     if (album?.id == null) continue
@@ -380,6 +392,11 @@ object VirtualAlbumSyncManager {
                         val albumName = innerBackup.name?.trim()?.ifEmpty { null } ?: continue
                         val createdTs = innerBackup.createdTs ?: file.lastModified()
 
+                        val parentPhysicalPath = innerBackup.parentPhysicalPath?.trim()?.ifEmpty { null }
+                            ?: innerBackup.items?.firstOrNull()?.fullPath?.getParentPath()
+                            ?: innerBackup.mediaPaths?.firstOrNull()?.getParentPath()
+                            ?: ""
+
                         var album = dao.getAlbumByName(albumName)
                         if (album == null) {
                             val newId = dao.insertAlbum(
@@ -388,12 +405,16 @@ object VirtualAlbumSyncManager {
                                     name = albumName,
                                     createdTs = createdTs,
                                     thumbnail = "",
-                                    isHidden = true
+                                    isHidden = true,
+                                    parentPhysicalPath = parentPhysicalPath
                                 )
                             )
                             if (newId > 0) {
                                 album = dao.getAlbumById(newId)
                             }
+                        } else if (album.parentPhysicalPath.isEmpty() && parentPhysicalPath.isNotEmpty()) {
+                            album.id?.let { dao.updateAlbumParentPhysicalPath(it, parentPhysicalPath) }
+                            album.parentPhysicalPath = parentPhysicalPath
                         }
 
                         if (album?.id == null) continue

@@ -266,8 +266,35 @@ fun Context.virtualAlbumNameExists(name: String, ignoreAlbumId: Long? = null): B
     }
 }
 
+fun Context.getVirtualAlbumOwnerPhysicalPath(albumId: Long): String {
+    val album = virtualAlbumsDB.getAlbumById(albumId) ?: return ""
+    if (album.parentPhysicalPath.isNotEmpty()) {
+        return album.parentPhysicalPath
+    }
+    val items = virtualAlbumsDB.getItems(albumId)
+    val firstItemParent = items.firstOrNull()?.parentPath ?: ""
+    if (firstItemParent.isNotEmpty()) {
+        album.parentPhysicalPath = firstItemParent
+        ensureBackgroundThread {
+            try {
+                virtualAlbumsDB.updateAlbumParentPhysicalPath(albumId, firstItemParent)
+            } catch (_: Exception) {}
+        }
+        return firstItemParent
+    }
+    return ""
+}
+
+fun Context.resolveEffectiveSourcePhysicalPath(sourcePath: String): String {
+    if (sourcePath.isVirtualAlbumPath()) {
+        val albumId = sourcePath.getVirtualAlbumId() ?: return ""
+        return getVirtualAlbumOwnerPhysicalPath(albumId)
+    }
+    return sourcePath
+}
+
 /** @return id of the new album, or -1 if the name is blank or already used */
-fun Context.createVirtualAlbum(name: String, isHidden: Boolean = false): Long {
+fun Context.createVirtualAlbum(name: String, isHidden: Boolean = false, parentPhysicalPath: String = ""): Long {
     val trimmed = name.trim()
     if (trimmed.isEmpty() || virtualAlbumNameExists(trimmed)) {
         return -1L
@@ -286,7 +313,8 @@ fun Context.createVirtualAlbum(name: String, isHidden: Boolean = false): Long {
                 name = storedName,
                 createdTs = System.currentTimeMillis(),
                 thumbnail = "",
-                isHidden = isHidden
+                isHidden = isHidden,
+                parentPhysicalPath = parentPhysicalPath
             )
         )
     } catch (e: Exception) {
@@ -346,11 +374,32 @@ fun Context.addMediaToVirtualAlbum(albumId: Long, media: Collection<Medium>, for
     }
 
     return try {
+        val album = virtualAlbumsDB.getAlbumById(albumId)
+        val targetOwner = if (album?.parentPhysicalPath?.isNotEmpty() == true) {
+            album.parentPhysicalPath
+        } else {
+            val firstParent = validMedia.firstOrNull()?.parentPath ?: ""
+            if (firstParent.isNotEmpty() && album != null) {
+                album.parentPhysicalPath = firstParent
+                virtualAlbumsDB.updateAlbumParentPhysicalPath(albumId, firstParent)
+            }
+            firstParent
+        }
+
+        val allowedMedia = if (targetOwner.isNotEmpty()) {
+            validMedia.filter { it.parentPath.equals(targetOwner, ignoreCase = true) }
+        } else {
+            validMedia
+        }
+        if (allowedMedia.isEmpty()) {
+            return 0
+        }
+
         val existingPaths = virtualAlbumsDB.getItems(albumId).map { it.fullPath.lowercase() }.toHashSet()
-        val alreadyInAlbum = validMedia.count { existingPaths.contains(it.path.lowercase()) }
+        val alreadyInAlbum = allowedMedia.count { existingPaths.contains(it.path.lowercase()) }
         var hasHiddenItem = forceMarkAlbumHidden
 
-        validMedia.forEach { medium ->
+        allowedMedia.forEach { medium ->
             val itemHidden = isPathHiddenOrEncrypted(medium.path)
             if (itemHidden) {
                 hasHiddenItem = true
@@ -375,13 +424,13 @@ fun Context.addMediaToVirtualAlbum(albumId: Long, media: Collection<Medium>, for
         }
 
         val now = System.currentTimeMillis()
-        val items = validMedia.map {
+        val items = allowedMedia.map {
             // Always store the on-disk filename (e.g. .fv_xxx.fenc), never decrypted originalName
             VirtualAlbumItem(null, albumId, it.path, it.path.getFilenameFromPath(), it.path.getParentPath(), now)
         }
         virtualAlbumsDB.insertItems(items)
         VirtualAlbumSyncManager.saveAlbumToFile(this, albumId)
-        validMedia.size - alreadyInAlbum
+        allowedMedia.size - alreadyInAlbum
     } catch (e: Exception) {
         0
     }
@@ -403,11 +452,32 @@ fun Context.addFileDirItemsToVirtualAlbum(
     }
 
     return try {
+        val album = virtualAlbumsDB.getAlbumById(albumId)
+        val targetOwner = if (album?.parentPhysicalPath?.isNotEmpty() == true) {
+            album.parentPhysicalPath
+        } else {
+            val firstParent = validItems.firstOrNull()?.path?.getParentPath() ?: ""
+            if (firstParent.isNotEmpty() && album != null) {
+                album.parentPhysicalPath = firstParent
+                virtualAlbumsDB.updateAlbumParentPhysicalPath(albumId, firstParent)
+            }
+            firstParent
+        }
+
+        val allowedItems = if (targetOwner.isNotEmpty()) {
+            validItems.filter { it.path.getParentPath().equals(targetOwner, ignoreCase = true) }
+        } else {
+            validItems
+        }
+        if (allowedItems.isEmpty()) {
+            return 0
+        }
+
         val existingPaths = virtualAlbumsDB.getItems(albumId).map { it.fullPath.lowercase() }.toHashSet()
-        val alreadyInAlbum = validItems.count { existingPaths.contains(it.path.lowercase()) }
+        val alreadyInAlbum = allowedItems.count { existingPaths.contains(it.path.lowercase()) }
         var hasHiddenItem = forceMarkAlbumHidden
 
-        validItems.forEach { item ->
+        allowedItems.forEach { item ->
             val path = item.path
             val itemHidden = isPathHiddenOrEncrypted(path)
             if (itemHidden) {
@@ -419,9 +489,9 @@ fun Context.addFileDirItemsToVirtualAlbum(
         }
 
         if (hasHiddenItem) {
-            val album = virtualAlbumsDB.getAlbumById(albumId)
-            if (album != null && (!album.isHidden || !CryptoManager.isEncryptedVaultString(album.name))) {
-                val plainName = CryptoManager.decryptStringFromVault(album.name) ?: album.name
+            val currentAlbum = virtualAlbumsDB.getAlbumById(albumId)
+            if (currentAlbum != null && (!currentAlbum.isHidden || !CryptoManager.isEncryptedVaultString(currentAlbum.name))) {
+                val plainName = CryptoManager.decryptStringFromVault(currentAlbum.name) ?: currentAlbum.name
                 val encName = CryptoManager.encryptStringForVault(this, plainName)
                 virtualAlbumsDB.updateAlbumVisibilityAndName(albumId, true, encName)
                 directoryDB.deleteDirPath(getVirtualAlbumPath(albumId))
@@ -429,12 +499,12 @@ fun Context.addFileDirItemsToVirtualAlbum(
         }
 
         val now = System.currentTimeMillis()
-        val items = validItems.map {
+        val items = allowedItems.map {
             VirtualAlbumItem(null, albumId, it.path, it.path.getFilenameFromPath(), it.path.getParentPath(), now)
         }
         virtualAlbumsDB.insertItems(items)
         VirtualAlbumSyncManager.saveAlbumToFile(this, albumId)
-        validItems.size - alreadyInAlbum
+        allowedItems.size - alreadyInAlbum
     } catch (e: Exception) {
         0
     }

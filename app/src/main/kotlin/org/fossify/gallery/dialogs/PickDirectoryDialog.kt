@@ -8,6 +8,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.dialogs.FilePickerDialog
+import org.fossify.commons.dialogs.RadioGroupDialog
+import org.fossify.commons.models.RadioItem
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beInvisible
 import org.fossify.commons.extensions.beVisibleIf
@@ -199,13 +201,32 @@ class PickDirectoryDialog(
     private fun showOtherFolder() {
         activity.hideKeyboard(searchEditText)
         if (isPickingCopyMoveDestination && isCopyOperation) {
-            dialog?.dismiss()
-            CreateVirtualAlbumDialog(activity, isHidden = isHiddenCopySource) { albumId ->
-                callback(getVirtualAlbumPath(albumId))
+            val effectiveSource = activity.resolveEffectiveSourcePhysicalPath(sourcePath)
+            val items = arrayListOf(
+                RadioItem(1, activity.getString(R.string.create_virtual_album)),
+                RadioItem(2, activity.getString(R.string.other_folder))
+            )
+            RadioGroupDialog(activity, items) { selected ->
+                if (selected == 1) {
+                    dialog?.dismiss()
+                    CreateVirtualAlbumDialog(
+                        activity = activity,
+                        isHidden = isHiddenCopySource,
+                        parentPhysicalPath = effectiveSource
+                    ) { albumId ->
+                        callback(getVirtualAlbumPath(albumId))
+                    }
+                } else {
+                    openPhysicalFolderPicker(effectiveSource)
+                }
             }
             return
         }
 
+        openPhysicalFolderPicker("")
+    }
+
+    private fun openPhysicalFolderPicker(excludedPath: String) {
         FilePickerDialog(
             activity,
             activity.getDefaultCopyDestinationPath(showHidden, sourcePath),
@@ -214,6 +235,10 @@ class PickDirectoryDialog(
             true,
             true
         ) {
+            if (excludedPath.isNotEmpty() && it.trimEnd('/').equals(excludedPath.trimEnd('/'), ignoreCase = true)) {
+                activity.toast(org.fossify.commons.R.string.source_and_destination_same)
+                return@FilePickerDialog
+            }
             config.lastCopyPath = it
             activity.handleLockedFolderOpening(it) { success ->
                 if (success) {
@@ -228,8 +253,34 @@ class PickDirectoryDialog(
             allDirectories = newDirs.clone() as ArrayList<Directory>
         }
 
-        val distinctDirs = newDirs.filter { showFavoritesBin || (!it.isRecycleBin() && !it.areFavorites()) }.distinctBy { it.path.getDistinctPath() }
-            .toMutableList() as ArrayList<Directory>
+        val effectiveSource = if (isPickingCopyMoveDestination && isCopyOperation) {
+            activity.resolveEffectiveSourcePhysicalPath(sourcePath)
+        } else {
+            sourcePath
+        }
+
+        val distinctDirs = newDirs.filter { dir ->
+            if (!showFavoritesBin && (dir.isRecycleBin() || dir.areFavorites())) {
+                return@filter false
+            }
+
+            if (isPickingCopyMoveDestination && isCopyOperation) {
+                if (dir.isVirtualAlbum()) {
+                    val albumId = dir.path.getVirtualAlbumId() ?: return@filter false
+                    val albumOwner = activity.getVirtualAlbumOwnerPhysicalPath(albumId)
+                    if (albumOwner.isNotEmpty()) {
+                        return@filter albumOwner.equals(effectiveSource, ignoreCase = true) && dir.path != sourcePath
+                    }
+                    return@filter dir.path != sourcePath
+                } else if (sourcePath.isVirtualAlbumPath()) {
+                    if (effectiveSource.isNotEmpty() && dir.path.trimEnd('/').equals(effectiveSource.trimEnd('/'), ignoreCase = true)) {
+                        return@filter false
+                    }
+                }
+            }
+
+            true
+        }.distinctBy { it.path.getDistinctPath() }.toMutableList() as ArrayList<Directory>
         val sortedDirs = activity.getSortedDirectories(distinctDirs)
         val dirs = activity.getDirsToShow(sortedDirs, allDirectories, currentPathPrefix).clone() as ArrayList<Directory>
         if (dirs.hashCode() == shownDirectories.hashCode()) {

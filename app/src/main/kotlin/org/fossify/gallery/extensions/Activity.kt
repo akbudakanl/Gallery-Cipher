@@ -350,13 +350,24 @@ fun BaseSimpleActivity.toggleFileVisibility(oldPath: String, hide: Boolean, call
     }
 }
 
-fun BaseSimpleActivity.tryCopyMoveFilesTo(fileDirItems: ArrayList<FileDirItem>, isCopyOperation: Boolean, callback: (destinationPath: String) -> Unit) {
+fun BaseSimpleActivity.tryCopyMoveFilesTo(
+    fileDirItems: ArrayList<FileDirItem>,
+    isCopyOperation: Boolean,
+    currentDirectoryPath: String = "",
+    callback: (destinationPath: String) -> Unit
+) {
     if (fileDirItems.isEmpty()) {
         toast(org.fossify.commons.R.string.unknown_error_occurred)
         return
     }
 
-    val source = fileDirItems[0].getParentPath()
+    val source = if (currentDirectoryPath.isVirtualAlbumPath()) {
+        currentDirectoryPath
+    } else if (currentDirectoryPath.isNotEmpty()) {
+        currentDirectoryPath
+    } else {
+        fileDirItems[0].getParentPath()
+    }
     val isHiddenCopySource = isPathHiddenOrEncrypted(source) || fileDirItems.any { isPathHiddenOrEncrypted(it.path) }
 
     PickDirectoryDialog(
@@ -449,9 +460,14 @@ fun BaseSimpleActivity.tryCopyMoveFilesTo(fileDirItems: ArrayList<FileDirItem>, 
                 }
             }
         } else {
-            handleSAFDialog(source) {
+            val physicalSource = if (source.isVirtualAlbumPath()) {
+                fileDirItems.firstOrNull()?.getParentPath() ?: source
+            } else {
+                source
+            }
+            handleSAFDialog(physicalSource) {
                 if (it) {
-                    copyMoveFilesTo(fileDirItems, source.trimEnd('/'), destination, isCopyOperation, true, config.shouldShowHidden, callback)
+                    copyMoveFilesTo(fileDirItems, physicalSource.trimEnd('/'), destination, isCopyOperation, true, config.shouldShowHidden, callback)
                 }
             }
         }

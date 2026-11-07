@@ -41,6 +41,7 @@ private fun Activity.buildAlbumNameField(initialText: String): Pair<FrameLayout,
 class CreateVirtualAlbumDialog(
     val activity: Activity,
     val isHidden: Boolean = false,
+    val parentPhysicalPath: String = "",
     val callback: (albumId: Long) -> Unit
 ) {
     init {
@@ -64,7 +65,7 @@ class CreateVirtualAlbumDialog(
                                 return@ensureBackgroundThread
                             }
 
-                            val albumId = activity.createVirtualAlbum(name, isHidden = isHidden)
+                            val albumId = activity.createVirtualAlbum(name, isHidden = isHidden, parentPhysicalPath = parentPhysicalPath)
                             activity.runOnUiThread {
                                 if (albumId == -1L) {
                                     activity.toast(org.fossify.commons.R.string.unknown_error_occurred)

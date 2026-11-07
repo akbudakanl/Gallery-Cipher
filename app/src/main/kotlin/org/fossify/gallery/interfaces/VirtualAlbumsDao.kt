@@ -31,6 +31,12 @@ interface VirtualAlbumsDao {
     @Query("UPDATE virtual_albums SET thumbnail = :thumbnail WHERE id = :id")
     fun updateAlbumThumbnail(id: Long, thumbnail: String)
 
+    @Query("UPDATE virtual_albums SET parent_physical_path = :parentPhysicalPath WHERE id = :id")
+    fun updateAlbumParentPhysicalPath(id: Long, parentPhysicalPath: String)
+
+    @Query("SELECT * FROM virtual_albums WHERE parent_physical_path = :parentPhysicalPath COLLATE NOCASE")
+    fun getAlbumsByParentPhysicalPath(parentPhysicalPath: String): List<VirtualAlbum>
+
     @Query("DELETE FROM virtual_albums WHERE id = :id")
     fun deleteAlbumById(id: Long)
 

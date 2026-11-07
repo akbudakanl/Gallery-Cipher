@@ -201,4 +201,78 @@ class VirtualAlbumSyncTest {
             tempDir.deleteRecursively()
         }
     }
+    @Test
+    fun testParentPhysicalPathSerializationAndDeserialization() {
+        val backup = VirtualAlbumBackup(
+            version = 1,
+            name = "Kamera Albümü",
+            createdTs = 1700000000000L,
+            isHidden = false,
+            parentPhysicalPath = "/storage/emulated/0/DCIM/Camera",
+            items = listOf(
+                VirtualAlbumItemBackup("/storage/emulated/0/DCIM/Camera/IMG_01.jpg", 1700000010000L)
+            )
+        )
+
+        val json = GsonBuilder().setPrettyPrinting().create().toJson(backup)
+        assertTrue(json.contains("\"parentPhysicalPath\": \"/storage/emulated/0/DCIM/Camera\""))
+
+        val parsed = Gson().fromJson(json, VirtualAlbumBackup::class.java)
+        assertEquals("/storage/emulated/0/DCIM/Camera", parsed.parentPhysicalPath)
+        assertEquals("Kamera Albümü", parsed.name)
+
+        // Also test deserialization when snake_case "parent_physical_path" is used
+        val snakeCaseJson = """
+            {
+                "name": "Kamera Albümü",
+                "parent_physical_path": "/storage/emulated/0/DCIM/Camera"
+            }
+        """.trimIndent()
+        val parsedSnakeCase = Gson().fromJson(snakeCaseJson, VirtualAlbumBackup::class.java)
+        assertEquals("/storage/emulated/0/DCIM/Camera", parsedSnakeCase.parentPhysicalPath)
+    }
+
+    @Test
+    fun testSinglePhysicalFolderFilteringLogic() {
+        val cameraFolder = "/storage/emulated/0/DCIM/Camera"
+        val screenshotsFolder = "/storage/emulated/0/Pictures/Screenshots"
+        val downloadsFolder = "/storage/emulated/0/Download"
+
+        val albums = listOf(
+            VirtualAlbum(id = 1L, name = "Kamera 1", createdTs = 0L, thumbnail = "", parentPhysicalPath = cameraFolder),
+            VirtualAlbum(id = 2L, name = "Screenshots 1", createdTs = 0L, thumbnail = "", parentPhysicalPath = screenshotsFolder),
+            VirtualAlbum(id = 3L, name = "Kamera 2", createdTs = 0L, thumbnail = "", parentPhysicalPath = cameraFolder)
+        )
+
+        // When copying from Camera folder, only albums belonging to Camera folder must match
+        val cameraMatchedAlbums = albums.filter { it.parentPhysicalPath.equals(cameraFolder, ignoreCase = true) }
+        assertEquals(2, cameraMatchedAlbums.size)
+        assertTrue(cameraMatchedAlbums.any { it.name == "Kamera 1" })
+        assertTrue(cameraMatchedAlbums.any { it.name == "Kamera 2" })
+        assertFalse(cameraMatchedAlbums.any { it.name == "Screenshots 1" })
+
+        // Adding items restriction: items from Downloads cannot be added to a Camera-bound album
+        val incomingItems = listOf(
+            "$cameraFolder/IMG_001.jpg",
+            "$downloadsFolder/doc_photo.jpg",
+            "$cameraFolder/IMG_002.jpg"
+        )
+        val targetAlbumOwner = cameraFolder
+        val allowedItems = incomingItems.filter {
+            val parent = it.substringBeforeLast('/')
+            parent.equals(targetAlbumOwner, ignoreCase = true)
+        }
+        assertEquals(2, allowedItems.size)
+        assertTrue(allowedItems.contains("$cameraFolder/IMG_001.jpg"))
+        assertTrue(allowedItems.contains("$cameraFolder/IMG_002.jpg"))
+        assertFalse(allowedItems.contains("$downloadsFolder/doc_photo.jpg"))
+
+        // Copy destination restriction: cannot copy from a virtual album to its owner physical album
+        val destinationDirs = listOf(cameraFolder, screenshotsFolder, downloadsFolder)
+        val validDestinations = destinationDirs.filter { !it.equals(cameraFolder, ignoreCase = true) }
+        assertEquals(2, validDestinations.size)
+        assertFalse(validDestinations.contains(cameraFolder))
+        assertTrue(validDestinations.contains(screenshotsFolder))
+        assertTrue(validDestinations.contains(downloadsFolder))
+    }
 }

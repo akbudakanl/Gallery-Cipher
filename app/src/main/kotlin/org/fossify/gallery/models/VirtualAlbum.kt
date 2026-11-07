@@ -14,5 +14,6 @@ data class VirtualAlbum(
     @ColumnInfo(name = "name") var name: String,
     @ColumnInfo(name = "created_ts") var createdTs: Long = System.currentTimeMillis() / 1000L,
     @ColumnInfo(name = "thumbnail") var thumbnail: String = "",
-    @ColumnInfo(name = "is_hidden") var isHidden: Boolean = false
+    @ColumnInfo(name = "is_hidden") var isHidden: Boolean = false,
+    @ColumnInfo(name = "parent_physical_path") var parentPhysicalPath: String = ""
 )

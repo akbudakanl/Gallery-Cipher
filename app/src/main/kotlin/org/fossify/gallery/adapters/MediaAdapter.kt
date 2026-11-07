@@ -194,7 +194,7 @@ class MediaAdapter(
             findItem(R.id.cab_add_to_favorites).isVisible = !isInRecycleBin
             findItem(R.id.cab_remove_from_virtual_album).isVisible = path.isVirtualAlbumPath()
             findItem(R.id.cab_fix_date_taken).isVisible = !isInRecycleBin
-            findItem(R.id.cab_move_to).isVisible = !isInRecycleBin
+            findItem(R.id.cab_move_to).isVisible = !isInRecycleBin && !path.isVirtualAlbumPath()
             findItem(R.id.cab_open_with).isVisible = isOneItemSelected
             findItem(R.id.cab_edit).isVisible = isOneItemSelected
             findItem(R.id.cab_set_as).isVisible = isOneItemSelected
@@ -229,7 +229,7 @@ class MediaAdapter(
             R.id.cab_rotate_left -> rotateSelection(270)
             R.id.cab_rotate_one_eighty -> rotateSelection(180)
             R.id.cab_copy_to -> checkMediaManagementAndCopy(true)
-            R.id.cab_move_to -> moveFilesTo()
+            R.id.cab_move_to -> if (!path.isVirtualAlbumPath()) moveFilesTo()
             R.id.cab_create_shortcut -> createShortcut()
             R.id.cab_select_all -> selectAll()
             R.id.cab_open_with -> openPath()
@@ -467,6 +467,9 @@ class MediaAdapter(
     }
 
     private fun moveFilesTo() {
+        if (path.isVirtualAlbumPath()) {
+            return
+        }
         activity.handleDeletePasswordProtection {
             checkMediaManagementAndCopy(false)
         }
@@ -494,7 +497,7 @@ class MediaAdapter(
             return
         }
 
-        activity.tryCopyMoveFilesTo(fileDirItems, isCopyOperation) {
+        activity.tryCopyMoveFilesTo(fileDirItems, isCopyOperation, currentDirectoryPath = path) {
             val destinationPath = it
             config.tempFolderPath = ""
             if (destinationPath.isVirtualAlbumPath()) {
