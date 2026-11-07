@@ -1221,6 +1221,7 @@ fun Context.getUpdatedDeletedMedia(): ArrayList<Medium> {
 
 fun Context.deleteDBPath(path: String) {
     deleteMediumWithPath(path.replaceFirst(recycleBinPath, RECYCLE_BIN))
+    deleteVirtualAlbumItemFromAllAlbums(path)
 }
 
 fun Context.deleteMediumWithPath(path: String) {

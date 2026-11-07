@@ -16,6 +16,7 @@ import org.fossify.commons.extensions.toast
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.gallery.R
 import org.fossify.gallery.extensions.*
+import org.fossify.gallery.helpers.VirtualAlbumSyncManager
 
 private fun Activity.buildAlbumNameField(initialText: String): Pair<FrameLayout, AppCompatEditText> {
     val padding = (20 * resources.displayMetrics.density).toInt()
@@ -137,6 +138,7 @@ class PickVirtualAlbumDialog(
 
     init {
         ensureBackgroundThread {
+            VirtualAlbumSyncManager.syncVirtualAlbums(activity)
             val canAccessHidden = activity.canAccessHiddenVirtualAlbums()
             val albums = activity.getVirtualAlbums()
                 .filter { it.id != null && it.id != excludedAlbumId && (!it.isHidden || canAccessHidden) }

@@ -89,6 +89,7 @@ fun Context.getVirtualAlbumPaths(albumPath: String): ArrayList<String> {
         val deletedPaths = virtualAlbumsDB.getDeletedPathsForAlbum(albumId).toHashSet()
         val canAccessHidden = canAccessHiddenVirtualAlbums()
         val validPaths = ArrayList<String>()
+        val missingPaths = ArrayList<String>()
 
         for (item in items) {
             val path = item.fullPath
@@ -99,8 +100,17 @@ fun Context.getVirtualAlbumPaths(albumPath: String): ArrayList<String> {
             if (isHiddenOrEnc && !canAccessHidden) continue
             if (File(path).exists()) {
                 validPaths.add(path)
+            } else {
+                missingPaths.add(path)
             }
         }
+
+        if (missingPaths.isNotEmpty()) {
+            ensureBackgroundThread {
+                VirtualAlbumSyncManager.pruneMissingItems(this, albumId, missingPaths)
+            }
+        }
+
         validPaths
     } catch (e: Exception) {
         ArrayList()
@@ -131,13 +141,20 @@ fun Context.getVirtualAlbumMedia(albumId: Long): ArrayList<Medium> {
         }
 
         val result = ArrayList<Medium>()
+        val missingPaths = ArrayList<String>()
+
         for (item in items) {
             val path = item.fullPath
             if (deletedPaths.contains(path) || path.startsWith(recycleBinPath)) continue
 
             val file = File(path)
+            if (!file.exists()) {
+                missingPaths.add(path)
+                continue
+            }
+
             if (CryptoManager.isEncryptedFile(path)) {
-                if (!canAccessHidden || !CryptoManager.isVaultUnlocked || !file.exists()) continue
+                if (!canAccessHidden || !CryptoManager.isVaultUnlocked) continue
                 val meta = CryptoManager.readMetadata(file) ?: continue
                 result.add(
                     Medium(
@@ -164,7 +181,7 @@ fun Context.getVirtualAlbumMedia(albumId: Long): ArrayList<Medium> {
             val cached = cachedMediaByPath[path]
             if (cached != null) {
                 result.add(cached)
-            } else if (file.exists() && file.isFile) {
+            } else if (file.isFile) {
                 val isImage = path.isImageFast()
                 val isVideo = if (isImage) false else path.isVideoFast()
                 val isGif = if (isImage || isVideo) false else path.isGif()
@@ -199,6 +216,13 @@ fun Context.getVirtualAlbumMedia(albumId: Long): ArrayList<Medium> {
                 )
             }
         }
+
+        if (missingPaths.isNotEmpty()) {
+            ensureBackgroundThread {
+                VirtualAlbumSyncManager.pruneMissingItems(this, albumId, missingPaths)
+            }
+        }
+
         result
     } catch (e: Exception) {
         ArrayList()
@@ -255,7 +279,7 @@ fun Context.createVirtualAlbum(name: String, isHidden: Boolean = false): Long {
         trimmed
     }
 
-    return try {
+    val albumId = try {
         virtualAlbumsDB.insertAlbum(
             VirtualAlbum(
                 id = null,
@@ -268,6 +292,11 @@ fun Context.createVirtualAlbum(name: String, isHidden: Boolean = false): Long {
     } catch (e: Exception) {
         -1L
     }
+
+    if (albumId > 0) {
+        VirtualAlbumSyncManager.saveAlbumToFile(this, albumId)
+    }
+    return albumId
 }
 
 fun Context.renameVirtualAlbum(albumId: Long, newName: String): Boolean {
@@ -277,13 +306,14 @@ fun Context.renameVirtualAlbum(albumId: Long, newName: String): Boolean {
     }
 
     return try {
-        val album = virtualAlbumsDB.getAlbumById(albumId) ?: return false
-        val storedName = if (album.isHidden) {
+        val oldAlbum = virtualAlbumsDB.getAlbumById(albumId) ?: return false
+        val storedName = if (oldAlbum.isHidden) {
             CryptoManager.encryptStringForVault(this, trimmed)
         } else {
             trimmed
         }
         virtualAlbumsDB.renameAlbum(albumId, storedName)
+        VirtualAlbumSyncManager.onAlbumRenamed(this, albumId, oldAlbum)
         true
     } catch (e: Exception) {
         false
@@ -293,6 +323,10 @@ fun Context.renameVirtualAlbum(albumId: Long, newName: String): Boolean {
 /** Deletes only the album and its references, the files stay untouched. */
 fun Context.deleteVirtualAlbum(albumId: Long) {
     try {
+        val album = virtualAlbumsDB.getAlbumById(albumId)
+        if (album != null) {
+            VirtualAlbumSyncManager.deleteAlbumFile(album)
+        }
         virtualAlbumsDB.deleteAlbumById(albumId)
         directoryDB.deleteDirPath(getVirtualAlbumPath(albumId))
     } catch (ignored: Exception) {
@@ -346,6 +380,7 @@ fun Context.addMediaToVirtualAlbum(albumId: Long, media: Collection<Medium>, for
             VirtualAlbumItem(null, albumId, it.path, it.path.getFilenameFromPath(), it.path.getParentPath(), now)
         }
         virtualAlbumsDB.insertItems(items)
+        VirtualAlbumSyncManager.saveAlbumToFile(this, albumId)
         validMedia.size - alreadyInAlbum
     } catch (e: Exception) {
         0
@@ -398,6 +433,7 @@ fun Context.addFileDirItemsToVirtualAlbum(
             VirtualAlbumItem(null, albumId, it.path, it.path.getFilenameFromPath(), it.path.getParentPath(), now)
         }
         virtualAlbumsDB.insertItems(items)
+        VirtualAlbumSyncManager.saveAlbumToFile(this, albumId)
         validItems.size - alreadyInAlbum
     } catch (e: Exception) {
         0
@@ -407,20 +443,25 @@ fun Context.addFileDirItemsToVirtualAlbum(
 fun Context.removePathsFromVirtualAlbum(albumId: Long, paths: Collection<String>) {
     try {
         paths.forEach { virtualAlbumsDB.removeItemFromAlbum(albumId, it) }
+        VirtualAlbumSyncManager.saveAlbumToFile(this, albumId)
     } catch (ignored: Exception) {
     }
 }
 
 fun Context.updateVirtualAlbumItemPath(oldPath: String, newPath: String) {
     try {
+        val albumIds = virtualAlbumsDB.getAlbumIdsWithItem(oldPath)
         virtualAlbumsDB.updateItemPath(oldPath, newPath, newPath.getFilenameFromPath(), newPath.getParentPath())
+        albumIds.forEach { VirtualAlbumSyncManager.saveAlbumToFile(this, it) }
     } catch (ignored: Exception) {
     }
 }
 
 fun Context.deleteVirtualAlbumItemFromAllAlbums(path: String) {
     try {
+        val albumIds = virtualAlbumsDB.getAlbumIdsWithItem(path)
         virtualAlbumsDB.removeItemFromAllAlbums(path)
+        albumIds.forEach { VirtualAlbumSyncManager.saveAlbumToFile(this, it) }
     } catch (ignored: Exception) {
     }
 }
@@ -431,6 +472,7 @@ fun Context.deleteVirtualAlbumItemFromAllAlbums(path: String) {
  * Empty albums are included too, otherwise a freshly created album could not be found. Must run on a background thread.
  */
 fun Context.getVirtualAlbumDirectories(): ArrayList<Directory> {
+    VirtualAlbumSyncManager.syncVirtualAlbums(this)
     val directories = ArrayList<Directory>()
     val albums = getVirtualAlbums()
     if (albums.isEmpty()) {

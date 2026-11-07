@@ -46,6 +46,9 @@ interface VirtualAlbumsDao {
     @Query("DELETE FROM virtual_album_items WHERE full_path = :fullPath COLLATE NOCASE")
     fun removeItemFromAllAlbums(fullPath: String)
 
+    @Query("SELECT DISTINCT album_id FROM virtual_album_items WHERE full_path = :fullPath COLLATE NOCASE")
+    fun getAlbumIdsWithItem(fullPath: String): List<Long>
+
     @Query("UPDATE OR REPLACE virtual_album_items SET full_path = :newPath, filename = :newFilename, parent_path = :newParentPath WHERE full_path = :oldPath COLLATE NOCASE")
     fun updateItemPath(oldPath: String, newPath: String, newFilename: String, newParentPath: String)
 
