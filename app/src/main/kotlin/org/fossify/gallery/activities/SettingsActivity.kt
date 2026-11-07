@@ -375,7 +375,11 @@ class SettingsActivity : SimpleActivity() {
         binding.settingsHiddenItemPasswordProtectionHolder.beGoneIf(isRPlus() && !isExternalStorageManager())
         binding.settingsHiddenItemPasswordProtection.isChecked = config.isHiddenPasswordProtectionOn
         binding.settingsHiddenItemPasswordProtectionHolder.setOnClickListener {
-            val tabToShow = if (config.isHiddenPasswordProtectionOn) config.hiddenProtectionType else SHOW_ALL_TABS
+            val tabToShow = if (config.isHiddenPasswordProtectionOn) {
+                CryptoManager.getVaultProtectionType(this) ?: config.hiddenProtectionType
+            } else {
+                SHOW_ALL_TABS
+            }
             VaultSecurityDialog(this, config.hiddenPasswordHash, tabToShow, minimalist = false) { hash, type, success ->
                 if (success) {
                     val hasPasswordProtection = config.isHiddenPasswordProtectionOn

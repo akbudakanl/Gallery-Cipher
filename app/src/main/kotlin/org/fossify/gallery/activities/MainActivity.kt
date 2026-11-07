@@ -62,6 +62,9 @@ import org.fossify.commons.extensions.toast
 import org.fossify.commons.extensions.underlineText
 import org.fossify.commons.extensions.viewBinding
 import org.fossify.commons.helpers.DAY_SECONDS
+import org.fossify.commons.helpers.PROTECTION_PATTERN
+import org.fossify.commons.helpers.PROTECTION_PIN
+import org.fossify.gallery.helpers.PROTECTION_PASSWORD
 import org.fossify.commons.helpers.FAVORITES
 import org.fossify.commons.helpers.PERMISSION_READ_STORAGE
 import org.fossify.commons.helpers.SORT_BY_DATE_MODIFIED
@@ -772,14 +775,21 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
         if (config.isHiddenPasswordProtectionOn || CryptoManager.hasExistingVault(this)) {
             mIsVaultDialogShowing = true
+            val initialType = CryptoManager.getVaultProtectionType(this)
+                ?: if (config.hiddenProtectionType in listOf(PROTECTION_PIN, PROTECTION_PASSWORD, PROTECTION_PATTERN)) {
+                    config.hiddenProtectionType
+                } else {
+                    PROTECTION_PATTERN
+                }
             VaultSecurityDialog(
                 activity = this,
                 requiredHash = config.hiddenPasswordHash,
-                showTabIndex = config.hiddenProtectionType,
+                showTabIndex = initialType,
                 minimalist = true
-            ) { _, _, success ->
+            ) { _, type, success ->
                 mIsVaultDialogShowing = false
                 if (success) {
+                    config.hiddenProtectionType = type
                     toggleTemporarilyShowHidden(true)
                 }
             }

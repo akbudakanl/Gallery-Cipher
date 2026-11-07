@@ -490,38 +490,13 @@ class DirectoryAdapter(
     }
 
     private fun hideFolder(path: String) {
-        if (config.isHiddenPasswordProtectionOn) {
+        if (config.isHiddenPasswordProtectionOn || CryptoManager.hasExistingVault(activity)) {
             activity.toast(R.string.encrypting_files)
             ensureBackgroundThread {
-                val newEncryptedPath = CryptoManager.encryptFolder(activity, path)
-                if (config.shouldShowHidden && CryptoManager.isVaultUnlocked) {
-                    activity.runOnUiThread {
-                        finishActMode()
-                        listener?.refreshItems()
-                    }
-                } else {
-                    val affectedPositions = ArrayList<Int>()
-                    val includedFolders = config.includedFolders
-                    val newDirs = dirs.filterIndexed { index, directory ->
-                        val removeDir = (directory.path == path || directory.path == newEncryptedPath || directory.path.doesThisOrParentHaveNoMedia(HashMap(), null)) &&
-                            !includedFolders.contains(directory.path)
-                        if (removeDir) {
-                            affectedPositions.add(index)
-                        }
-                        !removeDir
-                    } as ArrayList<Directory>
-
-                    activity.runOnUiThread {
-                        affectedPositions.sortedDescending().forEach {
-                            notifyItemRemoved(it)
-                        }
-
-                        currentDirectoriesHash = newDirs.hashCode()
-                        dirs = newDirs
-
-                        finishActMode()
-                        listener?.updateDirectories(newDirs)
-                    }
+                CryptoManager.encryptFolder(activity, path)
+                activity.runOnUiThread {
+                    finishActMode()
+                    listener?.refreshItems()
                 }
             }
             return

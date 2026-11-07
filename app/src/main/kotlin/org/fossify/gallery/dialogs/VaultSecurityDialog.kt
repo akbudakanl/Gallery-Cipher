@@ -11,6 +11,7 @@ import org.fossify.commons.helpers.PROTECTION_PIN
 import org.fossify.commons.helpers.SHOW_ALL_TABS
 import org.fossify.gallery.R
 import org.fossify.gallery.databinding.DialogVaultSecurityBinding
+import org.fossify.gallery.extensions.config
 import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.PROTECTION_PASSWORD
 
@@ -25,9 +26,15 @@ class VaultSecurityDialog(
     private val binding = DialogVaultSecurityBinding.inflate(activity.layoutInflater)
     private val isSetupMode = !CryptoManager.hasExistingVault(activity) && (requiredHash.isEmpty() || showTabIndex == SHOW_ALL_TABS)
 
-    private var currentType: Int = when {
-        showTabIndex == PROTECTION_PIN || showTabIndex == PROTECTION_PASSWORD -> showTabIndex
-        else -> PROTECTION_PATTERN
+    private var currentType: Int = when (showTabIndex) {
+        PROTECTION_PIN -> PROTECTION_PIN
+        PROTECTION_PASSWORD -> PROTECTION_PASSWORD
+        PROTECTION_PATTERN -> PROTECTION_PATTERN
+        else -> {
+            CryptoManager.getVaultProtectionType(activity)
+                ?: if (activity.config.hiddenProtectionType in listOf(PROTECTION_PIN, PROTECTION_PASSWORD)) activity.config.hiddenProtectionType
+                else PROTECTION_PATTERN
+        }
     }
 
     private var firstStepSecret = ""
@@ -44,36 +51,36 @@ class VaultSecurityDialog(
 
         binding.vaultPatternView.updateColors(textColor, primaryColor)
 
-        if (isSetupMode) {
-            binding.vaultTabs.apply {
-                beVisible()
-                setBackgroundColor(backgroundColor)
-                setTabTextColors(textColor, primaryColor)
-                setSelectedTabIndicatorColor(primaryColor)
+        binding.vaultTabs.apply {
+            beVisible()
+            setBackgroundColor(backgroundColor)
+            setTabTextColors(textColor, primaryColor)
+            setSelectedTabIndicatorColor(primaryColor)
 
-                addTab(newTab().setText(org.fossify.commons.R.string.pattern).setTag(PROTECTION_PATTERN))
-                addTab(newTab().setText(org.fossify.commons.R.string.pin).setTag(PROTECTION_PIN))
-                addTab(newTab().setText(R.string.alphanumeric_password).setTag(PROTECTION_PASSWORD))
+            removeAllTabs()
+            val patternTab = newTab().setText(org.fossify.commons.R.string.pattern).setTag(PROTECTION_PATTERN)
+            val pinTab = newTab().setText(org.fossify.commons.R.string.pin).setTag(PROTECTION_PIN)
+            val passwordTab = newTab().setText(R.string.alphanumeric_password).setTag(PROTECTION_PASSWORD)
 
-                addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
-                    override fun onTabSelected(tab: TabLayout.Tab?) {
-                        val type = tab?.tag as? Int ?: PROTECTION_PATTERN
-                        switchProtectionType(type)
-                    }
+            addTab(patternTab, currentType == PROTECTION_PATTERN)
+            addTab(pinTab, currentType == PROTECTION_PIN)
+            addTab(passwordTab, currentType == PROTECTION_PASSWORD)
 
-                    override fun onTabUnselected(tab: TabLayout.Tab?) {}
-                    override fun onTabReselected(tab: TabLayout.Tab?) {}
-                })
-            }
-        } else {
-            binding.vaultTabs.beGone()
+            addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+                override fun onTabSelected(tab: TabLayout.Tab?) {
+                    val type = tab?.tag as? Int ?: PROTECTION_PATTERN
+                    switchProtectionType(type)
+                }
+
+                override fun onTabUnselected(tab: TabLayout.Tab?) {}
+                override fun onTabReselected(tab: TabLayout.Tab?) {}
+            })
         }
 
-        if (minimalist) {
-            binding.vaultTabs.beGone()
+        if (minimalist && !isSetupMode) {
             binding.vaultStatusLabel.beGone()
-            binding.vaultPasswordInputLayout.hint = null
         }
+        binding.vaultPasswordInputLayout.hint = activity.getString(R.string.enter_password)
 
         setupPatternInput()
         setupPinInput()
@@ -97,8 +104,10 @@ class VaultSecurityDialog(
                 if (currentType == PROTECTION_PASSWORD) {
                     alertDialog.window?.clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
                     alertDialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
-                    binding.vaultPasswordInput.requestFocus()
-                    activity.showKeyboard(binding.vaultPasswordInput)
+                    binding.vaultPasswordInput.postDelayed({
+                        binding.vaultPasswordInput.requestFocus()
+                        activity.showKeyboard(binding.vaultPasswordInput)
+                    }, 100)
                 }
             }
         }
@@ -119,15 +128,19 @@ class VaultSecurityDialog(
         updateStatusLabel()
 
         if (type == PROTECTION_PASSWORD) {
+            dialog?.window?.clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
             dialog?.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
-            binding.vaultPasswordInput.requestFocus()
+            binding.vaultPasswordInput.postDelayed({
+                binding.vaultPasswordInput.requestFocus()
+                activity.showKeyboard(binding.vaultPasswordInput)
+            }, 100)
         } else {
             activity.hideKeyboard()
         }
     }
 
     private fun updateStatusLabel() {
-        if (minimalist) {
+        if (minimalist && !isSetupMode) {
             binding.vaultStatusLabel.beGone()
             return
         }
@@ -248,6 +261,7 @@ class VaultSecurityDialog(
                 updateStatusLabel()
             } else if (firstStepSecret == secret) {
                 val hash = CryptoManager.setupOrUpdateCredentials(activity, secret, currentType)
+                activity.config.hiddenProtectionType = currentType
                 activity.hideKeyboard()
                 dialog?.dismiss()
                 callback(hash, currentType, true)
@@ -268,6 +282,7 @@ class VaultSecurityDialog(
         } else {
             val unlocked = CryptoManager.unlockWithSecret(activity, secret)
             if (unlocked) {
+                activity.config.hiddenProtectionType = currentType
                 activity.hideKeyboard()
                 dialog?.dismiss()
                 callback(requiredHash, currentType, true)

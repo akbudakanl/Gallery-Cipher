@@ -256,16 +256,18 @@ object CryptoManager {
         iterations: Int,
         parallelism: Int,
         iv: ByteArray,
-        wrappedBundle: ByteArray
+        wrappedBundle: ByteArray,
+        protectionType: Int = PROTECTION_PATTERN
     ) {
         FileOutputStream(headerFile).use { fos ->
             DataOutputStream(fos).use { dos ->
                 dos.write(VAULT_HEADER_MAGIC.toByteArray(Charsets.US_ASCII))
-                dos.writeByte(2) // Version 2
+                dos.writeByte(3) // Version 3
                 dos.writeByte(1) // KDF: 1 = Argon2id
                 dos.writeInt(iterations)
                 dos.writeInt(memoryKb)
                 dos.writeInt(parallelism)
+                dos.writeByte(protectionType)
                 dos.writeInt(salt.size)
                 dos.write(salt)
                 dos.write(iv)
@@ -285,11 +287,12 @@ object CryptoManager {
                     dis.readFully(magicBytes)
                     if (String(magicBytes, Charsets.US_ASCII) != VAULT_HEADER_MAGIC) return false
 
-                    val version = dis.readByte()
+                    val version = dis.readByte().toInt()
                     val kdfType = dis.readByte()
                     val iterations = dis.readInt()
                     val memoryKb = dis.readInt()
                     val parallelism = dis.readInt()
+                    val storedProtectionType = if (version >= 3) dis.readByte().toInt() else -1
                     val saltLen = dis.readInt()
                     if (saltLen <= 0 || saltLen > 256) return false
                     val salt = ByteArray(saltLen)
@@ -327,11 +330,51 @@ object CryptoManager {
 
                     context.config.hiddenPasswordHash = "argon2id_aes256_gcm_v2"
                     context.config.isHiddenPasswordProtectionOn = true
+                    if (storedProtectionType in listOf(PROTECTION_PATTERN, PROTECTION_PIN, PROTECTION_PASSWORD)) {
+                        context.config.hiddenProtectionType = storedProtectionType
+                    }
+                    if (version < 3) {
+                        try {
+                            setupOrUpdateCredentials(context, secret, context.config.hiddenProtectionType)
+                        } catch (_: Exception) {}
+                    }
                     true
                 }
             }
         } catch (_: Exception) {
             false
+        }
+    }
+
+    fun getVaultProtectionType(context: Context): Int? {
+        val vaultRoot = findVaultRoot(context) ?: return null
+        val headerFile = File(vaultRoot, VAULT_HEADER_FILE)
+        if (!headerFile.exists()) return null
+        return try {
+            FileInputStream(headerFile).use { fis ->
+                DataInputStream(BufferedInputStream(fis)).use { dis ->
+                    val magicBytes = ByteArray(VAULT_HEADER_MAGIC.length)
+                    dis.readFully(magicBytes)
+                    if (String(magicBytes, Charsets.US_ASCII) != VAULT_HEADER_MAGIC) return null
+                    val version = dis.readByte().toInt()
+                    if (version >= 3) {
+                        dis.readByte() // kdfType
+                        dis.readInt()  // iterations
+                        dis.readInt()  // memoryKb
+                        dis.readInt()  // parallelism
+                        val protType = dis.readByte().toInt()
+                        if (protType in listOf(PROTECTION_PATTERN, PROTECTION_PIN, PROTECTION_PASSWORD)) {
+                            protType
+                        } else {
+                            null
+                        }
+                    } else {
+                        null
+                    }
+                }
+            }
+        } catch (_: Exception) {
+            null
         }
     }
 
@@ -380,7 +423,7 @@ object CryptoManager {
         // Write vault root header (.vault) on disk for full multi-device portability
         val vaultRoot = getOrCreateVaultRoot(context)
         val vaultHeader = File(vaultRoot, VAULT_HEADER_FILE)
-        writeVaultHeader(vaultHeader, salt, ARGON2_MEMORY_KB, ARGON2_ITERATIONS, ARGON2_PARALLELISM, iv, wrapped)
+        writeVaultHeader(vaultHeader, salt, ARGON2_MEMORY_KB, ARGON2_ITERATIONS, ARGON2_PARALLELISM, iv, wrapped, protectionType)
 
         val data = Base64.encodeToString(salt, Base64.NO_WRAP) + ":" +
             Base64.encodeToString(iv, Base64.NO_WRAP) + ":" +
@@ -968,6 +1011,50 @@ object CryptoManager {
 
         val originalFolderName = getDecryptedFolderName(folder) ?: folder.name
         val vaultRoot = getOrCreateVaultRoot(context)
+
+        // 1. Move any subfolders directly to internal storage so they remain unencrypted and unhidden
+        val internalStorageRoot = File(context.internalStoragePath)
+        val movedSubfolderPaths = ArrayList<String>()
+
+        val childFiles = folder.listFiles() ?: emptyArray()
+        for (child in childFiles) {
+            if (child.isDirectory) {
+                var targetSubfolder = File(internalStorageRoot, child.name)
+                var collisionIndex = 1
+                while (targetSubfolder.exists()) {
+                    targetSubfolder = File(internalStorageRoot, "${child.name}_$collisionIndex")
+                    collisionIndex++
+                }
+                val moved = if (child.renameTo(targetSubfolder)) {
+                    true
+                } else {
+                    try {
+                        child.copyRecursively(targetSubfolder, overwrite = false) && child.deleteRecursively()
+                    } catch (_: Exception) {
+                        false
+                    }
+                }
+                if (moved) {
+                    val noMediaInSub = File(targetSubfolder, NOMEDIA)
+                    if (noMediaInSub.exists()) {
+                        try { noMediaInSub.delete() } catch (_: Exception) {}
+                    }
+                    context.directoryDB.deleteDirPath(child.absolutePath)
+                    movedSubfolderPaths.add(targetSubfolder.absolutePath)
+                }
+            }
+        }
+
+        if (movedSubfolderPaths.isNotEmpty()) {
+            val pathsToRescan = ArrayList<String>()
+            for (path in movedSubfolderPaths) {
+                pathsToRescan.add(path)
+                File(path).walkTopDown().filter { it.isFile }.forEach {
+                    pathsToRescan.add(it.absolutePath)
+                }
+            }
+            context.rescanPaths(pathsToRescan)
+        }
 
         var subfolder = File(vaultRoot, randomHex(6))
         while (subfolder.exists()) {
