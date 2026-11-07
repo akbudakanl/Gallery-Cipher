@@ -3,6 +3,7 @@
 package org.fossify.gallery.fragments
 
 import android.annotation.SuppressLint
+import android.graphics.Bitmap
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Point
@@ -102,6 +103,16 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         private const val TOUCH_HOLD_DURATION_MS = 500L
         private const val TOUCH_HOLD_SPEED_MULTIPLIER = 2.0f
         private const val TOUCH_SLOP_DIVIDER = 3
+
+        val sVideoFrameCache = object : androidx.collection.LruCache<String, Bitmap>(6 * 1024 * 1024) {
+            override fun sizeOf(key: String, value: Bitmap): Int {
+                return value.byteCount
+            }
+        }
+
+        fun clearFrameCache() {
+            sVideoFrameCache.evictAll()
+        }
     }
 
     private var mIsFullscreen = false
@@ -283,10 +294,16 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
 
         storeStateVariables()
         binding.videoPlayOutline.beGone()
-        Glide.with(context)
-            .load(mMedium.path)
-            .diskCacheStrategy(if (CryptoManager.isEncryptedFile(mMedium.path)) com.bumptech.glide.load.engine.DiskCacheStrategy.NONE else com.bumptech.glide.load.engine.DiskCacheStrategy.AUTOMATIC)
-            .into(binding.videoPreview)
+        val cachedFrame = sVideoFrameCache.get(mMedium.path)
+        if (cachedFrame != null && !cachedFrame.isRecycled) {
+            binding.videoPreview.setImageBitmap(cachedFrame)
+            binding.videoPreview.beVisible()
+        } else {
+            Glide.with(context)
+                .load(mMedium.path)
+                .diskCacheStrategy(if (CryptoManager.isEncryptedFile(mMedium.path)) com.bumptech.glide.load.engine.DiskCacheStrategy.NONE else com.bumptech.glide.load.engine.DiskCacheStrategy.AUTOMATIC)
+                .into(binding.videoPreview)
+        }
 
         // setMenuVisibility is not called at VideoActivity (third party intent)
         if (!mIsFragmentVisible && activity is VideoActivity) {
@@ -372,6 +389,10 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         }
         restoreSessionPlaybackPosition()
         setupVideoDuration()
+
+        if (mIsFragmentVisible || mPositionAtPause > 0L) {
+            initExoPlayer()
+        }
         return mView
     }
 
@@ -463,24 +484,31 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         }
     }
 
+    private val mTimerRunnable = object : Runnable {
+        override fun run() {
+            if (mExoPlayer != null && !mIsDragged && mIsPlaying) {
+                mCurrTime = mExoPlayer!!.currentPosition
+                mSeekBar.progress = mCurrTime.toInt()
+                mCurrTimeView.text = mCurrTime.getFormattedDuration()
+                mTimerHandler.postDelayed(this, UPDATE_INTERVAL_MS)
+            }
+        }
+    }
+
+    private fun startTimer() {
+        stopTimer()
+        if (mIsPlaying) {
+            mTimerHandler.post(mTimerRunnable)
+        }
+    }
+
+    private fun stopTimer() {
+        mTimerHandler.removeCallbacks(mTimerRunnable)
+    }
+
     private fun setupTimeHolder() {
         mSeekBar.max = mDuration.toInt()
         binding.bottomVideoTimeHolder.videoDuration.text = mDuration.getFormattedDuration()
-        setupTimer()
-    }
-
-    private fun setupTimer() {
-        activity?.runOnUiThread(object : Runnable {
-            override fun run() {
-                if (mExoPlayer != null && !mIsDragged && mIsPlaying) {
-                    mCurrTime = mExoPlayer!!.currentPosition
-                    mSeekBar.progress = mCurrTime.toInt()
-                    mCurrTimeView.text = mCurrTime.getFormattedDuration()
-                }
-
-                mTimerHandler.postDelayed(this, UPDATE_INTERVAL_MS)
-            }
-        })
     }
 
     private fun initExoPlayer() {
@@ -496,26 +524,9 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
             ProgressiveMediaSource.Factory(factory)
                 .createMediaSource(MediaItem.fromUri(uri))
         } else {
-            val dataSpec = DataSpec(uri)
-            val fileDataSource = if (isContentUri) {
-                ContentDataSource(requireContext())
-            } else {
-                FileDataSource()
-            }
-
-            try {
-                fileDataSource.open(dataSpec)
-            } catch (e: Exception) {
-                fileDataSource.close()
-                activity?.showErrorToast(e)
-                return
-            }
-
-            val factory = DataSource.Factory { fileDataSource }
-            val source = ProgressiveMediaSource.Factory(factory)
-                .createMediaSource(MediaItem.fromUri(fileDataSource.uri!!))
-            fileDataSource.close()
-            source
+            val factory = androidx.media3.datasource.DefaultDataSource.Factory(requireContext())
+            ProgressiveMediaSource.Factory(factory)
+                .createMediaSource(MediaItem.fromUri(uri))
         }
 
         val initialPosition = when {
@@ -540,7 +551,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
 
         mExoPlayer = ExoPlayer.Builder(requireContext())
             .setMediaSourceFactory(DefaultMediaSourceFactory(requireContext()))
-            .setSeekParameters(SeekParameters.EXACT)
+            .setSeekParameters(SeekParameters.CLOSEST_SYNC)
             .setLoadControl(loadControl)
             .build()
             .apply {
@@ -872,6 +883,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
             mIsPlaying = true
         }
         mExoPlayer?.playWhenReady = true
+        startTimer()
         activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
@@ -881,6 +893,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         }
 
         mIsPlaying = false
+        stopTimer()
         val ended = videoEnded()
         if (!ended) {
             mExoPlayer?.playWhenReady = false
@@ -890,6 +903,17 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         mPositionAtPause = if (ended) 0L else (mExoPlayer?.currentPosition ?: 0L)
         listener?.saveVideoPlaybackPosition(mMedium.path, mPositionAtPause)
+
+        if (!ended && mPositionAtPause > 0L && mTextureView.isAvailable && mTextureView.width > 0 && mTextureView.height > 0) {
+            try {
+                val scaleWidth = (mTextureView.width / 2).coerceIn(360, 1080)
+                val scaleHeight = (mTextureView.height / 2).coerceIn(360, 1920)
+                val bmp = mTextureView.getBitmap(scaleWidth, scaleHeight)
+                if (bmp != null) {
+                    sVideoFrameCache.put(mMedium.path, bmp)
+                }
+            } catch (_: Throwable) {}
+        }
     }
 
     private fun restoreSessionPlaybackPosition() {
@@ -920,6 +944,20 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
     }
 
     private fun setupVideoDuration() {
+        val durationFromMedium = mMedium.videoDuration.times(1000L).coerceAtLeast(0L)
+        if (durationFromMedium > 0L) {
+            mDuration = durationFromMedium
+            setupTimeHolder()
+            val targetPosition = when {
+                mPositionWhenInit > 0L -> mPositionWhenInit
+                mPositionAtPause > 0L -> mPositionAtPause
+                mCurrTime > 0L -> mCurrTime
+                else -> 0L
+            }
+            setPosition(targetPosition)
+            return
+        }
+
         ensureBackgroundThread {
             mDuration = if (CryptoManager.isEncryptedFile(mMedium.path)) {
                 (CryptoManager.readMetadata(File(mMedium.path))?.videoDuration ?: 0).times(1000L).coerceAtLeast(0L)
@@ -985,6 +1023,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         if (mWasFragmentInit) {
             mCurrTimeView.text = 0.getFormattedDuration()
             mSeekBar.progress = 0
+            stopTimer()
             mTimerHandler.removeCallbacksAndMessages(null)
         }
     }

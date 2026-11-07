@@ -288,6 +288,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
 
     override fun onDestroy() {
         super.onDestroy()
+        VideoFragment.clearFrameCache()
         ColorModeHelper.resetColorMode(this)
 
         if (intent.extras?.containsKey(IS_VIEW_INTENT) == true) {
@@ -538,7 +539,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         }
 
         refreshViewPager(true)
-        binding.viewPager.offscreenPageLimit = 2
+        binding.viewPager.offscreenPageLimit = 3
 
         if (config.blackBackground) {
             binding.fragmentHolder.background = Color.BLACK.toDrawable()
