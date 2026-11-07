@@ -1019,10 +1019,11 @@ object CryptoManager {
         val childFiles = folder.listFiles() ?: emptyArray()
         for (child in childFiles) {
             if (child.isDirectory) {
-                var targetSubfolder = File(internalStorageRoot, child.name)
+                val cleanName = child.name.trimStart('.')
+                var targetSubfolder = File(internalStorageRoot, if (cleanName.isEmpty()) "Subfolder" else cleanName)
                 var collisionIndex = 1
                 while (targetSubfolder.exists()) {
-                    targetSubfolder = File(internalStorageRoot, "${child.name}_$collisionIndex")
+                    targetSubfolder = File(internalStorageRoot, "${if (cleanName.isEmpty()) "Subfolder" else cleanName}_$collisionIndex")
                     collisionIndex++
                 }
                 val moved = if (child.renameTo(targetSubfolder)) {
@@ -1038,6 +1039,13 @@ object CryptoManager {
                     val noMediaInSub = File(targetSubfolder, NOMEDIA)
                     if (noMediaInSub.exists()) {
                         try { noMediaInSub.delete() } catch (_: Exception) {}
+                        try {
+                            context.contentResolver.delete(
+                                MediaStore.Files.getContentUri("external"),
+                                "${MediaStore.Files.FileColumns.DATA} = ?",
+                                arrayOf(noMediaInSub.absolutePath)
+                            )
+                        } catch (_: Exception) {}
                     }
                     context.directoryDB.deleteDirPath(child.absolutePath)
                     movedSubfolderPaths.add(targetSubfolder.absolutePath)
@@ -1076,8 +1084,8 @@ object CryptoManager {
                 file.name != ENCRYPTED_FOLDER_META_FILE &&
                 file.name != VAULT_SUBFOLDER_META_FILE &&
                 file.name != VAULT_HEADER_FILE &&
-                !isEncryptedFile(file.name) &&
-                (file.name.isMediaFile() || file.name.isRawFast() || file.name.isSvg())
+                !isEncryptedFile(file.name)
+
             ) {
                 encryptFileToDirectory(
                     context = context,
@@ -1091,7 +1099,20 @@ object CryptoManager {
 
         // Delete original plaintext folder
         try {
-            folder.deleteRecursively()
+            val contentResolver = context.contentResolver
+            val filesUri = MediaStore.Files.getContentUri("external")
+            contentResolver.delete(
+                filesUri,
+                "${MediaStore.MediaColumns.DATA} LIKE ?",
+                arrayOf("${folder.absolutePath}%")
+            )
+            if (!folder.deleteRecursively()) {
+                (context as? BaseSimpleActivity)?.deleteFileBg(
+                    folder.toFileDirItem(context),
+                    allowDeleteFolder = true,
+                    isDeletingMultipleFiles = false
+                )
+            }
         } catch (_: Exception) {}
 
         context.config.removeEncryptedFolder(folder.absolutePath)
@@ -1135,7 +1156,20 @@ object CryptoManager {
         }
 
         try {
-            folder.deleteRecursively()
+            val contentResolver = context.contentResolver
+            val filesUri = MediaStore.Files.getContentUri("external")
+            contentResolver.delete(
+                filesUri,
+                "${MediaStore.MediaColumns.DATA} LIKE ?",
+                arrayOf("${folder.absolutePath}%")
+            )
+            if (!folder.deleteRecursively()) {
+                (context as? BaseSimpleActivity)?.deleteFileBg(
+                    folder.toFileDirItem(context),
+                    allowDeleteFolder = true,
+                    isDeletingMultipleFiles = false
+                )
+            }
         } catch (_: Exception) {}
         folderNameCache.remove(folder.absolutePath)
 
@@ -1384,9 +1418,11 @@ object CryptoManager {
             } catch (_: Exception) {
             }
             try {
-                val cacheDirs = listOf(
+                val cacheDirs = listOfNotNull(
                     File(appContext.cacheDir, "image_manager_disk_cache"),
-                    File(appContext.cacheDir, "picasso-cache")
+                    File(appContext.cacheDir, "picasso-cache"),
+                    File(appContext.cacheDir, "glide"),
+                    appContext.externalCacheDir
                 )
                 for (dir in cacheDirs) {
                     if (dir.exists() && dir.isDirectory) {
@@ -1395,6 +1431,16 @@ object CryptoManager {
                 }
             } catch (_: Exception) {
             }
+        }
+
+        try {
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                try {
+                    Glide.get(appContext).clearMemory()
+                } catch (_: Exception) {
+                }
+            }
+        } catch (_: Exception) {
         }
     }
 

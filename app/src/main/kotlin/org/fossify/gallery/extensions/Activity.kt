@@ -265,6 +265,9 @@ fun BaseSimpleActivity.addNoMediaIntoMediaStore(path: String) {
 fun BaseSimpleActivity.removeNoMedia(path: String, callback: (() -> Unit)? = null) {
     val file = File(path, NOMEDIA)
     if (!getDoesFilePathExist(file.absolutePath)) {
+        deleteFromMediaStore(file.absolutePath) {
+            rescanFolderMedia(path)
+        }
         callback?.invoke()
         return
     }

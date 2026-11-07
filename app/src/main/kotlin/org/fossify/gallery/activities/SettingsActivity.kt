@@ -375,20 +375,21 @@ class SettingsActivity : SimpleActivity() {
         binding.settingsHiddenItemPasswordProtectionHolder.beGoneIf(isRPlus() && !isExternalStorageManager())
         binding.settingsHiddenItemPasswordProtection.isChecked = config.isHiddenPasswordProtectionOn
         binding.settingsHiddenItemPasswordProtectionHolder.setOnClickListener {
-            val tabToShow = if (config.isHiddenPasswordProtectionOn) {
+            val wasProtectionOn = config.isHiddenPasswordProtectionOn
+            val tabToShow = if (wasProtectionOn) {
                 CryptoManager.getVaultProtectionType(this) ?: config.hiddenProtectionType
             } else {
                 SHOW_ALL_TABS
             }
             VaultSecurityDialog(this, config.hiddenPasswordHash, tabToShow, minimalist = false) { hash, type, success ->
                 if (success) {
-                    val hasPasswordProtection = config.isHiddenPasswordProtectionOn
-                    binding.settingsHiddenItemPasswordProtection.isChecked = !hasPasswordProtection
-                    config.isHiddenPasswordProtectionOn = !hasPasswordProtection
-                    config.hiddenPasswordHash = if (hasPasswordProtection) "" else hash
+                    val turnOn = !wasProtectionOn
+                    binding.settingsHiddenItemPasswordProtection.isChecked = turnOn
+                    config.isHiddenPasswordProtectionOn = turnOn
+                    config.hiddenPasswordHash = if (turnOn) hash else ""
                     config.hiddenProtectionType = type
 
-                    if (config.isHiddenPasswordProtectionOn) {
+                    if (turnOn) {
                         val confirmationTextId = if (config.hiddenProtectionType == PROTECTION_FINGERPRINT)
                             org.fossify.commons.R.string.fingerprint_setup_successfully else org.fossify.commons.R.string.protection_setup_successfully
                         ConfirmationDialog(this, "", confirmationTextId, org.fossify.commons.R.string.ok, 0) { }

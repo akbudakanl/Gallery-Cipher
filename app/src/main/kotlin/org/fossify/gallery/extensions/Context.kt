@@ -520,7 +520,11 @@ fun Context.getNoMediaFoldersSync(): ArrayList<String> {
                     getDoesFilePathExist(noMediaFile.absolutePath, OTGPath)
                     && noMediaFile.name == NOMEDIA
                 ) {
-                    folders.add(noMediaFile.parent)
+                    noMediaFile.parent?.let { folders.add(it) }
+                } else if (!noMediaFile.exists()) {
+                    try {
+                        contentResolver.delete(uri, "${Files.FileColumns.DATA} = ?", arrayOf(path))
+                    } catch (_: Exception) {}
                 }
             } while (cursor.moveToNext())
         }

@@ -274,14 +274,15 @@ class DirectoryAdapter(
     }
 
     private fun checkHideBtnVisibility(menu: Menu, selectedPaths: ArrayList<String>) {
+        val hasVault = config.isHiddenPasswordProtectionOn || CryptoManager.hasExistingVault(activity)
         menu.findItem(R.id.cab_hide).isVisible =
             (!isRPlus() || isExternalStorageManager()) && selectedPaths.any {
-                !it.doesThisOrParentHaveNoMedia(HashMap(), null) && !CryptoManager.isEncryptedFolderPath(activity, it)
+                !CryptoManager.isEncryptedFolderPath(activity, it) && (!it.doesThisOrParentHaveNoMedia(HashMap(), null) || hasVault)
             }
 
         menu.findItem(R.id.cab_unhide).isVisible =
             (!isRPlus() || isExternalStorageManager()) && selectedPaths.any {
-                it.doesThisOrParentHaveNoMedia(HashMap(), null) || CryptoManager.isEncryptedFolderPath(activity, it)
+                CryptoManager.isEncryptedFolderPath(activity, it) || (!hasVault && it.doesThisOrParentHaveNoMedia(HashMap(), null))
             }
     }
 
