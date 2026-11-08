@@ -180,3 +180,77 @@ The application transitions through three distinct operational states to balance
   - Swiping down from top to bottom when viewing media at original size (unzoomed 1:1 scale) dismisses the viewer and returns to the album grid view, mirroring the back button.
   - The gesture discriminator cleanly isolates intentional downward pulls from horizontal page swipes, using density-aware thresholds (40dp) and natural gesture duration (up to 500ms).
   - When content is zoomed in—via 2-finger pinch in videos or photos, or double-tap in photos—downward swipe dismiss is automatically disabled to allow free panning.
+
+---
+
+## 7. Zero-Disk Streaming Vault Downloader (Direct-to-Ciphertext)
+
+When downloading media using traditional mobile browsers, files are saved as plaintext into the public download directory (`/storage/emulated/0/Download`) before any application can move or encrypt them. This workflow introduces severe anti-forensic vulnerabilities:
+
+1. **Flash Storage Data Remanence:** NAND Flash controllers (UFS and eMMC) utilize a Flash Translation Layer (FTL) with wear-leveling algorithms. Even if a file is wiped or shredded after encryption, physical flash blocks containing plaintext chunks remain un-erased until long-term TRIM and garbage collection cycles occur.
+2. **System MediaStore Leakage:** As soon as a file touches disk, Android's `MediaScanner` indexes its name and metadata into `external.db` and often generates plaintext system thumbnails in `.thumbnails`.
+
+Fossify Gallery Cipher solves this with a **Zero-Disk Streaming Downloader**: incoming network bytes are held strictly in a transient RAM buffer, piped through an authenticated stream cipher, and committed directly to flash memory as randomized `.bin` ciphertext. Plaintext never touches non-volatile storage.
+
+### A. Architectural Sequence Diagram
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as User
+    participant Browser as Web Browser (Chrome, Brave, etc.)
+    participant Activity as VaultShareActivity (Entry Point)
+    participant Auth as VaultSecurityDialog (Credential Check)
+    participant Picker as PickVaultAlbumDialog (Physical Album Picker)
+    participant Downloader as VaultDownloader (Direct Streaming Engine)
+    participant Disk as Flash Storage (NAND Storage)
+
+    User->>Browser: Long press media / Tap "Share"
+    Browser->>Activity: Intent (ACTION_SEND / URL or Stream URI)
+    Activity->>Auth: Prompt Password / PIN / Pattern
+    alt Authentication Fails or Cancelled
+        Auth-->>Activity: Cancelled / Wrong credentials
+        Activity-->>User: Abort & finish() (Zero state change)
+    else Authentication Succeeds
+        Auth-->>Activity: Success (Master Key unlocked in RAM)
+        Activity->>Picker: Scan & Display Hidden Physical Albums
+        Note over Picker: Virtual albums (JSON) are excluded.<br/>Only physical vault folders (.meta) listed.
+        User->>Picker: Select Destination Album (+ Create New Album)
+        Picker->>Downloader: Start Streaming Download & Cipher Pipeline
+        Activity-->>User: Display progress dialog ("Downloading and encrypting...")
+        
+        loop In-RAM Streaming (Zero Disk Cache)
+            Downloader->>Downloader: Read 64 KB chunk from TLS socket (RAM)
+            Downloader->>Downloader: Encrypt chunk via AES-256-CTR & update Poly1305 MAC (RAM)
+            Downloader->>Disk: Write ciphertext chunk directly to xxxxxx.bin
+        end
+        Downloader->>Disk: Finalize file with AES-GCM header & Poly1305 MAC tag
+        Downloader-->>Activity: Download complete (Cache in-memory thumbnail)
+        Activity-->>User: Toast "Saved securely to [Album Name]" & finish()
+    end
+```
+
+### B. Core Architectural Components
+
+#### 1. Entry Point (`VaultShareActivity`)
+- Registered in `AndroidManifest.xml` with intent filters for `android.intent.action.SEND` and `android.intent.action.SEND_MULTIPLE` supporting `text/plain` (web links), `image/*`, and `video/*`.
+- Configured with `@style/TranslucentTheme` and `android:excludeFromRecents="true"` to prevent lingering previews in Android's task switcher.
+- Extracts URLs from `Intent.EXTRA_TEXT` (via regex) or direct streams from `Intent.EXTRA_STREAM` (content/file URIs).
+
+#### 2. Mandatory Pre-Action Authentication (`VaultSecurityDialog`)
+- Before displaying any vault contents, album names, or folder structures, the user must authenticate using their configured credential (PIN, Password, or Pattern).
+- If authentication fails or is dismissed, the activity immediately exits (`finish()`), revealing zero information about the vault structure.
+- Upon successful authentication, the 256-bit Master Encryption Key (MEK) is unlocked in volatile RAM (`CryptoManager.unlockedMasterKey`).
+
+#### 3. Strict Physical Album Isolation (`PickVaultAlbumDialog`)
+- **Exclusion of Virtual Albums:** Scans subdirectories in `CryptoManager.getOrCreateVaultRoot(context)`. Any non-media subfolders—specifically `JSON/` where virtual album manifests reside—are strictly omitted.
+- **On-the-Fly Name Decryption:** Vault directories exist on disk under randomized hexadecimal names (e.g., `vault/e8f2a1/`). Using the unlocked MEK, each folder's `.meta` header is decrypted in memory to display the human-readable album title (e.g., *"Private Documents"* or *"Vacation"*), alongside the count of `.bin` files inside.
+- **Instant Album Creation:** Users can tap **"+ Create New Hidden Album"**, which generates a new randomized subfolder on disk, creates a `.nomedia` file, encrypts the title into `.meta`, and automatically targets it for download.
+
+#### 4. Direct Streaming Encryption Pipeline (`CryptoManager.encryptStreamToDirectory`)
+- **Zero Disk Cache:** `VaultDownloader` disables HTTP caches (`useCaches = false`, `defaultUseCaches = false`, `Cache-Control: no-store`) and follows HTTP 301..308 redirects automatically.
+- **In-Memory Streaming:** Data is read in 64 KB chunks from the network input stream directly into memory.
+- **Stream Ciphering:** Chunks are passed into `AES-256-CTR` and incrementally authenticated using `Poly1305`. Ciphertext bytes are flushed directly into `targetDir/<random_hex>.bin`.
+- **Deterministic Header Sizing:** If the server provides a `Content-Length`, the header is written upfront. If the transfer is chunked or size is unknown, the header is updated after EOF using `RandomAccessFile` seek operations, taking advantage of fixed-size AES-GCM ciphertext blocks.
+- **In-RAM Thumbnail Extraction:** For image downloads, image dimensions and sample sizes are calculated by decoding stream bounds directly in memory from `openDecryptedContentStream()`, without writing intermediate unencrypted preview files to disk. Thumbnail bytes are compressed to JPEG and cached strictly in `CryptoManager.metadataCache`.
+
