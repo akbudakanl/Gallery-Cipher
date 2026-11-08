@@ -1,41 +1,41 @@
-# Fossify Gallery Cipher — Güvenlik Sertleştirme ve Güvenli Silme Rehberi
+# Fossify Gallery Cipher — Security Hardening and Secure Deletion Guide
 
-Kapsam: statik kod incelemesi (CryptoManager, VirtualAlbumSyncManager, EncryptedMediaDataSource, Glide/ExoPlayer yolları, manifest, DOCS.md). Uygulama derlenip çalıştırılmadı. Platforma bağlı maddeler (SQLite derleme seçenekleri, MediaStore davranışı, fstrim zamanlaması) hedef cihazda doğrulanmalıdır.
+Scope: static code analysis (CryptoManager, VirtualAlbumSyncManager, EncryptedMediaDataSource, Glide/ExoPlayer paths, AndroidManifest.xml, DOCS.md). The application was not built or run. Platform-dependent items (SQLite build flags, MediaStore behavior, fstrim scheduling) must be verified on a target device.
 
-## 1. Hedef ve dürüst tehdit modeli
+## 1. Objectives and Honest Threat Model
 
-Varsayımlar: güncel Android (FBE), yalnızca dahili depolama, root yok, kullanıcı her şifrelemeden sonra cihazı yeniden başlatıyor.
+Assumptions: modern Android with File-Based Encryption (FBE), internal storage only, non-rooted device, user reboots device after each encryption operation.
 
-Korunması hedeflenenler:
+Target protections:
 
-- T1: root’suz kurtarma uygulamaları ve diğer uygulamalar
-- T2: cihazı kaybeden veya çalan biri; cihaz yeniden başlatılmış, kilidi açılmamış (BFU)
-- T3: yedekleme, paylaşım, ekran görüntüsü gibi yan kanallar
-- T4: ayrıcalıklı adli erişim, cihaz açık ve kilidi bir kez açılmışken (AFU): yalnızca kısmi koruma
+- T1: Non-root recovery applications and third-party apps
+- T2: Device loss or theft; device rebooted into Before First Unlock (BFU) state
+- T3: Side channels such as backups, shares, and screenshots
+- T4: Privileged forensic extraction while device is powered on and unlocked at least once (After First Unlock - AFU): partial mitigation only
 
-Garanti edilemeyenler: flash hücrelerinin fiziksel olarak silindiği; kamera uygulaması, bulut yedeği, mesajlaşma uygulamaları gibi dışarıdaki kopyalar; T4.
+Non-guarantees: physical erasure of NAND flash cells; external copies produced by camera apps, cloud backups, or messaging apps; T4.
 
-Yeniden başlatmanın etkisi: RAM temizlenir (anahtarlar, çözülmüş bitmap’ler, silinen dosyanın page cache sayfaları) ve cihaz BFU durumuna döner. Flash’taki bloklara dokunmaz ve fstrim’i garanti etmez. Kilit açılınca CE anahtarı yeniden yüklenir.
+Impact of rebooting: Clears volatile RAM (cryptographic keys, decoded bitmaps, filesystem page cache pages for deleted files) and returns device to BFU state. Does not alter flash blocks or guarantee an immediate fstrim. Upon first unlock, the Credential Encrypted (CE) key is restored into memory.
 
-## 2. fstrim, discard ve çöp toplama (GC)
+## 2. fstrim, Discard, and Garbage Collection (GC)
 
-- Dosya silinince dosya sistemi blokları “boş” işaretler; flash denetleyicisi bunu discard/TRIM gelene kadar bilmez.
-- İki yol vardır: F2FS’in discard mount seçeneği (checkpoint sırasında asenkron discard) ve idle maintenance sırasında (cihaz şarjda, ekran kapalı, boşta; genellikle günlük) çalışan fstrim ile F2FS çöp toplama. Mount seçenekleri ve zamanlama üreticiye göre değişir.
-- Kapanışta /data unmount edilir ve F2FS son checkpoint’ini yapar; bekleyen discard’ların bir kısmı bu sırada gönderilebilir. Garanti değildir.
-- Discard gelse bile denetleyici hücreyi hemen silmek zorunda değildir. Pratikte çoğu cihazda kısa sürede okunamaz hale gelir, ama standart bir garanti yoktur.
-- FBE nedeniyle serbest kalan bloklar zaten şifreli içerik taşır; TRIM ikinci katmandır.
-- Uygulama fstrim veya GC tetikleyemez. Yapılabilecekler: kullanıcıyı yönlendirmek (şarja tak, ekranı kapat) ve ileri düzey kullanıcılar için USB hata ayıklama ile `adb shell sm idle-maint run` (çoğu cihazda root’suz çalışır, yetki hatası verebilir; test edin).
-- Boş alanı rastgele dosyalarla doldurma yöntemi önerilmez: flash’ı yıpratır, uzun sürer, cihazı kararsızlaştırabilir ve F2FS’in out-of-place yazımı yüzünden eski bloklara ulaşacağı garanti değildir.
+- When a file is deleted, the filesystem marks its blocks as "free"; the flash controller remains unaware until a discard/TRIM command is issued.
+- Two primary paths exist: F2FS discard mount options (asynchronous discard during checkpoints) and idle maintenance fstrim alongside F2FS garbage collection (runs when device is charging, screen off, and idle; typically daily). Mount options and scheduling vary across OEMs.
+- During device shutdown, `/data` is unmounted and F2FS performs its final checkpoint; pending discards may partially flush during this step, but this is not guaranteed.
+- Even upon receiving a discard command, the controller is not required to erase flash blocks immediately. In practice, blocks become unreadable shortly thereafter on most modern controllers, but no universal standard guarantees timing.
+- Under FBE, freed blocks already contain encrypted ciphertext; TRIM serves as a secondary defense layer.
+- An application cannot directly trigger fstrim or filesystem GC. Available mitigations: user guidance (plug into charger, turn screen off) and, for advanced users via USB debugging, `adb shell sm idle-maint run` (runs without root on most devices, though permission errors may occur; test on target OEM).
+- Overwriting free space with large random dummy files is discouraged: causes flash wear, is time-consuming, risks device instability, and does not guarantee reaching older blocks due to F2FS out-of-place logging.
 
-## 3. Mevcut hatalar ve düzeltmeleri
+## 3. Vulnerabilities and Remediations
 
-### P0: hemen yapılmalı
+### P0: Immediate Priority
 
-**3.1 Güvenli silme (CryptoManager.secureWipeAndDeleteFile)**
+**3.1 Secure Deletion (CryptoManager.secureWipeAndDeleteFile)**
 
-Sorunlar: 64 MB üstündeki dosyalarda yalnızca 32 MB üzerine yazılıyor; yazılan tek geçiş sıfır (dokümandaki “rastgele + sıfır, çok geçişli” ifadesi kodla uyuşmuyor); hatalar yutuluyor ve dosya yine de siliniyor; fonksiyon sonuç döndürmüyor.
+Issues: Files exceeding 64 MB only overwrite the first 32 MB; only a single pass of zeroes is written (contradicting the documentation's claim of "multi-pass random + zero fill"); exceptions are caught and ignored while still deleting the file; function does not return a status.
 
-Düzeltme: dosyanın tamamı üzerine yazılır, `force(true)` çağrılır, kısaltılır, silinir. Hata olursa `false` döner ve çağıran orijinali silmez.
+Remediation: Overwrite the entire file length, invoke `force(true)`, truncate to 0, and delete. On error, return `false` so the caller preserves the original plaintext.
 
 ```kotlin
 fun secureWipeAndDeleteFile(context: Context, file: File): Boolean {
@@ -58,7 +58,7 @@ fun secureWipeAndDeleteFile(context: Context, file: File): Boolean {
             ch.force(true)
         }
     } catch (e: IOException) {
-        return false   // çağıran orijinali silmemeli ve kullanıcıya bildirmeli
+        return false   // caller must not delete the original and should notify the user
     }
     val deleted = file.delete()
     syncDir(file.parentFile)
@@ -70,41 +70,41 @@ private fun syncDir(dir: File?) {
     try {
         val fd = Os.open(dir!!.path, OsConstants.O_RDONLY, 0)
         try { Os.fsync(fd) } finally { Os.close(fd) }
-    } catch (_: Exception) { /* en iyi çaba */ }
+    } catch (_: Exception) { /* best effort */ }
 }
 ```
 
-Notlar: tek geçiş yeterlidir; çoklu geçiş flash’ta fayda sağlamaz ve FBE altında yazılan sıfırlar da şifreli yazılır. Çağıranlar (encryptFolder, Activity.kt içindeki kopyala/taşı akışı) dönüş değerini kontrol etmeli, başarısızlıkta kullanıcıya hangi dosyaların güvenle silinemediğini göstermelidir.
+Notes: A single pass is sufficient; multi-pass overwrites offer no benefit on flash storage, and under FBE, written zeros are encrypted at rest anyway. Callers (`encryptFolder`, copy/move flows in `Activity.kt`) must check the return value and notify the user of any files that could not be securely wiped.
 
-**3.2 Silmeden önce doğrulama**
+**3.2 Pre-Wipe Verification**
 
-Şu an orijinal, şifreleme exception atmadığı için siliniyor. Şifrelerken düz metnin SHA-256 özetini hesaplayın; ardından şifreli dosyayı çözüp özeti karşılaştırın ve MAC’i doğrulayın. Uyuşmazlıkta şifreli dosyayı silin, orijinale dokunmayın.
+Currently, plaintext originals are deleted as long as encryption does not throw an unhandled exception. Instead, compute a SHA-256 digest of the plaintext stream during encryption; then decrypt the written ciphertext, verify its MAC, and confirm the digest matches. On mismatch, delete the encrypted artifact and keep the plaintext intact.
 
 ```kotlin
-// şifrelerken: her okunan düz metin bloğu için sha.update(buffer, 0, read)
+// during encryption: sha.update(buffer, 0, read) for every plaintext block read
 val sha = MessageDigest.getInstance("SHA-256")
 val expected = sha.digest()
 
-// doğrularken
+// during verification
 val check = MessageDigest.getInstance("SHA-256")
 openDecryptedContentStream(enc)?.use { s ->
     val b = ByteArray(64 * 1024)
     while (true) { val n = s.read(b); if (n < 0) break; check.update(b, 0, n) }
 }
 val ok = verifyFileIntegrity(enc) && MessageDigest.isEqual(expected, check.digest())
-if (!ok) { enc.delete(); return null }   // orijinale dokunma
+if (!ok) { enc.delete(); return null }   // do not touch the original
 ```
 
-**3.3 Kimlik bilgisi gücü ve .vault**
+**3.3 Credential Entropy and .vault Exposure**
 
-Sorun: PIN (en az 4 hane, yaklaşık 13 bit) ve desen (4–9 nokta, yaklaşık 18 bit) Argon2id’yi anlamsız kılar. `.vault` herkese açık Documents/Cipher altında; aynı sarılmış paket SharedPreferences’ta ve (allowBackup açık olduğu için) yedekte de duruyor. Offline kaba kuvvet saldırısı için gereken her şey saldırganın elinde.
+Issues: Using a PIN (min 4 digits, ~13 bits entropy) or pattern (4–9 dots, ~18 bits entropy) renders Argon2id ineffective against offline brute force. The `.vault` file is stored under public Documents/Cipher; the wrapped bundle is duplicated in SharedPreferences and (since `allowBackup="true"`) in cloud backups. An attacker has everything needed for an offline dictionary attack.
 
-Düzeltme:
+Remediation:
 
-- Günlük kullanım için cihaza bağlı sarma: sarılmış anahtar = GCM_Keystore( GCM_Argon2( MEK ) ). Keystore anahtarı varsa StrongBox’ta, yoksa TEE’de tutulur ve `setUnlockedDeviceRequired(true)` ile kilit açık olmadan kullanılamaz. Dosyalar kopyalansa bile PIN offline kırılamaz.
-- Taşınabilirlik isteğe bağlı olsun: yalnızca güçlü bir parola ile (en az 6 diceware kelimesi, yaklaşık 77 bit) korunan ayrı bir kurtarma başlığı. Güçlü parola girilmediyse herkese açık dizine hiç başlık yazmayın.
-- Argon2id: başlangıç 64 MiB, t=3, p=2 (RFC 9106’nın düşük bellek önerisine yakın); cihazda yaklaşık 0,5–1 sn sürecek şekilde kalibre edin.
-- `unlockFromHeaderFile` başlıktaki parametreleri sınırsız okuyor; kabul aralığı koyun.
+- Device-bound key wrapping for daily operations: wrapped key = `GCM_Keystore( GCM_Argon2( MEK ) )`. The Keystore key resides in StrongBox (or TEE fallback) with `setUnlockedDeviceRequired(true)` so it cannot be used without an unlocked screen. Even if files are exfiltrated, the PIN cannot be brute-forced offline.
+- Optional portability: A standalone recovery header protected solely by a strong passphrase (at least 6 Diceware words, ~77 bits entropy). If no strong passphrase is provided, avoid writing public headers altogether.
+- Argon2id parameters: Base config of 64 MiB, t=3, p=2 (aligning with RFC 9106 low-memory recommendations); calibrate to ~0.5–1.0s on the target hardware.
+- Enforce strict sanity ranges on parameters parsed by `unlockFromHeaderFile`.
 
 ```kotlin
 val spec = KeyGenParameterSpec.Builder(
@@ -113,26 +113,26 @@ val spec = KeyGenParameterSpec.Builder(
     .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
     .setKeySize(256)
     .setUnlockedDeviceRequired(true)
-    .setIsStrongBoxBacked(hasStrongBox)   // yoksa TEE
+    .setIsStrongBoxBacked(hasStrongBox)   // fallback to TEE if unavailable
     .build()
 
-// başlık okurken
+// when parsing header
 require(memoryKb in 8_192..262_144 && iterations in 1..10 && parallelism in 1..8)
 ```
 
-**3.4 Uzun işlemlerin güvenliği**
+**3.4 Long-Running Operation Resilience**
 
-Sorun: şifreleme ve silme `ensureBackgroundThread` içinde çalışıyor. Kullanıcı uygulamadan çıkarsa `onDestroy` içindeki `lockVault()` anahtarı işlem ortasında siler; süreç öldürülürse düz metin dosyalar kalır.
+Issues: Encryption and wipe routines run inside `ensureBackgroundThread`. If the user leaves the app, `lockVault()` in `onDestroy` zeroes out keys mid-operation. If the process is killed by the OS, plaintext files remain stranded.
 
-Düzeltme: işlemi foreground service (dataSync tipi) içinde çalıştırın; işlem sürerken otomatik kilidi askıya alın; bildirimde albüm adı göstermeyin; işlem öncesi boş alanı (albüm boyutu × 1,1) ve şarj durumunu kontrol edin.
+Remediation: Execute batch operations inside a foreground service (`dataSync` type); suppress auto-lock during active processing; avoid exposing album names in notifications; pre-flight check storage space (album size × 1.1) and battery level.
 
-**3.5 Alt klasörler**
+**3.5 Subdirectory Handling**
 
-`encryptFolder` yalnızca üst düzey dosyaları şifreliyor; alt klasörleri düz metin olarak `internalStorageRoot` altına taşıyor ve .nomedia’sını siliyor. Alt klasörleri özyinelemeli şifreleyin (tercih edilen) ya da işlemden önce kullanıcıya açık uyarı gösterip onay isteyin.
+`encryptFolder` only encrypts top-level files; subdirectories are moved in plaintext under `internalStorageRoot` and their `.nomedia` file is removed. Encrypt subdirectories recursively (preferred) or display an explicit warning and prompt for confirmation before proceeding.
 
-**3.6 Ekran görüntüsü ve Recents**
+**3.6 Screen Capture and Recents Leaks**
 
-`FLAG_SECURE` hiç kullanılmıyor; Android uygulama arka plana gidince görev anlık görüntüsünü diske yazar. Vault görünümü (mIsSecretVaultView) ve şifreli medya açıkken koruma açılmalı.
+`FLAG_SECURE` was absent; Android writes task snapshot images to disk when an app transitions to the background. Window security must be applied whenever the vault view (`mIsSecretVaultView`) or encrypted media is displayed.
 
 ```kotlin
 fun Activity.applyVaultScreenProtection(enable: Boolean) {
@@ -142,9 +142,9 @@ fun Activity.applyVaultScreenProtection(enable: Boolean) {
 }
 ```
 
-**3.7 Yedekleme**
+**3.7 Application Backups**
 
-`allowBackup="true"`: veritabanları, SharedPreferences ve sarılmış anahtar bulut yedeğine gidebilir. `allowBackup="false"` yapın ve `dataExtractionRules` ile tüm alanları hariç tutun.
+`allowBackup="true"` allows room databases, SharedPreferences, and wrapped credentials to escape into cloud backups. Set `allowBackup="false"` and configure `dataExtractionRules` to exclude all domains.
 
 ```xml
 <application android:allowBackup="false"
@@ -163,11 +163,11 @@ fun Activity.applyVaultScreenProtection(enable: Boolean) {
 </data-extraction-rules>
 ```
 
-### P1: kısa vadede
+### P1: Short-Term Priority
 
-**3.8 Room veritabanı kalıntıları**
+**3.8 Room Database Forensic Artifacts**
 
-Android’in sistem SQLite’ı birçok sürümde secure_delete açık derlenir, ama bu garanti değildir (ilk değerlendirmede bunu kesin bir açık olarak ifade etmiştim; doğrusu “doğrulanmalı”). `PRAGMA secure_delete` değerini okuyun, kapalıysa açın; WAL için checkpoint(TRUNCATE), ardından VACUUM çalıştırın. Albüm şifrelendikten sonra mediaDB, directoryDB, favoriler ve dateTakens tablolarında o albümün yollarını temizleyin.
+Android's system SQLite is often compiled with `secure_delete` enabled, but this is not guaranteed across all vendor builds. Query `PRAGMA secure_delete` and enforce `ON`; run `wal_checkpoint(TRUNCATE)` followed by `VACUUM`. After encrypting an album, purge its paths from `mediaDB`, `directoryDB`, `favorites`, and `dateTakens`.
 
 ```kotlin
 Room.databaseBuilder(ctx, GalleryDatabase::class.java, name)
@@ -185,44 +185,44 @@ fun scrubDatabase(db: SupportSQLiteDatabase) {
 }
 ```
 
-**3.9 Glide ve diğer önbellekler**
+**3.9 Glide and Subsystem Caches**
 
-`clearDiskCache` dosyaları yalnızca unlink eder. Önce klasördeki dosyaların üzerine yazın, sonra `clearDiskCache()` çağırın. Aynısı `externalCacheDir`, `removeTempFolder()` içeriği, widget önbelleği (`MyWidgetProvider`, RESOURCE) ve `PortraitPhotosAdapter` (RESOURCE) için geçerli. Gizli albümlerin widget’ta kapak olarak kullanılamadığını doğrulayın.
+`clearDiskCache` simply unlinks files. Overwrite cached files prior to calling `clearDiskCache()`. Apply the same logic to `externalCacheDir`, `removeTempFolder()` contents, app widget cache (`MyWidgetProvider`, RESOURCE), and `PortraitPhotosAdapter` (RESOURCE). Ensure hidden albums cannot be selected as widget cover art.
 
-**3.10 Sanal albüm JSON dosyaları**
+**3.10 Virtual Album JSON Files**
 
-`Virtual Album Saves/*.json` albüm gizlenince düz `delete()` ile siliniyor; üzerine yazıp silin (küçük dosya, maliyet ihmal edilebilir). Gizli albüm dosya adı albüm adının özetinden türüyor (`fva_<hash>`): ad tahmininin doğrulanmasına izin verir. HMAC(MEK, ad) ya da rastgele kimlik kullanın. DOCS.md’deki 16 haneli hex örneği de gerçeğe uydurulmalı.
+`Virtual Album Saves/*.json` was deleted with plain `delete()` when an album was hidden; overwrite before unlinking (files are small, negligible I/O overhead). Hidden album filenames were derived from a hash of the album title (`fva_<hash>`), allowing rainbow/dictionary confirmation of album names. Use `HMAC(MEK, title)` or a random UUID. Align the 16-character hex description in DOCS.md with reality.
 
 **3.11 SharedPreferences (Config)**
 
-Yol taşıyan anahtarları denetleyin: sabitlenmiş, dahil edilen ve hariç tutulan klasörler, albüm kapakları, klasöre özel sıralama ve görünüm anahtarları, son açılan klasör. Albüm gizlenirken hepsini temizleyin. Not: SharedPreferences her yazımda dosyayı yeniden oluşturur ve eski blokları bırakır; burada ancak FBE korur. Bu yüzden hassas yolları en başta saklamamak en iyisidir.
+Audit preference keys containing paths: pinned, included, and excluded folders; album covers; folder-specific sort and view settings; last opened directory. Cleanse them upon hiding an album. Note: SharedPreferences rewrites the entire file upon modification, leaving stale flash blocks behind; here only FBE provides protection. Consequently, avoiding persistent storage of sensitive paths is ideal.
 
-**3.12 MediaStore ve sistem izleri**
+**3.12 MediaStore and System Indices**
 
-`MediaStore.*.Thumbnails` tabloları API 29’dan beri kullanımdan kalktı; `purgeTracesForFile` içindeki bu temizlik muhtemelen etkisiz. Silmeden sonra üst klasörü tarayın (scanFile), satırların gittiğini doğrulayın, `.thumbnails` ve `.trashed-*` kalıntılarını arayın. Fossify’ın kendi geri dönüşüm kutusunda bu albümden gelen öğeler olabilir (denetleyin); varsa onları da ezin.
+`MediaStore.*.Thumbnails` tables have been deprecated since API 29; calling purge operations against them is mostly ineffective. After deletion, scan the parent directory (`scanFile`), verify rows have been removed, and look for `.thumbnails` and `.trashed-*` remnants. Check Fossify's built-in Recycle Bin for items originating from the album and shred them if present.
 
-**3.13 Dosya zaman damgası ve boyut**
+**3.13 File Timestamps and Size Leakage**
 
-`encryptedFile.setLastModified(lastModified)` orijinal fotoğraf zamanını şifreli dosyaya taşıyor. Sabit veya rastgele zaman damgası kullanın; gerçek tarih zaten şifreli başlıkta. İsteğe bağlı: küçük dosyalarda boyut sınıflarına dolgu.
+`encryptedFile.setLastModified(lastModified)` propagated original photo timestamps directly to ciphertext files. Replace with a fixed (e.g. midnight UTC) or randomized timestamp; the original timestamp is already preserved inside the encrypted header. Optionally, pad small files into discrete size buckets.
 
-**3.14 Şifreleme formatı (v5)**
+**3.14 Encryption Container Format (v5)**
 
-Mevcut yapıda dosya anahtarı doğrudan MEK; MAC oynatmada doğrulanmıyor (yalnızca dışa aktarma ve çözmede); başlık ile payload kriptografik olarak bağlı değil.
+In earlier formats, the per-file key was the MEK directly; Poly1305 MAC was only verified on full export/decryption rather than during streaming playback; headers and payloads were not cryptographically bound.
 
-Öneri: Google Tink StreamingAead (AES-GCM-HKDF, 1 MiB segment; SeekableByteChannel ile rastgele erişim, yani ExoPlayer seek’i korunur) ve dosya başına rastgele anahtar (MEK ile sarılı, AAD = dosya kimliği). Her segment hem oynatmada hem dışa aktarmada doğrulanır. v1–v4 okunmaya devam eder, arka planda v5’e geçirilir.
+Recommendation: Transition to Google Tink StreamingAead (AES-GCM-HKDF with 1 MiB segments; random access via `SeekableByteChannel` preserving ExoPlayer seeking) with random per-file keys (wrapped with MEK, AAD = file UUID). Every segment is authenticated during both playback and export. Retain read support for v1–v4 while migrating in the background.
 
-Kendi CTR + Poly1305 kurgunuzu sürdürmek zorundaysanız: MAC’i en azından ilk açılışta doğrulayın, başlık özetini MAC girdisine katın, dosya başına anahtar türetin.
+If retaining custom CTR + Poly1305: Authenticate the MAC on initial stream opening, incorporate header digest into the MAC input, and derive unique per-file keys.
 
-**3.15 Anahtar ve bellek hijyeni**
+**3.15 Key and Memory Hygiene**
 
-- Argon2 girdisi `String` yerine `CharArray` olsun; `secretBytes` ve `keyBytes` işlem sonunda sıfırlansın.
-- `unlockedPrivateKey` nesne olarak bekliyor ve sıfırlanamıyor. PKCS8 baytlarını tutup gerektiğinde oluşturun ya da RSA’yı Android Keystore’a taşıyın (dışa aktarılamaz anahtar).
-- `lockVault()` ile birlikte `VideoFragment.sVideoFrameCache` içindeki bitmap’leri `eraseColor(0)` + `recycle()` ile temizleyin ve `Glide.get(ctx).clearMemory()` çağırın. Şu an `clearFrameCache()` yalnızca ViewPagerActivity’den çağrılıyor ve `evictAll` pikselleri sıfırlamıyor.
-- Bu en iyi çabadır: GC taşıması ve kopyalar yüzünden JVM’de kesin sıfırlama garanti edilemez. Dokümanda bunu belirtin.
+- Take Argon2 credentials as `CharArray` rather than `String`; zero out `secretBytes` and `keyBytes` immediately after use.
+- `unlockedPrivateKey` resides as an immutable object in memory and cannot be directly zeroed. Retain PKCS#8 byte arrays for on-demand derivation or delegate RSA keys to Android Keystore (non-exportable keys).
+- On `lockVault()`, wipe bitmaps in `VideoFragment.sVideoFrameCache` using `eraseColor(0)` + `recycle()` and call `Glide.get(ctx).clearMemory()`. Previously, `clearFrameCache()` was only invoked from `ViewPagerActivity`, and `evictAll()` did not zero pixel buffers.
+- Note: This is best-effort; exact JVM memory wiping cannot be guaranteed due to GC compaction and memory duplication. Acknowledge this limitation in documentation.
 
-**3.16 Kilit tetikleyicileri**
+**3.16 Lock Triggers and Lifecycle**
 
-`onDestroy` ve gecikmeli handler’a güvenmeyin. Arka plana geçişte (kısa, ayarlanabilir tolerans) ve ekran kapanınca hemen kilitleyin.
+Do not rely solely on `onDestroy` or delayed handler callbacks. Lock immediately upon application backgrounding (with a short, configurable tolerance) and on screen-off events.
 
 ```kotlin
 ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
@@ -231,72 +231,72 @@ ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObser
 registerReceiver(screenOffReceiver, IntentFilter(Intent.ACTION_SCREEN_OFF))
 ```
 
-**3.17 Diğer hatalar**
+**3.17 Additional Defects**
 
-- `setupOrUpdateCredentials` kilitliyken çağrılırsa yeni MEK üretir ve mevcut dosyalar erişilemez olur; kilitliyken reddedin.
-- `deleteExistingVault` başlığı ezmeden siliyor; sarılmış paket olsa da ezin.
-- Kritik yollardaki `catch (_: Exception) {}` bloklarını kaldırın; detekt.yml’de EmptyCatchBlock ve SwallowedException kurallarını `helpers/` için hata seviyesine çekin.
-- Logcat’e dosya adı veya yol yazan satırları tarayın.
+- Calling `setupOrUpdateCredentials` while locked generates a new MEK, rendering existing files permanently inaccessible; reject attempts while locked.
+- `deleteExistingVault` unlinks headers without shredding; overwrite header bytes even when wrapped.
+- Remove blanket `catch (_: Exception) {}` blocks on critical I/O paths; elevate `EmptyCatchBlock` and `SwallowedException` detekt rules to errors for `helpers/`.
+- Audit logcat outputs to ensure filenames and filesystem paths are never printed.
 
-## 4. Şifreleme sonrası temizlik hattı
+## 4. Post-Encryption Sanitization Pipeline
 
-Sıra önemlidir:
+Order of operations is critical:
 
-1. Ön kontrol: depolama dahili mi (SD/USB ise uyar), FBE durumu (`DevicePolicyManager.getStorageEncryptionStatus()` değeri ENCRYPTION_STATUS_ACTIVE_PER_USER mı), boş alan, şarj. Foreground service başlat.
-2. Şifrele: geçici adla yaz (.tmp), `force`, ardından rename; düz metin SHA-256 özetini hesapla.
-3. Doğrula: şifreli dosyayı çöz, özeti ve MAC’i karşılaştır. Biri başarısızsa tüm işlem geri alınır, orijinallere dokunulmaz.
-4. Bekleyen-silme günlüğü: doğrulanmış düz metin yollarını uygulama özel dizinindeki bir dosyaya yazın (Room’a değil; anahtar gerekmez, çünkü doğrulama zaten yapıldı). Çökme veya süreç öldürülmesinde sonraki açılışta devam edilir.
-5. Wipe: her dosya için 3.1’deki fonksiyon; başarılıları günlükten çıkarın, başarısızları kullanıcıya gösterin.
-6. Uygulama izleri: DB satırları + checkpoint/VACUUM, favoriler, sanal albüm JSON, prefs anahtarları, Glide ve harici cache (üzerine yaz + temizle), geçici klasör, MediaStore satırları, geri dönüşüm kutusu.
-7. Düz metin klasörünü silin; üst dizini fsync edin. Günlük dosyasını da ezip silin.
-8. İkinci tur bellek temizliği: Glide bellek önbelleği ve frame cache.
-9. Kullanıcıya özet: kaç dosya güvenle silindi, hangileri silinemedi, hangi iz temizlikleri yapıldı, önerilen sonraki adımlar.
+1. Pre-flight checks: verify storage is internal (warn on SD/USB), check FBE status (`DevicePolicyManager.getStorageEncryptionStatus()` == `ENCRYPTION_STATUS_ACTIVE_PER_USER`), confirm sufficient free space, and check battery level. Start foreground service.
+2. Encrypt: write to temporary filename (`.tmp`), call `force()`, rename to target; compute SHA-256 digest of plaintext stream.
+3. Verify: decrypt the encrypted file stream, verify Poly1305 MAC and SHA-256 digest match. If any check fails, abort and preserve originals.
+4. Pending-wipe journal: record verified plaintext paths to a journal file in internal app-private storage (not Room; unencrypted is fine as data was already verified). On crash or process death, the wipe resumes on next launch.
+5. Shred: execute the secure wipe function from section 3.1 for each file; remove successful entries from journal, report failures to the user.
+6. Application traces: delete DB records + run checkpoint/VACUUM, purge favorites, virtual album JSON, SharedPreferences entries, Glide and external caches (shred then clear), temporary folder, MediaStore rows, and Recycle Bin items.
+7. Remove plaintext directory; `fsync` parent directory. Shred and unlink the pending-wipe journal.
+8. Secondary memory purge: flush Glide memory cache and frame cache bitmaps.
+9. User report: display summary of files securely wiped, any failed files, traces purged, and recommended next steps.
 
-## 5. Yeniden başlatma ve boşta bakım
+## 5. Device Reboot and Idle Maintenance
 
-- Uygulama cihazı programatik olarak yeniden başlatamaz; sonuç ekranında “Cihazı yeniden başlatın” önerisi gösterin.
-- Önerilen kullanıcı rutini: albümü gizle, “güvenle silindi” raporunu gör, cihazı şarja tak ve ekranı kapatıp boşta bırak (idle maintenance çalışsın; mümkünse birkaç saat veya gece boyunca), ardından yeniden başlat.
-- Yeniden başlatma sonrası ilk kilit açılışında (BOOT_COMPLETED; manifestte RECEIVE_BOOT_COMPLETED zaten var) bir WorkManager işi: bekleyen-silme günlüğünü kontrol et, kalan düz metinleri ez, DB checkpoint/VACUUM’u tekrarla, önbellek klasörlerini yeniden tara.
-- Sıra: önce yeniden başlatmak RAM’i temizler ama discard’ı garanti etmez; önce boşta bekletmek discard şansını artırır. İkisi birbirini dışlamaz.
+- Applications cannot reboot Android devices programmatically; display a prominent "Reboot Device" recommendation on the completion screen.
+- Recommended user routine: hide album, review the "securely wiped" summary, plug device into charger, lock screen, and leave idle (allowing idle maintenance / fstrim to run, ideally overnight), then reboot.
+- Post-reboot first unlock: A WorkManager worker triggered by `BOOT_COMPLETED` (declared in manifest) checks the pending-wipe journal, wipes leftover plaintexts, repeats DB checkpoint/VACUUM, and cleans cache folders.
+- Sequencing: Rebooting immediately clears volatile RAM but does not guarantee flash discard; idling first maximizes discard execution. Both practices complement each other.
 
-## 6. Ek sertleştirmeler
+## 6. Additional Hardening Measures
 
-- Dışa aktarma, paylaşma, “birlikte aç”, yazdırma ve duvar kâğıdı akışlarında şifreli içeriğin düz metin geçici dosya üretmediğini test edin. Şifreli dosyanın olduğu gibi (şifreli haliyle) paylaşılması ayrı bir risktir; bu akışları vault dosyaları için kapatın veya açıkça yönetin.
-- Bildirimlerde ve son kullanılanlar listelerinde albüm adı veya küçük resim göstermeyin.
-- PIN/desen ekranlarını pencere örtüsü saldırılarına karşı `filterTouchesWhenObscured` ile koruyun.
-- BouncyCastle ve Tink sürümlerini sabitleyin, CVE takibi yapın.
-- Ağ yok: derlenmiş (merged) manifestte INTERNET izninin bulunmadığını CI’da doğrulayın.
+- Ensure export, share, "open with", print, and wallpaper flows never generate plaintext temporary files on disk. Sharing the raw encrypted file also poses operational risks; disable or explicitly gate these flows for vault media.
+- Redact album names and thumbnail previews from notification channels and recent task views.
+- Protect PIN and pattern unlock screens against tapjacking and window overlay attacks using `filterTouchesWhenObscured`.
+- Pin dependency versions for BouncyCastle and Tink, and monitor CVE advisories.
+- Zero network surface: Verify via CI that the merged manifest contains no `INTERNET` permission.
 
-## 7. Doğrulama planı
+## 7. Verification and Testing Plan
 
-- Birim testleri: bilinen test vektörleri; bir bit çevir, doğrulama başarısız olmalı; kırpılmış dosya; başlık değişimi ve payload takası; yanlış parola; sınır dışı Argon2 parametreleri.
-- Wipe mantığı testi: FBE’siz bir emülatör veya test imajında `CANARY-<uuid>` desenli 4 KB, 50 MB ve 500 MB dosyalar oluşturun, albümü gizleyin, userdata imajı dökümünde deseni arayın. FBE’li gerçek cihazda ham blok okunamayacağı için bu test wipe mantığını değil FBE’yi ölçer; ikisini karıştırmayın.
-- Uygulama izi testi (debuggable derleme): `adb shell run-as <paket>` ile `databases/` (-wal ve -shm dahil), `shared_prefs/` ve `cache/` içinde deseni ve albüm adını arayın. `adb shell content query --uri content://media/external/file --where "_data LIKE '%AlbumAdi%'"` ile MediaStore satırlarını denetleyin; `/sdcard` altında `.thumbnails` ve `.trashed-*` arayın.
-- Hata enjeksiyonu: salt-okunur dosya, kilitli dosya, düşük alan, işlem ortasında süreç öldürme, ekran kapanması, gelen çağrı.
-- Arayüz: Recents’te albüm içeriğinin görünmediğini ve ekran görüntüsünün engellendiğini doğrulayın.
-- Kod kalitesi: kritik paketlerde boş catch yasağı (detekt) ve lint.
+- Unit tests: verify with known test vectors; single-bit flips must trigger MAC verification failure; truncated files; header swapping and payload swapping; incorrect password rejection; out-of-bounds Argon2 parameter rejection.
+- Wipe logic testing: On an emulator or non-FBE test image, generate 4 KB, 50 MB, and 500 MB files containing distinct `CANARY-<uuid>` markers, hide the album, and scan raw userdata image dumps for the marker. (On an FBE device, raw block reads fail regardless, testing FBE rather than wipe logic; do not conflate the two).
+- Application trace testing (debuggable build): Inspect `databases/` (including `-wal` and `-shm`), `shared_prefs/`, and `cache/` using `adb shell run-as <package>` for album names and identifiers. Query MediaStore with `adb shell content query --uri content://media/external/file --where "_data LIKE '%AlbumName%'"` and check `/sdcard` for `.thumbnails` and `.trashed-*`.
+- Fault injection: read-only files, locked files, low storage conditions, mid-operation process termination, screen timeout, incoming calls.
+- UI security: verify album content is suppressed in Recents and screenshots are blocked.
+- Code quality: enforce detekt rules banning empty catch blocks in critical packages, and run Android lint.
 
-## 8. Dokümantasyon düzeltmeleri (DOCS.md / FORK_CHANGELOG.md)
+## 8. Documentation Corrections (DOCS.md / FORK_CHANGELOG.md)
 
-Önerilen ifadeler:
+Recommended terminology:
 
-- Güvenli silme: “Orijinal dosyanın tüm içeriği üzerine yazılır, kısaltılır ve silinir. Flash depolamada fiziksel silme garanti edilemez; koruma esas olarak Android’in dosya tabanlı şifrelemesine (FBE) ve sistemin TRIM/discard işlemlerine dayanır.”
-- RAM: “Anahtar malzemesi en iyi çabayla sıfırlanır; çözülmüş görüntüler bellekte kısa süre kalabilir. İşlem sonrası yeniden başlatma önerilir.”
-- Diske yazma: “Uygulama çözülmüş içeriği kendi dosyalarına yazmaz; ekran görüntüsü, görev anlık görüntüsü ve sistem swap’ı uygulamanın kontrolü dışındadır (FLAG_SECURE ilk ikisini engeller).”
-- “Multi-pass shredding”, “random + zero fill” ve “asla” ifadelerini kaldırın.
+- Secure deletion: "The entire content of the original file is overwritten, truncated, and deleted. Physical erasure cannot be guaranteed on flash storage; protection primarily relies on Android's file-based encryption (FBE) and system TRIM/discard operations."
+- RAM: "Key material is zeroized on a best-effort basis; decrypted images may remain in memory briefly. A device reboot is recommended after operations."
+- Disk writes: "The app does not write decrypted content to its own files; screenshots, task snapshots, and system swap are outside app control (FLAG_SECURE mitigates the first two)."
+- Remove misleading claims such as "multi-pass shredding", "random + zero fill", and "never".
 
-## 9. Öncelikli yol haritası
+## 9. Priority Roadmap
 
-- Hafta 1 (P0): 3.1, 3.2, 3.4, 3.6, 3.7 ve dokümantasyon düzeltmeleri.
-- Hafta 2 (P0/P1): 3.3 (Keystore bağlı sarma ve parola seçeneği), 3.5, 3.8–3.12, 3.16.
-- Hafta 3 ve sonrası (P1/P2): 3.14 (v5 format ve geçiş), 3.15, 3.13, test altyapısı.
+- Week 1 (P0): 3.1, 3.2, 3.4, 3.6, 3.7, and documentation corrections.
+- Week 2 (P0/P1): 3.3 (Keystore-bound wrapping and passphrase option), 3.5, 3.8–3.12, 3.16.
+- Week 3+ (P1/P2): 3.14 (v5 format and migration), 3.15, 3.13, and testing testbed.
 
-Süreler kabaca tahmindir. Format geçişi en riskli iştir ve geri dönüş planı (v1–v4 okuma desteği) gerektirir.
+Timelines are approximate estimates. Format migration carries the highest risk and requires a backward compatibility plan (supporting v1–v4 reading).
 
-## 10. Kalan riskler
+## 10. Residual Risks
 
-- Flash seviyesinde fiziksel silme garantisi yoktur; FBE ve TRIM’e dayanılır.
-- Cihaz AFU iken ayrıcalıklı adli erişim kısmen mümkün olabilir.
-- Orijinal dosyanın kamera, bulut ve mesajlaşma uygulamalarındaki kopyaları.
-- Üretici katmanlarının (Samsung, Xiaomi vb.) kendi galeri, önbellek ve çöp kutusu mekanizmaları.
-- Kullanıcı davranışı: zayıf PIN, ekran görüntüsü alma, başka uygulamaya paylaşma.
+- Physical erasure is not guaranteed at the flash NAND controller level; reliance is placed on FBE and TRIM.
+- Privileged forensic extraction may partially succeed while the device is in the AFU state.
+- Pre-existing copies of the original files may exist in camera apps, cloud sync services, and messaging apps.
+- OEM system modifications (Samsung, Xiaomi, etc.) may run proprietary gallery caches, thumbnailers, or recycle bin mechanisms.
+- User operational security: weak PIN/pattern, taking external screenshots, or exporting/sharing unprotected media to other applications.
