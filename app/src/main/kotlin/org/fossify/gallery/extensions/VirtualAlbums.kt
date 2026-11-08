@@ -72,7 +72,7 @@ fun Context.getResolvedVirtualAlbumName(album: VirtualAlbum): String? {
     if (!canAccessHiddenVirtualAlbums()) {
         return null
     }
-    return CryptoManager.decryptStringFromVault(album.name)
+    return CryptoManager.decryptStringFromVault(album.name) ?: album.name
 }
 
 /** Existing, not deleted files of the given virtual album path, newest additions first. Must run on a background thread. */
@@ -121,7 +121,7 @@ fun Context.getVirtualAlbumPaths(albumPath: String): ArrayList<String> {
  * Resolves the `Medium` list for a virtual album without requiring encrypted `.fenc` or hidden files
  * to be stored in the `media` SQLite table.
  */
-fun Context.getVirtualAlbumMedia(albumId: Long): ArrayList<Medium> {
+fun Context.getVirtualAlbumMedia(albumId: Long, getVideoDurations: Boolean = false): ArrayList<Medium> {
     return try {
         val album = virtualAlbumsDB.getAlbumById(albumId) ?: return ArrayList()
         val canAccessHidden = canAccessHiddenVirtualAlbums()
@@ -197,7 +197,7 @@ fun Context.getVirtualAlbumMedia(albumId: Long): ArrayList<Medium> {
                     else -> TYPE_IMAGES
                 }
                 val lastMod = file.lastModified()
-                val duration = if (isVideo) (getDuration(path) ?: 0) else 0
+                val duration = if (isVideo && getVideoDurations) (getDuration(path) ?: 0) else 0
                 result.add(
                     Medium(
                         id = null,
@@ -567,7 +567,7 @@ fun Context.getVirtualAlbumDirectories(isSecretVaultView: Boolean = false): Arra
         }
         val resolvedName = getResolvedVirtualAlbumName(album) ?: continue
         val path = getVirtualAlbumPath(albumId)
-        val media = getVirtualAlbumMedia(albumId)
+        val media = getVirtualAlbumMedia(albumId, getVideoDurations = false)
 
         val directory = if (media.isEmpty()) {
             Directory(null, path, "", resolvedName, 0, album.createdTs, album.createdTs, 0L, LOCATION_INTERNAL, 0, "")

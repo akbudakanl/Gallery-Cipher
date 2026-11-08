@@ -21,7 +21,7 @@ data class VirtualAlbumBackup(
     @SerializedName(value = "isHidden", alternate = ["is_hidden"]) val isHidden: Boolean = false,
     @SerializedName("items") val items: List<VirtualAlbumItemBackup>? = null,
     @SerializedName(value = "parentPhysicalPath", alternate = ["parent_physical_path", "sourcePath", "source_path"]) val parentPhysicalPath: String? = null,
-    @SerializedName(value = "mediaPaths", alternate = ["media_paths"]) val mediaPaths: List<String>? = null,
+    @SerializedName(value = "mediaPaths", alternate = ["media_paths", "paths", "media", "files"]) val mediaPaths: List<String>? = null,
     @SerializedName(value = "encryptedPayload", alternate = ["encrypted_payload", "encrypted_data"]) val encryptedPayload: String? = null
 )
 
@@ -98,8 +98,8 @@ object VirtualAlbumSyncManager {
             val album = context.virtualAlbumsDB.getAlbumById(albumId) ?: return
             val items = context.virtualAlbumsDB.getItems(albumId)
 
-            // Include only items whose physical files actually exist on disk
-            val validItems = items.filter { File(it.fullPath).exists() }
+            // Include items whose files exist or whose parent directories exist
+            val validItems = items.filter { File(it.fullPath).exists() || File(it.fullPath).parentFile?.exists() != true }
             val backupItems = validItems.map {
                 VirtualAlbumItemBackup(
                     fullPath = it.fullPath,
@@ -151,7 +151,6 @@ object VirtualAlbumSyncManager {
                 }
             } else {
                 // Normal (Non-hidden) Virtual Album:
-                // Keep unchanged: saved in Documents/Fossify Virtual Albums/<AlbumName>.json
                 val targetDir = ensurePublicStorageDirExists()
                 val targetFile = File(targetDir, getPublicAlbumFileName(album.name, album.id))
                 val tempFile = File(targetDir, "${targetFile.name}.${System.currentTimeMillis()}.tmp")
@@ -208,8 +207,14 @@ object VirtualAlbumSyncManager {
     fun pruneMissingItems(context: Context, albumId: Long, missingPaths: Collection<String>) {
         if (missingPaths.isEmpty()) return
         try {
+            // Only prune if the file's parent directory actually exists on disk (confirming drive is accessible)
+            val actuallyMissing = missingPaths.filter { path ->
+                val f = File(path)
+                !f.exists() && f.parentFile?.exists() == true
+            }
+            if (actuallyMissing.isEmpty()) return
             val dao = context.virtualAlbumsDB
-            missingPaths.forEach { dao.removeItemFromAlbum(albumId, it) }
+            actuallyMissing.forEach { dao.removeItemFromAlbum(albumId, it) }
             saveAlbumToFile(context, albumId)
         } catch (_: Exception) {
         }
@@ -217,7 +222,7 @@ object VirtualAlbumSyncManager {
 
     fun syncVirtualAlbums(context: Context, force: Boolean = false) {
         val now = System.currentTimeMillis()
-        if (!force && now - lastSyncTs < 3000L) {
+        if (!force && now - lastSyncTs < 5000L) {
             return
         }
         lastSyncTs = now
@@ -229,31 +234,33 @@ object VirtualAlbumSyncManager {
             emptyList()
         }
 
+        val documentsDir = CryptoManager.getDocumentsDirectory()
+        val legacyDir = File(documentsDir, "Fossify Virtual Albums")
+        val publicDir = getVirtualAlbumsStorageDir()
+
         // 0. Automatically migrate legacy saves from Documents/Fossify Virtual Albums
         try {
-            val documentsDir = CryptoManager.getDocumentsDirectory()
-            val legacyDir = File(documentsDir, "Fossify Virtual Albums")
             if (legacyDir.exists() && legacyDir.isDirectory) {
-                val targetDir = getVirtualAlbumsStorageDir()
-                if (!targetDir.exists()) {
-                    targetDir.mkdirs()
+                if (!publicDir.exists()) {
+                    publicDir.mkdirs()
                 }
                 legacyDir.listFiles { file -> file.isFile && file.extension.equals("json", ignoreCase = true) }?.forEach { f ->
-                    val targetFile = File(targetDir, f.name)
+                    val targetFile = File(publicDir, f.name)
                     if (!targetFile.exists()) {
                         f.copyTo(targetFile, overwrite = true)
                     }
-                    f.delete()
+                    try { f.delete() } catch (_: Exception) {}
                 }
             }
         } catch (_: Exception) {}
 
-        val publicDir = getVirtualAlbumsStorageDir()
         val gson = Gson()
+        val processedAlbumNames = HashSet<String>()
 
-        // 1. Restore public non-hidden albums from Documents/Cipher/Virtual Album Saves/
-        if (publicDir.exists() && publicDir.isDirectory) {
-            val jsonFiles = publicDir.listFiles { file -> file.isFile && file.extension.equals("json", ignoreCase = true) } ?: emptyArray()
+        // 1. Restore public non-hidden albums from both new and legacy folders
+        val candidateDirs = listOfNotNull(publicDir, legacyDir).filter { it.exists() && it.isDirectory }
+        for (sourceDir in candidateDirs) {
+            val jsonFiles = sourceDir.listFiles { file -> file.isFile && file.extension.equals("json", ignoreCase = true) } ?: emptyArray()
             for (file in jsonFiles) {
                 try {
                     val content = file.readText(Charsets.UTF_8).trim()
@@ -265,11 +272,23 @@ object VirtualAlbumSyncManager {
                         null
                     } ?: continue
 
-                    // If a hidden album file was previously left in public folder, skip it
-                    if (backup.isHidden && backup.encryptedPayload != null) continue
+                    // If a hidden album file was previously left in public folder, migrate to vault JSON
+                    if (backup.isHidden && backup.encryptedPayload != null) {
+                        try {
+                            val vaultJsonDir = getVaultStorageDir(context)
+                            val targetVaultFile = File(vaultJsonDir, file.name)
+                            if (!targetVaultFile.exists()) {
+                                file.copyTo(targetVaultFile, overwrite = true)
+                            }
+                            try { file.delete() } catch (_: Exception) {}
+                        } catch (_: Exception) {}
+                        continue
+                    }
 
                     val albumName = backup.name?.trim()?.ifEmpty { null } ?: file.nameWithoutExtension.trim()
                     if (albumName.isEmpty()) continue
+                    if (processedAlbumNames.contains(albumName.lowercase())) continue
+                    processedAlbumNames.add(albumName.lowercase())
 
                     val isHidden = backup.isHidden
                     val createdTs = backup.createdTs ?: file.lastModified()
@@ -316,7 +335,8 @@ object VirtualAlbumSyncManager {
                         try {
                             if (path.isBlank()) continue
                             val targetFile = File(path)
-                            if (!targetFile.exists()) {
+                            // If file definitely doesn't exist and parent exists, skip it
+                            if (!targetFile.exists() && targetFile.parentFile?.exists() == true) {
                                 hadMissingFiles = true
                                 continue
                             }
@@ -343,7 +363,10 @@ object VirtualAlbumSyncManager {
                         dao.insertItems(itemsToInsert)
                     }
 
-                    val missingDbPaths = existingItems.filter { !File(it.fullPath).exists() }.map { it.fullPath }
+                    val missingDbPaths = existingItems.filter {
+                        val f = File(it.fullPath)
+                        !f.exists() && f.parentFile?.exists() == true
+                    }.map { it.fullPath }
                     if (missingDbPaths.isNotEmpty()) {
                         missingDbPaths.forEach { dao.removeItemFromAlbum(albumId, it) }
                         hadMissingFiles = true
@@ -434,7 +457,7 @@ object VirtualAlbumSyncManager {
                             try {
                                 if (path.isBlank()) continue
                                 val targetFile = File(path)
-                                if (!targetFile.exists()) {
+                                if (!targetFile.exists() && targetFile.parentFile?.exists() == true) {
                                     hadMissingFiles = true
                                     continue
                                 }
@@ -461,7 +484,10 @@ object VirtualAlbumSyncManager {
                             dao.insertItems(itemsToInsert)
                         }
 
-                        val missingDbPaths = existingItems.filter { !File(it.fullPath).exists() }.map { it.fullPath }
+                        val missingDbPaths = existingItems.filter {
+                            val f = File(it.fullPath)
+                            !f.exists() && f.parentFile?.exists() == true
+                        }.map { it.fullPath }
                         if (missingDbPaths.isNotEmpty()) {
                             missingDbPaths.forEach { dao.removeItemFromAlbum(albumId, it) }
                             hadMissingFiles = true

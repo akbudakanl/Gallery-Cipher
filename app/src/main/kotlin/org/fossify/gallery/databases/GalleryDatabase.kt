@@ -32,13 +32,7 @@ abstract class GalleryDatabase : RoomDatabase() {
                 synchronized(GalleryDatabase::class) {
                     if (db == null) {
                         db = Room.databaseBuilder(context.applicationContext, GalleryDatabase::class.java, "gallery.db")
-                            .setJournalMode(JournalMode.TRUNCATE)
-                            .addCallback(object : Callback() {
-                                override fun onOpen(db: SupportSQLiteDatabase) {
-                                    super.onOpen(db)
-                                    db.execSQL("PRAGMA secure_delete = ON")
-                                }
-                            })
+                            .setJournalMode(JournalMode.AUTOMATIC)
                             .fallbackToDestructiveMigration()
                             .allowMainThreadQueries()
                             .addMigrations(MIGRATION_4_5)

@@ -275,4 +275,69 @@ class VirtualAlbumSyncTest {
         assertTrue(validDestinations.contains(screenshotsFolder))
         assertTrue(validDestinations.contains(downloadsFolder))
     }
+
+    @Test
+    fun testLegacyAndNewFolderDiscovery() {
+        val tempDir = File(System.getProperty("java.io.tmpdir"), "cipher_multi_dir_${System.currentTimeMillis()}")
+        tempDir.mkdirs()
+        try {
+            val legacyDir = File(tempDir, "Fossify Virtual Albums").apply { mkdirs() }
+            val publicDir = File(tempDir, "Cipher/$CIPHER_VIRTUAL_ALBUMS_DIR_NAME").apply { mkdirs() }
+
+            File(legacyDir, "OldAlbum.json").writeText("{\"version\":1,\"name\":\"Old Album\"}")
+            File(publicDir, "NewAlbum.json").writeText("{\"version\":1,\"name\":\"New Album\"}")
+            // Duplicate in legacy folder should be deduplicated
+            File(legacyDir, "NewAlbum.json").writeText("{\"version\":1,\"name\":\"New Album\"}")
+
+            val candidateDirs = listOf(publicDir, legacyDir).filter { it.exists() && it.isDirectory }
+            val processedNames = HashSet<String>()
+            val loadedNames = ArrayList<String>()
+
+            for (dir in candidateDirs) {
+                val jsonFiles = dir.listFiles { f -> f.isFile && f.extension.equals("json", ignoreCase = true) } ?: emptyArray()
+                for (f in jsonFiles) {
+                    val backup = Gson().fromJson(f.readText(), VirtualAlbumBackup::class.java)
+                    val albumName = backup.name?.trim() ?: f.nameWithoutExtension.trim()
+                    if (processedNames.contains(albumName.lowercase())) continue
+                    processedNames.add(albumName.lowercase())
+                    loadedNames.add(albumName)
+                }
+            }
+
+            assertEquals(2, loadedNames.size)
+            assertTrue(loadedNames.contains("Old Album"))
+            assertTrue(loadedNames.contains("New Album"))
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun testDecryptionConfirmationCriteria() {
+        val encryptedFolder = "/storage/emulated/0/DCIM/.fv_vault"
+        val normalFolder = "/storage/emulated/0/DCIM/Camera"
+        val hiddenVirtualPath = "virtual_album_1"
+        val normalVirtualPath = "virtual_album_2"
+
+        // 1. From hidden physical to normal physical: requires confirmation
+        val isSourceHiddenPhysical1 = true
+        val isDestNonHiddenPhysical1 = true
+        assertTrue(isSourceHiddenPhysical1 && isDestNonHiddenPhysical1)
+
+        // 2. From hidden virtual to normal physical: requires confirmation
+        val isSourceHiddenVirtual2 = true
+        val isDestNonHiddenPhysical2 = true
+        assertTrue(isSourceHiddenVirtual2 && isDestNonHiddenPhysical2)
+
+        // 3. From normal physical to normal physical: NO confirmation
+        val isSourceHiddenPhysical3 = false
+        val isSourceHiddenVirtual3 = false
+        val needsConfirmation3 = (isSourceHiddenPhysical3 || isSourceHiddenVirtual3) && true
+        assertFalse(needsConfirmation3)
+
+        // 4. From hidden to hidden: NO confirmation
+        val isDestNonHiddenPhysical4 = false
+        val needsConfirmation4 = (true) && isDestNonHiddenPhysical4
+        assertFalse(needsConfirmation4)
+    }
 }

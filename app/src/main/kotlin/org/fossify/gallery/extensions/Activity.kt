@@ -406,70 +406,91 @@ fun BaseSimpleActivity.tryCopyMoveFilesTo(
         val isDestEncrypted = CryptoManager.isEncryptedFolderPath(this, destination)
         val hasEncryptedSources = fileDirItems.any { item -> CryptoManager.isEncryptedFile(item.path) }
 
-        if (isDestEncrypted || hasEncryptedSources) {
-            toast(if (isDestEncrypted) R.string.encrypting_files else R.string.decrypting_files)
-            ensureBackgroundThread {
-                val destDir = File(destination)
-                var anyPlaintextWiped = false
-                for (item in fileDirItems) {
-                    val srcFile = File(item.path)
-                    if (!srcFile.exists()) continue
+        val isSourceHiddenPhysical = !source.isVirtualAlbumPath() && (CryptoManager.isEncryptedFolderPath(this, source) || isPathHiddenOrEncrypted(source) || hasEncryptedSources)
+        val isSourceHiddenVirtual = source.isVirtualAlbumPath() && (isHiddenVirtualAlbumPath(source) || isPathHiddenOrEncrypted(source) || hasEncryptedSources)
+        val isDestNonHiddenPhysical = !destination.isVirtualAlbumPath() && !isDestEncrypted && !destination.trimEnd('/').substringAfterLast('/').startsWith(".")
 
-                    if (isDestEncrypted && !CryptoManager.isEncryptedFile(srcFile.name)) {
-                        CryptoManager.encryptFileToDirectory(
-                            context = this,
-                            sourceFile = srcFile,
-                            targetDir = destDir,
-                            wipeSource = !isCopyOperation,
-                            clearCachesNow = false
-                        )
-                        if (!isCopyOperation) {
-                            anyPlaintextWiped = true
-                        }
-                    } else if (!isDestEncrypted && CryptoManager.isEncryptedFile(srcFile.name)) {
-                        CryptoManager.decryptFileToDirectory(
-                            context = this,
-                            encryptedFile = srcFile,
-                            targetDir = destDir,
-                            deleteEncryptedSource = !isCopyOperation
-                        )
-                    } else {
-                        // Encrypted-to-encrypted or normal-to-normal within a mixed batch
-                        val targetFile = File(destDir, srcFile.name)
-                        if (srcFile.absolutePath != targetFile.absolutePath) {
-                            val oldSrcPath = srcFile.absolutePath
-                            srcFile.copyTo(targetFile, overwrite = true)
-                            targetFile.setLastModified(srcFile.lastModified())
+        val needsDecryptionConfirmation = (isSourceHiddenPhysical || isSourceHiddenVirtual) && isDestNonHiddenPhysical
+
+        val proceedWithCopyMove = {
+            if (isDestEncrypted || hasEncryptedSources) {
+                toast(if (isDestEncrypted) R.string.encrypting_files else R.string.decrypting_files)
+                ensureBackgroundThread {
+                    val destDir = File(destination)
+                    var anyPlaintextWiped = false
+                    for (item in fileDirItems) {
+                        val srcFile = File(item.path)
+                        if (!srcFile.exists()) continue
+
+                        if (isDestEncrypted && !CryptoManager.isEncryptedFile(srcFile.name)) {
+                            CryptoManager.encryptFileToDirectory(
+                                context = this,
+                                sourceFile = srcFile,
+                                targetDir = destDir,
+                                wipeSource = !isCopyOperation,
+                                clearCachesNow = false
+                            )
                             if (!isCopyOperation) {
-                                updateVirtualAlbumItemPath(oldSrcPath, targetFile.absolutePath)
-                                if (CryptoManager.isEncryptedFile(srcFile.name)) {
-                                    srcFile.delete()
-                                } else {
-                                    CryptoManager.secureWipeAndDeleteFile(this, srcFile)
-                                    anyPlaintextWiped = true
+                                anyPlaintextWiped = true
+                            }
+                        } else if (!isDestEncrypted && CryptoManager.isEncryptedFile(srcFile.name)) {
+                            CryptoManager.decryptFileToDirectory(
+                                context = this,
+                                encryptedFile = srcFile,
+                                targetDir = destDir,
+                                deleteEncryptedSource = !isCopyOperation
+                            )
+                        } else {
+                            // Encrypted-to-encrypted or normal-to-normal within a mixed batch
+                            val targetFile = File(destDir, srcFile.name)
+                            if (srcFile.absolutePath != targetFile.absolutePath) {
+                                val oldSrcPath = srcFile.absolutePath
+                                srcFile.copyTo(targetFile, overwrite = true)
+                                targetFile.setLastModified(srcFile.lastModified())
+                                if (!isCopyOperation) {
+                                    updateVirtualAlbumItemPath(oldSrcPath, targetFile.absolutePath)
+                                    if (CryptoManager.isEncryptedFile(srcFile.name)) {
+                                        srcFile.delete()
+                                    } else {
+                                        CryptoManager.secureWipeAndDeleteFile(this, srcFile)
+                                        anyPlaintextWiped = true
+                                    }
                                 }
                             }
                         }
                     }
+                    if (anyPlaintextWiped) {
+                        CryptoManager.clearAppImageCaches(this)
+                    }
+                    runOnUiThread {
+                        callback(destination)
+                    }
                 }
-                if (anyPlaintextWiped) {
-                    CryptoManager.clearAppImageCaches(this)
-                }
-                runOnUiThread {
-                    callback(destination)
-                }
-            }
-        } else {
-            val physicalSource = if (source.isVirtualAlbumPath()) {
-                fileDirItems.firstOrNull()?.getParentPath() ?: source
             } else {
-                source
-            }
-            handleSAFDialog(physicalSource) {
-                if (it) {
-                    copyMoveFilesTo(fileDirItems, physicalSource.trimEnd('/'), destination, isCopyOperation, true, config.shouldShowHidden, callback)
+                val physicalSource = if (source.isVirtualAlbumPath()) {
+                    fileDirItems.firstOrNull()?.getParentPath() ?: source
+                } else {
+                    source
+                }
+                handleSAFDialog(physicalSource) {
+                    if (it) {
+                        copyMoveFilesTo(fileDirItems, physicalSource.trimEnd('/'), destination, isCopyOperation, true, config.shouldShowHidden, callback)
+                    }
                 }
             }
+        }
+
+        if (needsDecryptionConfirmation) {
+            getAlertDialogBuilder()
+                .setMessage(R.string.confirm_decrypt_hidden_file)
+                .setPositiveButton(org.fossify.commons.R.string.no, null)
+                .setNegativeButton(org.fossify.commons.R.string.yes) { _, _ ->
+                    proceedWithCopyMove()
+                }
+                .create()
+                .show()
+        } else {
+            proceedWithCopyMove()
         }
     }
 }

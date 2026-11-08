@@ -348,4 +348,5 @@
     <string name="encrypted_download_failed">Failed to download and encrypt file</string>
     <string name="vault_not_setup">Secure Vault is not set up yet. Please set up a vault first.</string>
     <string name="no_media_url_found">No valid media link or file found</string>
+    <string name="confirm_decrypt_hidden_file">Are you sure you want to decrypt the hidden file(s)?</string>
 </resources>
