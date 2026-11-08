@@ -149,6 +149,8 @@
     <string name="autoplay_videos">Videoları otomatik oynat</string>
     <string name="remember_last_video_position">Son video oynatma konumunu hatırla</string>
     <string name="loop_videos">Videoları tekrarla</string>
+    <string name="video_double_tap_duration">Çift dokunma atlama süresi</string>
+    <string name="video_seek_duration_seconds">%d saniye</string>
     <string name="animate_gifs">Küçük resimlerdeki GIFleri hareketlendir</string>
     <string name="max_brightness">Tam ekran medya görüntülerken maksimum parlaklık</string>
     <string name="crop_thumbnails">Küçük resimleri karelere kırp</string>

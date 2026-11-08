@@ -89,6 +89,7 @@ import org.fossify.gallery.helpers.GO_TO_NEXT_ITEM
 import org.fossify.gallery.helpers.GO_TO_PREV_ITEM
 import org.fossify.gallery.helpers.HIDE_SYSTEM_UI_DELAY
 import org.fossify.gallery.helpers.MAX_CLOSE_DOWN_GESTURE_DURATION
+import org.fossify.gallery.helpers.MAX_ZOOM_EQUALITY_TOLERANCE
 import org.fossify.gallery.helpers.ROTATE_BY_ASPECT_RATIO
 import org.fossify.gallery.helpers.ROTATE_BY_DEVICE_ROTATION
 import org.fossify.gallery.helpers.ROTATE_BY_SYSTEM_SETTING
@@ -765,8 +766,9 @@ open class VideoPlayerActivity : BaseViewerActivity(), SeekBar.OnSeekBarChangeLi
         }
 
         val curr = mExoPlayer!!.currentPosition
+        val skipMs = config.videoDoubleTapFastForward * 1000L
         var newPosition =
-            if (forward) curr + FAST_FORWARD_VIDEO_MS else curr - FAST_FORWARD_VIDEO_MS
+            if (forward) curr + skipMs else curr - skipMs
         newPosition = newPosition.coerceIn(0, mExoPlayer!!.duration)
         setPosition(newPosition)
     }
@@ -820,7 +822,7 @@ open class VideoPlayerActivity : BaseViewerActivity(), SeekBar.OnSeekBarChangeLi
                 val downGestureDuration = System.currentTimeMillis() - mTouchDownTime
                 if (config.allowDownGesture && !mIgnoreCloseDown && Math.abs(diffY) > Math.abs(diffX) && diffY < -mCloseDownThreshold &&
                     downGestureDuration < MAX_CLOSE_DOWN_GESTURE_DURATION &&
-                    binding.videoSurfaceFrame.controller.state.zoom == 1f
+                    kotlin.math.abs(binding.videoSurfaceFrame.controller.state.zoom - 1f) < MAX_ZOOM_EQUALITY_TOLERANCE
                 ) {
                     supportFinishAfterTransition()
                 }

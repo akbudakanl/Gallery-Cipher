@@ -84,7 +84,7 @@ import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.EXOPLAYER_MAX_BUFFER_MS
 import org.fossify.gallery.helpers.EXOPLAYER_MIN_BUFFER_MS
 import org.fossify.gallery.helpers.EncryptedMediaDataSource
-import org.fossify.gallery.helpers.FAST_FORWARD_VIDEO_MS
+import org.fossify.gallery.helpers.MAX_ZOOM_EQUALITY_TOLERANCE
 import org.fossify.gallery.helpers.MEDIUM
 import org.fossify.gallery.helpers.SHOULD_INIT_FRAGMENT
 import org.fossify.gallery.interfaces.PlaybackSpeedListener
@@ -260,12 +260,15 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
                 })
 
             videoPreview.setOnTouchListener { view, event ->
-                handleEvent(event)
+                if (mConfig.allowDownGesture) {
+                    handleEvent(event)
+                }
                 false
             }
 
             videoSurfaceFrame.setOnTouchListener { view, event ->
-                if (videoSurfaceFrame.controller.state.zoom == 1f) {
+                val isZoomedOut = abs(videoSurfaceFrame.controller.state.zoom - 1f) < MAX_ZOOM_EQUALITY_TOLERANCE
+                if (mConfig.allowDownGesture && isZoomedOut) {
                     handleEvent(event)
                 }
                 handleTouchHoldEvent(event)
@@ -515,9 +518,20 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         mTimerHandler.removeCallbacks(mTimerRunnable)
     }
 
+    private fun showVideoControls() {
+        binding.videoPlayOutline.beGone()
+        mPlayPauseButton.beVisible()
+        binding.bottomVideoTimeHolder.videoToggleMute.beVisible()
+        binding.bottomVideoTimeHolder.videoPlaybackSpeed.beVisible()
+        binding.bottomVideoTimeHolder.videoPlaybackSpeed.text =
+            "${DecimalFormat("#.##").format(mConfig.playbackSpeed)}x"
+        updatePlayerMuteState()
+    }
+
     private fun setupTimeHolder() {
         mSeekBar.max = mDuration.toInt()
         binding.bottomVideoTimeHolder.videoDuration.text = mDuration.getFormattedDuration()
+        showVideoControls()
     }
 
     private fun initExoPlayer() {
@@ -588,6 +602,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
                     playWhenReady = true
                     mWasVideoStarted = true
                     mPlayPauseButton.setImageResource(org.fossify.commons.R.drawable.ic_pause_outline_vector)
+                    showVideoControls()
                     activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 }
 
@@ -778,8 +793,9 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         }
 
         val curr = mExoPlayer!!.currentPosition
+        val skipMs = mConfig.videoDoubleTapFastForward * 1000L
         var newPosition =
-            if (forward) curr + FAST_FORWARD_VIDEO_MS else curr - FAST_FORWARD_VIDEO_MS
+            if (forward) curr + skipMs else curr - skipMs
         newPosition = newPosition.coerceIn(0, maxOf(mExoPlayer!!.duration, 0))
         setPosition(newPosition)
     }
@@ -878,14 +894,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
             mPlayPauseButton.setImageResource(org.fossify.commons.R.drawable.ic_pause_outline_vector)
         }
 
-        if (!mWasVideoStarted) {
-            binding.videoPlayOutline.beGone()
-            mPlayPauseButton.beVisible()
-            binding.bottomVideoTimeHolder.videoToggleMute.beVisible()
-            binding.bottomVideoTimeHolder.videoPlaybackSpeed.beVisible()
-            binding.bottomVideoTimeHolder.videoPlaybackSpeed.text =
-                "${DecimalFormat("#.##").format(mConfig.playbackSpeed)}x"
-        }
+        showVideoControls()
 
         mWasVideoStarted = true
         if (mIsPlayerPrepared) {
@@ -1001,6 +1010,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         }
 
         mIsPlayerPrepared = true
+        showVideoControls()
         if (mPlayOnPrepared && !mIsPlaying && mIsFragmentVisible && mConfig.autoplayVideos) {
             updatePlaybackSpeed(mConfig.playbackSpeed)
             playVideo()

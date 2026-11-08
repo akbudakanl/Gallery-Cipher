@@ -226,6 +226,10 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getInt(VIDEO_PLAYER_TYPE, if (appRunCount <= 1) VIDEO_PLAYER_APP else VIDEO_PLAYER_SYSTEM)
         set(videoPlayerType) = prefs.edit().putInt(VIDEO_PLAYER_TYPE, videoPlayerType).apply()
 
+    var videoDoubleTapFastForward: Int
+        get() = prefs.getInt(VIDEO_DOUBLE_TAP_FAST_FORWARD, DEFAULT_DOUBLE_TAP_SEEK_DURATION)
+        set(videoDoubleTapFastForward) = prefs.edit().putInt(VIDEO_DOUBLE_TAP_FAST_FORWARD, videoDoubleTapFastForward).apply()
+
     var displayFileNames: Boolean
         get() = prefs.getBoolean(DISPLAY_FILE_NAMES, false)
         set(display) = prefs.edit().putBoolean(DISPLAY_FILE_NAMES, display).apply()

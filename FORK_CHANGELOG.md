@@ -10,6 +10,21 @@ For full architectural details, cryptography specifications, and user guides, se
 ---
 
 ## [Unreleased]
+### Added
+- **Configurable Double-Tap Seek Duration:**
+  - Added "Double-tap seek duration" setting under **Settings > Videos** with choices of 3, 5, 10, and 15 seconds.
+  - Changed default seek / fast-forward / rewind duration from 10 seconds to 5 seconds across both in-app and standalone video players (`VideoFragment`, `VideoPlayerActivity`, and side-scroll controllers).
+  - Included the preference in settings backup, export, and import routines (`VIDEO_DOUBLE_TAP_FAST_FORWARD`).
+
+### Fixed
+- **Restored Missing Video Player Controls:**
+  - Fixed an issue where the mute/unmute toggle (top-right of playback bar) and playback speed adjustment button (top-left of playback bar) disappeared during playback.
+  - Ensured player controls are properly revealed whenever video is initialized, autoplays, prepares, or updates duration, while preserving full fade-out behavior on single-tap focus and auto-hide timeouts.
+- **Swipe-Down-to-Dismiss Gesture Reliability:**
+  - Fixed gesture dismissal failure when swiping down from the top to return to the list view while viewing unzoomed media.
+  - Removed the overly strict 20-pixel horizontal movement threshold and premature move latching that caused almost all normal downward swipe motions to be blocked.
+  - Scaled dismiss threshold by display density (40dp) and adjusted maximum gesture duration to 500ms for smooth, effortless dismissals.
+  - Maintained strict zoom isolation: downward swipe dismisses only when media is at original 1:1 scale (in videos: 2-finger pinch; in photos: 2-finger pinch or center double-tap).
 
 ## [1.15.0-cipher] - 2026-11-08
 ### Added

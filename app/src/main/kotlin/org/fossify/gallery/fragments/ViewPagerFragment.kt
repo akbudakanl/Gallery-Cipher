@@ -177,7 +177,8 @@ abstract class ViewPagerFragment : Fragment() {
             MotionEvent.ACTION_MOVE -> {
                 val diffX = kotlin.math.abs(mTouchDownX - event.rawX)
                 val diffY = kotlin.math.abs(mTouchDownY - event.rawY)
-                if (diffX > 20f || diffX > diffY) {
+                val density = context?.resources?.displayMetrics?.density ?: 1f
+                if (diffX > density * 30f && diffX > diffY * 1.5f) {
                     mIgnoreCloseDown = true
                 }
             }
@@ -193,9 +194,8 @@ abstract class ViewPagerFragment : Fragment() {
 
                 val downGestureDuration = System.currentTimeMillis() - mTouchDownTime
                 val density = context?.resources?.displayMetrics?.density ?: 1f
-                val minThreshold = density * 60f
-                val closeThreshold = maxOf(mCloseDownThreshold, minThreshold)
-                if (!mIgnoreCloseDown && (Math.abs(diffY) > Math.abs(diffX) * 2) && (diffY < -closeThreshold) && downGestureDuration < MAX_CLOSE_DOWN_GESTURE_DURATION && context?.config?.allowDownGesture == true) {
+                val closeThreshold = density * 40f
+                if (!mIgnoreCloseDown && (Math.abs(diffY) > Math.abs(diffX)) && (diffY < -closeThreshold) && downGestureDuration < MAX_CLOSE_DOWN_GESTURE_DURATION && context?.config?.allowDownGesture == true) {
                     activity?.finish()
                     activity?.overridePendingTransition(0, org.fossify.commons.R.anim.slide_down)
                 }

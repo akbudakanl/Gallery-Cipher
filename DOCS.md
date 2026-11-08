@@ -165,8 +165,18 @@ The application transitions through three distinct operational states to balance
 
 ---
 
-## 6. Video Player Architecture & Instant Resume Optimizations
+## 6. Video Player Architecture, Gestures & Playback Optimizations
 
 - **Instant Resume (`sVideoFrameCache`):** When pausing or swiping away from a video, the current hardware `TextureView` frame is captured into an in-memory LRU cache. Swiping back from any distance (3+, 5, 10+ items) displays the exact paused frame immediately instead of falling back to the 00:00 cover photo.
 - **Pre-Warming:** Adjacent fragments with stored session playback positions initialize and seek ExoPlayer in the background before the page settles, eliminating buffering delays upon centering.
-- **Gesture Reliability:** Drag-to-dismiss gestures distinguish between horizontal ViewPager swipes and vertical pulls, preventing accidental activity closure during fast thumb navigation.
+- **Configurable Double-Tap Seek Duration:**
+  - Users can customize the double-tap forward and rewind jump duration under **Settings > Videos > Double-tap seek duration** (`3`, `5`, `10`, or `15` seconds).
+  - The default seek duration is set to **5 seconds** (previously hardcoded to 10 seconds).
+  - This configuration applies consistently to double-tap seeking on both sides of the screen, tap-to-skip on the current time and duration labels, and side scroll controller actions across both the in-app pager player (`VideoFragment`) and standalone player (`VideoPlayerActivity`).
+- **Interactive Control Bar & Auto-Hide:**
+  - The playback bar features a dedicated playback speed selector button (top-left) and audio mute/unmute toggle (top-right).
+  - Tapping the video to focus or waiting for the playback timeout automatically fades out the entire control bar (including speed and mute buttons); single-tapping again smoothly restores all controls together.
+- **Natural Swipe-Down to Dismiss:**
+  - Swiping down from top to bottom when viewing media at original size (unzoomed 1:1 scale) dismisses the viewer and returns to the album grid view, mirroring the back button.
+  - The gesture discriminator cleanly isolates intentional downward pulls from horizontal page swipes, using density-aware thresholds (40dp) and natural gesture duration (up to 500ms).
+  - When content is zoomed in—via 2-finger pinch in videos or photos, or double-tap in photos—downward swipe dismiss is automatically disabled to allow free panning.

@@ -67,6 +67,7 @@ class SettingsActivity : SimpleActivity() {
         setupLoopVideos()
         setupOpenVideosOnSeparateScreen()
         setupOnVideoTap()
+        setupVideoDoubleTapSeekDuration()
         setupMaxBrightness()
         setupUltraHdrRendering()
         setupCropThumbnails()
@@ -308,6 +309,29 @@ class SettingsActivity : SimpleActivity() {
             else -> R.string.open_system_default_player
         }
     )
+
+    private fun setupVideoDoubleTapSeekDuration() {
+        binding.settingsVideoDoubleTapSeekDuration.text = getVideoSeekDurationText()
+        binding.settingsVideoDoubleTapSeekDurationHolder.setOnClickListener {
+            val durations = listOf(3, 5, 10, 15)
+            val items = durations.map { duration ->
+                RadioItem(duration, String.format(getString(R.string.video_seek_duration_seconds), duration))
+            } as ArrayList<RadioItem>
+
+            RadioGroupDialog(
+                activity = this@SettingsActivity,
+                items = items,
+                checkedItemId = config.videoDoubleTapFastForward
+            ) {
+                config.videoDoubleTapFastForward = it as Int
+                binding.settingsVideoDoubleTapSeekDuration.text = getVideoSeekDurationText()
+            }
+        }
+    }
+
+    private fun getVideoSeekDurationText(): String {
+        return String.format(getString(R.string.video_seek_duration_seconds), config.videoDoubleTapFastForward)
+    }
 
     private fun setupMaxBrightness() {
         binding.settingsMaxBrightness.isChecked = config.maxBrightness
@@ -958,6 +982,7 @@ class SettingsActivity : SimpleActivity() {
                 put(LOOP_VIDEOS, config.loopVideos)
                 put(GESTURE_VIDEO_PLAYER, config.gestureVideoPlayer)
                 put(VIDEO_PLAYER_TYPE, config.videoPlayerType)
+                put(VIDEO_DOUBLE_TAP_FAST_FORWARD, config.videoDoubleTapFastForward)
                 put(ALLOW_VIDEO_GESTURES, config.allowVideoGestures)
                 put(ANIMATE_GIFS, config.animateGifs)
                 put(CROP_THUMBNAILS, config.cropThumbnails)
@@ -1104,6 +1129,7 @@ class SettingsActivity : SimpleActivity() {
                 LOOP_VIDEOS -> config.loopVideos = value.toBoolean()
                 GESTURE_VIDEO_PLAYER -> config.gestureVideoPlayer = value.toBoolean()
                 VIDEO_PLAYER_TYPE -> config.videoPlayerType = value.toInt()
+                VIDEO_DOUBLE_TAP_FAST_FORWARD -> config.videoDoubleTapFastForward = value.toInt()
                 ALLOW_VIDEO_GESTURES -> config.allowVideoGestures = value.toBoolean()
                 ANIMATE_GIFS -> config.animateGifs = value.toBoolean()
                 CROP_THUMBNAILS -> config.cropThumbnails = value.toBoolean()
