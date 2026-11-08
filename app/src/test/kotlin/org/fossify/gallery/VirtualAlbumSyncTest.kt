@@ -14,23 +14,23 @@ class VirtualAlbumSyncTest {
     fun testSerializationAndDeserialization() {
         val backup = VirtualAlbumBackup(
             version = 1,
-            name = "Resimler",
+            name = "Pictures",
             createdTs = 1700000000000L,
             isHidden = false,
             items = listOf(
-                VirtualAlbumItemBackup("/storage/emulated/0/Pictures/Resimler/1.jpg", 1700000010000L),
-                VirtualAlbumItemBackup("/storage/emulated/0/Pictures/Resimler/2.jpg", 1700000020000L)
+                VirtualAlbumItemBackup("/storage/emulated/0/Pictures/Album/1.jpg", 1700000010000L),
+                VirtualAlbumItemBackup("/storage/emulated/0/Pictures/Album/2.jpg", 1700000020000L)
             )
         )
 
         val json = GsonBuilder().setPrettyPrinting().create().toJson(backup)
-        assertTrue(json.contains("\"name\": \"Resimler\""))
-        assertTrue(json.contains("/storage/emulated/0/Pictures/Resimler/1.jpg"))
+        assertTrue(json.contains("\"name\": \"Pictures\""))
+        assertTrue(json.contains("/storage/emulated/0/Pictures/Album/1.jpg"))
 
         val parsed = Gson().fromJson(json, VirtualAlbumBackup::class.java)
-        assertEquals("Resimler", parsed.name)
+        assertEquals("Pictures", parsed.name)
         assertEquals(2, parsed.items?.size)
-        assertEquals("/storage/emulated/0/Pictures/Resimler/1.jpg", parsed.items?.get(0)?.fullPath)
+        assertEquals("/storage/emulated/0/Pictures/Album/1.jpg", parsed.items?.get(0)?.fullPath)
         assertEquals(1700000010000L, parsed.items?.get(0)?.addedTs)
     }
 
@@ -40,7 +40,7 @@ class VirtualAlbumSyncTest {
         val snakeCaseJson = """
             {
                 "version": 1,
-                "name": "Tatil Albümü",
+                "name": "Vacation Album",
                 "created_ts": 1690000000000,
                 "is_hidden": false,
                 "items": [
@@ -53,7 +53,7 @@ class VirtualAlbumSyncTest {
         """.trimIndent()
 
         val parsed = Gson().fromJson(snakeCaseJson, VirtualAlbumBackup::class.java)
-        assertEquals("Tatil Albümü", parsed.name)
+        assertEquals("Vacation Album", parsed.name)
         assertEquals(1690000000000L, parsed.createdTs)
         assertFalse(parsed.isHidden)
         assertEquals(1, parsed.items?.size)
@@ -63,7 +63,7 @@ class VirtualAlbumSyncTest {
         // Test fallback media_paths
         val mediaPathsJson = """
             {
-                "name": "Manzaralar",
+                "name": "Landscapes",
                 "media_paths": [
                     "/storage/emulated/0/Pictures/m1.jpg",
                     "/storage/emulated/0/Pictures/m2.jpg"
@@ -72,7 +72,7 @@ class VirtualAlbumSyncTest {
         """.trimIndent()
 
         val parsedPaths = Gson().fromJson(mediaPathsJson, VirtualAlbumBackup::class.java)
-        assertEquals("Manzaralar", parsedPaths.name)
+        assertEquals("Landscapes", parsedPaths.name)
         assertEquals(2, parsedPaths.mediaPaths?.size)
     }
 
@@ -90,18 +90,18 @@ class VirtualAlbumSyncTest {
 
     @Test
     fun testSafeFileNameGeneration() {
-        val normalFileName = VirtualAlbumSyncManager.getPublicAlbumFileName("Resimler", 1L)
-        assertEquals("Resimler.json", normalFileName)
+        val normalFileName = VirtualAlbumSyncManager.getPublicAlbumFileName("Pictures", 1L)
+        assertEquals("Pictures.json", normalFileName)
 
-        val specialFileName = VirtualAlbumSyncManager.getPublicAlbumFileName("Tatil / 2026 : Yaz ?", 2L)
-        assertEquals("Tatil _ 2026 _ Yaz _.json", specialFileName)
+        val specialFileName = VirtualAlbumSyncManager.getPublicAlbumFileName("Vacation / 2026 : Summer ?", 2L)
+        assertEquals("Vacation _ 2026 _ Summer _.json", specialFileName)
 
-        val hiddenFileName = VirtualAlbumSyncManager.getHiddenAlbumFileName("Gizli Albüm")
+        val hiddenFileName = VirtualAlbumSyncManager.getHiddenAlbumFileName("Hidden Album")
         assertTrue(hiddenFileName.startsWith("fva_"))
         assertTrue(hiddenFileName.endsWith(".json"))
-        assertFalse(hiddenFileName.contains("Gizli Albüm"))
+        assertFalse(hiddenFileName.contains("Hidden Album"))
         // Deterministic check
-        assertEquals(hiddenFileName, VirtualAlbumSyncManager.getHiddenAlbumFileName("Gizli Albüm"))
+        assertEquals(hiddenFileName, VirtualAlbumSyncManager.getHiddenAlbumFileName("Hidden Album"))
     }
 
     @Test
@@ -116,7 +116,7 @@ class VirtualAlbumSyncTest {
 
         val outerJson = Gson().toJson(outerBackup)
         // Ensure album name and item paths are not present in outer JSON
-        assertFalse(outerJson.contains("Resimler"))
+        assertFalse(outerJson.contains("Pictures"))
         assertFalse(outerJson.contains("fullPath"))
         assertFalse(outerJson.contains("mediaPaths"))
         assertTrue(outerJson.contains("encryptedPayload"))
@@ -149,8 +149,8 @@ class VirtualAlbumSyncTest {
         try {
             val legacyDir = File(tempDir, "Fossify Virtual Albums")
             legacyDir.mkdirs()
-            val sampleAlbumFile = File(legacyDir, "EskiAlbum.json")
-            sampleAlbumFile.writeText("{\"version\":1,\"name\":\"EskiAlbum\"}")
+            val sampleAlbumFile = File(legacyDir, "LegacyAlbum.json")
+            sampleAlbumFile.writeText("{\"version\":1,\"name\":\"LegacyAlbum\"}")
 
             val targetDir = File(tempDir, "Cipher/$CIPHER_VIRTUAL_ALBUMS_DIR_NAME")
             targetDir.mkdirs()
@@ -164,10 +164,10 @@ class VirtualAlbumSyncTest {
                 f.delete()
             }
 
-            val migratedFile = File(targetDir, "EskiAlbum.json")
+            val migratedFile = File(targetDir, "LegacyAlbum.json")
             assertTrue(migratedFile.exists())
             assertFalse(sampleAlbumFile.exists())
-            assertEquals("{\"version\":1,\"name\":\"EskiAlbum\"}", migratedFile.readText())
+            assertEquals("{\"version\":1,\"name\":\"LegacyAlbum\"}", migratedFile.readText())
         } finally {
             tempDir.deleteRecursively()
         }
@@ -185,7 +185,7 @@ class VirtualAlbumSyncTest {
 
             file1.writeText("fake photo 1")
             file2.writeText("fake photo 2")
-            // file3Missing is NOT created (simulates deleted file from Resimler)
+            // file3Missing is NOT created (simulates deleted file from Pictures)
 
             val rawPaths = listOf(file1.absolutePath, file3Missing.absolutePath, file2.absolutePath)
 
@@ -205,7 +205,7 @@ class VirtualAlbumSyncTest {
     fun testParentPhysicalPathSerializationAndDeserialization() {
         val backup = VirtualAlbumBackup(
             version = 1,
-            name = "Kamera Albümü",
+            name = "Camera Album",
             createdTs = 1700000000000L,
             isHidden = false,
             parentPhysicalPath = "/storage/emulated/0/DCIM/Camera",
@@ -219,12 +219,12 @@ class VirtualAlbumSyncTest {
 
         val parsed = Gson().fromJson(json, VirtualAlbumBackup::class.java)
         assertEquals("/storage/emulated/0/DCIM/Camera", parsed.parentPhysicalPath)
-        assertEquals("Kamera Albümü", parsed.name)
+        assertEquals("Camera Album", parsed.name)
 
         // Also test deserialization when snake_case "parent_physical_path" is used
         val snakeCaseJson = """
             {
-                "name": "Kamera Albümü",
+                "name": "Camera Album",
                 "parent_physical_path": "/storage/emulated/0/DCIM/Camera"
             }
         """.trimIndent()
@@ -239,16 +239,16 @@ class VirtualAlbumSyncTest {
         val downloadsFolder = "/storage/emulated/0/Download"
 
         val albums = listOf(
-            VirtualAlbum(id = 1L, name = "Kamera 1", createdTs = 0L, thumbnail = "", parentPhysicalPath = cameraFolder),
+            VirtualAlbum(id = 1L, name = "Camera 1", createdTs = 0L, thumbnail = "", parentPhysicalPath = cameraFolder),
             VirtualAlbum(id = 2L, name = "Screenshots 1", createdTs = 0L, thumbnail = "", parentPhysicalPath = screenshotsFolder),
-            VirtualAlbum(id = 3L, name = "Kamera 2", createdTs = 0L, thumbnail = "", parentPhysicalPath = cameraFolder)
+            VirtualAlbum(id = 3L, name = "Camera 2", createdTs = 0L, thumbnail = "", parentPhysicalPath = cameraFolder)
         )
 
         // When copying from Camera folder, only albums belonging to Camera folder must match
         val cameraMatchedAlbums = albums.filter { it.parentPhysicalPath.equals(cameraFolder, ignoreCase = true) }
         assertEquals(2, cameraMatchedAlbums.size)
-        assertTrue(cameraMatchedAlbums.any { it.name == "Kamera 1" })
-        assertTrue(cameraMatchedAlbums.any { it.name == "Kamera 2" })
+        assertTrue(cameraMatchedAlbums.any { it.name == "Camera 1" })
+        assertTrue(cameraMatchedAlbums.any { it.name == "Camera 2" })
         assertFalse(cameraMatchedAlbums.any { it.name == "Screenshots 1" })
 
         // Adding items restriction: items from Downloads cannot be added to a Camera-bound album
