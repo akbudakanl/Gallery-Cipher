@@ -338,4 +338,14 @@
     <string name="confirm_checkbox_label">I confirm</string>
     <string name="secret_vault">Secret Vault</string>
     <string name="secret_vault_empty">Secret Vault is empty</string>
+    <string name="save_to_secure_vault">Save to Secure Vault</string>
+    <string name="select_vault_album">Select Hidden Physical Album</string>
+    <string name="create_new_vault_album">+ Create New Hidden Album</string>
+    <string name="enter_album_name">Enter album name</string>
+    <string name="vault_album_name_empty">Album name cannot be empty</string>
+    <string name="downloading_and_encrypting">Downloading and encrypting to vault…</string>
+    <string name="encrypted_download_success">Saved securely to %s</string>
+    <string name="encrypted_download_failed">Failed to download and encrypt file</string>
+    <string name="vault_not_setup">Secure Vault is not set up yet. Please set up a vault first.</string>
+    <string name="no_media_url_found">No valid media link or file found</string>
 </resources>

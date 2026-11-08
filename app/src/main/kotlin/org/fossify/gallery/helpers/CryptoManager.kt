@@ -108,6 +108,13 @@ data class EncryptedFileMetadata(
     val thumbnailBytes: ByteArray? = null
 )
 
+data class VaultPhysicalAlbum(
+    val name: String,
+    val fullPath: String,
+    val folder: File,
+    val itemCount: Int
+)
+
 object CryptoManager {
     private const val MAGIC_V1 = "FVLTENC1"
     private const val MAGIC_V2 = "FGVLTENC"
@@ -1043,6 +1050,85 @@ object CryptoManager {
         }
     }
 
+    fun createHiddenPhysicalAlbum(context: Context, originalName: String): File? {
+        if (unlockedMasterKey == null && context.config.vaultPublicKey.isEmpty()) {
+            return null
+        }
+        val vaultRoot = getOrCreateVaultRoot(context)
+        var subfolder = File(vaultRoot, randomHex(6))
+        while (subfolder.exists()) {
+            subfolder = File(vaultRoot, randomHex(6))
+        }
+        if (!subfolder.mkdirs()) return null
+
+        val noMedia = File(subfolder, NOMEDIA)
+        if (!noMedia.exists()) {
+            try { noMedia.createNewFile() } catch (_: Exception) {}
+        }
+
+        writeEncryptedFolderMeta(context, subfolder, originalName)
+        folderNameCache[subfolder.absolutePath] = originalName
+        encryptedFolderCache[subfolder.absolutePath] = true
+        return subfolder
+    }
+
+    fun getHiddenPhysicalAlbums(context: Context): List<VaultPhysicalAlbum> {
+        val albums = ArrayList<VaultPhysicalAlbum>()
+        val vaultRoot = getOrCreateVaultRoot(context)
+
+        // 1. Vault Root (Main Vault album)
+        val rootFiles = vaultRoot.listFiles() ?: emptyArray()
+        val rootBinCount = rootFiles.count { isEncryptedFile(it.name) }
+        albums.add(
+            VaultPhysicalAlbum(
+                name = context.getString(org.fossify.gallery.R.string.secret_vault),
+                fullPath = vaultRoot.absolutePath,
+                folder = vaultRoot,
+                itemCount = rootBinCount
+            )
+        )
+
+        // 2. Physical subfolders in vaultRoot (excluding virtual albums JSON/ and hidden/system folders)
+        rootFiles.filter { it.isDirectory }.forEach { subfolder ->
+            val folderName = subfolder.name
+            if (folderName.equals("JSON", ignoreCase = true) || folderName.startsWith(".")) {
+                return@forEach
+            }
+
+            val decryptedName = getDecryptedFolderName(subfolder) ?: folderName
+            val binCount = subfolder.listFiles()?.count { isEncryptedFile(it.name) } ?: 0
+            albums.add(
+                VaultPhysicalAlbum(
+                    name = decryptedName,
+                    fullPath = subfolder.absolutePath,
+                    folder = subfolder,
+                    itemCount = binCount
+                )
+            )
+        }
+
+        // 3. Custom external encrypted physical folders from config
+        for (path in context.config.encryptedFolders) {
+            val folder = File(path)
+            if (folder.exists() && folder.isDirectory && folder.absolutePath != vaultRoot.absolutePath) {
+                if (albums.none { it.fullPath == folder.absolutePath }) {
+                    val decryptedName = getDecryptedFolderName(folder) ?: folder.name
+                    val binCount = folder.listFiles()?.count { isEncryptedFile(it.name) } ?: 0
+                    albums.add(
+                        VaultPhysicalAlbum(
+                            name = decryptedName,
+                            fullPath = folder.absolutePath,
+                            folder = folder,
+                            itemCount = binCount
+                        )
+                    )
+                }
+            }
+        }
+
+        return albums
+    }
+
     fun getDecryptedFolderName(folder: File): String? {
         folderNameCache[folder.absolutePath]?.let { return it }
         val masterKey = unlockedMasterKey
@@ -1333,6 +1419,225 @@ object CryptoManager {
         } catch (e: Exception) {
             if (masterKey == null) fileKey.fill(0)
             encryptedFile.delete()
+            null
+        }
+    }
+
+    /**
+     * Directly encrypts a streaming InputStream (e.g. from network or content resolver)
+     * into a hidden vault directory WITHOUT ever writing plaintext to disk.
+     * Prevents any data remanence on flash storage.
+     */
+    fun encryptStreamToDirectory(
+        context: Context? = null,
+        inputStream: InputStream,
+        targetDir: File,
+        originalName: String,
+        contentLength: Long = -1L,
+        onProgress: ((bytesRead: Long, totalBytes: Long) -> Unit)? = null
+    ): File? {
+        val masterKey = unlockedMasterKey
+        val fileKey: ByteArray
+        val rsaWrappedKey: ByteArray?
+        val versionByte: Byte
+
+        if (masterKey != null) {
+            fileKey = masterKey
+            rsaWrappedKey = null
+            versionByte = VERSION_SYMMETRIC_AUTH
+        } else {
+            val pubKeyB64 = context?.config?.vaultPublicKey ?: ""
+            if (pubKeyB64.isEmpty()) return null
+            val pubKeyBytes = Base64.decode(pubKeyB64, Base64.NO_WRAP)
+            fileKey = ByteArray(32).also { secureRandom.nextBytes(it) }
+            rsaWrappedKey = wrapKeyWithPublicKey(pubKeyBytes, fileKey)
+            versionByte = VERSION_ASYMMETRIC_AUTH
+        }
+
+        if (!targetDir.exists()) {
+            targetDir.mkdirs()
+        }
+
+        val lastModified = System.currentTimeMillis()
+        val dateTaken = lastModified
+        val initialSize = if (contentLength > 0L) contentLength else 0L
+        val mediaType = getMediaTypeForName(originalName)
+        val videoDuration = 0
+        val thumbBytes = ByteArray(0)
+
+        fun buildHeaderBytes(size: Long): ByteArray {
+            return ByteArrayOutputStream().use { baos ->
+                DataOutputStream(baos).use { dos ->
+                    dos.writeUTF(originalName)
+                    dos.writeLong(lastModified)
+                    dos.writeLong(dateTaken)
+                    dos.writeLong(size)
+                    dos.writeInt(mediaType)
+                    dos.writeInt(videoDuration)
+                    dos.writeInt(thumbBytes.size)
+                    if (thumbBytes.isNotEmpty()) {
+                        dos.write(thumbBytes)
+                    }
+                }
+                baos.toByteArray()
+            }
+        }
+
+        val headerPlainBytes = buildHeaderBytes(initialSize)
+
+        val headerKey = deriveSubkey(fileKey, DOMAIN_HEADER_KEY)
+        val contentEncKey = deriveSubkey(fileKey, DOMAIN_CONTENT_ENC_KEY)
+        val contentMacKey = deriveSubkey(fileKey, DOMAIN_CONTENT_MAC_KEY)
+
+        val headerIv = ByteArray(GCM_IV_LENGTH).also { secureRandom.nextBytes(it) }
+        val headerCipher = Cipher.getInstance("AES/GCM/NoPadding")
+        headerCipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(headerKey, "AES"), GCMParameterSpec(GCM_TAG_BITS, headerIv))
+        val encryptedHeader = headerCipher.doFinal(headerPlainBytes)
+
+        val contentIv = ByteArray(CTR_IV_LENGTH).also { secureRandom.nextBytes(it) }
+        val contentCipher = Cipher.getInstance("AES/CTR/NoPadding")
+        contentCipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(contentEncKey, "AES"), IvParameterSpec(contentIv))
+        contentEncKey.fill(0)
+
+        val poly1305 = Poly1305(AESEngine.newInstance())
+        poly1305.init(ParametersWithIV(KeyParameter(contentMacKey), contentIv))
+        contentMacKey.fill(0)
+
+        var encryptedFile = File(targetDir, "${randomHex(8)}$ENCRYPTED_BIN_EXT")
+        while (encryptedFile.exists()) {
+            encryptedFile = File(targetDir, "${randomHex(8)}$ENCRYPTED_BIN_EXT")
+        }
+
+        val headerIvOffset = MAGIC_V2.length + 1 + (if (rsaWrappedKey != null) 4 + rsaWrappedKey.size else 0)
+
+        return try {
+            var totalBytesRead = 0L
+            FileOutputStream(encryptedFile).use { fos ->
+                BufferedOutputStream(fos, 64 * 1024).use { bos ->
+                    DataOutputStream(bos).use { dos ->
+                        dos.write(MAGIC_V2.toByteArray(Charsets.US_ASCII))
+                        dos.writeByte(versionByte.toInt())
+                        if (rsaWrappedKey != null) {
+                            dos.writeInt(rsaWrappedKey.size)
+                            dos.write(rsaWrappedKey)
+                        }
+                        dos.write(headerIv)
+                        dos.writeInt(encryptedHeader.size)
+                        dos.write(encryptedHeader)
+                        dos.write(contentIv)
+
+                        val buffer = ByteArray(64 * 1024)
+                        var read: Int
+                        while (inputStream.read(buffer).also { read = it } != -1) {
+                            totalBytesRead += read
+                            val out = contentCipher.update(buffer, 0, read)
+                            if (out != null && out.isNotEmpty()) {
+                                dos.write(out)
+                                poly1305.update(out, 0, out.size)
+                            }
+                            onProgress?.invoke(totalBytesRead, contentLength)
+                        }
+                        val finalBytes = contentCipher.doFinal()
+                        if (finalBytes != null && finalBytes.isNotEmpty()) {
+                            dos.write(finalBytes)
+                            poly1305.update(finalBytes, 0, finalBytes.size)
+                        }
+                        val macTag = ByteArray(MAC_TAG_LENGTH)
+                        poly1305.doFinal(macTag, 0)
+                        dos.write(macTag)
+                        dos.flush()
+                        bos.flush()
+                        fos.fd.sync()
+                    }
+                }
+            }
+
+            if (contentLength <= 0L || contentLength != totalBytesRead) {
+                val finalHeaderPlain = buildHeaderBytes(totalBytesRead)
+                val newHeaderIv = ByteArray(GCM_IV_LENGTH).also { secureRandom.nextBytes(it) }
+                headerCipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(headerKey, "AES"), GCMParameterSpec(GCM_TAG_BITS, newHeaderIv))
+                val newEncryptedHeader = headerCipher.doFinal(finalHeaderPlain)
+                RandomAccessFile(encryptedFile, "rw").use { raf ->
+                    raf.seek(headerIvOffset.toLong())
+                    raf.write(newHeaderIv)
+                    raf.writeInt(newEncryptedHeader.size)
+                    raf.write(newEncryptedHeader)
+                    raf.fd.sync()
+                }
+            }
+            headerKey.fill(0)
+
+            encryptedFile.setLastModified(lastModified)
+
+            val finalThumbBytes = if (mediaType == TYPE_IMAGES && masterKey != null) {
+                generateEmbeddedThumbnailFromEncryptedFile(encryptedFile)
+            } else null
+
+            if (masterKey != null) {
+                val payloadOffset = (headerIvOffset + GCM_IV_LENGTH + 4 + encryptedHeader.size + CTR_IV_LENGTH).toLong()
+                metadataCache[encryptedFile.absolutePath] = EncryptedFileMetadata(
+                    originalName = originalName,
+                    lastModified = lastModified,
+                    dateTaken = dateTaken,
+                    originalSize = totalBytesRead,
+                    mediaType = mediaType,
+                    videoDuration = videoDuration,
+                    payloadOffset = payloadOffset,
+                    contentIv = contentIv,
+                    fileKey = fileKey.copyOf(),
+                    version = versionByte,
+                    isMacAuthenticated = true,
+                    thumbnailBytes = finalThumbBytes
+                )
+            } else {
+                fileKey.fill(0)
+            }
+
+            encryptedFile
+        } catch (e: Exception) {
+            headerKey.fill(0)
+            if (masterKey == null) fileKey.fill(0)
+            encryptedFile.delete()
+            null
+        }
+    }
+
+    private fun generateEmbeddedThumbnailFromEncryptedFile(encryptedFile: File): ByteArray? {
+        return try {
+            val boundsOpts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            openDecryptedContentStream(encryptedFile)?.use { stream ->
+                BitmapFactory.decodeStream(stream, null, boundsOpts)
+            }
+            var sampleSize = 1
+            while (boundsOpts.outWidth / sampleSize > THUMB_MAX_DIMENSION * 2 ||
+                boundsOpts.outHeight / sampleSize > THUMB_MAX_DIMENSION * 2
+            ) {
+                sampleSize *= 2
+            }
+            val decodeOpts = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+            val bitmap = openDecryptedContentStream(encryptedFile)?.use { stream ->
+                BitmapFactory.decodeStream(stream, null, decodeOpts)
+            } ?: return null
+
+            val width = bitmap.width
+            val height = bitmap.height
+            val scale = THUMB_MAX_DIMENSION.toFloat() / maxOf(width, height).coerceAtLeast(1)
+            val scaled = if (scale < 1f) {
+                Bitmap.createScaledBitmap(
+                    bitmap,
+                    (width * scale).toInt().coerceAtLeast(1),
+                    (height * scale).toInt().coerceAtLeast(1),
+                    true
+                )
+            } else {
+                bitmap
+            }
+            val baos = ByteArrayOutputStream()
+            scaled.compress(Bitmap.CompressFormat.JPEG, THUMB_JPEG_QUALITY, baos)
+            if (scaled !== bitmap) scaled.recycle()
+            bitmap.recycle()
+            baos.toByteArray()
+        } catch (_: Exception) {
             null
         }
     }

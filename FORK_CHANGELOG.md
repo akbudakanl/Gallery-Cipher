@@ -10,7 +10,15 @@ For full architectural details, cryptography specifications, and user guides, se
 ---
 
 ## [Unreleased]
+
+## [1.16.0-cipher] - 2026-11-08
 ### Added
+- **Zero-Disk Streaming Encrypted Downloader (`VaultShareActivity`):**
+  - Integrated an Android Share target (`ACTION_SEND` and `ACTION_SEND_MULTIPLE`) enabling direct, encrypted media downloads from web browsers and other apps without ever writing unencrypted files to storage.
+  - Enforced mandatory vault authentication (PIN, Password, or Pattern) before showing album options or downloading.
+  - Implemented an interactive hidden physical album selector filtering exclusively for encrypted physical folders (excluding virtual JSON collections) with instant "+ Create New Hidden Album" capability.
+  - Streaming payload (HTTP/HTTPS URL or Content URI) is piped directly into a 64 KB RAM buffer, encrypted on the fly via `AES-256-CTR` and authenticated with `Poly1305` MAC tags and `AES-256-GCM` headers, writing directly as `.bin` ciphertext to disk with zero flash memory plaintext remanence.
+  - Embedded thumbnails for downloaded images are decoded entirely in RAM from the decrypted stream and registered in the in-memory metadata cache with zero plaintext disk caching.
 - **Configurable Double-Tap Seek Duration:**
   - Added "Double-tap seek duration" setting under **Settings > Videos** with choices of 3, 5, 10, and 15 seconds.
   - Changed default seek / fast-forward / rewind duration from 10 seconds to 5 seconds across both in-app and standalone video players (`VideoFragment`, `VideoPlayerActivity`, and side-scroll controllers).

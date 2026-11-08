@@ -304,4 +304,14 @@
     <string name="confirm_checkbox_label">Onaylıyorum</string>
     <string name="secret_vault">Gizli Kasa</string>
     <string name="secret_vault_empty">Gizli Kasa boş</string>
+    <string name="save_to_secure_vault">Gizli Kasaya Şifreli Kaydet</string>
+    <string name="select_vault_album">Gizli Fiziksel Albüm Seçin</string>
+    <string name="create_new_vault_album">+ Yeni Gizli Albüm Oluştur</string>
+    <string name="enter_album_name">Albüm adı girin</string>
+    <string name="vault_album_name_empty">Albüm adı boş olamaz</string>
+    <string name="downloading_and_encrypting">Kasaya indiriliyor ve şifreleniyor…</string>
+    <string name="encrypted_download_success">%s albümüne güvenle kaydedildi</string>
+    <string name="encrypted_download_failed">Dosya indirilip şifrelenemedi</string>
+    <string name="vault_not_setup">Gizli kasa henüz kurulmamış. Lütfen önce kasayı kurun.</string>
+    <string name="no_media_url_found">Geçerli bir medya bağlantısı veya dosya bulunamadı</string>
 </resources>
