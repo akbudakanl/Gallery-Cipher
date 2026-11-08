@@ -1221,3 +1221,17 @@ fun Activity.proposeNewFilePath(uri: Uri): Pair<String, Boolean> {
 
     return Pair(newPath, shouldAppendFilename)
 }
+
+fun Activity.applyVaultScreenProtection(enable: Boolean) {
+    try {
+        if (enable) {
+            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        } else {
+            window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        }
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            setRecentsScreenshotEnabled(!enable)
+        }
+    } catch (_: Throwable) {
+    }
+}

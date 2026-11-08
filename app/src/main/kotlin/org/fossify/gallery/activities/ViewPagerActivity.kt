@@ -101,6 +101,7 @@ import org.fossify.gallery.dialogs.DeleteWithRememberDialog
 import org.fossify.gallery.dialogs.SaveAsDialog
 import org.fossify.gallery.dialogs.SlideshowDialog
 import org.fossify.gallery.extensions.canAccessHiddenVirtualAlbums
+import org.fossify.gallery.extensions.applyVaultScreenProtection
 import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.favoritesDB
 import org.fossify.gallery.extensions.fixDateTaken
@@ -266,7 +267,9 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         val currentPath = getCurrentPath().ifEmpty { mPath }
         val requiresVaultAccess = CryptoManager.isEncryptedFile(currentPath) ||
             (mDirectory.isNotEmpty() && !mDirectory.isVirtualAlbumPath() && CryptoManager.isEncryptedFolderPath(this, mDirectory)) ||
-            (mDirectory.isVirtualAlbumPath() && isHiddenVirtualAlbumPath(mDirectory))
+            (mDirectory.isVirtualAlbumPath() && isHiddenVirtualAlbumPath(mDirectory)) ||
+            config.temporarilyShowHidden
+        applyVaultScreenProtection(requiresVaultAccess)
         if (requiresVaultAccess && !canAccessHiddenVirtualAlbums()) {
             finish()
             return
@@ -1579,6 +1582,12 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
 
     override fun onPageSelected(position: Int) {
+        val path = mMediaFiles.getOrNull(position)?.path ?: mPath
+        val requiresVault = CryptoManager.isEncryptedFile(path) ||
+            (mDirectory.isNotEmpty() && !mDirectory.isVirtualAlbumPath() && CryptoManager.isEncryptedFolderPath(this, mDirectory)) ||
+            (mDirectory.isVirtualAlbumPath() && isHiddenVirtualAlbumPath(mDirectory)) ||
+            config.temporarilyShowHidden
+        applyVaultScreenProtection(requiresVault)
         if (mPos != position) {
             mPos = position
             updateActionbarTitle()

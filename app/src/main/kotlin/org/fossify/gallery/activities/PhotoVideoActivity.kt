@@ -46,6 +46,8 @@ import org.fossify.commons.helpers.isRPlus
 import org.fossify.gallery.BuildConfig
 import org.fossify.gallery.R
 import org.fossify.gallery.databinding.FragmentHolderBinding
+import org.fossify.gallery.extensions.applyVaultScreenProtection
+import org.fossify.gallery.extensions.isPathHiddenOrEncrypted
 import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.hideSystemUI
 import org.fossify.gallery.extensions.openEditor
@@ -114,6 +116,9 @@ open class PhotoVideoActivity : BaseViewerActivity(), ViewPagerFragment.Fragment
 
     override fun onResume() {
         super.onResume()
+        val path = mUri?.path ?: ""
+        val isEnc = org.fossify.gallery.helpers.CryptoManager.isEncryptedFile(path) || isPathHiddenOrEncrypted(path) || config.temporarilyShowHidden
+        applyVaultScreenProtection(isEnc)
         if (config.blackBackground) {
             binding.fragmentHolder.background = Color.BLACK.toDrawable()
         }

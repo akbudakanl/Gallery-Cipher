@@ -34,10 +34,16 @@ For full architectural details, cryptography specifications, and user guides, se
   - Added an in-memory LRU frame cache capturing the exact paused `TextureView` frame when swiping away or pausing a video.
   - Swiping back from 3+ items away instantly renders the exact paused frame instead of the 00:00 cover photo.
   - Background pre-warming prepares ExoPlayer during incoming swipes, eliminating buffering pauses and resuming playback with zero delay.
-- **Cryptographic Key Derivation & Stream Encryption:**
-  - Integrated `Argon2id` (32 MB RAM, 3 iterations, 2 lanes) for hardware-hardened master key protection.
-  - Hybrid cipher architecture pairing `AES-256-GCM` authenticated headers with `AES-256-CTR` media streams (zero error propagation / bit-rot resilience) and `Poly1305` MAC integrity verification.
-  - 2-stage secure file shredding (random byte overwrite + zeroization) before plaintext source file deletion.
+- **Cryptographic Hardening & Key Management:**
+  - Upgraded `Argon2id` configuration to 64 MB RAM cost, 3 iterations, 2 lanes with strict input parameter bounds checking.
+  - Integrated Android Keystore hardware-bound key wrapping layer (StrongBox / TEE) for device-tied master key protection (`vaultWrappedKeyData`).
+  - Added V5 container format binding metadata header bytes directly into `Poly1305-AES` MAC to eliminate metadata substitution vectors.
+  - Implemented pre-wipe verification: encrypts to `.tmp`, verifies Poly1305 MAC and performs full byte-for-byte SHA-256 decrypted readback before touching source media.
+  - Full-file CSPRNG overwrite with 1 MiB chunks, `fsync(fd)`, file truncation, directory sync (`syncDir`), and pending-wipe recovery journal (`pending_wipe_journal.txt`).
+  - Added recursive subfolder encryption and space pre-flight validation in `encryptFolder`, eliminating exposure of subfolders to root internal storage.
+  - Hardened database and cache hygiene: SQLite `PRAGMA secure_delete = ON`, Room `JournalMode.TRUNCATE`, database scrubbing, and full SharedPreferences path scrubbing.
+  - Comprehensive screen protection: applied `FLAG_SECURE` and Android 13+ recents screenshot suppression across all vault and hidden media views, touchjacking protection in `VaultSecurityDialog`, and immediate vault locking upon screen off (`ACTION_SCREEN_OFF`).
+  - Excluded vault and app data from cloud backups and device-to-device transfers via `data_extraction_rules.xml`.
 
 ### Changed
 - **Video Player & ViewPager Optimizations:**

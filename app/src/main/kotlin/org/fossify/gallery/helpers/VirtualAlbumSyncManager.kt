@@ -116,7 +116,7 @@ object VirtualAlbumSyncManager {
                 if (publicDir.exists()) {
                     val oldPublicFile = File(publicDir, getPublicAlbumFileName(album.name, album.id))
                     if (oldPublicFile.exists()) {
-                        oldPublicFile.delete()
+                        CryptoManager.secureWipeAndDeleteFile(oldPublicFile, context)
                     }
                 }
 
@@ -182,7 +182,7 @@ object VirtualAlbumSyncManager {
         try {
             val file = getAlbumFile(context, album)
             if (file.exists()) {
-                file.delete()
+                CryptoManager.secureWipeAndDeleteFile(file, context)
             }
             // Check other location just in case
             val otherFile = if (album.isHidden) {
@@ -191,7 +191,7 @@ object VirtualAlbumSyncManager {
                 File(getVaultStorageDir(context), getHiddenAlbumFileName(album.name))
             }
             if (otherFile.exists()) {
-                otherFile.delete()
+                CryptoManager.secureWipeAndDeleteFile(otherFile, context)
             }
         } catch (_: Exception) {
         }

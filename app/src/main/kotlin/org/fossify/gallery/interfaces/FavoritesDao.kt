@@ -26,6 +26,9 @@ interface FavoritesDao {
     @Query("DELETE FROM favorites WHERE full_path = :path COLLATE NOCASE")
     fun deleteFavoritePath(path: String)
 
+    @Query("DELETE FROM favorites WHERE full_path LIKE :pathPrefix || '%' COLLATE NOCASE")
+    fun deleteFavoritesByPrefix(pathPrefix: String)
+
     @Query("DELETE FROM favorites")
     fun clearFavorites()
 }

@@ -47,7 +47,7 @@ Created when the user enables password protection for hidden items in Settings:
 - **`.vault` (Master Vault Header):** Stores the encrypted bundle containing the 256-bit Master Encryption Key (MEK) and RSA-2048 keypair, protected via `Argon2id` (32 MB RAM cost, 3 iterations) and `AES-256-GCM`.
 - **`JSON/` (Stealth Encrypted Virtual Albums):**
   - When a virtual album is created from contents of a hidden/encrypted physical album, it automatically gains **Stealth Virtual Album** status.
-  - The filename is an obfuscated 16-character hexadecimal identifier (`8f4b1e2a9c3d4e5f.json`).
+  - The filename is an obfuscated 16-character hexadecimal identifier (`fva_8f4b1e2a9c3d4e5f.json`), derived via HMAC-SHA256 with MEK.
   - The album title and all member file paths within the JSON payload are encrypted via `AES-256-GCM` with the `FVSTR1:` prefix. Inspecting the file on disk reveals neither the album name nor any media paths.
 - **Randomized Vault Subfolders (`a1b2c3/`):**
   - Encrypted physical albums are moved inside `Cipher_Secrets` under randomized subfolder names.
@@ -62,18 +62,20 @@ Fossify Gallery Cipher employs a defense-in-depth cryptographic pipeline designe
 
 | Component | Primitive / Algorithm | Purpose |
 | :--- | :--- | :--- |
-| **Key Derivation (KDF)** | `Argon2id` (32 MB RAM, 3 iterations, 2 threads) | Hardware-hardened key derivation resistant to GPU/FPGA/ASIC cracking |
+| **Key Derivation (KDF)** | `Argon2id` (64 MB RAM, 3 iterations, 2 threads) | Hardware-hardened key derivation resistant to GPU/FPGA/ASIC cracking |
+| **Hardware Key Protection** | Android Keystore (`AES-256-GCM`, StrongBox / TEE) | Device-bound cryptographic wrapping layer (`vaultWrappedKeyData`) |
 | **Vault Headers & Strings** | `AES-256-GCM` (`12-byte IV`, `128-bit Tag`) | Authenticated encryption for headers, thumbnails, and metadata |
 | **Payload Streams** | `AES-256-CTR` (`16-byte IV` with counter derivation) | Random-access streaming encryption for images and high-bitrate videos |
-| **Integrity Verification** | `Poly1305-AES` MAC (`16-byte Tag`) | Cryptographic tamper detection during export and decryption |
-| **Asymmetric Fallback** | `RSA-2048 OAEP` (`SHA-256`, `MGF1`) | Allows encrypting new files into vaults even when the vault is locked |
-| **Data Destruction** | Multi-pass shredding (Random bytes + Zero fill) | Secure wipe preventing raw flash recovery of plaintext media |
+| **Integrity Verification** | `Poly1305-AES` MAC (`16-byte Tag`) with AAD Header Binding | Cryptographic tamper detection during export, streaming, and decryption |
+| **Pre-Wipe Verification** | SHA-256 Digest Verification + Decryption Readback | Guarantees file is 100% decryptable before original plaintext is touched |
+| **Screen & Recents Guard** | `FLAG_SECURE` + Android 13+ Recents Suppression | Prevents screen capture, video recording, and task switcher leakage |
+| **Data Destruction** | Full-file CSPRNG overwrite (1 MiB chunks) + `fsync` + `syncDir` | Best-effort shredding subject to flash controller wear-leveling realities |
 
 ### Bit-Rot Resilience (Zero Error Propagation)
 Monolithic container formats (such as Veracrypt volumes or ZIP archives) risk total catastrophic loss if a single sector corrupts. Fossify Gallery Cipher avoids this through granular file isolation:
 1. **File-Level Granularity:** Each image and video is stored as an independent encrypted binary file. Corruption in one file has **zero effect** on any other file or the vault at large.
 2. **CTR Mode Error Isolation:** `AES-256-CTR` operates as a stream cipher (`Ciphertext = Plaintext ⊕ Keystream`). A 1-bit corruption in ciphertext affects **only that exact single bit** upon decryption. Adjacent bytes and the rest of the file remain intact. In JPEG photos, bit-rot results only in a minor visual artifact rather than complete decode failure; in MP4 videos, only a single corrupted microsecond frame occurs while the rest of the stream continues playing.
-3. **Redundant Vault Keying:** Vault credentials are saved both on disk (`.vault`) and in protected app preferences (`vaultWrappedKeyData`). If either header suffers physical sector loss, the application can recover the key bundle from the alternate source.
+3. **Hardware-Bound & Redundant Keying:** Vault credentials on disk (`.vault`) are backed by an Android Keystore hardware-bound wrapping layer (`vaultWrappedKeyData`) with StrongBox / TEE enforcement. If the master header file suffers physical sector loss, the application can recover the master key bundle on the authenticated device.
 
 ---
 

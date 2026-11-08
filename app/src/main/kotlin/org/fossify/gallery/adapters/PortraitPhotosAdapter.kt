@@ -59,9 +59,11 @@ class PortraitPhotosAdapter(val context: Context, val photos: ArrayList<String>,
                     strokeBackground
                 }
 
+                val isEncrypted = org.fossify.gallery.helpers.CryptoManager.isEncryptedFile(photo)
+                val diskCache = if (isEncrypted) DiskCacheStrategy.NONE else DiskCacheStrategy.RESOURCE
                 val options = RequestOptions()
                     .signature(ObjectKey(photo.getFileKey()))
-                    .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+                    .diskCacheStrategy(diskCache)
                     .centerCrop()
 
                 Glide.with(context)

@@ -91,6 +91,7 @@ import org.fossify.gallery.dialogs.FilterMediaDialog
 import org.fossify.gallery.dialogs.GrantAllFilesDialog
 import org.fossify.gallery.dialogs.VaultSecurityDialog
 import org.fossify.gallery.extensions.addTempFolderIfNeeded
+import org.fossify.gallery.extensions.applyVaultScreenProtection
 import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.createDirectoryFromMedia
 import org.fossify.gallery.extensions.directoryDB
@@ -320,6 +321,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         if (!config.temporarilyShowHidden || !CryptoManager.isVaultUnlocked) {
             mIsSecretVaultView = false
         }
+        applyVaultScreenProtection(mIsSecretVaultView || config.temporarilyShowHidden)
         updateVaultModeUi()
         refreshMenuItems()
 
@@ -783,6 +785,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     private fun updateVaultModeUi() {
         runOnUiThread {
             if (isDestroyed || isFinishing) return@runOnUiThread
+            applyVaultScreenProtection(mIsSecretVaultView || config.temporarilyShowHidden)
             if (mIsSecretVaultView) {
                 binding.mainMenu.updateHintText(getString(R.string.secret_vault))
             } else {

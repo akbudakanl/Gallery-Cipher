@@ -38,6 +38,10 @@ class MyWidgetProvider : AppWidgetProvider() {
         ensureBackgroundThread {
             val config = context.config
             context.widgetsDB.getWidgets().filter { appWidgetIds.contains(it.widgetId) }.forEach {
+                if (CryptoManager.isEncryptedFolderPath(context, it.folderPath)) {
+                    return@forEach
+                }
+
                 val views = RemoteViews(context.packageName, R.layout.widget).apply {
                     applyColorFilter(R.id.widget_background, config.widgetBgColor)
                     setVisibleIf(R.id.widget_folder_name, config.showWidgetFolderName)
@@ -46,9 +50,10 @@ class MyWidgetProvider : AppWidgetProvider() {
                 }
 
                 val path = context.directoryDB.getDirectoryThumbnail(it.folderPath) ?: return@forEach
+                val diskCache = if (CryptoManager.isEncryptedFile(path)) DiskCacheStrategy.NONE else DiskCacheStrategy.RESOURCE
                 val options = RequestOptions()
                     .signature(path.getFileSignature())
-                    .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+                    .diskCacheStrategy(diskCache)
 
                 if (context.config.cropThumbnails) {
                     options.centerCrop()

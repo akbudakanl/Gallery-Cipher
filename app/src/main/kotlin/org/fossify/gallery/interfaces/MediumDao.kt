@@ -35,6 +35,12 @@ interface MediumDao {
     @Query("DELETE FROM media WHERE full_path = :path COLLATE NOCASE")
     fun deleteMediumPath(path: String)
 
+    @Query("DELETE FROM media WHERE parent_path = :path COLLATE NOCASE")
+    fun deleteMediaFromPath(path: String)
+
+    @Query("DELETE FROM media WHERE full_path LIKE :pathPrefix || '%' COLLATE NOCASE")
+    fun deleteMediaByPrefix(pathPrefix: String)
+
     @Query("UPDATE OR REPLACE media SET filename = :newFilename, full_path = :newFullPath, parent_path = :newParentPath WHERE full_path = :oldPath COLLATE NOCASE")
     fun updateMedium(oldPath: String, newParentPath: String, newFilename: String, newFullPath: String)
 

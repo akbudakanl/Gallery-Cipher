@@ -32,6 +32,13 @@ abstract class GalleryDatabase : RoomDatabase() {
                 synchronized(GalleryDatabase::class) {
                     if (db == null) {
                         db = Room.databaseBuilder(context.applicationContext, GalleryDatabase::class.java, "gallery.db")
+                            .setJournalMode(JournalMode.TRUNCATE)
+                            .addCallback(object : Callback() {
+                                override fun onOpen(db: SupportSQLiteDatabase) {
+                                    super.onOpen(db)
+                                    db.execSQL("PRAGMA secure_delete = ON")
+                                }
+                            })
                             .fallbackToDestructiveMigration()
                             .allowMainThreadQueries()
                             .addMigrations(MIGRATION_4_5)
@@ -55,6 +62,18 @@ abstract class GalleryDatabase : RoomDatabase() {
                 db?.close()
             }
             db = null
+        }
+
+        fun scrubDatabase(context: Context) {
+            try {
+                val dbInstance = getInstance(context)
+                val writable = dbInstance.openHelper.writableDatabase
+                writable.execSQL("PRAGMA secure_delete = ON")
+                writable.query("PRAGMA wal_checkpoint(TRUNCATE)").close()
+                writable.execSQL("VACUUM")
+            } catch (e: Exception) {
+                // Ignore or log best-effort scrub failure
+            }
         }
 
         private val MIGRATION_4_5 = object : Migration(4, 5) {

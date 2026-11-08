@@ -68,6 +68,8 @@ import org.fossify.commons.extensions.updateTextColors
 import org.fossify.commons.extensions.viewBinding
 import org.fossify.gallery.R
 import org.fossify.gallery.databinding.ActivityVideoPlayerBinding
+import org.fossify.gallery.extensions.applyVaultScreenProtection
+import org.fossify.gallery.extensions.isPathHiddenOrEncrypted
 import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.getActionBarHeight
 import org.fossify.gallery.extensions.getFormattedDuration
@@ -172,6 +174,9 @@ open class VideoPlayerActivity : BaseViewerActivity(), SeekBar.OnSeekBarChangeLi
 
     override fun onResume() {
         super.onResume()
+        val rawPath = mUri?.path ?: ""
+        val isEnc = CryptoManager.isEncryptedFile(rawPath) || isPathHiddenOrEncrypted(rawPath) || config.temporarilyShowHidden
+        applyVaultScreenProtection(isEnc)
         window.statusBarColor = Color.TRANSPARENT
         window.navigationBarColor = Color.TRANSPARENT
         if (config.blackBackground) {

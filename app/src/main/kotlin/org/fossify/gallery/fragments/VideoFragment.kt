@@ -111,6 +111,15 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         }
 
         fun clearFrameCache() {
+            try {
+                sVideoFrameCache.snapshot().values.forEach { bmp ->
+                    if (!bmp.isRecycled) {
+                        bmp.eraseColor(0)
+                    }
+                }
+            } catch (e: Exception) {
+                // Ignore
+            }
             sVideoFrameCache.evictAll()
         }
     }

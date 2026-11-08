@@ -101,6 +101,11 @@ class VaultSecurityDialog(
         builder.apply {
             activity.setupDialogStuff(binding.root, this) { alertDialog ->
                 dialog = alertDialog
+                alertDialog.window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                binding.root.filterTouchesWhenObscured = true
+                binding.vaultPatternView.filterTouchesWhenObscured = true
+                binding.vaultPinHolder.filterTouchesWhenObscured = true
+                binding.vaultPasswordHolder.filterTouchesWhenObscured = true
                 if (currentType == PROTECTION_PASSWORD) {
                     alertDialog.window?.clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
                     alertDialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)

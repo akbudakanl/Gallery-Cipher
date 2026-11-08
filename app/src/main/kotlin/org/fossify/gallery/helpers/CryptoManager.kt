@@ -43,6 +43,18 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.OAEPParameterSpec
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.PSource
+import android.media.MediaScannerConnection
+import android.os.Build
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
+import org.fossify.gallery.databases.GalleryDatabase
+import org.fossify.gallery.extensions.favoritesDB
+import org.fossify.gallery.fragments.VideoFragment
+import java.security.KeyStore
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
 import javax.crypto.spec.SecretKeySpec
 
 class BoundedInputStream(
@@ -103,6 +115,7 @@ object CryptoManager {
     private const val VERSION_ASYMMETRIC: Byte = 2
     private const val VERSION_SYMMETRIC_AUTH: Byte = 3
     private const val VERSION_ASYMMETRIC_AUTH: Byte = 4
+    private const val VERSION_V5_AUTH: Byte = 5
     private const val META_MAGIC_SYM = "FVLTMETA"
     private const val META_MAGIC_ASYM = "FVLTMET2"
     private const val META_MAGIC_V2 = "FGMETA2"
@@ -122,7 +135,7 @@ object CryptoManager {
     }
 
     // Argon2id Parameters (Memory-Hard Key Derivation)
-    private const val ARGON2_MEMORY_KB = 32768 // 32 MB RAM cost
+    private const val ARGON2_MEMORY_KB = 65536 // 64 MB RAM cost
     private const val ARGON2_ITERATIONS = 3
     private const val ARGON2_PARALLELISM = 2
     private const val ARGON2_SALT_LENGTH = 16
@@ -153,14 +166,40 @@ object CryptoManager {
     @Volatile
     private var vaultRootSearchDone = false
 
+    private val activeCryptoOperations = AtomicInteger(0)
+    private val pendingLock = AtomicBoolean(false)
+
+    fun isOperationInProgress(): Boolean = activeCryptoOperations.get() > 0
+
+    fun <T> runCryptoOperation(block: () -> T): T {
+        activeCryptoOperations.incrementAndGet()
+        try {
+            return block()
+        } finally {
+            if (activeCryptoOperations.decrementAndGet() == 0 && pendingLock.getAndSet(false)) {
+                lockVaultInternal()
+            }
+        }
+    }
+
     val isVaultUnlocked: Boolean
         get() = unlockedMasterKey != null
+
+    fun getMasterKeyCopy(): ByteArray? = unlockedMasterKey?.copyOf()
 
     fun invalidateFolderCache() {
         encryptedFolderCache.clear()
     }
 
     fun lockVault() {
+        if (isOperationInProgress()) {
+            pendingLock.set(true)
+            return
+        }
+        lockVaultInternal()
+    }
+
+    private fun lockVaultInternal() {
         unlockedMasterKey?.fill(0)
         unlockedMasterKey = null
         unlockedPrivateKey = null
@@ -168,6 +207,9 @@ object CryptoManager {
         metadataCache.clear()
         folderNameCache.clear()
         encryptedFolderCache.clear()
+        try {
+            VideoFragment.clearFrameCache()
+        } catch (_: Throwable) {}
     }
 
     fun isEncryptedFile(path: String): Boolean {
@@ -256,7 +298,14 @@ object CryptoManager {
         val vaultDir = getExistingCipherSecretsDir(context) ?: findVaultRoot(context)
         if (vaultDir != null && vaultDir.exists()) {
             try {
-                vaultDir.deleteRecursively()
+                vaultDir.walkBottomUp().forEach { file ->
+                    if (file.isFile) {
+                        secureWipeAndDeleteFile(file, context)
+                    } else if (file.isDirectory) {
+                        file.delete()
+                    }
+                }
+                vaultDir.delete()
             } catch (_: Exception) {}
         }
 
@@ -268,6 +317,8 @@ object CryptoManager {
         encryptedFolderCache.clear()
 
         context.config.vaultRootPath = ""
+        context.config.vaultWrappedKeyData = ""
+        context.config.vaultPublicKey = ""
         context.config.vaultWrappedKeyData = ""
         context.config.vaultPublicKey = ""
         context.config.hiddenPasswordHash = ""
@@ -389,6 +440,75 @@ object CryptoManager {
 
     // ==================== KEY MANAGEMENT (ARGON2id + AES-256-GCM + RSA-2048) ====================
 
+    private const val ANDROID_KEYSTORE = "AndroidKeyStore"
+    private const val KEYSTORE_ALIAS = "vault_hw_key"
+
+    private fun getOrCreateHardwareKey(): SecretKey? {
+        return try {
+            val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
+            keyStore.load(null)
+            if (!keyStore.containsAlias(KEYSTORE_ALIAS)) {
+                val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
+                val builder = KeyGenParameterSpec.Builder(
+                    KEYSTORE_ALIAS,
+                    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+                )
+                    .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                    .setKeySize(256)
+                try {
+                    builder.setIsStrongBoxBacked(true)
+                    keyGenerator.init(builder.build())
+                    keyGenerator.generateKey()
+                } catch (_: Throwable) {
+                    val fallbackBuilder = KeyGenParameterSpec.Builder(
+                        KEYSTORE_ALIAS,
+                        KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+                    )
+                        .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                        .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                        .setKeySize(256)
+                    keyGenerator.init(fallbackBuilder.build())
+                    keyGenerator.generateKey()
+                }
+            }
+            keyStore.getKey(KEYSTORE_ALIAS, null) as? SecretKey
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    private fun wrapKeyWithHardwareKey(masterKey: ByteArray): String? {
+        val hwKey = getOrCreateHardwareKey() ?: return null
+        return try {
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.ENCRYPT_MODE, hwKey)
+            val iv = cipher.iv
+            val encrypted = cipher.doFinal(masterKey)
+            val combined = ByteArray(iv.size + encrypted.size)
+            System.arraycopy(iv, 0, combined, 0, iv.size)
+            System.arraycopy(encrypted, 0, combined, iv.size, encrypted.size)
+            Base64.encodeToString(combined, Base64.NO_WRAP)
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    private fun unwrapKeyWithHardwareKey(wrappedB64: String): ByteArray? {
+        val hwKey = getOrCreateHardwareKey() ?: return null
+        return try {
+            val combined = Base64.decode(wrappedB64, Base64.NO_WRAP)
+            if (combined.size <= GCM_IV_LENGTH) return null
+            val iv = combined.copyOfRange(0, GCM_IV_LENGTH)
+            val encrypted = combined.copyOfRange(GCM_IV_LENGTH, combined.size)
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.DECRYPT_MODE, hwKey, GCMParameterSpec(GCM_TAG_BITS, iv))
+            cipher.doFinal(encrypted)
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
     fun deriveKeyArgon2id(
         secret: String,
         salt: ByteArray,
@@ -406,16 +526,29 @@ object CryptoManager {
         generator.init(builder.build())
         val keyBytes = ByteArray(32)
         val secretBytes = secret.toByteArray(Charsets.UTF_8)
-        generator.generateBytes(secretBytes, keyBytes, 0, keyBytes.size)
-        return SecretKeySpec(keyBytes, "AES")
+        try {
+            generator.generateBytes(secretBytes, keyBytes, 0, keyBytes.size)
+            val spec = SecretKeySpec(keyBytes, "AES")
+            return spec
+        } finally {
+            secretBytes.fill(0)
+            keyBytes.fill(0)
+        }
     }
 
     private fun deriveWrappingKey(secret: String, salt: ByteArray): SecretKeySpec {
         val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
-        val spec = PBEKeySpec(secret.toCharArray(), salt, PBKDF2_ITERATIONS, KEY_LENGTH_BITS)
-        val keyBytes = factory.generateSecret(spec).encoded
-        spec.clearPassword()
-        return SecretKeySpec(keyBytes, "AES")
+        val chars = secret.toCharArray()
+        val spec = PBEKeySpec(chars, salt, PBKDF2_ITERATIONS, KEY_LENGTH_BITS)
+        try {
+            val keyBytes = factory.generateSecret(spec).encoded
+            val result = SecretKeySpec(keyBytes, "AES")
+            keyBytes.fill(0)
+            return result
+        } finally {
+            spec.clearPassword()
+            chars.fill('\u0000')
+        }
     }
 
     private fun getOaepSpec(): OAEPParameterSpec {
@@ -497,6 +630,12 @@ object CryptoManager {
                     val wrapped = ByteArray(wrappedLen)
                     dis.readFully(wrapped)
 
+                    if (kdfType == 1.toByte()) {
+                        if (memoryKb !in 8_192..262_144 || iterations !in 1..10 || parallelism !in 1..8) {
+                            return false
+                        }
+                    }
+
                     val wrappingKey = if (kdfType == 1.toByte()) {
                         deriveKeyArgon2id(secret, salt, memoryKb, iterations, parallelism)
                     } else {
@@ -507,8 +646,8 @@ object CryptoManager {
                     cipher.init(Cipher.DECRYPT_MODE, wrappingKey, GCMParameterSpec(GCM_TAG_BITS, iv))
                     val bundle = cipher.doFinal(wrapped)
 
+                    val masterKey = ByteArray(32)
                     DataInputStream(ByteArrayInputStream(bundle)).use { bdis ->
-                        val masterKey = ByteArray(32)
                         bdis.readFully(masterKey)
                         val privLen = bdis.readInt()
                         val privBytes = ByteArray(privLen)
@@ -520,6 +659,25 @@ object CryptoManager {
                         unlockedPrivateKey = privKey
                     }
                     bundle.fill(0)
+
+                    val hwWrapped = context.config.vaultWrappedKeyData
+                    if (hwWrapped.isNotEmpty()) {
+                        val hwDecrypted = unwrapKeyWithHardwareKey(hwWrapped)
+                        if (hwDecrypted != null) {
+                            val matches = MessageDigest.isEqual(masterKey, hwDecrypted)
+                            hwDecrypted.fill(0)
+                            if (!matches) {
+                                masterKey.fill(0)
+                                unlockedMasterKey = null
+                                unlockedPrivateKey = null
+                                return false
+                            }
+                        } else {
+                            wrapKeyWithHardwareKey(masterKey)?.let { context.config.vaultWrappedKeyData = it }
+                        }
+                    } else {
+                        wrapKeyWithHardwareKey(masterKey)?.let { context.config.vaultWrappedKeyData = it }
+                    }
 
                     context.config.hiddenPasswordHash = "argon2id_aes256_gcm_v2"
                     context.config.isHiddenPasswordProtectionOn = true
@@ -577,6 +735,9 @@ object CryptoManager {
      * The master bundle (MasterKey + PrivateKey) is written directly to .vault in the root folder.
      */
     fun setupOrUpdateCredentials(context: Context, secret: String, protectionType: Int): String {
+        if (hasExistingVault(context) && !isVaultUnlocked) {
+            throw IllegalStateException("Vault is locked! Cannot update credentials without unlocking first.")
+        }
         val masterKey = unlockedMasterKey ?: ByteArray(32).also { secureRandom.nextBytes(it) }
         val privateKey: PrivateKey
         val publicKeyBytes: ByteArray
@@ -612,6 +773,8 @@ object CryptoManager {
         cipher.init(Cipher.ENCRYPT_MODE, wrappingKey, GCMParameterSpec(GCM_TAG_BITS, iv))
         val wrapped = cipher.doFinal(bundle)
         bundle.fill(0)
+
+        wrapKeyWithHardwareKey(masterKey)?.let { context.config.vaultWrappedKeyData = it }
 
         // Write vault root header (.vault) on disk for full multi-device portability
         val vaultRoot = getOrCreateVaultRoot(context)
@@ -1518,7 +1681,7 @@ object CryptoManager {
                     val version = dis.readByte()
                     var extraHeaderBytes = 0
                     val fileKey: ByteArray = when (version) {
-                        VERSION_SYMMETRIC, VERSION_SYMMETRIC_AUTH -> masterKey.copyOf()
+                        VERSION_SYMMETRIC, VERSION_SYMMETRIC_AUTH, VERSION_V5_AUTH -> masterKey.copyOf()
                         VERSION_ASYMMETRIC, VERSION_ASYMMETRIC_AUTH -> {
                             val privKey = unlockedPrivateKey ?: return null
                             val wrappedLen = dis.readInt()
@@ -1546,7 +1709,7 @@ object CryptoManager {
                     val contentIv = ByteArray(CTR_IV_LENGTH)
                     dis.readFully(contentIv)
 
-                    val isMacAuth = (version == VERSION_SYMMETRIC_AUTH || version == VERSION_ASYMMETRIC_AUTH)
+                    val isMacAuth = (version == VERSION_SYMMETRIC_AUTH || version == VERSION_ASYMMETRIC_AUTH || version == VERSION_V5_AUTH)
                     val headerKey = if (isMacAuth) {
                         deriveSubkey(fileKey, DOMAIN_HEADER_KEY)
                     } else {
@@ -1625,7 +1788,7 @@ object CryptoManager {
                         val wrappedLen = dis.readInt()
                         if (wrappedLen <= 0 || wrappedLen > 2048) return null
                         dis.skipBytes(wrappedLen)
-                    } else if (version != VERSION_SYMMETRIC && version != VERSION_SYMMETRIC_AUTH) {
+                    } else if (version != VERSION_SYMMETRIC && version != VERSION_SYMMETRIC_AUTH && version != VERSION_V5_AUTH) {
                         return null
                     }
 
@@ -1638,7 +1801,7 @@ object CryptoManager {
                     val encHeader = ByteArray(encHeaderLen)
                     dis.readFully(encHeader)
 
-                    val isMacAuth = (version == VERSION_SYMMETRIC_AUTH || version == VERSION_ASYMMETRIC_AUTH)
+                    val isMacAuth = (version == VERSION_SYMMETRIC_AUTH || version == VERSION_ASYMMETRIC_AUTH || version == VERSION_V5_AUTH)
                     val headerKey = if (isMacAuth) {
                         deriveSubkey(meta.fileKey, DOMAIN_HEADER_KEY)
                     } else {
@@ -1760,6 +1923,16 @@ object CryptoManager {
         val storedTag = ByteArray(MAC_TAG_LENGTH)
         return try {
             RandomAccessFile(file, "r").use { raf ->
+                if (meta.version == VERSION_V5_AUTH) {
+                    raf.seek(8L + 1L)
+                    val headerIv = ByteArray(GCM_IV_LENGTH)
+                    raf.readFully(headerIv)
+                    val encHeaderLen = raf.readInt()
+                    val encHeader = ByteArray(encHeaderLen)
+                    raf.readFully(encHeader)
+                    poly.update(headerIv, 0, headerIv.size)
+                    poly.update(encHeader, 0, encHeader.size)
+                }
                 raf.seek(meta.payloadOffset)
                 val buffer = ByteArray(64 * 1024)
                 var remaining = meta.originalSize
@@ -1781,6 +1954,50 @@ object CryptoManager {
     }
 
     // ==================== ANTI-RECOVERY / SECURE WIPE ====================
+
+    private fun getPendingWipeJournalFile(context: Context): File {
+        return File(context.filesDir, "pending_wipe_journal.txt")
+    }
+
+    private fun appendPendingWipe(context: Context, path: String) {
+        try {
+            val file = getPendingWipeJournalFile(context)
+            file.appendText(path + "\n", Charsets.UTF_8)
+        } catch (_: Exception) {}
+    }
+
+    private fun removePendingWipe(context: Context, path: String) {
+        try {
+            val file = getPendingWipeJournalFile(context)
+            if (!file.exists()) return
+            val lines = file.readLines(Charsets.UTF_8).filter { it.trim().isNotEmpty() && it.trim() != path }
+            if (lines.isEmpty()) {
+                secureWipeAndDeleteFile(file, null)
+            } else {
+                file.writeText(lines.joinToString("\n") + "\n", Charsets.UTF_8)
+            }
+        } catch (_: Exception) {}
+    }
+
+    fun processPendingWipeJournal(context: Context) {
+        ensureBackgroundThread {
+            try {
+                val file = getPendingWipeJournalFile(context)
+                if (!file.exists()) return@ensureBackgroundThread
+                val lines = file.readLines(Charsets.UTF_8)
+                for (line in lines) {
+                    val trimmed = line.trim()
+                    if (trimmed.isNotEmpty()) {
+                        val target = File(trimmed)
+                        if (target.exists()) {
+                            secureWipeAndDeleteFile(target, context)
+                        }
+                    }
+                }
+                secureWipeAndDeleteFile(file, null)
+            } catch (_: Exception) {}
+        }
+    }
 
     fun purgeTracesForFile(context: Context, plaintextPath: String) {
         try {
@@ -1804,26 +2021,82 @@ object CryptoManager {
                         "${MediaStore.Images.Thumbnails.IMAGE_ID} = ?",
                         arrayOf(mediaId.toString())
                     )
-                } catch (_: Exception) {
-                }
+                } catch (_: Exception) {}
                 try {
                     contentResolver.delete(
                         MediaStore.Video.Thumbnails.EXTERNAL_CONTENT_URI,
                         "${MediaStore.Video.Thumbnails.VIDEO_ID} = ?",
                         arrayOf(mediaId.toString())
                     )
-                } catch (_: Exception) {
-                }
+                } catch (_: Exception) {}
             }
 
             contentResolver.delete(filesUri, selection, selectionArgs)
-        } catch (_: Exception) {
-        }
+            MediaScannerConnection.scanFile(context, arrayOf(plaintextPath), null, null)
+        } catch (_: Exception) {}
 
         try {
             context.mediaDB.deleteMediumPath(plaintextPath)
-        } catch (_: Exception) {
-        }
+            context.favoritesDB.deleteFavoritePath(plaintextPath)
+            GalleryDatabase.getInstance(context.applicationContext).DateTakensDao().deleteDateTaken(plaintextPath)
+            context.virtualAlbumsDB.removeItemFromAllAlbums(plaintextPath)
+        } catch (_: Exception) {}
+
+        try {
+            val fileName = plaintextPath.substringAfterLast('/')
+            val parent = plaintextPath.substringBeforeLast('/')
+            val dcimThumbnails = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), ".thumbnails")
+            val picThumbnails = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), ".thumbnails")
+            val parentThumbnails = File(parent, ".thumbnails")
+            listOf(dcimThumbnails, picThumbnails, parentThumbnails).forEach { tDir ->
+                if (tDir.exists() && tDir.isDirectory) {
+                    tDir.listFiles { f -> f.name.contains(fileName) }?.forEach { thumbFile ->
+                        secureWipeAndDeleteFile(thumbFile, null)
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+    }
+
+    fun purgeFolderTraces(context: Context, folderPath: String) {
+        val cleanPath = folderPath.trimEnd('/')
+        try {
+            context.mediaDB.deleteMediaFromPath(cleanPath)
+            context.mediaDB.deleteMediaByPrefix(cleanPath)
+            context.directoryDB.deleteDirPath(cleanPath)
+            context.directoryDB.deleteDirPrefix(cleanPath)
+            context.favoritesDB.deleteFavoritesByPrefix(cleanPath)
+            val db = GalleryDatabase.getInstance(context.applicationContext)
+            db.DateTakensDao().deleteDateTakensFromPath(cleanPath)
+            db.DateTakensDao().deleteDateTakensByPrefix(cleanPath)
+            GalleryDatabase.scrubDatabase(context)
+        } catch (_: Exception) {}
+
+        try {
+            context.config.scrubFolderPreferences(cleanPath)
+        } catch (_: Exception) {}
+
+        try {
+            val contentResolver = context.contentResolver
+            val filesUri = MediaStore.Files.getContentUri("external")
+            contentResolver.delete(
+                filesUri,
+                "${MediaStore.Files.FileColumns.DATA} LIKE ? OR ${MediaStore.Files.FileColumns.DATA} = ?",
+                arrayOf("$cleanPath/%", cleanPath)
+            )
+            MediaScannerConnection.scanFile(context, arrayOf(cleanPath), null, null)
+        } catch (_: Exception) {}
+
+        try {
+            val recycleBin = File(context.filesDir, RECYCLE_BIN)
+            if (recycleBin.exists() && recycleBin.isDirectory) {
+                recycleBin.listFiles()?.forEach { binFile ->
+                    if (binFile.absolutePath.contains(cleanPath)) {
+                        secureWipeAndDeleteFile(binFile, null)
+                    }
+                }
+            }
+        } catch (_: Exception) {}
     }
 
     fun clearAppImageCaches(context: Context) {
@@ -1831,85 +2104,109 @@ object CryptoManager {
         ensureBackgroundThread {
             try {
                 Glide.get(appContext).clearDiskCache()
-            } catch (_: Exception) {
-            }
+            } catch (_: Exception) {}
             try {
                 val cacheDirs = listOfNotNull(
                     File(appContext.cacheDir, "image_manager_disk_cache"),
                     File(appContext.cacheDir, "picasso-cache"),
                     File(appContext.cacheDir, "glide"),
-                    appContext.externalCacheDir
+                    appContext.externalCacheDir,
+                    File(appContext.cacheDir, TEMP_FOLDER_NAME)
                 )
                 for (dir in cacheDirs) {
                     if (dir.exists() && dir.isDirectory) {
-                        dir.deleteRecursively()
+                        dir.walkBottomUp().forEach { f ->
+                            if (f.isFile) {
+                                secureWipeFileInternal(f)
+                                f.delete()
+                            } else if (f.isDirectory) {
+                                f.delete()
+                            }
+                        }
                     }
                 }
-            } catch (_: Exception) {
-            }
+            } catch (_: Exception) {}
         }
 
         try {
             android.os.Handler(android.os.Looper.getMainLooper()).post {
                 try {
                     Glide.get(appContext).clearMemory()
-                } catch (_: Exception) {
-                }
+                } catch (_: Exception) {}
             }
-        } catch (_: Exception) {
-        }
+        } catch (_: Exception) {}
     }
 
-    fun secureWipeAndDeleteFile(context: Context, file: File) {
-        if (!file.exists()) return
+    fun secureWipeAndDeleteFile(context: Context, file: File): Boolean {
+        return secureWipeAndDeleteFile(file, context)
+    }
+
+    fun secureWipeAndDeleteFile(file: File, context: Context? = null): Boolean {
+        if (!file.exists()) return true
         val originalPath = file.absolutePath
 
-        try {
-            val length = file.length()
-            if (length > 0L) {
-                RandomAccessFile(file, "rw").use { raf ->
-                    val chunk = ByteArray(64 * 1024)
-                    val fullWipeThreshold = 64L * 1024L * 1024L // 64 MB
-                    if (length <= fullWipeThreshold) {
-                        var remaining = length
-                        raf.seek(0L)
-                        while (remaining > 0L) {
-                            val toWrite = minOf(remaining, chunk.size.toLong()).toInt()
-                            raf.write(chunk, 0, toWrite)
-                            remaining -= toWrite
-                        }
-                    } else {
-                        val headSize = 16L * 1024L * 1024L
-                        val midSize = 8L * 1024L * 1024L
-                        val tailSize = 8L * 1024L * 1024L
-
-                        fun wipeRegion(start: Long, count: Long) {
-                            raf.seek(start)
-                            var rem = count
-                            while (rem > 0L) {
-                                val toWrite = minOf(rem, chunk.size.toLong()).toInt()
-                                raf.write(chunk, 0, toWrite)
-                                rem -= toWrite
-                            }
-                        }
-
-                        wipeRegion(0L, headSize)
-                        wipeRegion((length / 2L) - (midSize / 2L), midSize)
-                        wipeRegion(length - tailSize, tailSize)
-                    }
-                    raf.fd.sync()
-                    raf.setLength(0L)
-                    raf.fd.sync()
-                }
-            }
-        } catch (_: Exception) {
+        val wiped = secureWipeFileInternal(file)
+        if (!wiped) {
+            return false
         }
 
         var deleted = file.delete()
-        if (!deleted) {
+        if (!deleted && context != null) {
             deleted = context.tryFastDocumentDelete(originalPath, false)
         }
 
-        purgeTracesForFile(context, originalPath)
+        syncDir(file.parentFile)
+
+        if (context != null) {
+            purgeTracesForFile(context, originalPath)
+        }
+
+        return deleted
+    }
+
+    private fun secureWipeFileInternal(file: File): Boolean {
+        return try {
+            val length = file.length()
+            if (length > 0L) {
+                val random = SecureRandom()
+                val bufSize = 1024 * 1024 // 1 MiB chunk
+                val buf = ByteArray(bufSize)
+                RandomAccessFile(file, "rws").use { raf ->
+                    val ch = raf.channel
+                    var rem = length
+                    ch.position(0L)
+                    while (rem > 0L) {
+                        val toWrite = minOf(rem, bufSize.toLong()).toInt()
+                        random.nextBytes(buf)
+                        val byteBuf = java.nio.ByteBuffer.wrap(buf, 0, toWrite)
+                        while (byteBuf.hasRemaining()) {
+                            ch.write(byteBuf)
+                        }
+                        rem -= toWrite
+                    }
+                    ch.force(true)
+                    ch.truncate(0L)
+                    ch.force(true)
+                }
+            }
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun syncDir(dir: File?) {
+        if (dir == null || !dir.exists() || !dir.isDirectory) return
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                val fd = android.system.Os.open(dir.absolutePath, android.system.OsConstants.O_RDONLY, 0)
+                try {
+                    android.system.Os.fsync(fd)
+                } finally {
+                    android.system.Os.close(fd)
+                }
+            }
+        } catch (_: Throwable) {
+        }
     }
 }

@@ -10,6 +10,7 @@ import org.fossify.gallery.helpers.MediaFetcher
 class BootCompletedReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         ensureBackgroundThread {
+            org.fossify.gallery.helpers.CryptoManager.processPendingWipeJournal(context)
             MediaFetcher(context).getFoldersToScan().forEach {
                 context.updateDirectoryPath(it)
             }

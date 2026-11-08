@@ -630,4 +630,69 @@ class Config(context: Context) : BaseConfig(context) {
         curr.remove(path.trimEnd('/'))
         encryptedFolders = curr
     }
+
+    fun scrubFolderPreferences(targetPath: String) {
+        if (targetPath.isEmpty()) return
+        val normalized = targetPath.trimEnd('/')
+        val lowerNormalized = normalized.lowercase(Locale.getDefault())
+
+        val currPinned = HashSet(pinnedFolders)
+        if (currPinned.removeAll { it.trimEnd('/').equals(normalized, ignoreCase = true) || it.startsWith("$normalized/", ignoreCase = true) }) {
+            pinnedFolders = currPinned
+        }
+
+        val currIncluded = HashSet(includedFolders)
+        if (currIncluded.removeAll { it.trimEnd('/').equals(normalized, ignoreCase = true) || it.startsWith("$normalized/", ignoreCase = true) }) {
+            includedFolders = currIncluded
+        }
+
+        val currExcluded = HashSet(excludedFolders)
+        if (currExcluded.removeAll { it.trimEnd('/').equals(normalized, ignoreCase = true) || it.startsWith("$normalized/", ignoreCase = true) }) {
+            excludedFolders = currExcluded
+        }
+
+        val currEverShown = HashSet(everShownFolders)
+        if (currEverShown.removeAll { it.trimEnd('/').equals(normalized, ignoreCase = true) || it.startsWith("$normalized/", ignoreCase = true) }) {
+            everShownFolders = currEverShown
+        }
+
+        try {
+            val covers = parseAlbumCovers()
+            if (covers.removeAll { it.path.trimEnd('/').equals(normalized, ignoreCase = true) || it.path.startsWith("$normalized/", ignoreCase = true) || it.tmb.startsWith(normalized, ignoreCase = true) }) {
+                albumCovers = Gson().toJson(covers)
+            }
+        } catch (e: Exception) {
+            // Ignore
+        }
+
+        if (customFoldersOrder.isNotEmpty()) {
+            val folders = customFoldersOrder.split("|||").filter { it.isNotEmpty() && !it.trimEnd('/').equals(normalized, ignoreCase = true) && !it.startsWith("$normalized/", ignoreCase = true) }
+            customFoldersOrder = folders.joinToString("|||")
+        }
+
+        if (defaultFolder.trimEnd('/').equals(normalized, ignoreCase = true) || defaultFolder.startsWith("$normalized/", ignoreCase = true)) {
+            defaultFolder = ""
+        }
+        if (lastFilepickerPath.trimEnd('/').equals(normalized, ignoreCase = true) || lastFilepickerPath.startsWith("$normalized/", ignoreCase = true)) {
+            lastFilepickerPath = ""
+        }
+
+        removeFolderGrouping(normalized)
+        removeFolderViewType(normalized)
+        removeCustomSorting(normalized)
+        removeLastVideoPosition(normalized)
+
+        val editor = prefs.edit()
+        var hasEdits = false
+        prefs.all.keys.forEach { key ->
+            val lowerKey = key.lowercase(Locale.getDefault())
+            if (lowerKey.contains(lowerNormalized)) {
+                editor.remove(key)
+                hasEdits = true
+            }
+        }
+        if (hasEdits) {
+            editor.apply()
+        }
+    }
 }
