@@ -267,8 +267,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         val currentPath = getCurrentPath().ifEmpty { mPath }
         val requiresVaultAccess = CryptoManager.isEncryptedFile(currentPath) ||
             (mDirectory.isNotEmpty() && !mDirectory.isVirtualAlbumPath() && CryptoManager.isEncryptedFolderPath(this, mDirectory)) ||
-            (mDirectory.isVirtualAlbumPath() && isHiddenVirtualAlbumPath(mDirectory)) ||
-            config.temporarilyShowHidden
+            (mDirectory.isVirtualAlbumPath() && isHiddenVirtualAlbumPath(mDirectory))
         applyVaultScreenProtection(requiresVaultAccess)
         if (requiresVaultAccess && !canAccessHiddenVirtualAlbums()) {
             finish()
@@ -1589,8 +1588,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         val path = mMediaFiles.getOrNull(position)?.path ?: mPath
         val requiresVault = CryptoManager.isEncryptedFile(path) ||
             (mDirectory.isNotEmpty() && !mDirectory.isVirtualAlbumPath() && CryptoManager.isEncryptedFolderPath(this, mDirectory)) ||
-            (mDirectory.isVirtualAlbumPath() && isHiddenVirtualAlbumPath(mDirectory)) ||
-            config.temporarilyShowHidden
+            (mDirectory.isVirtualAlbumPath() && isHiddenVirtualAlbumPath(mDirectory))
         applyVaultScreenProtection(requiresVault)
         if (mPos != position) {
             mPos = position

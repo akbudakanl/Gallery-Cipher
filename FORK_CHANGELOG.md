@@ -9,6 +9,22 @@ For full architectural details, cryptography specifications, and user guides, se
 
 ---
 
+## [1.17.1-cipher] - 2026-11-09
+### Added
+- **Configurable Secret Vault Exit Behavior (`ON_VAULT_EXIT`):**
+  - Prompt selection dialog upon pressing back to exit Secret Vault mode with "Keep showing hidden albums" and "Hide hidden albums" options, plus an unchecked "Remember my choice" checkbox.
+  - Contextual guidance note directing users to **Settings > On leaving hidden section** for advanced preference options.
+  - Comprehensive preference in Settings with 5 choices:
+    1. Keep showing all hidden albums
+    2. Only show encrypted albums
+    3. Only show other hidden albums
+    4. Hide all hidden albums
+    5. Always ask (default)
+  - Settings backup, export, and import support for the vault exit preference.
+- **Strict Vault Teardown & In-Memory Zeroization on Non-Cipher Modes:**
+  - Instantly zeroes cryptographic keys in RAM (`CryptoManager.lockVault()`) and purges decrypted in-memory Glide caches (`clearAppImageCaches`) whenever leaving Secret Vault to non-encrypted or hidden modes (e.g., hiding all albums or showing only non-encrypted `.nomedia`/`.thumbnails` folders).
+  - Deactivates background privacy defenses (suppresses `FLAG_SECURE` screen protection and hides Vault Browser from menus) when encrypted albums are not visible.
+
 ## [1.17.0-cipher] - 2026-11-09
 ### Added
 - **Ephemeral Zero-Disk In-App Vault Browser (`VaultWebViewActivity`):**

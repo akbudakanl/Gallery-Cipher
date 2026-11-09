@@ -26,9 +26,11 @@ open class SimpleActivity : BaseSimpleActivity() {
 
     override fun onResume() {
         super.onResume()
-        val isVaultActive = CryptoManager.isVaultUnlocked || config.temporarilyShowHidden
+        val isVaultActive = CryptoManager.isVaultUnlocked
         if (isVaultActive) {
             applyVaultScreenProtection(true)
+        } else {
+            applyVaultScreenProtection(false)
         }
     }
 

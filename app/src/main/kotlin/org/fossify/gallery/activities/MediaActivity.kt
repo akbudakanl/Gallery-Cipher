@@ -207,8 +207,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     override fun onResume() {
         super.onResume()
         val requiresVault = (mPath.isVirtualAlbumPath() && isHiddenVirtualAlbumPath(mPath)) ||
-            (mPath.isNotEmpty() && !mPath.isVirtualAlbumPath() && CryptoManager.isEncryptedFolderPath(this, mPath)) ||
-            config.temporarilyShowHidden
+            (mPath.isNotEmpty() && !mPath.isVirtualAlbumPath() && CryptoManager.isEncryptedFolderPath(this, mPath))
         applyVaultScreenProtection(requiresVault)
         if (requiresVault && !canAccessHiddenVirtualAlbums()) {
             finish()

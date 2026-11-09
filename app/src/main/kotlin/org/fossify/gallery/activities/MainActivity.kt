@@ -90,6 +90,7 @@ import org.fossify.gallery.dialogs.ChangeViewTypeDialog
 import org.fossify.gallery.dialogs.FilterMediaDialog
 import org.fossify.gallery.dialogs.GrantAllFilesDialog
 import org.fossify.gallery.dialogs.VaultSecurityDialog
+import org.fossify.gallery.dialogs.VaultExitDialog
 import org.fossify.gallery.extensions.addTempFolderIfNeeded
 import org.fossify.gallery.extensions.applyVaultScreenProtection
 import org.fossify.gallery.extensions.config
@@ -138,6 +139,12 @@ import org.fossify.gallery.helpers.LOCATION_INTERNAL
 import org.fossify.gallery.helpers.MAX_COLUMN_COUNT
 import org.fossify.gallery.helpers.MONTH_MILLISECONDS
 import org.fossify.gallery.helpers.MediaFetcher
+import org.fossify.gallery.helpers.ON_VAULT_EXIT
+import org.fossify.gallery.helpers.ON_VAULT_EXIT_KEEP_SHOWING_ALL
+import org.fossify.gallery.helpers.ON_VAULT_EXIT_SHOW_ENCRYPTED_ONLY
+import org.fossify.gallery.helpers.ON_VAULT_EXIT_SHOW_OTHER_ONLY
+import org.fossify.gallery.helpers.ON_VAULT_EXIT_HIDE_ALL
+import org.fossify.gallery.helpers.ON_VAULT_EXIT_ASK_EVERY_TIME
 import org.fossify.gallery.helpers.PICKED_PATHS
 import org.fossify.gallery.helpers.RECYCLE_BIN
 import org.fossify.gallery.helpers.SET_WALLPAPER_INTENT
@@ -169,6 +176,15 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         private const val PICK_MEDIA = 2
         private const val PICK_WALLPAPER = 3
         private const val LAST_MEDIA_CHECK_PERIOD = 3000L
+
+        private const val DISPLAY_NONE = 0
+        private const val DISPLAY_ALL_HIDDEN = 1
+        private const val DISPLAY_ENCRYPTED_ONLY = 2
+        private const val DISPLAY_OTHER_ONLY = 3
+        private const val DISPLAY_SECRET_VAULT = 4
+
+        private const val IS_SECRET_VAULT_VIEW = "is_secret_vault_view"
+        private const val HIDDEN_DISPLAY_MODE = "hidden_display_mode"
     }
 
     private var mIsPickImageIntent = false
@@ -215,6 +231,8 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     private var mBottomGestureCountedInThisTouch = false
     private var mIsVaultDialogShowing = false
     private var mIsSecretVaultView = false
+    private var mHiddenDisplayMode = DISPLAY_NONE
+
     private val binding by viewBinding(ActivityMainBinding::inflate)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -222,8 +240,12 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         setContentView(binding.root)
         appLaunched(BuildConfig.APPLICATION_ID)
 
-        mIsSecretVaultView = false
-        if (savedInstanceState == null) {
+        if (savedInstanceState != null) {
+            mIsSecretVaultView = savedInstanceState.getBoolean(IS_SECRET_VAULT_VIEW, false)
+            mHiddenDisplayMode = savedInstanceState.getInt(HIDDEN_DISPLAY_MODE, DISPLAY_NONE)
+        } else {
+            mIsSecretVaultView = false
+            mHiddenDisplayMode = DISPLAY_NONE
             config.temporarilyShowHidden = false
             config.temporarilyShowExcluded = false
             config.tempSkipDeleteConfirmation = false
@@ -320,8 +342,12 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
         if (!config.temporarilyShowHidden || !CryptoManager.isVaultUnlocked) {
             mIsSecretVaultView = false
+            if (!config.temporarilyShowHidden) {
+                mHiddenDisplayMode = DISPLAY_NONE
+            }
         }
-        applyVaultScreenProtection(mIsSecretVaultView || config.temporarilyShowHidden)
+        val hasEncryptedActive = mIsSecretVaultView || (CryptoManager.isVaultUnlocked && (mHiddenDisplayMode == DISPLAY_ALL_HIDDEN || mHiddenDisplayMode == DISPLAY_ENCRYPTED_ONLY))
+        applyVaultScreenProtection(hasEncryptedActive)
         updateVaultModeUi()
         refreshMenuItems()
 
@@ -393,6 +419,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         if (config.temporarilyShowHidden || config.tempSkipDeleteConfirmation || config.temporarilyShowExcluded) {
             mTempShowHiddenHandler.postDelayed({
                 mIsSecretVaultView = false
+                mHiddenDisplayMode = DISPLAY_NONE
                 config.temporarilyShowHidden = false
                 config.temporarilyShowExcluded = false
                 config.tempSkipDeleteConfirmation = false
@@ -409,6 +436,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         super.onDestroy()
         if (!isChangingConfigurations) {
             mIsSecretVaultView = false
+            mHiddenDisplayMode = DISPLAY_NONE
             config.temporarilyShowHidden = false
             config.temporarilyShowExcluded = false
             config.tempSkipDeleteConfirmation = false
@@ -426,15 +454,23 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         }
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(IS_SECRET_VAULT_VIEW, mIsSecretVaultView)
+        outState.putInt(HIDDEN_DISPLAY_MODE, mHiddenDisplayMode)
+    }
+
     override fun onBackPressedCompat(): Boolean {
         return if (binding.mainMenu.isSearchOpen) {
             binding.mainMenu.closeSearch()
             true
+        } else if (mCurrentPathPrefix.isNotEmpty()) {
+            mOpenedSubfolders.removeAt(mOpenedSubfolders.lastIndex)
+            mCurrentPathPrefix = mOpenedSubfolders.last()
+            setupAdapter(mDirs)
+            true
         } else if (mIsSecretVaultView) {
-            mIsSecretVaultView = false
-            updateVaultModeUi()
-            binding.directoriesGrid.adapter = null
-            getDirectories()
+            handleVaultExit()
             true
         } else if (config.groupDirectSubfolders) {
             if (mCurrentPathPrefix.isEmpty()) {
@@ -450,6 +486,58 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             appLockManager.lock()
             false
         }
+    }
+
+    private fun handleVaultExit() {
+        when (config.onVaultExit) {
+            ON_VAULT_EXIT_KEEP_SHOWING_ALL -> applyVaultExitOption(ON_VAULT_EXIT_KEEP_SHOWING_ALL)
+            ON_VAULT_EXIT_SHOW_ENCRYPTED_ONLY -> applyVaultExitOption(ON_VAULT_EXIT_SHOW_ENCRYPTED_ONLY)
+            ON_VAULT_EXIT_SHOW_OTHER_ONLY -> applyVaultExitOption(ON_VAULT_EXIT_SHOW_OTHER_ONLY)
+            ON_VAULT_EXIT_HIDE_ALL -> applyVaultExitOption(ON_VAULT_EXIT_HIDE_ALL)
+            else -> {
+                VaultExitDialog(this) { keepShowing, rememberChoice ->
+                    val chosenOption = if (keepShowing) {
+                        ON_VAULT_EXIT_KEEP_SHOWING_ALL
+                    } else {
+                        ON_VAULT_EXIT_HIDE_ALL
+                    }
+                    if (rememberChoice) {
+                        config.onVaultExit = chosenOption
+                    }
+                    applyVaultExitOption(chosenOption)
+                }
+            }
+        }
+    }
+
+    private fun applyVaultExitOption(option: Int) {
+        mIsSecretVaultView = false
+        when (option) {
+            ON_VAULT_EXIT_KEEP_SHOWING_ALL -> {
+                mHiddenDisplayMode = DISPLAY_ALL_HIDDEN
+                config.temporarilyShowHidden = true
+            }
+            ON_VAULT_EXIT_SHOW_ENCRYPTED_ONLY -> {
+                mHiddenDisplayMode = DISPLAY_ENCRYPTED_ONLY
+                config.temporarilyShowHidden = true
+            }
+            ON_VAULT_EXIT_SHOW_OTHER_ONLY -> {
+                mHiddenDisplayMode = DISPLAY_OTHER_ONLY
+                config.temporarilyShowHidden = true
+                CryptoManager.lockVault()
+                CryptoManager.clearAppImageCaches(this)
+            }
+            ON_VAULT_EXIT_HIDE_ALL -> {
+                mHiddenDisplayMode = DISPLAY_NONE
+                config.temporarilyShowHidden = false
+                CryptoManager.lockVault()
+                CryptoManager.clearAppImageCaches(this)
+            }
+        }
+        updateVaultModeUi()
+        binding.directoriesGrid.adapter = null
+        getDirectories()
+        refreshMenuItems()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
@@ -500,7 +588,8 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         }
 
         binding.mainMenu.requireToolbar().menu.apply {
-            findItem(R.id.menu_vault_browser)?.isVisible = mIsSecretVaultView || config.temporarilyShowHidden
+            val hasEncryptedActive = mIsSecretVaultView || (CryptoManager.isVaultUnlocked && (mHiddenDisplayMode == DISPLAY_ALL_HIDDEN || mHiddenDisplayMode == DISPLAY_ENCRYPTED_ONLY))
+            findItem(R.id.menu_vault_browser)?.isVisible = hasEncryptedActive
             findItem(R.id.temporarily_show_hidden)?.isVisible = false
             findItem(R.id.stop_showing_hidden)?.isVisible =
                 (!isRPlus() || isExternalStorageManager()) && config.temporarilyShowHidden
@@ -793,7 +882,8 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     private fun updateVaultModeUi() {
         runOnUiThread {
             if (isDestroyed || isFinishing) return@runOnUiThread
-            applyVaultScreenProtection(mIsSecretVaultView || config.temporarilyShowHidden)
+            val hasEncryptedActive = mIsSecretVaultView || (CryptoManager.isVaultUnlocked && (mHiddenDisplayMode == DISPLAY_ALL_HIDDEN || mHiddenDisplayMode == DISPLAY_ENCRYPTED_ONLY))
+            applyVaultScreenProtection(hasEncryptedActive)
             if (mIsSecretVaultView) {
                 binding.mainMenu.updateHintText(getString(R.string.secret_vault))
             } else {
@@ -810,6 +900,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         if (config.temporarilyShowHidden && CryptoManager.isVaultUnlocked) {
             if (!mIsSecretVaultView) {
                 mIsSecretVaultView = true
+                mHiddenDisplayMode = DISPLAY_SECRET_VAULT
                 toast(R.string.secret_vault)
                 updateVaultModeUi()
                 binding.directoriesGrid.adapter = null
@@ -841,12 +932,14 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                 if (success) {
                     config.hiddenProtectionType = type
                     mIsSecretVaultView = true
+                    mHiddenDisplayMode = DISPLAY_SECRET_VAULT
                     toast(R.string.secret_vault)
                     toggleTemporarilyShowHidden(true)
                 }
             }
         } else {
             mIsSecretVaultView = true
+            mHiddenDisplayMode = DISPLAY_SECRET_VAULT
             toast(R.string.secret_vault)
             toggleTemporarilyShowHidden(true)
         }
@@ -865,6 +958,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         config.temporarilyShowHidden = show
         if (!show) {
             mIsSecretVaultView = false
+            mHiddenDisplayMode = DISPLAY_NONE
             CryptoManager.lockVault()
             CryptoManager.clearAppImageCaches(this)
         }
@@ -1252,6 +1346,13 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     private fun gotDirectories(newDirs: ArrayList<Directory>) {
         if (mIsSecretVaultView) {
             newDirs.retainAll { isEncryptedVaultAlbum(it.path) }
+        } else {
+            when (mHiddenDisplayMode) {
+                DISPLAY_ENCRYPTED_ONLY -> newDirs.removeAll { isFolderOrAlbumHidden(it.path) && !isEncryptedVaultAlbum(it.path) }
+                DISPLAY_OTHER_ONLY -> newDirs.removeAll { isEncryptedVaultAlbum(it.path) }
+                DISPLAY_NONE -> newDirs.removeAll { isFolderOrAlbumHidden(it.path) }
+                else -> {}
+            }
         }
         mIsGettingDirs = false
         mShouldStopFetching = false
@@ -1475,6 +1576,14 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             if (mIsSecretVaultView && !isEncryptedVaultAlbum(folder)) {
                 continue
             }
+            if (!mIsSecretVaultView) {
+                when (mHiddenDisplayMode) {
+                    DISPLAY_ENCRYPTED_ONLY -> if (isFolderOrAlbumHidden(folder) && !isEncryptedVaultAlbum(folder)) continue
+                    DISPLAY_OTHER_ONLY -> if (isEncryptedVaultAlbum(folder)) continue
+                    DISPLAY_NONE -> if (isFolderOrAlbumHidden(folder)) continue
+                    else -> {}
+                }
+            }
             if (mShouldStopFetching || isDestroyed || isFinishing) {
                 return
             }
@@ -1666,7 +1775,12 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             val filtered = if (mIsSecretVaultView) {
                 dirsCopy.filter { isEncryptedVaultAlbum(it.path) }
             } else {
-                dirsCopy
+                when (mHiddenDisplayMode) {
+                    DISPLAY_ENCRYPTED_ONLY -> dirsCopy.filterNot { isFolderOrAlbumHidden(it.path) && !isEncryptedVaultAlbum(it.path) }
+                    DISPLAY_OTHER_ONLY -> dirsCopy.filterNot { isEncryptedVaultAlbum(it.path) }
+                    DISPLAY_NONE -> dirsCopy.filterNot { isFolderOrAlbumHidden(it.path) }
+                    else -> dirsCopy
+                }
             }
             val distinctDirs = ArrayList(filtered.distinctBy { it.path.getDistinctPath() })
 

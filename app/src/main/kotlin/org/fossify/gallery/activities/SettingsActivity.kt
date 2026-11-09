@@ -60,6 +60,7 @@ class SettingsActivity : SimpleActivity() {
         setupManageIncludedFolders()
         setupManageExcludedFolders()
         setupManageHiddenFolders()
+        setupOnVaultExit()
         setupSearchAllFiles()
         setupShowHiddenItems()
         setupAutoplayVideos()
@@ -233,6 +234,38 @@ class SettingsActivity : SimpleActivity() {
             }
         }
     }
+
+    private fun setupOnVaultExit() {
+        binding.settingsOnVaultExit.text = getOnVaultExitText()
+        binding.settingsOnVaultExitHolder.setOnClickListener {
+            val items = arrayListOf(
+                RadioItem(ON_VAULT_EXIT_KEEP_SHOWING_ALL, getString(R.string.on_vault_exit_keep_showing_all)),
+                RadioItem(ON_VAULT_EXIT_SHOW_ENCRYPTED_ONLY, getString(R.string.on_vault_exit_show_encrypted_only)),
+                RadioItem(ON_VAULT_EXIT_SHOW_OTHER_ONLY, getString(R.string.on_vault_exit_show_other_only)),
+                RadioItem(ON_VAULT_EXIT_HIDE_ALL, getString(R.string.on_vault_exit_hide_all)),
+                RadioItem(ON_VAULT_EXIT_ASK_EVERY_TIME, getString(R.string.on_vault_exit_ask_every_time))
+            )
+
+            RadioGroupDialog(
+                activity = this@SettingsActivity,
+                items = items,
+                checkedItemId = config.onVaultExit
+            ) {
+                config.onVaultExit = it as Int
+                binding.settingsOnVaultExit.text = getOnVaultExitText()
+            }
+        }
+    }
+
+    private fun getOnVaultExitText() = getString(
+        when (config.onVaultExit) {
+            ON_VAULT_EXIT_KEEP_SHOWING_ALL -> R.string.on_vault_exit_keep_showing_all
+            ON_VAULT_EXIT_SHOW_ENCRYPTED_ONLY -> R.string.on_vault_exit_show_encrypted_only
+            ON_VAULT_EXIT_SHOW_OTHER_ONLY -> R.string.on_vault_exit_show_other_only
+            ON_VAULT_EXIT_HIDE_ALL -> R.string.on_vault_exit_hide_all
+            else -> R.string.on_vault_exit_ask_every_time
+        }
+    )
 
     private fun setupShowHiddenItems() {
         config.showHiddenMedia = false
@@ -976,6 +1009,7 @@ class SettingsActivity : SimpleActivity() {
                 put(INCLUDED_FOLDERS, TextUtils.join(",", config.includedFolders))
                 put(EXCLUDED_FOLDERS, TextUtils.join(",", config.excludedFolders))
                 put(SHOW_HIDDEN_MEDIA, config.showHiddenMedia)
+                put(ON_VAULT_EXIT, config.onVaultExit)
                 put(FILE_LOADING_PRIORITY, config.fileLoadingPriority)
                 put(AUTOPLAY_VIDEOS, config.autoplayVideos)
                 put(REMEMBER_LAST_VIDEO_POSITION, config.rememberLastVideoPosition)
@@ -1123,6 +1157,7 @@ class SettingsActivity : SimpleActivity() {
                 INCLUDED_FOLDERS -> config.addIncludedFolders(value.toStringSet())
                 EXCLUDED_FOLDERS -> config.addExcludedFolders(value.toStringSet())
                 SHOW_HIDDEN_MEDIA -> config.showHiddenMedia = value.toBoolean()
+                ON_VAULT_EXIT -> config.onVaultExit = value.toInt()
                 FILE_LOADING_PRIORITY -> config.fileLoadingPriority = value.toInt()
                 AUTOPLAY_VIDEOS -> config.autoplayVideos = value.toBoolean()
                 REMEMBER_LAST_VIDEO_POSITION -> config.rememberLastVideoPosition = value.toBoolean()
