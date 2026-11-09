@@ -349,4 +349,17 @@
     <string name="vault_not_setup">Secure Vault is not set up yet. Please set up a vault first.</string>
     <string name="no_media_url_found">No valid media link or file found</string>
     <string name="confirm_decrypt_hidden_file">Are you sure you want to decrypt the hidden file(s)?</string>
+    <string name="copy_to_clipboard_disabled_in_vault">Copying to clipboard is disabled while vault is unlocked for security.</string>
+    <string name="vault_browser">Vault Browser</string>
+    <string name="search_or_enter_url">Search or enter URL…</string>
+    <string name="clear_session_and_exit">Clear Session &amp; Exit</string>
+    <string name="save_to_vault_dialog">Save this image directly to vault?</string>
+    <string name="save_media_to_vault">Save to Vault</string>
+    <string name="desktop_site">Desktop site</string>
+    <string name="refresh">Refresh</string>
+    <string name="more_settings">More settings</string>
+    <string name="select_vault_album_to_upload">Select hidden physical album to upload from</string>
+    <string name="vault_file_selected_for_upload">Encrypted file prepared for streaming upload</string>
+    <string name="no_vault_albums_found">No hidden physical albums found</string>
+    <string name="vault_not_unlocked">Vault is locked</string>
 </resources>

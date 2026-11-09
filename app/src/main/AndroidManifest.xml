@@ -304,27 +304,16 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
             </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="image/*" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="video/*" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.SEND_MULTIPLE" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="image/*" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.SEND_MULTIPLE" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="video/*" />
-            </intent-filter>
         </activity>
+
+        <activity
+            android:name=".activities.VaultWebViewActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:theme="@style/AppTheme"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:windowSoftInputMode="adjustResize"
+            android:label="@string/vault_browser" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -335,6 +324,12 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/provider_paths" />
         </provider>
+
+        <provider
+            android:name=".helpers.VaultStreamProvider"
+            android:authorities="${applicationId}.vaultstream"
+            android:exported="false"
+            android:grantUriPermissions="true" />
 
         <receiver
             android:name=".receivers.RefreshMediaReceiver"
