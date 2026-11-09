@@ -413,7 +413,7 @@ open class VideoPlayerActivity : BaseViewerActivity(), SeekBar.OnSeekBarChangeLi
 
         mExoPlayer = ExoPlayer.Builder(this)
             .setMediaSourceFactory(DefaultMediaSourceFactory(applicationContext))
-            .setSeekParameters(SeekParameters.EXACT)
+            .setSeekParameters(SeekParameters.CLOSEST_SYNC)
             .setLoadControl(loadControl)
             .build()
             .apply {
@@ -492,7 +492,9 @@ open class VideoPlayerActivity : BaseViewerActivity(), SeekBar.OnSeekBarChangeLi
             mDuration = mExoPlayer!!.duration
             binding.bottomVideoTimeHolder.videoSeekbar.max = mDuration.toInt()
             binding.bottomVideoTimeHolder.videoDuration.text = mDuration.getFormattedDuration()
-            setPosition(mCurrTime)
+            if (mCurrTime > 0L) {
+                setPosition(mCurrTime)
+            }
             updatePlaybackSpeed(config.playbackSpeed)
 
             if (config.rememberLastVideoPosition) {

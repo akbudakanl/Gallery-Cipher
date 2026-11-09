@@ -575,7 +575,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
 
         mExoPlayer = ExoPlayer.Builder(requireContext())
             .setMediaSourceFactory(DefaultMediaSourceFactory(requireContext()))
-            .setSeekParameters(SeekParameters.EXACT)
+            .setSeekParameters(SeekParameters.CLOSEST_SYNC)
             .setLoadControl(loadControl)
             .build()
             .apply {
@@ -982,7 +982,9 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
                 mCurrTime > 0L -> mCurrTime
                 else -> 0L
             }
-            setPosition(targetPosition)
+            if (targetPosition > 0L) {
+                setPosition(targetPosition)
+            }
             return
         }
 
@@ -1001,7 +1003,9 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
                     mCurrTime > 0L -> mCurrTime
                     else -> 0L
                 }
-                setPosition(targetPosition)
+                if (targetPosition > 0L) {
+                    setPosition(targetPosition)
+                }
             }
         }
     }
