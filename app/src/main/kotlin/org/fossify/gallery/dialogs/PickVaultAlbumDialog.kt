@@ -19,9 +19,7 @@ import java.io.File
 class PickVaultAlbumDialog(
     private val activity: BaseSimpleActivity,
     private val onCancel: () -> Unit,
-    private val onAlbumSelected: (File, String) -> Unit,
-    private val titleId: Int = R.string.select_vault_album,
-    private val allowNewAlbum: Boolean = true
+    private val onAlbumSelected: (File, String) -> Unit
 ) {
     private var dialog: AlertDialog? = null
 
@@ -31,27 +29,19 @@ class PickVaultAlbumDialog(
 
     private fun showAlbumList() {
         val albums = CryptoManager.getHiddenPhysicalAlbums(activity)
-        if (albums.isEmpty()) {
-            activity.toast(R.string.no_vault_albums_found)
-            onCancel()
-            return
-        }
         val albumLabels = albums.map { "${it.name} (${it.itemCount})" }.toTypedArray()
 
         val builder = activity.getAlertDialogBuilder()
-            .setTitle(titleId)
+            .setTitle(R.string.select_vault_album)
+            .setNeutralButton(R.string.create_new_vault_album) { _, _ ->
+                promptNewAlbumName()
+            }
             .setNegativeButton(org.fossify.commons.R.string.cancel) { _, _ ->
                 onCancel()
             }
             .setOnCancelListener {
                 onCancel()
             }
-
-        if (allowNewAlbum) {
-            builder.setNeutralButton(R.string.create_new_vault_album) { _, _ ->
-                promptNewAlbumName()
-            }
-        }
 
         builder.setItems(albumLabels) { _, which ->
             if (which in albums.indices) {

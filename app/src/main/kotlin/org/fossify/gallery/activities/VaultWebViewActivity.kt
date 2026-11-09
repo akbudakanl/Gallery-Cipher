@@ -30,13 +30,11 @@ import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.gallery.R
 import org.fossify.gallery.databinding.ActivityVaultWebViewBinding
 import org.fossify.gallery.dialogs.CryptoProgressDialog
-import org.fossify.gallery.dialogs.PickMediumDialog
 import org.fossify.gallery.dialogs.PickVaultAlbumDialog
 import org.fossify.gallery.dialogs.VaultSecurityDialog
 import org.fossify.gallery.extensions.applyVaultScreenProtection
 import org.fossify.gallery.extensions.config
 import org.fossify.gallery.helpers.CryptoManager
-import org.fossify.gallery.helpers.VaultStreamProvider
 import java.io.File
 import java.io.InputStream
 import java.net.HttpURLConnection
@@ -96,7 +94,6 @@ class VaultWebViewActivity : SimpleActivity() {
         try {
             mFilePathCallback?.onReceiveValue(null)
             mFilePathCallback = null
-            VaultStreamProvider.clearAll()
             CookieManager.getInstance().removeAllCookies(null)
             CookieManager.getInstance().flush()
             WebStorage.getInstance().deleteAllData()
@@ -550,6 +547,10 @@ class VaultWebViewActivity : SimpleActivity() {
         return "vault_download_${System.currentTimeMillis()}.$ext"
     }
 
+    companion object {
+        private const val REQUEST_CODE_FILE_CHOOSER = 10001
+    }
+
     private fun handleFileChooser(
         filePathCallback: ValueCallback<Array<Uri>>?,
         fileChooserParams: WebChromeClient.FileChooserParams?
@@ -558,47 +559,30 @@ class VaultWebViewActivity : SimpleActivity() {
         mFilePathCallback?.onReceiveValue(null)
         mFilePathCallback = filePathCallback
 
-        if (!CryptoManager.isVaultUnlocked) {
+        return try {
+            val intent = fileChooserParams?.createIntent() ?: Intent(Intent.ACTION_GET_CONTENT).apply {
+                type = "*/*"
+                addCategory(Intent.CATEGORY_OPENABLE)
+            }
+            @Suppress("DEPRECATION")
+            startActivityForResult(intent, REQUEST_CODE_FILE_CHOOSER)
+            true
+        } catch (_: Exception) {
             mFilePathCallback?.onReceiveValue(null)
             mFilePathCallback = null
-            toast(R.string.vault_not_unlocked)
-            return false
+            false
         }
+    }
 
-        PickVaultAlbumDialog(
-            activity = this,
-            titleId = R.string.select_vault_album_to_upload,
-            allowNewAlbum = false,
-            onCancel = {
-                mFilePathCallback?.onReceiveValue(null)
-                mFilePathCallback = null
-            },
-            onAlbumSelected = { albumFolder, _ ->
-                PickMediumDialog(
-                    activity = this,
-                    path = albumFolder.absolutePath,
-                    onCancel = {
-                        mFilePathCallback?.onReceiveValue(null)
-                        mFilePathCallback = null
-                    },
-                    callback = { selectedMediumPath ->
-                        val selectedFile = File(selectedMediumPath)
-                        if (selectedFile.exists() && CryptoManager.isEncryptedFile(selectedFile.name)) {
-                            val streamUri = VaultStreamProvider.createStreamUri(applicationContext, selectedFile)
-                            grantUriPermission(packageName, streamUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            mFilePathCallback?.onReceiveValue(arrayOf(streamUri))
-                            mFilePathCallback = null
-                            toast(R.string.vault_file_selected_for_upload)
-                        } else {
-                            mFilePathCallback?.onReceiveValue(null)
-                            mFilePathCallback = null
-                            toast(org.fossify.commons.R.string.unknown_error_occurred)
-                        }
-                    }
-                )
-            }
-        )
-        return true
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
+        @Suppress("DEPRECATION")
+        super.onActivityResult(requestCode, resultCode, resultData)
+        if (requestCode == REQUEST_CODE_FILE_CHOOSER) {
+            val uris = WebChromeClient.FileChooserParams.parseResult(resultCode, resultData)
+            mFilePathCallback?.onReceiveValue(uris)
+            mFilePathCallback = null
+        }
     }
 
     @Deprecated("Deprecated in Java")

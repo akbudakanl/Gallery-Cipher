@@ -20,14 +20,8 @@ import org.fossify.gallery.models.Medium
 import org.fossify.gallery.models.ThumbnailItem
 import org.fossify.gallery.models.ThumbnailSection
 
-class PickMediumDialog(
-    val activity: BaseSimpleActivity,
-    val path: String,
-    val onCancel: (() -> Unit)? = null,
-    val callback: (path: String) -> Unit
-) {
+class PickMediumDialog(val activity: BaseSimpleActivity, val path: String, val callback: (path: String) -> Unit) {
     private var dialog: AlertDialog? = null
-    private var isSelectionMade = false
     private var shownMedia = ArrayList<ThumbnailItem>()
     private val binding = DialogMediumPickerBinding.inflate(activity.layoutInflater)
     private val config = activity.config
@@ -44,19 +38,11 @@ class PickMediumDialog(
 
         activity.getAlertDialogBuilder()
             .setPositiveButton(org.fossify.commons.R.string.ok, null)
-            .setNegativeButton(org.fossify.commons.R.string.cancel) { _, _ ->
-                if (!isSelectionMade) onCancel?.invoke()
-            }
-            .setOnCancelListener {
-                if (!isSelectionMade) onCancel?.invoke()
-            }
+            .setNegativeButton(org.fossify.commons.R.string.cancel, null)
             .setNeutralButton(R.string.other_folder) { dialogInterface, i -> showOtherFolder() }
             .apply {
                 activity.setupDialogStuff(binding.root, this, org.fossify.commons.R.string.select_photo) { alertDialog ->
                     dialog = alertDialog
-                    alertDialog.setOnDismissListener {
-                        if (!isSelectionMade) onCancel?.invoke()
-                    }
                 }
             }
 
@@ -88,7 +74,6 @@ class PickMediumDialog(
         shownMedia = media
         val adapter = MediaAdapter(activity, shownMedia.clone() as ArrayList<ThumbnailItem>, null, true, false, path, binding.mediaGrid) {
             if (it is Medium) {
-                isSelectionMade = true
                 callback(it.path)
                 dialog?.dismiss()
             }

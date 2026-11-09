@@ -325,12 +325,6 @@
                 android:resource="@xml/provider_paths" />
         </provider>
 
-        <provider
-            android:name=".helpers.VaultStreamProvider"
-            android:authorities="${applicationId}.vaultstream"
-            android:exported="false"
-            android:grantUriPermissions="true" />
-
         <receiver
             android:name=".receivers.RefreshMediaReceiver"
             android:exported="true">

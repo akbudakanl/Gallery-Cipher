@@ -266,7 +266,7 @@ sequenceDiagram
 
 ## 8. Mobile Option 2: Ephemeral Zero-Disk In-App Vault Browser (`VaultWebViewActivity`)
 
-While sharing direct URL strings from external browsers operates in-memory over Binder IPC, authenticated media (such as private photos inside Google Photos, Nextcloud, or password-protected personal cloud drives) cannot be fetched anonymously without session cookies. 
+While sharing direct URL strings from external browsers operates in-memory over Binder IPC, web media requiring active user sessions cannot be fetched anonymously without session cookies. 
 
 Fossify Gallery Cipher resolves this with the **Ephemeral Zero-Disk In-App Vault Browser**, accessible directly from the Secret Vault (Mode 2) top app bar:
 
@@ -279,19 +279,15 @@ Fossify Gallery Cipher resolves this with the **Ephemeral Zero-Disk In-App Vault
    - All hardware sensor, camera, microphone, and geolocation requests are unconditionally rejected (`onPermissionRequest -> deny()`).
    - Mixed insecure content is strictly rejected (`MIXED_CONTENT_NEVER_ALLOW`).
 4. **Session Cookies Kept Strictly in RAM:**
-   - Standard cookie handling is enabled in RAM during the active session to allow logging into personal accounts (Google Photos, Nextcloud).
+   - Standard cookie handling is enabled in RAM during the active session to allow logging into personal accounts and services.
    - Cookies and cache are never flushed to disk database files.
 5. **Direct-to-Vault In-Memory Streaming:**
-   - Both the web `DownloadListener` (triggered when tapping "Download" on Google Photos or personal cloud) and long-press image context actions stream incoming bytes directly into `CryptoManager.encryptStreamToDirectory` in 64 KB RAM buffers.
+   - Both the web `DownloadListener` and long-press image context actions stream incoming bytes directly into `CryptoManager.encryptStreamToDirectory` in 64 KB RAM buffers.
    - Bytes are encrypted via `AES-256-CTR` and committed straight to `.bin` ciphertext in the selected vault folder, with zero flash plaintext exposure.
 6. **Instant RAM Purge on Exit:**
    - Exiting the browser or tapping "Clear session & exit" immediately purges all transient cookies (`CookieManager.removeAllCookies`), local storage (`WebStorage.deleteAllData`), cache (`clearCache(true)`), and navigation history.
-8. **Direct-to-Web In-Memory Streaming Upload (`VaultStreamProvider`):**
-   - Web pages requesting file uploads (`<input type="file">`) are intercepted via `WebChromeClient.onShowFileChooser`.
-   - Instead of opening unencrypted system storage, the browser presents an in-app vault picker (`PickVaultAlbumDialog` and `PickMediumDialog`) with RAM-decoded thumbnails.
-   - The selected encrypted `.bin` file is bridged to Chromium via `VaultStreamProvider` (`content://<package>.vaultstream/<token>`).
-   - Plaintext bytes are decrypted on the fly via `AES-256-CTR` in 64 KB RAM chunks and piped directly into Chromium's HTTPS upload socket through an anonymous Linux kernel pipe (`ParcelFileDescriptor.createPipe()`).
-   - Plaintext media never touches non-volatile storage during upload. Zero flash remanence is maintained symmetrically for both downloads and uploads. Tokens and memory pipes are strictly cleared upon session exit.
+7. **Standard System Media File Chooser:**
+   - Web pages requesting file uploads (`<input type="file">`) are delegated to Android's standard system file picker (`fileChooserParams.createIntent()`), which exclusively accesses public media on the device. Secret vault folders (`Cipher_Secrets/`) remain completely hidden and isolated behind `.nomedia` and encryption, ensuring vault items can never be exposed or uploaded by accident.
 
 ---
 
@@ -302,7 +298,7 @@ Fossify Gallery Cipher provides **three distinct, mathematically sound ingestion
 | Option | Environment | Target Use Case | Zero-Disk Mechanism |
 | :--- | :--- | :--- | :--- |
 | **Option 1: Mobile Direct URL Share** | Android (`VaultShareActivity`) | Public media URLs shared from Brave, Firefox, or Chrome | Link passed via RAM-only Binder IPC; downloaded & encrypted directly into `.bin` in 64 KB RAM buffers. File sharing permanently removed. |
-| **Option 2: Mobile Ephemeral Vault Browser** | Android (`VaultWebViewActivity`) | Authenticated cloud media (Google Photos, Nextcloud) | Native Chromium in Mode 2; zero disk cache (`LOAD_NO_CACHE`); session cookies in RAM; direct streaming encryption to `.bin`; memory zeroized on exit. |
+| **Option 2: Mobile Ephemeral Vault Browser** | Android (`VaultWebViewActivity`) | Downloadable media from web | Native Chromium in Mode 2; zero disk cache (`LOAD_NO_CACHE`); session cookies in RAM; direct streaming encryption to `.bin`; memory zeroized on exit. |
 | **Option 3: Desktop Linux CLI (Tails Recommended)** | Desktop Linux / Tails OS (`tools/fossify-cipher-cli/`) | Offline batch imports, desktop media preparation | Offline encryption inside system RAM; writes ready-to-use `.bin` ciphertext directly to USB/storage for transfer to `Documents/Cipher/Cipher_Secrets/`. |
 
 ### Detailed Breakdown of Option 3: Desktop Linux CLI Tool (Tails OS Recommended)
