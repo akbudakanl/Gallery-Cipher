@@ -26,8 +26,8 @@ class VaultShareActivity : SimpleActivity() {
             return
         }
 
-        val (url, uri) = VaultDownloader.extractPayload(intent)
-        if (url == null && uri == null) {
+        val url = VaultDownloader.extractUrl(intent)
+        if (url == null) {
             toast(R.string.no_media_url_found)
             finish()
             return
@@ -43,24 +43,24 @@ class VaultShareActivity : SimpleActivity() {
         ) { _, _, success ->
             if (success && CryptoManager.isVaultUnlocked) {
                 // Step 2: Show Hidden Physical Albums Picker
-                showAlbumPicker(url, uri)
+                showAlbumPicker(url)
             } else {
                 finish()
             }
         }
     }
 
-    private fun showAlbumPicker(url: String?, uri: Uri?) {
+    private fun showAlbumPicker(url: String) {
         PickVaultAlbumDialog(
             activity = this,
             onCancel = { finish() },
             onAlbumSelected = { targetFolder, albumName ->
-                startDownloadAndEncryption(url, uri, targetFolder, albumName)
+                startDownloadAndEncryption(url, targetFolder, albumName)
             }
         )
     }
 
-    private fun startDownloadAndEncryption(url: String?, uri: Uri?, targetFolder: File, albumName: String) {
+    private fun startDownloadAndEncryption(url: String, targetFolder: File, albumName: String) {
         val progressDialog = CryptoProgressDialog(this, 100, R.string.downloading_and_encrypting)
         val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
         val wakeLock = powerManager?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "FossifyGallery:VaultDownload")
@@ -72,7 +72,6 @@ class VaultShareActivity : SimpleActivity() {
             val encryptedFile = VaultDownloader.downloadAndEncrypt(
                 context = applicationContext,
                 url = url,
-                uri = uri,
                 targetDir = targetFolder,
                 onProgress = { bytesRead, totalBytes ->
                     runOnUiThread {
