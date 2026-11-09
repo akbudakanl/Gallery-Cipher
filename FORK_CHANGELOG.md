@@ -10,6 +10,31 @@ For full architectural details, cryptography specifications, and user guides, se
 ---
 
 ## [Unreleased]
+### Added
+- **Ephemeral Zero-Disk In-App Vault Browser (`VaultWebViewActivity`):**
+  - Integrated an in-app privacy browser directly inside Secret Vault mode (Mode 2) allowing users to safely import already-downloadable media (e.g. from Google Photos, Nextcloud, or personal web albums) straight into encrypted storage without ever writing plaintext files to device storage or external browser caches.
+  - Hardened native Chromium sandbox: zero-disk ephemeral caching (`LOAD_NO_CACHE`), pop-up windows blocked via `setSupportMultipleWindows(false)` and `javaScriptCanOpenWindowsAutomatically = false`, mixed content blocked (`MIXED_CONTENT_NEVER_ALLOW`), local file and content access blocked (`allowFileAccess = false`, `allowContentAccess = false`), and automatic denial of all sensor, camera, microphone, and geolocation requests (`onPermissionRequest -> deny()`).
+  - In-memory direct vault streaming: web download listener (`setDownloadListener`) and image long-press actions stream media directly with session cookies through `CryptoManager.encryptStreamToDirectory` in 64 KB RAM buffers straight into `.bin` ciphertext in vault physical albums.
+  - Complete memory zeroization on exit: purges cookies (`CookieManager.removeAllCookies`), local storage (`WebStorage.deleteAllData`), caches (`clearCache(true)`), and navigation history upon closing the activity.
+- **Zero-Disk In-Memory Streaming Upload (`VaultStreamProvider`):**
+  - Integrated zero-disk encrypted media upload capabilities into `VaultWebViewActivity`, intercepting Chromium's file chooser (`onShowFileChooser`) when a website requests `<input type="file">`.
+  - Presents an interactive in-app vault album and photo picker (`PickVaultAlbumDialog` & `PickMediumDialog`) with RAM-decoded thumbnails.
+  - Streams decrypted bytes on the fly via `AES-256-CTR` through a Linux kernel pipe in RAM (`ParcelFileDescriptor.createPipe()`) directly to Chromium's HTTPS upload stream.
+  - Guarantees zero flash plaintext remanence for web uploads symmetrically matching streaming downloads; ephemeral tokens and kernel pipes are zeroized on session exit.
+- **Global Vault Screen Protection (`FLAG_SECURE`):**
+  - Enforced `FLAG_SECURE` and Android 13+ recents screenshot suppression across the entire application (including the Vault Browser) from the moment the vault credentials are entered in Mode 2 until the vault is locked or the app is closed.
+- **Global Clipboard Photo Copy Suppression in Vault Mode:**
+  - Disabled photo copying to clipboard across the application whenever the vault is unlocked (`isVaultUnlocked`), preventing plaintext image data or URIs from leaking into third-party keyboard history or system clipboard databases.
+- **Three Zero-Disk Media Ingestion Options (Detailed in `DOCS.md`):**
+  - Clarified and documented the 3 zero-disk pathways for importing media into the vault without plaintext flash remanence:
+    1. **Option 1 (Mobile Direct URL Share):** Share URL strings directly from privacy browsers (Brave, Firefox, Chrome) to `VaultShareActivity`. Transmitted via RAM-only Binder IPC; direct streaming download into `.bin` ciphertext in 64 KB RAM buffers.
+    2. **Option 2 (Mobile Ephemeral Vault Browser):** In-app native Chromium browser in Mode 2 for downloading authenticated cloud media (Google Photos, Nextcloud) with zero-disk caching and exit zeroization.
+    3. **Option 3 (Desktop Linux CLI - Tails Recommended):** Offline media encryption tool (`tools/fossify-cipher-cli/cipher_vault.py`) running in system RAM (Tails OS recommended), outputting compatible `.bin` files ready to transfer directly to `Documents/Cipher/Cipher_Secrets/`.
+
+### Removed
+- **Permanent Removal of File-Based Sharing in `VaultShareActivity`:**
+  - Removed `image/*`, `video/*`, `Intent.EXTRA_STREAM`, and content URI (`content://`, `file://`) sharing targets from `VaultShareActivity` and `VaultDownloader`.
+  - Addressed flash wear-leveling data remanence: Chromium-based browsers (e.g. Brave, Chrome) write unencrypted temporary images to disk cache via `ChromeFileProvider` when sharing files. By rejecting file streams and accepting strictly `text/plain` URL strings, the app eliminates plaintext leaks from third-party browser caches.
 
 ## [1.16.0-cipher] - 2026-11-08
 ### Added

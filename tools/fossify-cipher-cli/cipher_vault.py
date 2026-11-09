@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-Fossify Gallery Cipher - Tails & Linux Encryption CLI Tool
------------------------------------------------------------
-Encrypts media files (photos, videos) on Linux / Tails OS into .bin format,
+Fossify Gallery Cipher - Linux & Tails Offline Encryption CLI Tool
+-------------------------------------------------------------------
+Encrypts media files (photos, videos) on Linux (Tails OS recommended) into .bin format,
 100% compatible with Android Fossify Gallery Cipher (AES-256 + Poly1305-AES).
 
 Features:
-- Automatic 2-folder desktop management on Tails / Linux (To_Encrypt & Encrypted_Output).
-- Automatic .vault discovery across Desktop, Tails Persistent Storage, and mounted USB drives.
+- Automatic 2-folder desktop management on Linux / Tails (To_Encrypt & Encrypted_Output).
+- Automatic .vault discovery across Desktop, persistent storage, and mounted USB drives.
 - Subfolder preservation as encrypted physical albums (.meta) in Fossify Gallery.
-- Anti-forensic secure wiping (overwriting with zeros) of plaintext source media.
+- Secure source sanitation (overwriting with zeros) of plaintext source media.
 """
 
 import os
@@ -686,7 +686,7 @@ Custom Directory Usage:
         print("\033[1;37m[i] Tip: Transfer the contents of the output folder into your phone's\033[0m")
         print("\033[1;37m    'Documents/Cipher/Cipher_Secrets/' directory.\033[0m")
 
-        # 6. Secure Wipe & Deletion of Plaintext Source Files (Anti-Forensics)
+        # 6. Secure Wipe & Deletion of Plaintext Source Files
         delete_source = args.delete_source
         if not delete_source and sys.stdin.isatty():
             try:

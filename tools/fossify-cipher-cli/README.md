@@ -1,16 +1,16 @@
-# Fossify Gallery Cipher - Tails & Linux Encryption CLI Tool
+# Fossify Gallery Cipher - Linux & Tails Offline Encryption CLI Tool
 
-This tool encrypts media files (photos, videos) on **Tails OS** or any Linux distribution into `.bin` format, **100% compatible with the Android Fossify Gallery Cipher** application (using `AES-256-CTR` + `Poly1305-AES` authenticated streaming encryption).
+This tool encrypts media files (photos, videos) on Linux distributions (with **Tails OS** recommended for RAM-based workflows) into `.bin` format, **100% compatible with the Android Fossify Gallery Cipher** application (using `AES-256-CTR` + `Poly1305-AES` authenticated streaming encryption).
 
-By encrypting files directly inside Tails prior to transferring them, raw plaintext media never touches your mobile device's storage, ensuring that Android's media scanner, thumbnail cache, and filesystem journals leave zero forensic traces.
+By encrypting files on your PC prior to transferring them to mobile, raw plaintext media never touches your mobile device's storage, ensuring that Android's media scanner, thumbnail cache, and filesystem journals never encounter unencrypted files.
 
 ---
 
-## 🎯 Tails OS Desktop (2-Folder) Workflow
+## 🎯 Desktop (2-Folder) Workflow (Tails OS Recommended)
 
-The tool is purpose-built for Tails OS. It automatically manages 2 folders directly on your Desktop:
+The tool automatically manages 2 folders directly on your Desktop (Tails OS is recommended because it runs in volatile RAM):
 
-1. **`To_Encrypt` (Desktop):** Place media downloaded via Tor Browser or copied from external sources here.
+1. **`To_Encrypt` (Desktop):** Place media downloaded or copied from local/external sources here.
 2. **`Encrypted_Output` (Desktop):** Running the tool generates randomized `.bin` files here, encrypted with your vault key.
 
 ```
@@ -65,7 +65,7 @@ python3 cipher_vault.py
    ```
    Documents/Cipher/Cipher_Secrets/
    ```
-6. **Anti-Forensic Wipe:** The tool prompts whether to securely overwrite (with zeros) and delete the plaintext source files from the `To_Encrypt` folder (`[y/N]`).
+6. **Secure Source Sanitation:** The tool prompts whether to securely overwrite (with zeros) and delete the plaintext source files from the `To_Encrypt` folder (`[y/N]`).
 
 ---
 

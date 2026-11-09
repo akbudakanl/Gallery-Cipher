@@ -183,14 +183,21 @@ The application transitions through three distinct operational states to balance
 
 ---
 
-## 7. Zero-Disk Streaming Vault Downloader (Direct-to-Ciphertext)
+## 7. Mobile Option 1: Zero-Disk Direct URL Streaming Downloader (`VaultShareActivity`)
 
-When downloading media using traditional mobile browsers, files are saved as plaintext into the public download directory (`/storage/emulated/0/Download`) before any application can move or encrypt them. This workflow introduces severe anti-forensic vulnerabilities:
+When downloading media using traditional mobile browsers, files are saved as plaintext into the public download directory (`/storage/emulated/0/Download`) before any application can move or encrypt them. Furthermore, tapping "Share image" within Chromium-based browsers (such as Chrome or Brave, even in Incognito mode) forces the browser to write unencrypted image bytes into its private app cache directory (`/data/user/0/.../cache/images/`) and pass a `content://` URI via `FileProvider`.
 
-1. **Flash Storage Data Remanence:** NAND Flash controllers (UFS and eMMC) utilize a Flash Translation Layer (FTL) with wear-leveling algorithms. Even if a file is wiped or shredded after encryption, physical flash blocks containing plaintext chunks remain un-erased until long-term TRIM and garbage collection cycles occur.
+This introduces critical storage privacy and data remanence vulnerabilities:
+1. **Flash Storage Data Remanence (Wear-Leveling):** NAND Flash controllers (UFS and eMMC) utilize a Flash Translation Layer (FTL) with wear-leveling algorithms. When temporary files are written and subsequently deleted or shredded, the underlying physical flash blocks containing plaintext chunks remain un-erased until asynchronous TRIM and controller garbage collection occur.
 2. **System MediaStore Leakage:** As soon as a file touches disk, Android's `MediaScanner` indexes its name and metadata into `external.db` and often generates plaintext system thumbnails in `.thumbnails`.
 
-Fossify Gallery Cipher solves this with a **Zero-Disk Streaming Downloader**: incoming network bytes are held strictly in a transient RAM buffer, piped through an authenticated stream cipher, and committed directly to flash memory as randomized `.bin` ciphertext. Plaintext never touches non-volatile storage.
+### Permanent Removal of File-Based Sharing
+To ensure complete zero-disk privacy, **all file-based sharing (`image/*`, `video/*`, `EXTRA_STREAM`, `content://`, `file://`) has been permanently removed** from Fossify Gallery Cipher. Receiving an unencrypted file via `FileProvider` means the browser has already written plaintext to flash storage.
+
+Instead, Fossify Gallery Cipher provides **Direct URL Sharing**:
+- The browser shares only the URL string via `Intent.EXTRA_TEXT` (`text/plain`).
+- URL strings are transmitted directly across processes in volatile RAM via Linux kernel `/dev/binder` IPC (`mmap`), without any filesystem writes.
+- `VaultDownloader` establishes a direct TLS connection, reads incoming bytes into transient 64 KB RAM buffers, pipes them through `CryptoManager.encryptStreamToDirectory` (`AES-256-CTR` + `Poly1305`), and writes directly as randomized `.bin` ciphertext to disk. Plaintext media never touches non-volatile storage.
 
 ### A. Architectural Sequence Diagram
 
@@ -198,15 +205,15 @@ Fossify Gallery Cipher solves this with a **Zero-Disk Streaming Downloader**: in
 sequenceDiagram
     autonumber
     actor User as User
-    participant Browser as Web Browser (Chrome, Brave, etc.)
-    participant Activity as VaultShareActivity (Entry Point)
+    participant Browser as Privacy Browser (Brave, Chrome, etc.)
+    participant Activity as VaultShareActivity (URL Share Target)
     participant Auth as VaultSecurityDialog (Credential Check)
     participant Picker as PickVaultAlbumDialog (Physical Album Picker)
     participant Downloader as VaultDownloader (Direct Streaming Engine)
     participant Disk as Flash Storage (NAND Storage)
 
-    User->>Browser: Long press media / Tap "Share"
-    Browser->>Activity: Intent (ACTION_SEND / URL or Stream URI)
+    User->>Browser: Share Link / Page URL via Android Share Sheet
+    Browser->>Activity: Intent (ACTION_SEND / text/plain URL via Binder RAM)
     Activity->>Auth: Prompt Password / PIN / Pattern
     alt Authentication Fails or Cancelled
         Auth-->>Activity: Cancelled / Wrong credentials
@@ -233,14 +240,15 @@ sequenceDiagram
 ### B. Core Architectural Components
 
 #### 1. Entry Point (`VaultShareActivity`)
-- Registered in `AndroidManifest.xml` with intent filters for `android.intent.action.SEND` and `android.intent.action.SEND_MULTIPLE` supporting `text/plain` (web links), `image/*`, and `video/*`.
+- Registered in `AndroidManifest.xml` strictly for `android.intent.action.SEND` with `text/plain` mimeType (URLs). File and stream mime types (`image/*`, `video/*`) are completely disabled.
 - Configured with `@style/TranslucentTheme` and `android:excludeFromRecents="true"` to prevent lingering previews in Android's task switcher.
-- Extracts URLs from `Intent.EXTRA_TEXT` (via regex) or direct streams from `Intent.EXTRA_STREAM` (content/file URIs).
+- Extracts URLs strictly from `Intent.EXTRA_TEXT` via `VaultDownloader.extractUrl(intent)`. Non-URL payloads and file streams are rejected.
 
 #### 2. Mandatory Pre-Action Authentication (`VaultSecurityDialog`)
 - Before displaying any vault contents, album names, or folder structures, the user must authenticate using their configured credential (PIN, Password, or Pattern).
 - If authentication fails or is dismissed, the activity immediately exits (`finish()`), revealing zero information about the vault structure.
 - Upon successful authentication, the 256-bit Master Encryption Key (MEK) is unlocked in volatile RAM (`CryptoManager.unlockedMasterKey`).
+- Vault screen protection (`FLAG_SECURE`) is activated immediately.
 
 #### 3. Strict Physical Album Isolation (`PickVaultAlbumDialog`)
 - **Exclusion of Virtual Albums:** Scans subdirectories in `CryptoManager.getOrCreateVaultRoot(context)`. Any non-media subfolders—specifically `JSON/` where virtual album manifests reside—are strictly omitted.
@@ -253,4 +261,62 @@ sequenceDiagram
 - **Stream Ciphering:** Chunks are passed into `AES-256-CTR` and incrementally authenticated using `Poly1305`. Ciphertext bytes are flushed directly into `targetDir/<random_hex>.bin`.
 - **Deterministic Header Sizing:** If the server provides a `Content-Length`, the header is written upfront. If the transfer is chunked or size is unknown, the header is updated after EOF using `RandomAccessFile` seek operations, taking advantage of fixed-size AES-GCM ciphertext blocks.
 - **In-RAM Thumbnail Extraction:** For image downloads, image dimensions and sample sizes are calculated by decoding stream bounds directly in memory from `openDecryptedContentStream()`, without writing intermediate unencrypted preview files to disk. Thumbnail bytes are compressed to JPEG and cached strictly in `CryptoManager.metadataCache`.
+
+---
+
+## 8. Mobile Option 2: Ephemeral Zero-Disk In-App Vault Browser (`VaultWebViewActivity`)
+
+While sharing direct URL strings from external browsers operates in-memory over Binder IPC, authenticated media (such as private photos inside Google Photos, Nextcloud, or password-protected personal cloud drives) cannot be fetched anonymously without session cookies. 
+
+Fossify Gallery Cipher resolves this with the **Ephemeral Zero-Disk In-App Vault Browser**, accessible directly from the Secret Vault (Mode 2) top app bar:
+
+1. **Native Chromium Sandboxing:** Operates under Android's hardened multi-process Chromium architecture with isolated rendering processes. Does not inject arbitrary third-party JavaScript interfaces or alter standard Chromium sandbox security.
+2. **Strict Zero-Disk Ephemeral Policy:**
+   - Configured with `WebSettings.LOAD_NO_CACHE`. HTML, CSS, JavaScript, and image assets are held exclusively in volatile RAM and never committed to disk cache.
+   - `databaseEnabled = false`, `saveFormData = false`, `allowFileAccess = false`, `allowContentAccess = false`.
+3. **Automated Pop-Up & Hardware Sensor Isolation:**
+   - Multi-window pop-ups and pop-unders are blocked via `setSupportMultipleWindows(false)` and `javaScriptCanOpenWindowsAutomatically = false`.
+   - All hardware sensor, camera, microphone, and geolocation requests are unconditionally rejected (`onPermissionRequest -> deny()`).
+   - Mixed insecure content is strictly rejected (`MIXED_CONTENT_NEVER_ALLOW`).
+4. **Session Cookies Kept Strictly in RAM:**
+   - Standard cookie handling is enabled in RAM during the active session to allow logging into personal accounts (Google Photos, Nextcloud).
+   - Cookies and cache are never flushed to disk database files.
+5. **Direct-to-Vault In-Memory Streaming:**
+   - Both the web `DownloadListener` (triggered when tapping "Download" on Google Photos or personal cloud) and long-press image context actions stream incoming bytes directly into `CryptoManager.encryptStreamToDirectory` in 64 KB RAM buffers.
+   - Bytes are encrypted via `AES-256-CTR` and committed straight to `.bin` ciphertext in the selected vault folder, with zero flash plaintext exposure.
+6. **Instant RAM Purge on Exit:**
+   - Exiting the browser or tapping "Clear session & exit" immediately purges all transient cookies (`CookieManager.removeAllCookies`), local storage (`WebStorage.deleteAllData`), cache (`clearCache(true)`), and navigation history.
+8. **Direct-to-Web In-Memory Streaming Upload (`VaultStreamProvider`):**
+   - Web pages requesting file uploads (`<input type="file">`) are intercepted via `WebChromeClient.onShowFileChooser`.
+   - Instead of opening unencrypted system storage, the browser presents an in-app vault picker (`PickVaultAlbumDialog` and `PickMediumDialog`) with RAM-decoded thumbnails.
+   - The selected encrypted `.bin` file is bridged to Chromium via `VaultStreamProvider` (`content://<package>.vaultstream/<token>`).
+   - Plaintext bytes are decrypted on the fly via `AES-256-CTR` in 64 KB RAM chunks and piped directly into Chromium's HTTPS upload socket through an anonymous Linux kernel pipe (`ParcelFileDescriptor.createPipe()`).
+   - Plaintext media never touches non-volatile storage during upload. Zero flash remanence is maintained symmetrically for both downloads and uploads. Tokens and memory pipes are strictly cleared upon session exit.
+
+---
+
+## 9. Comprehensive Zero-Disk Media Ingestion: The 3 Secure Pathways
+
+Fossify Gallery Cipher provides **three distinct, mathematically sound ingestion pathways** to import photos and videos into your encrypted vault without ever writing unencrypted plaintext files to non-volatile flash storage:
+
+| Option | Environment | Target Use Case | Zero-Disk Mechanism |
+| :--- | :--- | :--- | :--- |
+| **Option 1: Mobile Direct URL Share** | Android (`VaultShareActivity`) | Public media URLs shared from Brave, Firefox, or Chrome | Link passed via RAM-only Binder IPC; downloaded & encrypted directly into `.bin` in 64 KB RAM buffers. File sharing permanently removed. |
+| **Option 2: Mobile Ephemeral Vault Browser** | Android (`VaultWebViewActivity`) | Authenticated cloud media (Google Photos, Nextcloud) | Native Chromium in Mode 2; zero disk cache (`LOAD_NO_CACHE`); session cookies in RAM; direct streaming encryption to `.bin`; memory zeroized on exit. |
+| **Option 3: Desktop Linux CLI (Tails Recommended)** | Desktop Linux / Tails OS (`tools/fossify-cipher-cli/`) | Offline batch imports, desktop media preparation | Offline encryption inside system RAM; writes ready-to-use `.bin` ciphertext directly to USB/storage for transfer to `Documents/Cipher/Cipher_Secrets/`. |
+
+### Detailed Breakdown of Option 3: Desktop Linux CLI Tool (Tails OS Recommended)
+
+For users performing batch media imports or preparing encrypted archives on a PC, the **Fossify Gallery Cipher CLI Tool** (`tools/fossify-cipher-cli/cipher_vault.py`) enables offline media encryption on Linux distributions. **Tails OS** is recommended as a live distribution because it operates in computer RAM, ensuring plaintext media never touches local hard drives during processing:
+
+1. **RAM-Only Processing (Recommended on Tails OS):** Operating in a live RAM-based system keeps the workspace strictly in memory, preventing temporary file remanence on the computer's internal storage drive.
+2. **Offline Master Key Decryption:** Copy your `.vault` master header from `Documents/Cipher/Cipher_Secrets/.vault` to the Desktop. The CLI tool decrypts the master key using your password via `Argon2id + AES-256-GCM`.
+3. **V5 Stream Encryption & MAC Generation:** 
+   - Media placed into `To_Encrypt` is processed chunk-by-chunk using `AES-256-CTR` and authenticated with `Poly1305-AES`.
+   - Embedded JPEG preview thumbnails are generated in memory (via Pillow) and packaged with encrypted file headers matching the mobile app's native V5 format.
+4. **Direct Transfer to Phone:**
+   - The resulting `<random_hex>.bin` files are output to `Encrypted_Output`.
+   - These files can be copied over USB cable or SD card directly into `Documents/Cipher/Cipher_Secrets/<random_album_folder>/`.
+   - When Fossify Gallery Cipher is opened on Android and unlocked, the files appear instantly in the designated album—fully decryptable, playable, and with zero plaintext exposure on the phone's storage.
+
 
