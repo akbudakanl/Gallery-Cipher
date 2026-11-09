@@ -9,7 +9,7 @@ For full architectural details, cryptography specifications, and user guides, se
 
 ---
 
-## [Unreleased]
+## [1.17.0-cipher] - 2026-11-09
 ### Added
 - **Ephemeral Zero-Disk In-App Vault Browser (`VaultWebViewActivity`):**
   - Integrated an in-app privacy browser directly inside Secret Vault mode (Mode 2) allowing users to safely import already-downloadable media (e.g. from Google Photos, Nextcloud, or personal web albums) straight into encrypted storage without ever writing plaintext files to device storage or external browser caches.
