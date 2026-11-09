@@ -130,6 +130,7 @@ class PhotoFragment : ViewPagerFragment() {
     private var mCurrentGestureViewZoom = 1f
     private var mInitialZoom = 1f
     private var mHasInitialZoom = false
+    private var mHasGifSource = false
 
     private var mStoredShowExtendedDetails = false
     private var mStoredHideExtendedDetails = false
@@ -336,7 +337,7 @@ class PhotoFragment : ViewPagerFragment() {
                     measureScreen()
                     Handler().postDelayed({
                         binding.gifViewFrame.controller.resetState()
-                        loadGif()
+                        loadGif(forceReload = true)
                     }, 50)
                 }
             }
@@ -436,7 +437,14 @@ class PhotoFragment : ViewPagerFragment() {
         }
     }
 
-    private fun loadGif() {
+    private fun loadGif(forceReload: Boolean = false) {
+        // onCreateView starts the first load, then onResume is called immediately.
+        // Do not assign the same source twice while the GIF decoder is starting.
+        if (mHasGifSource && !forceReload) {
+            return
+        }
+
+        mHasGifSource = true
         try {
             val pathToLoad = getPathToLoad(mMedium)
             if (CryptoManager.isEncryptedFile(pathToLoad)) {
@@ -457,8 +465,10 @@ class PhotoFragment : ViewPagerFragment() {
                 }
             }
         } catch (e: Exception) {
+            mHasGifSource = false
             loadBitmap()
         } catch (e: OutOfMemoryError) {
+            mHasGifSource = false
             loadBitmap()
         }
     }

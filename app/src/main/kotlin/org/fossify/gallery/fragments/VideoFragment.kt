@@ -306,20 +306,29 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
 
         storeStateVariables()
         binding.videoPlayOutline.beGone()
+
+        // Starting Glide's video-frame decoder and ExoPlayer at the same time makes both
+        // compete for I/O and the hardware decoder. That was introduced by player
+        // pre-warming and is most visible during the first seconds of autoplay.
+        // A paused video still gets its normal preview; an autoplaying one lets the
+        // player render its own first frame instead.
+        // setMenuVisibility is not called at VideoActivity (third party intent)
+        if (!mIsFragmentVisible && activity is VideoActivity) {
+            mIsFragmentVisible = true
+        }
+
+        val startsPlayingImmediately = mIsFragmentVisible && mConfig.autoplayVideos && !mConfig.gestureVideoPlayer
         val cachedFrame = sVideoFrameCache.get(mMedium.path)
         if (cachedFrame != null && !cachedFrame.isRecycled) {
             binding.videoPreview.setImageBitmap(cachedFrame)
             binding.videoPreview.beVisible()
-        } else {
+        } else if (!startsPlayingImmediately) {
             Glide.with(context)
                 .load(mMedium.path)
                 .diskCacheStrategy(if (CryptoManager.isEncryptedFile(mMedium.path)) com.bumptech.glide.load.engine.DiskCacheStrategy.NONE else com.bumptech.glide.load.engine.DiskCacheStrategy.AUTOMATIC)
                 .into(binding.videoPreview)
-        }
-
-        // setMenuVisibility is not called at VideoActivity (third party intent)
-        if (!mIsFragmentVisible && activity is VideoActivity) {
-            mIsFragmentVisible = true
+        } else {
+            binding.videoPreview.beGone()
         }
 
         mIsFullscreen = listener?.isFullScreen() == true
@@ -539,6 +548,10 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         val shouldSkipInit = activity == null || mConfig.gestureVideoPlayer || mIsPanorama || mExoPlayer != null
         if (shouldSkipInit) return
 
+        // Cancel an in-flight thumbnail extraction before the player starts reading
+        // the same file. This also covers videos opened manually after their preview.
+        Glide.with(this).clear(binding.videoPreview)
+
         val isContentUri = mMedium.path.startsWith("content://")
         val isEncrypted = CryptoManager.isEncryptedFile(mMedium.path)
         val uri = if (isContentUri) Uri.parse(mMedium.path) else Uri.fromFile(File(mMedium.path))
@@ -593,11 +606,11 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
                         .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
                         .build(), false
                 )
-                prepare()
-
+                initListeners()
                 if (mTextureView.surfaceTexture != null) {
                     setVideoSurface(Surface(mTextureView.surfaceTexture))
                 }
+                prepare()
 
                 if (shouldAutoplay) {
                     playWhenReady = true
@@ -606,8 +619,6 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
                     showVideoControls()
                     activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 }
-
-                initListeners()
             }
 
         updatePlayerMuteState()

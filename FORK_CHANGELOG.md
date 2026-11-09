@@ -9,6 +9,16 @@ For full architectural details, cryptography specifications, and user guides, se
 
 ---
 
+## [1.17.2-cipher] - 2026-11-09
+### Fixed
+- **GIF Decoder Deduplication (`PhotoFragment`):**
+  - Added `mHasGifSource` guard to prevent redundant concurrent GIF decoder initialization during activity lifecycle transitions and layout measurements.
+  - Enhanced memory safety by resetting decode state upon caught exceptions or out-of-memory errors.
+- **Video Autoplay Hardware Decoder & I/O Deconfliction (`VideoFragment`):**
+  - Eliminated hardware decoder and storage I/O contention between Glide's video-frame extraction and ExoPlayer during autoplay by suppressing the initial thumbnail load when playback begins immediately.
+  - Pre-emptively cancels in-flight Glide thumbnail decoding before player initialization.
+  - Reordered listener initialization prior to `prepare()` to avoid missing initial player state events.
+
 ## [1.17.1-cipher] - 2026-11-09
 ### Added
 - **Configurable Secret Vault Exit Behavior (`ON_VAULT_EXIT`):**
