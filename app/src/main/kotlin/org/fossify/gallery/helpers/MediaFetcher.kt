@@ -29,7 +29,8 @@ class MediaFetcher(val context: Context, var isSecretVaultView: Boolean = false)
     fun getFilesFrom(
         curPath: String, isPickImage: Boolean, isPickVideo: Boolean, getProperDateTaken: Boolean, getProperLastModified: Boolean,
         getProperFileSize: Boolean, favoritePaths: ArrayList<String>, getVideoDurations: Boolean,
-        lastModifieds: HashMap<String, Long>, dateTakens: HashMap<String, Long>, android11Files: HashMap<String, ArrayList<Medium>>?
+        lastModifieds: HashMap<String, Long>, dateTakens: HashMap<String, Long>, android11Files: HashMap<String, ArrayList<Medium>>?,
+        enableRandom: Boolean = false
     ): ArrayList<Medium> {
         val filterMedia = context.config.filterMedia
         if (filterMedia == 0) {
@@ -79,7 +80,7 @@ class MediaFetcher(val context: Context, var isSecretVaultView: Boolean = false)
             }
         }
 
-        sortMedia(curMedia, context.config.getFolderSorting(curPath))
+        sortMedia(curMedia, context.config.getFolderSorting(curPath), enableRandom)
         return curMedia
     }
 
@@ -827,8 +828,8 @@ class MediaFetcher(val context: Context, var isSecretVaultView: Boolean = false)
         return sizes
     }
 
-    fun sortMedia(media: ArrayList<Medium>, sorting: Int) {
-        if (sorting and SORT_BY_RANDOM != 0) {
+    fun sortMedia(media: ArrayList<Medium>, sorting: Int, enableRandom: Boolean = true) {
+        if (enableRandom && sorting and SORT_BY_RANDOM != 0) {
             media.shuffle()
             return
         }
@@ -860,6 +861,10 @@ class MediaFetcher(val context: Context, var isSecretVaultView: Boolean = false)
 
             if (sorting and SORT_DESCENDING != 0) {
                 result *= -1
+            }
+
+            if (result == 0) {
+                result = o1.name.lowercase(Locale.getDefault()).compareTo(o2.name.lowercase(Locale.getDefault()))
             }
             result
         }

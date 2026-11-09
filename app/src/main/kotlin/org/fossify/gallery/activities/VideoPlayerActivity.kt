@@ -185,6 +185,7 @@ open class VideoPlayerActivity : BaseViewerActivity(), SeekBar.OnSeekBarChangeLi
         }
 
         mOriginalBrightness = window.updateBrightness(config.maxBrightness, mOriginalBrightness)
+        mExoPlayer?.repeatMode = if (config.loopVideos) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
         updateTextColors(binding.videoPlayerHolder)
     }
 
@@ -573,6 +574,7 @@ open class VideoPlayerActivity : BaseViewerActivity(), SeekBar.OnSeekBarChangeLi
     }
 
     private fun setPosition(milliseconds: Long) {
+        mCurrTime = milliseconds
         mExoPlayer?.seekTo(milliseconds)
         binding.bottomVideoTimeHolder.videoSeekbar.progress = milliseconds.toInt()
         binding.bottomVideoTimeHolder.videoCurrTime.text = milliseconds.getFormattedDuration()
@@ -766,10 +768,18 @@ open class VideoPlayerActivity : BaseViewerActivity(), SeekBar.OnSeekBarChangeLi
         }
 
         val curr = mExoPlayer!!.currentPosition
+        val duration = mExoPlayer!!.duration
         val skipMs = config.videoDoubleTapFastForward * 1000L
+        val isLooping = config.loopVideos || mExoPlayer?.repeatMode == Player.REPEAT_MODE_ONE
+
+        if (forward && isLooping && duration > 0L && curr + skipMs >= duration) {
+            setPosition(0L)
+            return
+        }
+
         var newPosition =
             if (forward) curr + skipMs else curr - skipMs
-        newPosition = newPosition.coerceIn(0, mExoPlayer!!.duration)
+        newPosition = newPosition.coerceIn(0, maxOf(duration, 0L))
         setPosition(newPosition)
     }
 

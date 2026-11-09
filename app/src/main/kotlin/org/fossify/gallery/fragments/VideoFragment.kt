@@ -419,6 +419,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
 
         mVolumeSideScroll.beVisibleIf(allowVideoGestures && !mIsPanorama)
         mBrightnessSideScroll.beVisibleIf(allowVideoGestures && !mIsPanorama)
+        mExoPlayer?.repeatMode = if (mConfig.loopVideos && listener?.isSlideShowActive() == false) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
 
         checkExtendedDetails()
         initTimeHolder()
@@ -574,7 +575,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
 
         mExoPlayer = ExoPlayer.Builder(requireContext())
             .setMediaSourceFactory(DefaultMediaSourceFactory(requireContext()))
-            .setSeekParameters(SeekParameters.CLOSEST_SYNC)
+            .setSeekParameters(SeekParameters.EXACT)
             .setLoadControl(loadControl)
             .build()
             .apply {
@@ -793,10 +794,19 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         }
 
         val curr = mExoPlayer!!.currentPosition
+        val duration = mExoPlayer!!.duration
         val skipMs = mConfig.videoDoubleTapFastForward * 1000L
+        val isLooping = (mConfig.loopVideos && listener?.isSlideShowActive() != true) ||
+            mExoPlayer?.repeatMode == Player.REPEAT_MODE_ONE
+
+        if (forward && isLooping && duration > 0L && curr + skipMs >= duration) {
+            setPosition(0L)
+            return
+        }
+
         var newPosition =
             if (forward) curr + skipMs else curr - skipMs
-        newPosition = newPosition.coerceIn(0, maxOf(mExoPlayer!!.duration, 0))
+        newPosition = newPosition.coerceIn(0, maxOf(duration, 0L))
         setPosition(newPosition)
     }
 

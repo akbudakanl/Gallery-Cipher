@@ -702,7 +702,8 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             getCachedMedia(
                 mPath,
                 mIsGetVideoIntent && !mIsGetImageIntent,
-                mIsGetImageIntent && !mIsGetVideoIntent
+                mIsGetImageIntent && !mIsGetVideoIntent,
+                enableRandom = true
             ) {
                 if (it.isEmpty()) {
                     runOnUiThread {

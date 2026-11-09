@@ -572,7 +572,7 @@ fun Context.getVirtualAlbumDirectories(isSecretVaultView: Boolean = false): Arra
         val directory = if (media.isEmpty()) {
             Directory(null, path, "", resolvedName, 0, album.createdTs, album.createdTs, 0L, LOCATION_INTERNAL, 0, "")
         } else {
-            mediaFetcher.sortMedia(media, config.getFolderSorting(path))
+            mediaFetcher.sortMedia(media, config.getFolderSorting(path), enableRandom = false)
             createDirectoryFromMedia(
                 path = path,
                 curMedia = media,

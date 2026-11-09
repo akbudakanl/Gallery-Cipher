@@ -1014,6 +1014,7 @@ fun Context.getCachedMedia(
     path: String,
     getVideosOnly: Boolean = false,
     getImagesOnly: Boolean = false,
+    enableRandom: Boolean = false,
     callback: (ArrayList<ThumbnailItem>) -> Unit
 ) {
     ensureBackgroundThread {
@@ -1080,7 +1081,7 @@ fun Context.getCachedMedia(
         }) as ArrayList<Medium>
 
         val pathToUse = path.ifEmpty { SHOW_ALL }
-        mediaFetcher.sortMedia(media, config.getFolderSorting(pathToUse))
+        mediaFetcher.sortMedia(media, config.getFolderSorting(pathToUse), enableRandom)
         val grouped = mediaFetcher.groupMedia(media, pathToUse)
         callback(grouped.clone() as ArrayList<ThumbnailItem>)
         val OTGPath = config.OTGPath

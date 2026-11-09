@@ -48,12 +48,13 @@ class GetMediaAsynctask(
                 media.addAll(newMedia)
             }
 
-            mediaFetcher.sortMedia(media, context.config.getFolderSorting(SHOW_ALL))
+            mediaFetcher.sortMedia(media, context.config.getFolderSorting(SHOW_ALL), enableRandom = true)
             media
         } else {
             mediaFetcher.getFilesFrom(
                 mPath, isPickImage, isPickVideo, getProperDateTaken, getProperLastModified, getProperFileSize, favoritePaths,
-                getVideoDurations, lastModifieds, dateTakens, null
+                getVideoDurations, lastModifieds, dateTakens, null,
+                enableRandom = true
             )
         }
 
