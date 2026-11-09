@@ -14,13 +14,23 @@ import org.fossify.commons.helpers.isPiePlus
 import org.fossify.gallery.R
 import org.fossify.gallery.dialogs.StoragePermissionRequiredDialog
 import org.fossify.gallery.extensions.addPathToDB
+import org.fossify.gallery.extensions.applyVaultScreenProtection
 import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.updateDirectoryPath
+import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.getPermissionsToRequest
 
 open class SimpleActivity : BaseSimpleActivity() {
 
     private var dialog: AlertDialog? = null
+
+    override fun onResume() {
+        super.onResume()
+        val isVaultActive = CryptoManager.isVaultUnlocked || config.temporarilyShowHidden
+        if (isVaultActive) {
+            applyVaultScreenProtection(true)
+        }
+    }
 
     private val observer = object : ContentObserver(null) {
         override fun onChange(selfChange: Boolean, uri: Uri?) {

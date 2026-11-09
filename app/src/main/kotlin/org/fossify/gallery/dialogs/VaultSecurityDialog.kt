@@ -11,6 +11,7 @@ import org.fossify.commons.helpers.PROTECTION_PIN
 import org.fossify.commons.helpers.SHOW_ALL_TABS
 import org.fossify.gallery.R
 import org.fossify.gallery.databinding.DialogVaultSecurityBinding
+import org.fossify.gallery.extensions.applyVaultScreenProtection
 import org.fossify.gallery.extensions.config
 import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.PROTECTION_PASSWORD
@@ -267,6 +268,7 @@ class VaultSecurityDialog(
             } else if (firstStepSecret == secret) {
                 val hash = CryptoManager.setupOrUpdateCredentials(activity, secret, currentType)
                 activity.config.hiddenProtectionType = currentType
+                activity.applyVaultScreenProtection(true)
                 activity.hideKeyboard()
                 dialog?.dismiss()
                 callback(hash, currentType, true)
@@ -288,6 +290,7 @@ class VaultSecurityDialog(
             val unlocked = CryptoManager.unlockWithSecret(activity, secret)
             if (unlocked) {
                 activity.config.hiddenProtectionType = currentType
+                activity.applyVaultScreenProtection(true)
                 activity.hideKeyboard()
                 dialog?.dismiss()
                 callback(requiredHash, currentType, true)
