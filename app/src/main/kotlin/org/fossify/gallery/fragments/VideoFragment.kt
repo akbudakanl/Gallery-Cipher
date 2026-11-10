@@ -305,7 +305,6 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         }
 
         storeStateVariables()
-        binding.videoPlayOutline.beGone()
 
         // Starting Glide's video-frame decoder and ExoPlayer at the same time makes both
         // compete for I/O and the hardware decoder. That was introduced by player
@@ -541,7 +540,6 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
     private fun setupTimeHolder() {
         mSeekBar.max = mDuration.toInt()
         binding.bottomVideoTimeHolder.videoDuration.text = mDuration.getFormattedDuration()
-        showVideoControls()
     }
 
     private fun initExoPlayer() {
@@ -628,7 +626,9 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         addListener(object : Player.Listener {
             override fun onRenderedFirstFrame() {
                 binding.videoPreview.beGone()
-                binding.videoPlayOutline.beGone()
+                if (mWasVideoStarted) {
+                    binding.videoPlayOutline.beGone()
+                }
             }
 
             override fun onPositionDiscontinuity(
@@ -666,6 +666,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
                         fadeIn()
                     } else {
                         beGone()
+                        binding.videoPlayOutline.beVisible()
                     }
                 }
             }
@@ -899,8 +900,6 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
             return
         }
 
-        binding.videoPlayOutline.beGone()
-
         val wasEnded = videoEnded()
         if (wasEnded) {
             setPosition(0)
@@ -915,7 +914,9 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
             mPlayPauseButton.setImageResource(org.fossify.commons.R.drawable.ic_pause_outline_vector)
         }
 
-        showVideoControls()
+        if (!mWasVideoStarted) {
+            showVideoControls()
+        }
 
         mWasVideoStarted = true
         if (mIsPlayerPrepared) {
@@ -1035,7 +1036,6 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         }
 
         mIsPlayerPrepared = true
-        showVideoControls()
         if (mPlayOnPrepared && !mIsPlaying && mIsFragmentVisible && mConfig.autoplayVideos) {
             updatePlaybackSpeed(mConfig.playbackSpeed)
             playVideo()
@@ -1043,7 +1043,6 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         mWasPlayerInited = true
         mPlayOnPrepared = false
         binding.videoPreview.beGone()
-        binding.videoPlayOutline.beGone()
     }
     private fun videoCompleted() {
         if (!isAdded || mExoPlayer == null) {
