@@ -108,33 +108,43 @@ class ChangeLanguageDialog(
             }
         }
 
+        /** Returns the localized native display name for [locale], applying custom overrides where needed. */
+        fun getNativeDisplayName(locale: Locale): String {
+            val lang = locale.language
+            if (lang.equals("az", ignoreCase = true)) {
+                return "Azərbaycan dili"
+            }
+            if (lang.equals("tr", ignoreCase = true)) {
+                return "Türkçe"
+            }
+            if (lang.equals("en", ignoreCase = true) && locale.country.isEmpty()) {
+                return "English"
+            }
+            return locale.getDisplayName(locale)
+                .replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
+        }
+
         fun getSystemLanguageLabel(context: Context, systemLocale: Locale = getDeviceSystemLocale(context)): String {
             val exactTag = systemLocale.toLanguageTag()
             val codeMatch = ALL_SUPPORTED_CODES.firstOrNull { it.equals(exactTag, ignoreCase = true) }
             if (codeMatch != null) {
-                val loc = Locale.forLanguageTag(codeMatch)
-                return loc.getDisplayName(loc).replaceFirstChar { if (it.isLowerCase()) it.titlecase(loc) else it.toString() }
+                return getNativeDisplayName(Locale.forLanguageTag(codeMatch))
             }
 
             val lang = systemLocale.language
-            if (lang.equals("tr", ignoreCase = true)) {
-                return "Türkçe"
-            }
             if (lang.equals("en", ignoreCase = true)) {
                 return "English"
             }
             val langMatch = ALL_SUPPORTED_CODES.firstOrNull { it.equals(lang, ignoreCase = true) }
             if (langMatch != null) {
-                val loc = Locale.forLanguageTag(langMatch)
-                return loc.getDisplayName(loc).replaceFirstChar { if (it.isLowerCase()) it.titlecase(loc) else it.toString() }
+                return getNativeDisplayName(Locale.forLanguageTag(langMatch))
             }
 
             val nativeLanguage = systemLocale.getDisplayLanguage(systemLocale)
             if (nativeLanguage.isNotEmpty()) {
                 return nativeLanguage.replaceFirstChar { if (it.isLowerCase()) it.titlecase(systemLocale) else it.toString() }
             }
-            return systemLocale.getDisplayName(systemLocale)
-                .replaceFirstChar { if (it.isLowerCase()) it.titlecase(systemLocale) else it.toString() }
+            return getNativeDisplayName(systemLocale)
         }
     }
 
@@ -160,8 +170,7 @@ class ChangeLanguageDialog(
         val sortedLanguages = ALL_SUPPORTED_CODES.mapNotNull { tag ->
             try {
                 val locale = Locale.forLanguageTag(tag)
-                val nativeName = locale.getDisplayName(locale)
-                    .replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
+                val nativeName = getNativeDisplayName(locale)
                 val englishName = locale.getDisplayName(Locale.ENGLISH)
                     .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ENGLISH) else it.toString() }
                 val label = nativeName
