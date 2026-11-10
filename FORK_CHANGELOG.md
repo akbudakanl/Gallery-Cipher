@@ -51,7 +51,7 @@ For full architectural details, cryptography specifications, and user guides, se
 
 ### Notes — Translation Requests & Feedback
 - **New Languages & Translation Corrections:**
-  - If you notice any inaccurate, unnatural, or missing translations—or would like to request full audit/support for a new language—please submit a report, complaint, or Pull Request on the project's [GitHub Issues](https://github.com/akbudakanl/Fossify-Gallery-Cipher/issues) page.
+  - If you notice any inaccurate, unnatural, or missing translations—or would like to request full audit/support for a new language—please submit a report, complaint, or Pull Request on the project's [GitHub Issues](https://github.com/akbudakanl/Gallery-Cipher/issues) page.
 
 ## [1.18.1-cipher] - 2026-11-10
 ### Fixed

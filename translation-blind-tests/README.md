@@ -4,7 +4,7 @@ This directory stores translation audit and blind-review comparison reports for 
 
 > [!NOTE]
 > **Notes — Translation Requests & Feedback:**  
-> If you notice any inaccurate, unnatural, or missing translations—or would like to request full audit/support for a new language—please submit a report, complaint, or Pull Request on the project's [GitHub Issues](https://github.com/akbudakanl/Fossify-Gallery-Cipher/issues) page.
+> If you notice any inaccurate, unnatural, or missing translations—or would like to request full audit/support for a new language—please submit a report, complaint, or Pull Request on the project's [GitHub Issues](https://github.com/akbudakanl/Gallery-Cipher/issues) page.
 
 ## Directory Structure
 
