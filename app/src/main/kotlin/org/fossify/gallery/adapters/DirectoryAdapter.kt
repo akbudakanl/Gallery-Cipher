@@ -196,7 +196,9 @@ class DirectoryAdapter(
             findItem(R.id.cab_lock).isVisible = selectedPaths.any { !config.isFolderProtected(it) }
             findItem(R.id.cab_unlock).isVisible = selectedPaths.any { config.isFolderProtected(it) }
 
-            findItem(R.id.cab_empty_recycle_bin).isVisible = isOneItemSelected && selectedPaths.first() == RECYCLE_BIN
+            val selectedDir = getSelectedItems().firstOrNull()
+            val isRecycleBin = isOneItemSelected && (selectedPaths.first() == RECYCLE_BIN || selectedDir?.isRecycleBin() == true)
+            findItem(R.id.cab_empty_recycle_bin).isVisible = isRecycleBin
             findItem(R.id.cab_empty_disable_recycle_bin).isVisible = isOneItemSelected && selectedPaths.first() == RECYCLE_BIN
 
             findItem(R.id.cab_create_shortcut).isVisible = isOneItemSelected
@@ -465,10 +467,10 @@ class DirectoryAdapter(
 
         if (!CryptoManager.isVaultUnlocked) {
             val initialType = CryptoManager.getVaultProtectionType(activity)
-                ?: if (config.hiddenProtectionType in listOf(PROTECTION_PIN, PROTECTION_PASSWORD, PROTECTION_PATTERN)) {
-                    config.hiddenProtectionType
+                ?: if (config.hiddenProtectionType == PROTECTION_PASSWORD) {
+                    PROTECTION_PASSWORD
                 } else {
-                    PROTECTION_PATTERN
+                    PROTECTION_PIN
                 }
             VaultSecurityDialog(
                 activity = activity,
@@ -537,6 +539,18 @@ class DirectoryAdapter(
     }
 
     private fun emptyRecycleBin() {
+        val selectedDir = getSelectedItems().firstOrNull()
+        if (selectedDir != null && CryptoManager.isVaultRecycleBinPath(activity, selectedDir.path)) {
+            ensureBackgroundThread {
+                CryptoManager.emptyVaultRecycleBin(activity)
+                activity.runOnUiThread {
+                    listener?.refreshItems()
+                    finishActMode()
+                }
+            }
+            return
+        }
+
         activity.handleLockedFolderOpening(RECYCLE_BIN) { success ->
             if (success) {
                 activity.emptyTheRecycleBin {
@@ -582,10 +596,10 @@ class DirectoryAdapter(
 
         if (!CryptoManager.isVaultUnlocked) {
             val initialType = CryptoManager.getVaultProtectionType(activity)
-                ?: if (config.hiddenProtectionType in listOf(PROTECTION_PIN, PROTECTION_PASSWORD, PROTECTION_PATTERN)) {
-                    config.hiddenProtectionType
+                ?: if (config.hiddenProtectionType == PROTECTION_PASSWORD) {
+                    PROTECTION_PASSWORD
                 } else {
-                    PROTECTION_PATTERN
+                    PROTECTION_PIN
                 }
             VaultSecurityDialog(
                 activity = activity,

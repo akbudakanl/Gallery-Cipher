@@ -138,6 +138,16 @@ open class PhotoVideoActivity : BaseViewerActivity(), ViewPagerFragment.Fragment
             findItem(R.id.menu_properties).isVisible = mUri?.scheme == "file" && visibleBottomActions and BOTTOM_ACTION_PROPERTIES == 0
             findItem(R.id.menu_share).isVisible = visibleBottomActions and BOTTOM_ACTION_SHARE == 0
             findItem(R.id.menu_show_on_map).isVisible = visibleBottomActions and BOTTOM_ACTION_SHOW_ON_MAP == 0
+
+            // Items inside the encrypted vault only allow management actions.
+            val path = mUri?.path ?: ""
+            if (org.fossify.gallery.helpers.CryptoManager.isVaultMediaPath(this@PhotoVideoActivity, path)) {
+                findItem(R.id.menu_share).isVisible = false
+                findItem(R.id.menu_edit).isVisible = false
+                findItem(R.id.menu_set_as).isVisible = false
+                findItem(R.id.menu_open_with).isVisible = false
+                findItem(R.id.menu_show_on_map).isVisible = false
+            }
         }
     }
 

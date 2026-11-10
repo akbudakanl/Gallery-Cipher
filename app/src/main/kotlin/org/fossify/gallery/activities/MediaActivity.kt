@@ -1,11 +1,15 @@
-package org.fossify.gallery.activities
+﻿package org.fossify.gallery.activities
 
 import android.app.WallpaperManager
 import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.os.Handler
+import android.view.HapticFeedbackConstants
+import android.view.MotionEvent
+import android.view.ViewConfiguration
 import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
 import android.widget.RelativeLayout
 import androidx.core.net.toUri
 import androidx.recyclerview.widget.GridLayoutManager
@@ -17,6 +21,7 @@ import com.bumptech.glide.request.transition.Transition
 import org.fossify.commons.dialogs.CreateNewFolderDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
 import org.fossify.commons.extensions.appLockManager
+import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.areSystemAnimationsEnabled
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beVisible
@@ -68,6 +73,9 @@ import org.fossify.gallery.extensions.canAccessHiddenVirtualAlbums
 import org.fossify.gallery.extensions.applyVaultScreenProtection
 import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.deleteDBPath
+import org.fossify.gallery.extensions.deleteVirtualAlbumItemFromAllAlbums
+import org.fossify.gallery.extensions.getVirtualAlbumId
+import org.fossify.gallery.extensions.removePathsFromVirtualAlbum
 import org.fossify.gallery.extensions.directoryDB
 import org.fossify.gallery.extensions.emptyAndDisableTheRecycleBin
 import org.fossify.gallery.extensions.emptyTheRecycleBin
@@ -104,6 +112,7 @@ import org.fossify.gallery.helpers.MediaFetcher
 import org.fossify.gallery.helpers.PATH
 import org.fossify.gallery.helpers.PICKED_PATHS
 import org.fossify.gallery.helpers.RECYCLE_BIN
+import org.fossify.gallery.helpers.EXTRA_OPEN_SECRET_VAULT
 import org.fossify.gallery.helpers.SET_WALLPAPER_INTENT
 import org.fossify.gallery.helpers.SHOW_ALL
 import org.fossify.gallery.helpers.SHOW_FAVORITES
@@ -143,6 +152,13 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     private var mTempShowHiddenHandler = Handler()
     private var mCurrAsyncTask: GetMediaAsynctask? = null
     private var mZoomListener: MyRecyclerView.MyZoomListener? = null
+    private var mVaultGestureStartY = 0f
+    private var mVaultGestureStartX = 0f
+    private var mVaultGestureStartTime = 0L
+    private var mVaultGestureStartedAtTop = false
+    private var mVaultCancelDispatched = false
+    private var mVaultGestureThresholdMet = false
+    private var mIsVaultOpening = false
 
     private var mStoredAnimateGifs = true
     private var mStoredCropThumbnails = true
@@ -254,7 +270,8 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
         refreshMenuItems()
 
         binding.mediaFastscroller.updateColors(primaryColor)
-        binding.mediaRefreshLayout.isEnabled = config.enablePullToRefresh
+        mIsVaultOpening = false
+        binding.mediaRefreshLayout.isEnabled = !mShowAll && config.enablePullToRefresh
         getMediaAdapter()?.apply {
             dateFormat = config.dateFormat
             timeFormat = getTimeFormat()
@@ -297,12 +314,10 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     override fun onStop() {
         super.onStop()
 
-        if (config.temporarilyShowHidden || config.tempSkipDeleteConfirmation) {
+        if (config.tempSkipDeleteConfirmation) {
             mTempShowHiddenHandler.postDelayed({
-                config.temporarilyShowHidden = false
                 config.tempSkipDeleteConfirmation = false
                 config.tempSkipRecycleBin = false
-                CryptoManager.lockVault()
             }, SHOW_TEMP_HIDDEN_DURATION)
         } else {
             mTempShowHiddenHandler.removeCallbacksAndMessages(null)
@@ -350,26 +365,27 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
         val isDefaultFolder = !config.defaultFolder.isEmpty()
                 && File(config.defaultFolder).compareTo(File(mPath)) == 0
 
+        val isVaultRecycleBin = CryptoManager.isVaultRecycleBinPath(this@MediaActivity, mPath)
         binding.mediaMenu.requireToolbar().menu.apply {
             findItem(R.id.group).isVisible = !config.scrollHorizontally
 
-            findItem(R.id.empty_recycle_bin).isVisible = mPath == RECYCLE_BIN
+            findItem(R.id.empty_recycle_bin).isVisible = mPath == RECYCLE_BIN || isVaultRecycleBin
             findItem(R.id.empty_disable_recycle_bin).isVisible = mPath == RECYCLE_BIN
-            findItem(R.id.restore_all_files).isVisible = mPath == RECYCLE_BIN
+            findItem(R.id.restore_all_files).isVisible = mPath == RECYCLE_BIN || isVaultRecycleBin
 
             findItem(R.id.folder_view).isVisible = mShowAll
             findItem(R.id.open_camera).isVisible = mShowAll
             findItem(R.id.about).isVisible = mShowAll
             findItem(R.id.create_new_folder).isVisible =
-                !mShowAll && mPath != RECYCLE_BIN && mPath != FAVORITES && !mPath.isVirtualAlbumPath()
-            findItem(R.id.open_recycle_bin).isVisible = config.useRecycleBin && mPath != RECYCLE_BIN
+                !mShowAll && mPath != RECYCLE_BIN && !isVaultRecycleBin && mPath != FAVORITES && !mPath.isVirtualAlbumPath()
+            findItem(R.id.open_recycle_bin).isVisible = config.useRecycleBin && mPath != RECYCLE_BIN && !isVaultRecycleBin
 
             findItem(R.id.temporarily_show_hidden).isVisible = false
             findItem(R.id.stop_showing_hidden).isVisible =
                 (!isRPlus() || isExternalStorageManager()) && config.temporarilyShowHidden
 
-            findItem(R.id.set_as_default_folder).isVisible = !isDefaultFolder && !mPath.isVirtualAlbumPath()
-            findItem(R.id.unset_as_default_folder).isVisible = isDefaultFolder
+            findItem(R.id.set_as_default_folder).isVisible = !isDefaultFolder && !mPath.isVirtualAlbumPath() && !isVaultRecycleBin
+            findItem(R.id.unset_as_default_folder).isVisible = isDefaultFolder && !isVaultRecycleBin
 
             val viewType = config.getFolderViewType(if (mShowAll) SHOW_ALL else mPath)
             findItem(R.id.column_count).isVisible = viewType == VIEW_TYPE_GRID
@@ -385,11 +401,15 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
         binding.mediaMenu.onSearchTextChangedListener = { text ->
             mLastSearchedText = text
             searchQueryChanged(text)
-            binding.mediaRefreshLayout.isEnabled = text.isEmpty() && config.enablePullToRefresh
+            binding.mediaRefreshLayout.isEnabled = !mShowAll && text.isEmpty() && config.enablePullToRefresh
         }
 
         binding.mediaMenu.requireToolbar().setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
+                R.id.refresh_menu -> {
+                    getMedia()
+                    true
+                }
                 R.id.sort -> showSortingDialog()
                 R.id.filter -> showFilterMediaDialog()
                 R.id.empty_recycle_bin -> emptyRecycleBin()
@@ -496,10 +516,10 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
                     }
                 }
             } else {
-                val dirName = when (mPath) {
-                    FAVORITES -> getString(org.fossify.commons.R.string.favorites)
-                    RECYCLE_BIN -> getString(org.fossify.commons.R.string.recycle_bin)
-                    config.OTGPath -> getString(org.fossify.commons.R.string.usb)
+                val dirName = when {
+                    mPath == FAVORITES -> getString(org.fossify.commons.R.string.favorites)
+                    mPath == RECYCLE_BIN || CryptoManager.isVaultRecycleBinPath(this, mPath) -> getString(org.fossify.commons.R.string.recycle_bin)
+                    mPath == config.OTGPath -> getString(org.fossify.commons.R.string.usb)
                     else -> getHumanizedFilename(mPath)
                 }
 
@@ -621,8 +641,17 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
 
     private fun emptyRecycleBin() {
         showRecycleBinEmptyingDialog {
-            emptyTheRecycleBin {
-                finish()
+            if (CryptoManager.isVaultRecycleBinPath(this, mPath)) {
+                ensureBackgroundThread {
+                    CryptoManager.emptyVaultRecycleBin(this)
+                    runOnUiThread {
+                        finish()
+                    }
+                }
+            } else {
+                emptyTheRecycleBin {
+                    finish()
+                }
             }
         }
     }
@@ -638,11 +667,20 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     private fun restoreAllFiles() {
         val paths = mMedia.filter { it is Medium }.map { (it as Medium).path } as ArrayList<String>
         showRestoreConfirmationDialog(paths.size) {
-            restoreRecycleBinPaths(paths) {
+            if (CryptoManager.isVaultRecycleBinPath(this, mPath)) {
                 ensureBackgroundThread {
-                    directoryDB.deleteDirPath(RECYCLE_BIN)
+                    CryptoManager.restoreVaultRecycleBinFiles(this, paths)
+                    runOnUiThread {
+                        finish()
+                    }
                 }
-                finish()
+            } else {
+                restoreRecycleBinPaths(paths) {
+                    ensureBackgroundThread {
+                        directoryDB.deleteDirPath(RECYCLE_BIN)
+                    }
+                    finish()
+                }
             }
         }
     }
@@ -1098,8 +1136,31 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
 
     override fun tryDeleteFiles(fileDirItems: ArrayList<FileDirItem>, skipRecycleBin: Boolean) {
         val filtered = fileDirItems
-            .filter { !getIsPathDirectory(it.path) && it.path.isMediaFile() } as ArrayList
+            .filter { !getIsPathDirectory(it.path) && (it.path.isMediaFile() || CryptoManager.isEncryptedFile(it.path)) } as ArrayList
         if (filtered.isEmpty()) {
+            return
+        }
+
+        val isVaultRecycleBin = CryptoManager.isVaultRecycleBinPath(this, mPath)
+
+        if (isVaultRecycleBin) {
+            val deletingItems = resources.getQuantityString(
+                org.fossify.commons.R.plurals.deleting_items,
+                filtered.size,
+                filtered.size
+            )
+            toast(deletingItems)
+            ensureBackgroundThread {
+                val paths = filtered.map { it.path }
+                CryptoManager.permanentlyDeleteVaultRecycleBinFiles(this, paths)
+                runOnUiThread {
+                    mMedia.removeAll { filtered.map { f -> f.path }.contains((it as? Medium)?.path) }
+                    getMediaAdapter()?.updateMedia(mMedia)
+                    if (mMedia.isEmpty()) {
+                        finish()
+                    }
+                }
+            }
             return
         }
 
@@ -1115,11 +1176,58 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             )
             toast(movingItems)
 
-            movePathsInRecycleBin(filtered.map { it.path } as ArrayList<String>) {
-                if (it) {
-                    deleteFilteredFiles(filtered)
-                } else {
-                    toast(org.fossify.commons.R.string.unknown_error_occurred)
+            val encItems = filtered.filter { CryptoManager.isEncryptedFile(it.path) }
+            val plainItems = filtered.filter { !CryptoManager.isEncryptedFile(it.path) }
+
+            ensureBackgroundThread {
+                if (encItems.isNotEmpty()) {
+                    CryptoManager.moveEncryptedFilesToVaultRecycleBin(this, encItems.map { it.path })
+                }
+
+                if (plainItems.isNotEmpty()) {
+                    val hiddenPlain = plainItems.filter { isPathHiddenOrEncrypted(it.path) || mPath.isVirtualAlbumPath() }
+                    val normalPlain = plainItems.filter { !hiddenPlain.contains(it) }
+
+                    if (hiddenPlain.isNotEmpty()) {
+                        val hiddenPaths = ArrayList(hiddenPlain.map { it.path })
+                        movePathsInRecycleBin(hiddenPaths) { success ->
+                            ensureBackgroundThread {
+                                hiddenPlain.forEach {
+                                    try { File(it.path).delete() } catch (_: Exception) {}
+                                    deleteDBPath(it.path)
+                                    CryptoManager.purgeTracesForFile(this, it.path)
+                                }
+                            }
+                        }
+                    }
+
+                    if (normalPlain.isNotEmpty()) {
+                        runOnUiThread {
+                            movePathsInRecycleBin(normalPlain.map { it.path } as ArrayList<String>) {
+                                if (it) {
+                                    deleteFilteredFiles(ArrayList(normalPlain))
+                                } else {
+                                    toast(org.fossify.commons.R.string.unknown_error_occurred)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                runOnUiThread {
+                    mMedia.removeAll { filtered.map { f -> f.path }.contains((it as? Medium)?.path) }
+                    getMediaAdapter()?.updateMedia(mMedia)
+                    if (mPath.isVirtualAlbumPath()) {
+                        val albumId = mPath.getVirtualAlbumId()
+                        if (albumId != null) {
+                            removePathsFromVirtualAlbum(albumId, filtered.map { it.path })
+                        }
+                    }
+                    if (mMedia.isEmpty()) {
+                        deleteDirectoryIfEmpty()
+                        deleteDBDirectory()
+                        finish()
+                    }
                 }
             }
         } else {
@@ -1129,7 +1237,54 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
                 filtered.size
             )
             toast(deletingItems)
-            deleteFilteredFiles(filtered)
+
+            val encItems = filtered.filter { CryptoManager.isEncryptedFile(it.path) }
+            val plainItems = filtered.filter { !CryptoManager.isEncryptedFile(it.path) }
+
+            ensureBackgroundThread {
+                if (encItems.isNotEmpty()) {
+                    for (item in encItems) {
+                        val f = File(item.path)
+                        CryptoManager.secureWipeAndDeleteFile(this, f)
+                        deleteVirtualAlbumItemFromAllAlbums(item.path)
+                    }
+                }
+
+                if (plainItems.isNotEmpty()) {
+                    val hiddenPlain = plainItems.filter { isPathHiddenOrEncrypted(it.path) || mPath.isVirtualAlbumPath() }
+                    val normalPlain = plainItems.filter { !hiddenPlain.contains(it) }
+
+                    if (hiddenPlain.isNotEmpty()) {
+                        hiddenPlain.forEach {
+                            try { File(it.path).delete() } catch (_: Exception) {}
+                            deleteDBPath(it.path)
+                            CryptoManager.purgeTracesForFile(this, it.path)
+                        }
+                    }
+
+                    if (normalPlain.isNotEmpty()) {
+                        runOnUiThread {
+                            deleteFilteredFiles(ArrayList(normalPlain))
+                        }
+                    }
+                }
+
+                runOnUiThread {
+                    mMedia.removeAll { filtered.map { f -> f.path }.contains((it as? Medium)?.path) }
+                    getMediaAdapter()?.updateMedia(mMedia)
+                    if (mPath.isVirtualAlbumPath()) {
+                        val albumId = mPath.getVirtualAlbumId()
+                        if (albumId != null) {
+                            removePathsFromVirtualAlbum(albumId, filtered.map { it.path })
+                        }
+                    }
+                    if (mMedia.isEmpty()) {
+                        deleteDirectoryIfEmpty()
+                        deleteDBDirectory()
+                        finish()
+                    }
+                }
+            }
         }
     }
 
@@ -1200,5 +1355,133 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     private fun unsetAsDefaultFolder() {
         config.defaultFolder = ""
         refreshMenuItems()
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        val isVaultFolder = (mPath.isNotEmpty() && !mPath.isVirtualAlbumPath() && CryptoManager.isEncryptedFolderPath(this, mPath)) ||
+            CryptoManager.isVaultRecycleBinPath(this, mPath)
+
+        if (mShowAll && !mIsVaultOpening && !isVaultFolder && !config.scrollHorizontally) {
+            val rv = binding.mediaGrid
+            val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
+            when (ev.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    val atTop = !rv.canScrollVertically(-1)
+                    if (atTop) {
+                        mVaultGestureStartY = ev.rawY
+                        mVaultGestureStartX = ev.rawX
+                        mVaultGestureStartedAtTop = true
+                        mVaultGestureThresholdMet = false
+                        mVaultCancelDispatched = false
+                    } else {
+                        mVaultGestureStartedAtTop = false
+                        mVaultGestureThresholdMet = false
+                    }
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (mVaultGestureStartedAtTop) {
+                        val deltaX = Math.abs(ev.rawX - mVaultGestureStartX)
+                        val deltaY = ev.rawY - mVaultGestureStartY
+                        if (deltaY > 0 && deltaY > deltaX) {
+                            val maxTranslation = 160f * resources.displayMetrics.density
+                            val threshold = 95f * resources.displayMetrics.density
+                            val translation = (deltaY * 0.45f).coerceIn(0f, maxTranslation)
+
+                            if (translation > touchSlop) {
+                                if (!mVaultCancelDispatched) {
+                                    mVaultCancelDispatched = true
+                                    val cancelEvent = MotionEvent.obtain(ev).apply { action = MotionEvent.ACTION_CANCEL }
+                                    super.dispatchTouchEvent(cancelEvent)
+                                    cancelEvent.recycle()
+                                }
+
+                                binding.mediaRefreshLayout.translationY = translation
+
+                                binding.vaultPullIndicator.beVisible()
+                                binding.vaultPullIndicator.bringToFront()
+                                binding.vaultPullIcon.applyColorFilter(getProperPrimaryColor())
+                                binding.vaultPullText.setTextColor(getProperTextColor())
+
+                                val progress = (translation / threshold).coerceIn(0f, 1f)
+                                binding.vaultPullIndicator.alpha = (progress * 1.4f).coerceIn(0.1f, 1f)
+                                binding.vaultPullIcon.rotation = progress * 180f
+
+                                if (translation >= threshold) {
+                                    if (!mVaultGestureThresholdMet) {
+                                        mVaultGestureThresholdMet = true
+                                        window.decorView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                                    }
+                                    binding.vaultPullText.text = getString(R.string.release_to_open_vault)
+                                } else {
+                                    mVaultGestureThresholdMet = false
+                                    binding.vaultPullText.text = getString(R.string.pull_down_to_open_vault)
+                                }
+                                return true
+                            }
+                        } else if (deltaY < 0) {
+                            if (binding.mediaRefreshLayout.translationY > 0f) {
+                                binding.mediaRefreshLayout.translationY = 0f
+                                binding.vaultPullIndicator.beGone()
+                            }
+                            if (rv.canScrollVertically(-1)) {
+                                mVaultGestureStartedAtTop = false
+                            }
+                        }
+                    }
+                }
+                MotionEvent.ACTION_UP -> {
+                    if (mVaultGestureStartedAtTop) {
+                        val wasThresholdMet = mVaultGestureThresholdMet
+                        binding.mediaRefreshLayout.animate()
+                            .translationY(0f)
+                            .setDuration(220)
+                            .setInterpolator(DecelerateInterpolator())
+                            .start()
+
+                        binding.vaultPullIndicator.animate()
+                            .alpha(0f)
+                            .setDuration(220)
+                            .withEndAction {
+                                binding.vaultPullIndicator.beGone()
+                                binding.vaultPullIndicator.alpha = 1f
+                            }
+                            .start()
+
+                        mVaultGestureThresholdMet = false
+                        mVaultGestureStartedAtTop = false
+
+                        if (wasThresholdMet) {
+                            mIsVaultOpening = true
+                            openSecretVaultFromMedia()
+                            return true
+                        }
+                    }
+                    mVaultGestureThresholdMet = false
+                    mVaultGestureStartedAtTop = false
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    if (mVaultGestureStartedAtTop) {
+                        binding.mediaRefreshLayout.animate()
+                            .translationY(0f)
+                            .setDuration(220)
+                            .start()
+                        binding.vaultPullIndicator.beGone()
+                    }
+                    mVaultGestureThresholdMet = false
+                    mVaultGestureStartedAtTop = false
+                }
+            }
+        }
+        return super.dispatchTouchEvent(ev)
+    }
+
+    private fun openSecretVaultFromMedia() {
+        config.showAll = false
+        Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra(EXTRA_OPEN_SECRET_VAULT, true)
+            startActivity(this)
+        }
+        finish()
     }
 }
