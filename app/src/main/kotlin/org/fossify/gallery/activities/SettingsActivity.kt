@@ -3,6 +3,7 @@ package org.fossify.gallery.activities
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.widget.Toast
@@ -174,16 +175,29 @@ class SettingsActivity : SimpleActivity() {
         if (!appLocales.isEmpty) {
             val locale = appLocales.get(0)
             if (locale != null) {
+                if (locale.language.equals("tr", ignoreCase = true)) {
+                    return "Türkçe"
+                }
+                if (locale.language.equals("en", ignoreCase = true) && locale.country.isEmpty()) {
+                    return "English"
+                }
                 return locale.getDisplayName(locale)
                     .replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
             }
         } else if (config.useEnglish) {
             return "English"
         }
-        val defaultLocale = Locale.getDefault()
-        val defaultName = defaultLocale.getDisplayName(defaultLocale)
-            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(defaultLocale) else it.toString() }
-        return "${getString(R.string.system_default)} ($defaultName)"
+        if (appLocales.isEmpty) {
+            val currentLoc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                resources.configuration.locales.get(0) ?: Locale.getDefault()
+            } else {
+                @Suppress("DEPRECATION")
+                resources.configuration.locale ?: Locale.getDefault()
+            }
+            config.lastSystemLocaleTag = currentLoc.toLanguageTag()
+        }
+        val systemLangLabel = ChangeLanguageDialog.getSystemLanguageLabel(this)
+        return "${getString(R.string.system_default)} - $systemLangLabel"
     }
 
     private fun setupChangeDateTimeFormat() {

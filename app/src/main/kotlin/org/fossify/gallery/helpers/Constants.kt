@@ -4,6 +4,7 @@ import org.fossify.commons.helpers.*
 
 // shared preferences
 const val DIRECTORY_SORT_ORDER = "directory_sort_order"
+const val LAST_SYSTEM_LOCALE = "last_system_locale"
 const val GROUP_FOLDER_PREFIX = "group_folder_"
 const val VIEW_TYPE_PREFIX = "view_type_folder_"
 const val SHOW_HIDDEN_MEDIA = "show_hidden_media"

@@ -1,5 +1,8 @@
 package org.fossify.gallery.dialogs
 
+import android.content.Context
+import android.content.res.Resources
+import android.os.Build
 import android.text.Editable
 import android.text.TextWatcher
 import android.widget.ArrayAdapter
@@ -33,76 +36,142 @@ class ChangeLanguageDialog(
     private val binding = DialogSelectLanguageBinding.inflate(activity.layoutInflater)
 
     companion object {
-        private val ALL_SUPPORTED_CODES = listOf(
+        val ALL_SUPPORTED_CODES = listOf(
             "ar", "az", "be", "bg", "bn", "bn-BD", "bqi", "br", "bs", "ca",
-            "ckb", "cr", "cs", "cy", "da", "de", "el", "en-GB", "en-IN",
+            "ckb", "cr", "cs", "cy", "da", "de", "el", "en", "en-GB", "en-IN",
             "eo", "es", "es-419", "es-US", "et", "eu", "fa", "fi", "fil", "fr",
             "ga", "gl", "gu", "hi", "hr", "hu", "ia", "id", "is", "it",
             "he", "ja", "kab", "kn", "ko-KR", "kr", "lt", "ltg", "lv", "mk",
             "ml", "ms", "my", "nb-NO", "ne", "nl", "nn", "or", "pa", "pa-PK",
             "pl", "pt", "pt-BR", "pt-PT", "ro", "ru", "sat", "si", "sk", "sl",
-            "sr", "sv", "ta", "te", "th", "uk", "vi", "zgh", "zh-CN",
+            "sr", "sv", "ta", "te", "th", "tr", "uk", "vi", "zgh", "zh-CN",
             "zh-HK", "zh-TW"
         )
+
+        fun getDeviceSystemLocale(context: Context): Locale {
+            // 1. Android 13+ (API 33+): Official LocaleManager system service unaffected by app-specific overrides
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                try {
+                    val localeManager = context.getSystemService(android.app.LocaleManager::class.java)
+                    val locales = localeManager?.systemLocales
+                    if (locales != null && !locales.isEmpty) {
+                        val loc = locales.get(0)
+                        if (loc != null && loc.language.isNotEmpty()) return loc
+                    }
+                } catch (_: Throwable) {}
+            }
+
+            // 2. Read standard Android system properties via reflection
+            try {
+                val sysPropClass = Class.forName("android.os.SystemProperties")
+                val getMethod = sysPropClass.getMethod("get", String::class.java, String::class.java)
+                for (prop in listOf("persist.sys.locale", "persist.sys.locales", "ro.product.locale")) {
+                    val tag = getMethod.invoke(null, prop, "") as? String
+                    if (!tag.isNullOrEmpty()) {
+                        val cleanTag = tag.split(",").firstOrNull()?.trim() ?: ""
+                        if (cleanTag.isNotEmpty()) {
+                            val loc = Locale.forLanguageTag(cleanTag)
+                            if (loc.language.isNotEmpty()) return loc
+                        }
+                    }
+                }
+            } catch (_: Throwable) {}
+
+            // 3. Read Settings.System "system_locales"
+            try {
+                val localesStr = android.provider.Settings.System.getString(context.contentResolver, "system_locales")
+                if (!localesStr.isNullOrEmpty()) {
+                    val firstTag = localesStr.split(",").firstOrNull()?.trim() ?: ""
+                    if (firstTag.isNotEmpty()) {
+                        val loc = Locale.forLanguageTag(firstTag)
+                        if (loc.language.isNotEmpty()) return loc
+                    }
+                }
+            } catch (_: Throwable) {}
+
+            // 4. Saved system locale tag in app config
+            try {
+                val savedTag = context.config.lastSystemLocaleTag
+                if (savedTag.isNotEmpty()) {
+                    val loc = Locale.forLanguageTag(savedTag)
+                    if (loc.language.isNotEmpty()) return loc
+                }
+            } catch (_: Throwable) {}
+
+            // 5. Fallback to Resources.getSystem() or Locale.getDefault()
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                val locales = Resources.getSystem().configuration.locales
+                if (!locales.isEmpty) locales.get(0) else Locale.getDefault()
+            } else {
+                @Suppress("DEPRECATION")
+                Resources.getSystem().configuration.locale ?: Locale.getDefault()
+            }
+        }
+
+        fun getSystemLanguageLabel(context: Context, systemLocale: Locale = getDeviceSystemLocale(context)): String {
+            val exactTag = systemLocale.toLanguageTag()
+            val codeMatch = ALL_SUPPORTED_CODES.firstOrNull { it.equals(exactTag, ignoreCase = true) }
+            if (codeMatch != null) {
+                val loc = Locale.forLanguageTag(codeMatch)
+                return loc.getDisplayName(loc).replaceFirstChar { if (it.isLowerCase()) it.titlecase(loc) else it.toString() }
+            }
+
+            val lang = systemLocale.language
+            if (lang.equals("tr", ignoreCase = true)) {
+                return "Türkçe"
+            }
+            if (lang.equals("en", ignoreCase = true)) {
+                return "English"
+            }
+            val langMatch = ALL_SUPPORTED_CODES.firstOrNull { it.equals(lang, ignoreCase = true) }
+            if (langMatch != null) {
+                val loc = Locale.forLanguageTag(langMatch)
+                return loc.getDisplayName(loc).replaceFirstChar { if (it.isLowerCase()) it.titlecase(loc) else it.toString() }
+            }
+
+            val nativeLanguage = systemLocale.getDisplayLanguage(systemLocale)
+            if (nativeLanguage.isNotEmpty()) {
+                return nativeLanguage.replaceFirstChar { if (it.isLowerCase()) it.titlecase(systemLocale) else it.toString() }
+            }
+            return systemLocale.getDisplayName(systemLocale)
+                .replaceFirstChar { if (it.isLowerCase()) it.titlecase(systemLocale) else it.toString() }
+        }
     }
 
     init {
         val allOptions = ArrayList<LanguageOption>()
 
-        // 1. System default
-        val systemLocale = Locale.getDefault()
-        val systemNative = systemLocale.getDisplayName(systemLocale)
-            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(systemLocale) else it.toString() }
+        // 1. System default (Always at the very top)
+        val systemLocale = getDeviceSystemLocale(activity)
+        val systemLangLabel = getSystemLanguageLabel(activity, systemLocale)
         allOptions.add(
             LanguageOption(
                 code = "",
-                label = "${activity.getString(R.string.system_default)} ($systemNative)",
+                label = "${activity.getString(R.string.system_default)} - $systemLangLabel",
                 nativeName = activity.getString(R.string.system_default),
                 englishName = "System default"
             )
         )
 
-        // 2. Turkish (pinned at top for quick access)
-        val trLocale = Locale.forLanguageTag("tr")
-        allOptions.add(
-            LanguageOption(
-                code = "tr",
-                label = "Türkçe (Turkish)",
-                nativeName = "Türkçe",
-                englishName = "Turkish"
-            )
-        )
-
-        // 3. English (pinned at top for quick access)
-        allOptions.add(
-            LanguageOption(
-                code = "en",
-                label = "English",
-                nativeName = "English",
-                englishName = "English"
-            )
-        )
-
-        // 4. Other languages sorted alphabetically by their display name
-        val otherLanguages = ALL_SUPPORTED_CODES.mapNotNull { tag ->
+        // 2. All supported languages sorted alphabetically by their display name (no exceptions)
+        val collator = java.text.Collator.getInstance(systemLocale).apply {
+            strength = java.text.Collator.PRIMARY
+        }
+        val sortedLanguages = ALL_SUPPORTED_CODES.mapNotNull { tag ->
             try {
                 val locale = Locale.forLanguageTag(tag)
                 val nativeName = locale.getDisplayName(locale)
                     .replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
                 val englishName = locale.getDisplayName(Locale.ENGLISH)
                     .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ENGLISH) else it.toString() }
-                val label = if (nativeName.equals(englishName, ignoreCase = true)) {
-                    nativeName
-                } else {
-                    "$nativeName ($englishName)"
-                }
+                val label = nativeName
                 LanguageOption(code = tag, label = label, nativeName = nativeName, englishName = englishName)
             } catch (_: Exception) {
                 null
             }
-        }.sortedBy { it.label.lowercase(Locale.getDefault()) }
+        }.sortedWith { o1, o2 -> collator.compare(o1.label, o2.label) }
 
-        allOptions.addAll(otherLanguages)
+        allOptions.addAll(sortedLanguages)
 
         val filteredOptions = ArrayList(allOptions)
         val adapter = ArrayAdapter(
@@ -197,7 +266,7 @@ class ChangeLanguageDialog(
             LocaleListCompat.forLanguageTags(code)
         }
 
-        activity.config.useEnglish = code.equals("en", ignoreCase = true) || code.startsWith("en-", ignoreCase = true)
+        activity.config.useEnglish = if (code.isEmpty()) false else (code.equals("en", ignoreCase = true) || code.startsWith("en-", ignoreCase = true))
         AppCompatDelegate.setApplicationLocales(localeList)
         callback(code)
     }

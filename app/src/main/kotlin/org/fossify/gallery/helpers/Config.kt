@@ -24,6 +24,10 @@ class Config(context: Context) : BaseConfig(context) {
         get(): Int = prefs.getInt(DIRECTORY_SORT_ORDER, SORT_BY_DATE_MODIFIED or SORT_DESCENDING)
         set(order) = prefs.edit().putInt(DIRECTORY_SORT_ORDER, order).apply()
 
+    var lastSystemLocaleTag: String
+        get() = prefs.getString(LAST_SYSTEM_LOCALE, "") ?: ""
+        set(tag) = prefs.edit().putString(LAST_SYSTEM_LOCALE, tag).apply()
+
     fun saveFolderGrouping(path: String, value: Int) {
         if (path.isEmpty()) {
             groupBy = value
