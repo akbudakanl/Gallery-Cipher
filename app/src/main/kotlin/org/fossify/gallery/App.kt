@@ -1,5 +1,7 @@
 package org.fossify.gallery
 
+import android.app.Activity
+import android.os.Bundle
 import com.github.ajalt.reprint.core.Reprint
 import com.squareup.picasso.Downloader
 import com.squareup.picasso.Picasso
@@ -7,6 +9,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.fossify.commons.FossifyApp
 import org.fossify.gallery.extensions.config
+import org.fossify.gallery.helpers.CryptoManager
 import java.io.IOException
 import java.net.Proxy
 import java.net.ProxySelector
@@ -19,6 +22,7 @@ import java.net.URLStreamHandler
 class App : FossifyApp() {
 
     override val isAppLockFeatureAvailable = true
+    private var startedActivities = 0
 
     override fun onCreate() {
         super.onCreate()
@@ -30,20 +34,29 @@ class App : FossifyApp() {
             override fun shutdown() {}
         }).build())
 
-        try {
-            val filter = android.content.IntentFilter(android.content.Intent.ACTION_SCREEN_OFF)
-            registerReceiver(object : android.content.BroadcastReceiver() {
-                override fun onReceive(context: android.content.Context?, intent: android.content.Intent?) {
-                    if (intent?.action == android.content.Intent.ACTION_SCREEN_OFF) {
+        registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+            override fun onActivityStarted(activity: Activity) {
+                startedActivities++
+            }
+            override fun onActivityResumed(activity: Activity) {}
+            override fun onActivityPaused(activity: Activity) {}
+            override fun onActivityStopped(activity: Activity) {
+                startedActivities--
+                if (startedActivities <= 0) {
+                    startedActivities = 0
+                    if (!activity.isChangingConfigurations) {
                         try {
-                            this@App.config.temporarilyShowHidden = false
-                            org.fossify.gallery.helpers.CryptoManager.lockVault()
-                            org.fossify.gallery.helpers.CryptoManager.clearAppImageCaches(this@App)
+                            CryptoManager.lockVault()
+                            CryptoManager.clearAppImageCaches(this@App)
+                            config.temporarilyShowHidden = false
                         } catch (_: Throwable) {}
                     }
                 }
-            }, filter)
-        } catch (_: Throwable) {}
+            }
+            override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+            override fun onActivityDestroyed(activity: Activity) {}
+        })
 
         try {
             org.fossify.gallery.helpers.CryptoManager.processPendingWipeJournal(this)

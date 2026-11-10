@@ -13,44 +13,28 @@
         android:paddingTop="@dimen/activity_margin"
         android:paddingRight="@dimen/activity_margin">
 
-        <RadioGroup
-            android:id="@+id/vault_exit_radio_group"
+        <org.fossify.commons.views.MyTextView
+            android:id="@+id/vault_exit_question"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <org.fossify.commons.views.MyCompatRadioButton
-                android:id="@+id/vault_exit_radio_keep_showing"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:checked="true"
-                android:paddingTop="@dimen/small_margin"
-                android:paddingBottom="@dimen/small_margin"
-                android:text="@string/vault_exit_keep_showing" />
-
-            <org.fossify.commons.views.MyCompatRadioButton
-                android:id="@+id/vault_exit_radio_hide"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingTop="@dimen/small_margin"
-                android:paddingBottom="@dimen/small_margin"
-                android:text="@string/vault_exit_hide" />
-
-        </RadioGroup>
+            android:layout_height="wrap_content"
+            android:paddingTop="@dimen/small_margin"
+            android:paddingBottom="@dimen/medium_margin"
+            android:textSize="@dimen/normal_text_size" />
 
         <include
             android:id="@+id/vault_exit_divider"
             layout="@layout/divider"
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginTop="@dimen/medium_margin"
+            android:layout_marginTop="@dimen/small_margin"
             android:layout_marginBottom="@dimen/medium_margin" />
 
         <org.fossify.commons.views.MyAppCompatCheckbox
-            android:id="@+id/vault_exit_remember_checkbox"
+            android:id="@+id/vault_exit_always_ask_checkbox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:checked="false"
-            android:text="@string/vault_exit_remember_my_choice" />
+            android:text="@string/on_vault_exit_ask_every_time" />
 
         <org.fossify.commons.views.MyTextView
             android:id="@+id/vault_exit_settings_hint"

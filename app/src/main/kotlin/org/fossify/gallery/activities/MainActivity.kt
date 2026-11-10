@@ -8,8 +8,11 @@ import android.os.Handler
 import android.provider.MediaStore
 import android.provider.MediaStore.Images
 import android.provider.MediaStore.Video
+import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
+import android.view.ViewConfiguration
 import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
 import android.widget.RelativeLayout
 import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
@@ -18,6 +21,7 @@ import org.fossify.commons.dialogs.FilePickerDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
 import org.fossify.commons.extensions.appLaunched
 import org.fossify.commons.extensions.appLockManager
+import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.areSystemAnimationsEnabled
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beVisible
@@ -140,13 +144,12 @@ import org.fossify.gallery.helpers.MAX_COLUMN_COUNT
 import org.fossify.gallery.helpers.MONTH_MILLISECONDS
 import org.fossify.gallery.helpers.MediaFetcher
 import org.fossify.gallery.helpers.ON_VAULT_EXIT
-import org.fossify.gallery.helpers.ON_VAULT_EXIT_KEEP_SHOWING_ALL
-import org.fossify.gallery.helpers.ON_VAULT_EXIT_SHOW_ENCRYPTED_ONLY
-import org.fossify.gallery.helpers.ON_VAULT_EXIT_SHOW_OTHER_ONLY
-import org.fossify.gallery.helpers.ON_VAULT_EXIT_HIDE_ALL
+import org.fossify.gallery.helpers.ON_VAULT_EXIT_KEEP_SHOWING
+import org.fossify.gallery.helpers.ON_VAULT_EXIT_HIDE
 import org.fossify.gallery.helpers.ON_VAULT_EXIT_ASK_EVERY_TIME
 import org.fossify.gallery.helpers.PICKED_PATHS
 import org.fossify.gallery.helpers.RECYCLE_BIN
+import org.fossify.gallery.helpers.EXTRA_OPEN_SECRET_VAULT
 import org.fossify.gallery.helpers.SET_WALLPAPER_INTENT
 import org.fossify.gallery.helpers.SHOW_ALL
 import org.fossify.gallery.helpers.SHOW_TEMP_HIDDEN_DURATION
@@ -224,11 +227,12 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     private var mStoredTextColor = 0
     private var mStoredPrimaryColor = 0
     private var mStoredStyleString = ""
-    private var mBottomOverscrollCount = 0
-    private var mLastBottomOverscrollTime = 0L
-    private var mBottomGestureStartedAtBottom = false
-    private var mBottomGestureStartY = 0f
-    private var mBottomGestureCountedInThisTouch = false
+    private var mVaultGestureStartY = 0f
+    private var mVaultGestureStartX = 0f
+    private var mVaultGestureStartTime = 0L
+    private var mVaultGestureStartedAtTop = false
+    private var mVaultCancelDispatched = false
+    private var mVaultGestureThresholdMet = false
     private var mIsVaultDialogShowing = false
     private var mIsSecretVaultView = false
     private var mHiddenDisplayMode = DISPLAY_NONE
@@ -273,11 +277,11 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         setupOptionsMenu()
         refreshMenuItems()
 
+        checkOpenSecretVaultIntent(intent)
         setupEdgeToEdge(
             padBottomImeAndSystem = listOf(binding.directoriesGrid)
         )
 
-        setupSecretVaultScrollTrigger()
 
         binding.directoriesRefreshLayout.setOnRefreshListener { getDirectories() }
         storeStateVariables()
@@ -381,7 +385,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         }
 
         binding.directoriesFastscroller.updateColors(primaryColor)
-        binding.directoriesRefreshLayout.isEnabled = config.enablePullToRefresh
+        binding.directoriesRefreshLayout.isEnabled = false
         getRecyclerAdapter()?.apply {
             dateFormat = config.dateFormat
             timeFormat = getTimeFormat()
@@ -398,9 +402,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             tryLoadGallery()
         }
 
-        if (config.searchAllFilesByDefault) {
-            binding.mainMenu.updateHintText(getString(org.fossify.commons.R.string.search_files))
-        } else {
+        if (!mIsSecretVaultView) {
             binding.mainMenu.updateHintText(getString(org.fossify.commons.R.string.search_folders))
         }
     }
@@ -416,16 +418,11 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     override fun onStop() {
         super.onStop()
 
-        if (config.temporarilyShowHidden || config.tempSkipDeleteConfirmation || config.temporarilyShowExcluded) {
+        if (config.tempSkipDeleteConfirmation || config.temporarilyShowExcluded) {
             mTempShowHiddenHandler.postDelayed({
-                mIsSecretVaultView = false
-                mHiddenDisplayMode = DISPLAY_NONE
-                config.temporarilyShowHidden = false
                 config.temporarilyShowExcluded = false
                 config.tempSkipDeleteConfirmation = false
                 config.tempSkipRecycleBin = false
-                CryptoManager.lockVault()
-                CryptoManager.clearAppImageCaches(this)
             }, SHOW_TEMP_HIDDEN_DURATION)
         } else {
             mTempShowHiddenHandler.removeCallbacksAndMessages(null)
@@ -490,19 +487,24 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
     private fun handleVaultExit() {
         when (config.onVaultExit) {
-            ON_VAULT_EXIT_KEEP_SHOWING_ALL -> applyVaultExitOption(ON_VAULT_EXIT_KEEP_SHOWING_ALL)
-            ON_VAULT_EXIT_SHOW_ENCRYPTED_ONLY -> applyVaultExitOption(ON_VAULT_EXIT_SHOW_ENCRYPTED_ONLY)
-            ON_VAULT_EXIT_SHOW_OTHER_ONLY -> applyVaultExitOption(ON_VAULT_EXIT_SHOW_OTHER_ONLY)
-            ON_VAULT_EXIT_HIDE_ALL -> applyVaultExitOption(ON_VAULT_EXIT_HIDE_ALL)
+            ON_VAULT_EXIT_KEEP_SHOWING -> applyVaultExitOption(ON_VAULT_EXIT_KEEP_SHOWING)
+            ON_VAULT_EXIT_HIDE -> applyVaultExitOption(ON_VAULT_EXIT_HIDE)
             else -> {
-                VaultExitDialog(this) { keepShowing, rememberChoice ->
+                val encryptedCount = if (mDirs.isNotEmpty()) {
+                    mDirs.count { isEncryptedVaultAlbum(it) && !CryptoManager.isVaultRecycleBinPath(this, it.path) }
+                } else {
+                    CryptoManager.getVaultDestinationAlbums(this).size
+                }
+                VaultExitDialog(this, encryptedCount) { keepShowing, alwaysAsk ->
                     val chosenOption = if (keepShowing) {
-                        ON_VAULT_EXIT_KEEP_SHOWING_ALL
+                        ON_VAULT_EXIT_KEEP_SHOWING
                     } else {
-                        ON_VAULT_EXIT_HIDE_ALL
+                        ON_VAULT_EXIT_HIDE
                     }
-                    if (rememberChoice) {
+                    if (!alwaysAsk) {
                         config.onVaultExit = chosenOption
+                    } else {
+                        config.onVaultExit = ON_VAULT_EXIT_ASK_EVERY_TIME
                     }
                     applyVaultExitOption(chosenOption)
                 }
@@ -513,21 +515,11 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     private fun applyVaultExitOption(option: Int) {
         mIsSecretVaultView = false
         when (option) {
-            ON_VAULT_EXIT_KEEP_SHOWING_ALL -> {
-                mHiddenDisplayMode = DISPLAY_ALL_HIDDEN
-                config.temporarilyShowHidden = true
-            }
-            ON_VAULT_EXIT_SHOW_ENCRYPTED_ONLY -> {
+            ON_VAULT_EXIT_KEEP_SHOWING -> {
                 mHiddenDisplayMode = DISPLAY_ENCRYPTED_ONLY
                 config.temporarilyShowHidden = true
             }
-            ON_VAULT_EXIT_SHOW_OTHER_ONLY -> {
-                mHiddenDisplayMode = DISPLAY_OTHER_ONLY
-                config.temporarilyShowHidden = true
-                CryptoManager.lockVault()
-                CryptoManager.clearAppImageCaches(this)
-            }
-            ON_VAULT_EXIT_HIDE_ALL -> {
+            ON_VAULT_EXIT_HIDE -> {
                 mHiddenDisplayMode = DISPLAY_NONE
                 config.temporarilyShowHidden = false
                 CryptoManager.lockVault()
@@ -608,21 +600,18 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         binding.mainMenu.toggleHideOnScroll(!config.scrollHorizontally)
         binding.mainMenu.setupMenu()
 
-        binding.mainMenu.onSearchOpenListener = {
-            if (config.searchAllFilesByDefault) {
-                launchSearchActivity()
-            }
-        }
-
         binding.mainMenu.onSearchTextChangedListener = { text ->
             setupAdapter(mDirsIgnoringSearch, text)
-            binding.directoriesRefreshLayout.isEnabled =
-                text.isEmpty() && config.enablePullToRefresh
+            binding.directoriesRefreshLayout.isEnabled = false
             binding.directoriesSwitchSearching.beVisibleIf(text.isNotEmpty())
         }
 
         binding.mainMenu.requireToolbar().setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
+                R.id.refresh_menu -> {
+                    getDirectories()
+                    true
+                }
                 R.id.sort -> showSortingDialog()
                 R.id.filter -> showFilterMediaDialog()
                 R.id.open_camera -> launchCamera()
@@ -824,50 +813,133 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         }
     }
 
-    private fun setupSecretVaultScrollTrigger() {
-        val minSwipePx = 48f * resources.displayMetrics.density
-        binding.directoriesGrid.addOnItemTouchListener(object : RecyclerView.SimpleOnItemTouchListener() {
-            override fun onInterceptTouchEvent(rv: RecyclerView, e: MotionEvent): Boolean {
-                if (mIsVaultDialogShowing) {
-                    return false
-                }
-                when (e.actionMasked) {
-                    MotionEvent.ACTION_DOWN -> {
-                        val atBottom = !rv.canScrollVertically(1)
-                        mBottomGestureStartedAtBottom = atBottom
-                        mBottomGestureStartY = e.rawY
-                        mBottomGestureCountedInThisTouch = false
-                        if (!atBottom) {
-                            mBottomOverscrollCount = 0
-                        }
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        checkOpenSecretVaultIntent(intent)
+    }
+
+    private fun checkOpenSecretVaultIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_OPEN_SECRET_VAULT, false) == true) {
+            intent.removeExtra(EXTRA_OPEN_SECRET_VAULT)
+            binding.directoriesGrid.post {
+                triggerSecretVaultMenu()
+            }
+        }
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        if (!mIsVaultDialogShowing && !mIsSecretVaultView && !config.scrollHorizontally) {
+            val rv = binding.directoriesGrid
+            val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
+            when (ev.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    val atTop = !rv.canScrollVertically(-1)
+                    if (atTop) {
+                        mVaultGestureStartY = ev.rawY
+                        mVaultGestureStartX = ev.rawX
+                        mVaultGestureStartedAtTop = true
+                        mVaultGestureThresholdMet = false
+                        mVaultCancelDispatched = false
+                    } else {
+                        mVaultGestureStartedAtTop = false
+                        mVaultGestureThresholdMet = false
                     }
-                    MotionEvent.ACTION_MOVE -> {
-                        if (mBottomGestureStartedAtBottom && !mBottomGestureCountedInThisTouch) {
-                            if (rv.canScrollVertically(1)) {
-                                mBottomGestureStartedAtBottom = false
-                                mBottomOverscrollCount = 0
-                            } else {
-                                val deltaY = mBottomGestureStartY - e.rawY
-                                if (deltaY >= minSwipePx) {
-                                    mBottomGestureCountedInThisTouch = true
-                                    val now = System.currentTimeMillis()
-                                    if (now - mLastBottomOverscrollTime > 4000L) {
-                                        mBottomOverscrollCount = 0
-                                    }
-                                    mBottomOverscrollCount++
-                                    mLastBottomOverscrollTime = now
-                                    if (mBottomOverscrollCount >= 3) {
-                                        mBottomOverscrollCount = 0
-                                        triggerSecretVaultMenu()
-                                    }
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (mVaultGestureStartedAtTop) {
+                        val deltaX = Math.abs(ev.rawX - mVaultGestureStartX)
+                        val deltaY = ev.rawY - mVaultGestureStartY
+                        if (deltaY > 0 && deltaY > deltaX) {
+                            val maxTranslation = 160f * resources.displayMetrics.density
+                            val threshold = 95f * resources.displayMetrics.density
+                            val translation = (deltaY * 0.45f).coerceIn(0f, maxTranslation)
+
+                            if (translation > touchSlop) {
+                                if (!mVaultCancelDispatched) {
+                                    mVaultCancelDispatched = true
+                                    val cancelEvent = MotionEvent.obtain(ev).apply { action = MotionEvent.ACTION_CANCEL }
+                                    super.dispatchTouchEvent(cancelEvent)
+                                    cancelEvent.recycle()
                                 }
+
+                                binding.directoriesRefreshLayout.translationY = translation
+
+                                binding.vaultPullIndicator.beVisible()
+                                binding.vaultPullIndicator.bringToFront()
+                                binding.vaultPullIcon.applyColorFilter(getProperPrimaryColor())
+                                binding.vaultPullText.setTextColor(getProperTextColor())
+
+                                val progress = (translation / threshold).coerceIn(0f, 1f)
+                                binding.vaultPullIndicator.alpha = (progress * 1.4f).coerceIn(0.1f, 1f)
+                                binding.vaultPullIcon.rotation = progress * 180f
+
+                                if (translation >= threshold) {
+                                    if (!mVaultGestureThresholdMet) {
+                                        mVaultGestureThresholdMet = true
+                                        window.decorView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                                    }
+                                    binding.vaultPullText.text = getString(R.string.release_to_open_vault)
+                                } else {
+                                    mVaultGestureThresholdMet = false
+                                    binding.vaultPullText.text = getString(R.string.pull_down_to_open_vault)
+                                }
+                                return true
+                            }
+                        } else if (deltaY < 0) {
+                            if (binding.directoriesRefreshLayout.translationY > 0f) {
+                                binding.directoriesRefreshLayout.translationY = 0f
+                                binding.vaultPullIndicator.beGone()
+                            }
+                            if (rv.canScrollVertically(-1)) {
+                                mVaultGestureStartedAtTop = false
                             }
                         }
                     }
                 }
-                return false
+                MotionEvent.ACTION_UP -> {
+                    if (mVaultGestureStartedAtTop) {
+                        val wasThresholdMet = mVaultGestureThresholdMet
+                        binding.directoriesRefreshLayout.animate()
+                            .translationY(0f)
+                            .setDuration(220)
+                            .setInterpolator(DecelerateInterpolator())
+                            .start()
+
+                        binding.vaultPullIndicator.animate()
+                            .alpha(0f)
+                            .setDuration(220)
+                            .withEndAction {
+                                binding.vaultPullIndicator.beGone()
+                                binding.vaultPullIndicator.alpha = 1f
+                            }
+                            .start()
+
+                        mVaultGestureThresholdMet = false
+                        mVaultGestureStartedAtTop = false
+
+                        if (wasThresholdMet) {
+                            triggerSecretVaultMenu()
+                            return true
+                        }
+                    }
+                    mVaultGestureThresholdMet = false
+                    mVaultGestureStartedAtTop = false
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    if (mVaultGestureStartedAtTop) {
+                        binding.directoriesRefreshLayout.animate()
+                            .translationY(0f)
+                            .setDuration(220)
+                            .start()
+                        binding.vaultPullIndicator.beGone()
+                    }
+                    mVaultGestureThresholdMet = false
+                    mVaultGestureStartedAtTop = false
+                }
             }
-        })
+        }
+        return super.dispatchTouchEvent(ev)
     }
 
     private fun updateVaultModeUi() {
@@ -878,11 +950,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             if (mIsSecretVaultView) {
                 binding.mainMenu.updateHintText(getString(R.string.secret_vault))
             } else {
-                if (config.searchAllFilesByDefault) {
-                    binding.mainMenu.updateHintText(getString(org.fossify.commons.R.string.search_files))
-                } else {
-                    binding.mainMenu.updateHintText(getString(org.fossify.commons.R.string.search_folders))
-                }
+                binding.mainMenu.updateHintText(getString(org.fossify.commons.R.string.search_folders))
             }
         }
     }
@@ -895,7 +963,12 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                 toast(R.string.secret_vault)
                 updateVaultModeUi()
                 binding.directoriesGrid.adapter = null
-                getDirectories()
+                ensureBackgroundThread {
+                    CryptoManager.getOrCreateDefaultHiddenAlbum(this)
+                    runOnUiThread {
+                        getDirectories()
+                    }
+                }
             }
             return
         }
@@ -908,10 +981,10 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         if (config.isHiddenPasswordProtectionOn || CryptoManager.hasExistingVault(this)) {
             mIsVaultDialogShowing = true
             val initialType = CryptoManager.getVaultProtectionType(this)
-                ?: if (config.hiddenProtectionType in listOf(PROTECTION_PIN, PROTECTION_PASSWORD, PROTECTION_PATTERN)) {
-                    config.hiddenProtectionType
+                ?: if (config.hiddenProtectionType == PROTECTION_PASSWORD) {
+                    PROTECTION_PASSWORD
                 } else {
-                    PROTECTION_PATTERN
+                    PROTECTION_PIN
                 }
             VaultSecurityDialog(
                 activity = this,
@@ -925,14 +998,24 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                     mIsSecretVaultView = true
                     mHiddenDisplayMode = DISPLAY_SECRET_VAULT
                     toast(R.string.secret_vault)
-                    toggleTemporarilyShowHidden(true)
+                    ensureBackgroundThread {
+                        CryptoManager.getOrCreateDefaultHiddenAlbum(this)
+                        runOnUiThread {
+                            toggleTemporarilyShowHidden(true)
+                        }
+                    }
                 }
             }
         } else {
             mIsSecretVaultView = true
             mHiddenDisplayMode = DISPLAY_SECRET_VAULT
             toast(R.string.secret_vault)
-            toggleTemporarilyShowHidden(true)
+            ensureBackgroundThread {
+                CryptoManager.getOrCreateDefaultHiddenAlbum(this)
+                runOnUiThread {
+                    toggleTemporarilyShowHidden(true)
+                }
+            }
         }
     }
 
@@ -1338,11 +1421,11 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         if (mIsSecretVaultView) {
             newDirs.retainAll { isEncryptedVaultAlbum(it.path) }
         } else {
-            when (mHiddenDisplayMode) {
-                DISPLAY_ENCRYPTED_ONLY -> newDirs.removeAll { isFolderOrAlbumHidden(it.path) && !isEncryptedVaultAlbum(it.path) }
-                DISPLAY_OTHER_ONLY -> newDirs.removeAll { isEncryptedVaultAlbum(it.path) }
-                DISPLAY_NONE -> newDirs.removeAll { isFolderOrAlbumHidden(it.path) }
-                else -> {}
+            if (!CryptoManager.isVaultUnlocked || (!config.temporarilyShowHidden && mHiddenDisplayMode != DISPLAY_ENCRYPTED_ONLY)) {
+                newDirs.removeAll { isEncryptedVaultAlbum(it.path) }
+            }
+            if (!config.temporarilyShowExcluded) {
+                newDirs.removeAll { isFolderOrAlbumHidden(it.path) && !isEncryptedVaultAlbum(it.path) }
             }
         }
         mIsGettingDirs = false
@@ -1568,11 +1651,11 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                 continue
             }
             if (!mIsSecretVaultView) {
-                when (mHiddenDisplayMode) {
-                    DISPLAY_ENCRYPTED_ONLY -> if (isFolderOrAlbumHidden(folder) && !isEncryptedVaultAlbum(folder)) continue
-                    DISPLAY_OTHER_ONLY -> if (isEncryptedVaultAlbum(folder)) continue
-                    DISPLAY_NONE -> if (isFolderOrAlbumHidden(folder)) continue
-                    else -> {}
+                if (!CryptoManager.isVaultUnlocked || (!config.temporarilyShowHidden && mHiddenDisplayMode != DISPLAY_ENCRYPTED_ONLY)) {
+                    if (isEncryptedVaultAlbum(folder)) continue
+                }
+                if (!config.temporarilyShowExcluded) {
+                    if (isFolderOrAlbumHidden(folder) && !isEncryptedVaultAlbum(folder)) continue
                 }
             }
             if (mShouldStopFetching || isDestroyed || isFinishing) {
@@ -1764,13 +1847,23 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             val query = textToSearch ?: binding.mainMenu.getCurrentQuery()
             val currAdapter = binding.directoriesGrid.adapter
             val filtered = if (mIsSecretVaultView) {
-                dirsCopy.filter { isEncryptedVaultAlbum(it.path) }
+                dirsCopy.filter { dir ->
+                    if (CryptoManager.isVaultRecycleBinPath(this, dir.path)) {
+                        config.showRecycleBinAtFolders && dir.mediaCnt > 0
+                    } else {
+                        isEncryptedVaultAlbum(dir.path)
+                    }
+                }
             } else {
-                when (mHiddenDisplayMode) {
-                    DISPLAY_ENCRYPTED_ONLY -> dirsCopy.filterNot { isFolderOrAlbumHidden(it.path) && !isEncryptedVaultAlbum(it.path) }
-                    DISPLAY_OTHER_ONLY -> dirsCopy.filterNot { isEncryptedVaultAlbum(it.path) }
-                    DISPLAY_NONE -> dirsCopy.filterNot { isFolderOrAlbumHidden(it.path) }
-                    else -> dirsCopy
+                val nonVaultDirs = dirsCopy.filterNot { CryptoManager.isVaultRecycleBinPath(this, it.path) }
+                nonVaultDirs.filter { dir ->
+                    if (isEncryptedVaultAlbum(dir.path)) {
+                        CryptoManager.isVaultUnlocked && (config.temporarilyShowHidden || mHiddenDisplayMode == DISPLAY_ENCRYPTED_ONLY)
+                    } else if (isFolderOrAlbumHidden(dir.path)) {
+                        config.temporarilyShowExcluded
+                    } else {
+                        true
+                    }
                 }
             }
             val distinctDirs = ArrayList(filtered.distinctBy { it.path.getDistinctPath() })
