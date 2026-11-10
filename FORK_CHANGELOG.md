@@ -12,7 +12,20 @@ For full architectural details, cryptography specifications, and user guides, se
 ---
 
 ## [1.18.3-cipher] - 2026-11-10
+### Added
+- **Mode 2 Encrypted Vault Recycle Bin (`CryptoManager`, `MainActivity`, `MediaActivity`, `ViewPagerActivity`, `DirectoryAdapter`):**
+  - Added dedicated cryptographic recycle bin under `Cipher_Secrets/` with randomized folder name, `.nomedia`, and AES-256-GCM encrypted metadata (`$$VAULT_RECYCLE_BIN$$` -> "Recycle Bin").
+  - Tracks original parent folder locations in an encrypted `.restore_info` manifest with restore, permanent CSPRNG wipe (`CryptoManager.secureWipeAndDeleteFile`), and bin emptying support.
+  - Appears in Mode 2 directory grid at index 0 (or bottom if "Show recycle bin last" enabled) only when non-empty (`mediaCnt > 0`).
+  - Seamlessly respects the *"Always skip delete confirmation dialog"* preference (`config.skipDeleteConfirmation` and `config.tempSkipDeleteConfirmation`).
+- **All-Folder Directory Picker in Copy & Move (`PickDirectoryDialog`):**
+  - When hidden items are unlocked in Mode 2 or Mode 3, `PickDirectoryDialog` now surfaces all three folder types: standard non-hidden folders, unencrypted hidden folders (with `.nomedia`), and decrypted physical vault folders.
+  - Bypassed Android 11+ SAF path restrictions for encrypted vault destinations.
+
 ### Fixed
+- **File Deletion Bug in Encrypted, Hidden, and Virtual Albums (`MediaActivity`, `ViewPagerActivity`, `SearchActivity`, `MediaAdapter`):**
+  - Resolved failure where deleting encrypted `.bin` files, `.nomedia` hidden files, or virtual album items did nothing due to `isMediaFile()` filtering and Android 11+ MediaStore `deleteSdk30` non-indexing of hidden paths.
+  - Implemented direct filesystem deletion (`File.delete()`), secure CSPRNG wiping, database cleanup, thumbnail trace purging, and virtual album manifest synchronization.
 - **Localization Register, Terminology & Completeness Refinements:**
   - **Spanish (`es`):** Aligned the Cipher/Vault prompt block (`place_finger_prompt`, `access_existing_cipher_secrets_prompt`, `delete_and_recreate_cipher_secrets_prompt`, `confirm_decrypt_hidden_file`) with formal `usted` register and unified `sensor de huellas`.
   - **Spanish (Latin America, `b+es+419`):** Updated `place_finger_prompt` to `tú` register (`Por favor, apoya tu dedo sobre el sensor de huellas`) for consistency with the rest of `values-b+es+419`.
@@ -98,16 +111,15 @@ For full architectural details, cryptography specifications, and user guides, se
 
 ## [1.17.1-cipher] - 2026-11-09
 ### Added
-- **Configurable Secret Vault Exit Behavior (`ON_VAULT_EXIT`):**
-  - Prompt selection dialog upon pressing back to exit Secret Vault mode with "Keep showing hidden albums" and "Hide hidden albums" options, plus an unchecked "Remember my choice" checkbox.
-  - Contextual guidance note directing users to **Settings > On leaving hidden section** for advanced preference options.
-  - Comprehensive preference in Settings with 5 choices:
-    1. Keep showing all hidden albums
-    2. Only show encrypted albums
-    3. Only show other hidden albums
-    4. Hide all hidden albums
-    5. Always ask (default)
+- **Configurable Encrypted Section Exit Behavior (`ON_VAULT_EXIT`):**
+  - Prompt selection dialog upon pressing back to exit Secret Vault mode asking whether to show encrypted album(s) with Yes/No options, quantity-aware phrasing, and an unchecked "Always ask" checkbox.
+  - Contextual guidance note directing users to **Settings > On leaving encrypted section** for preference options.
+  - Streamlined preference in Settings with 3 choices:
+    1. Keep showing encrypted albums
+    2. Hide encrypted albums
+    3. Always ask (default)
   - Settings backup, export, and import support for the vault exit preference.
+  - Independent management for unencrypted hidden folders (.nomedia) via temporarily show / stop showing excluded.
 - **Strict Vault Teardown & In-Memory Zeroization on Non-Cipher Modes:**
   - Instantly zeroes cryptographic keys in RAM (`CryptoManager.lockVault()`) and purges decrypted in-memory Glide caches (`clearAppImageCaches`) whenever leaving Secret Vault to non-encrypted or hidden modes (e.g., hiding all albums or showing only non-encrypted `.nomedia`/`.thumbnails` folders).
   - Deactivates background privacy defenses (suppresses `FLAG_SECURE` screen protection and hides Vault Browser from menus) when encrypted albums are not visible.

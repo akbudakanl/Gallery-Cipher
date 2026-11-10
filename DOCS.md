@@ -122,11 +122,25 @@ The application transitions through three distinct operational states to balance
 - Activated by entering the vault password in Settings or performing a **3x bottom overscroll gesture** at the bottom of the main gallery list.
 - **Isolated Vault View:** Standard photos and normal albums are completely filtered out. The user is presented with a dedicated vault screen containing **only encrypted physical albums and stealth virtual albums**.
 - Action bars update to indicate active Secret Vault mode.
+- **Encrypted Vault Recycle Bin:**
+  - In Mode 2, deleted encrypted files are sent to a dedicated **Encrypted Vault Recycle Bin** inside `Cipher_Secrets/` (unless permanent delete or skip recycle bin is selected).
+  - Like all other vaults in `Cipher_Secrets/`, its on-disk subfolder name is fully obfuscated (random 6-character hex identifier, e.g. `e8d2a1/`), protected with `.nomedia`, and its folder title is encrypted with `AES-256-GCM` in `.meta` as `$$VAULT_RECYCLE_BIN$$` (localized dynamically to "Recycle Bin" in memory).
+  - Original folder locations are preserved in an encrypted `.restore_info` manifest (`AES-256-GCM`). Restoring items returns `.bin` files to their original parent vault subfolders (with auto-fallback to an active vault folder if the original directory was deleted).
+  - Permanent deletion performs a secure CSPRNG wipe (`CryptoManager.secureWipeAndDeleteFile`) with 1 MiB block overwrites, truncation, and `fsync`.
+  - Appears in the directory grid at position 0 (or bottom if "Show recycle bin last" is enabled) only when non-empty (`mediaCnt > 0`). Automatically hidden when empty or when outside Mode 2.
+  - Fully compatible with the *"Always skip delete confirmation dialog"* preference (configured in the deletion dialog remember checkbox or under **Settings > File operations**).
 
 ### 🔹 Mode 3: Extended / Unified View Mode
 - Activated when the user presses the **Android Back button** while inside Mode 2 (Secret Vault).
 - The user returns to the primary gallery grid; however, normal albums, system `.nomedia` folders, and decrypted vault albums are displayed **together in a single unified view**.
 - Performing the **3x bottom overscroll gesture** while in Mode 3 instantly transitions the user back into the isolated **Mode 2 (Secret Vault)**.
+- **Unified Copy / Move Directory Picker (Mode 2 & Mode 3):**
+  - When hidden items are unlocked, destination folder selection dialogs (`PickDirectoryDialog`) display **all three folder categories**:
+    1. **Standard non-hidden directories** (Camera, Pictures, Downloads, etc.)
+    2. **Unencrypted hidden directories** (folders with `.nomedia` or starting with `.`)
+    3. **Encrypted hidden vaults** (physical vaults under `Cipher_Secrets/` with decrypted names)
+    4. *(If copying)* Eligible virtual albums.
+  - Safeguards ensure recycle bins are excluded from destination pickers, and Android 11+ SAF path restrictions are bypassed for internal encrypted vault directories.
 
 ### 🛑 Lock & Memory Zeroization (RAM Purge)
 - When the user closes the app (swiping away from Android's Recents overview) or taps *"Stop showing hidden items"*:
