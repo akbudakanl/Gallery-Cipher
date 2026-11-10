@@ -360,18 +360,28 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
             // Exposure-type actions (share, reveal, edit, wallpaper...) are removed.
             val isVaultMedium = CryptoManager.isVaultMediaPath(this@ViewPagerActivity, currentMedium.path) ||
                 (mDirectory.isVirtualAlbumPath() && isHiddenVirtualAlbumPath(mDirectory))
-            if (isVaultMedium) {
-                binding.mediumViewerToolbar.menu.apply {
+            binding.mediumViewerToolbar.menu.apply {
+                // Favorites, share and edit are completely disabled for hidden files.
+                if (isVaultMedium || currentMedium.isHidden()) {
                     findItem(R.id.menu_share).isVisible = false
+                    findItem(R.id.menu_edit).isVisible = false
+                    findItem(R.id.menu_add_to_favorites).isVisible = false
+                    findItem(R.id.menu_remove_from_favorites).isVisible = false
+                }
+                if (isVaultMedium) {
+                    // Delete replaces the slideshow button in the toolbar,
+                    // the slideshow itself moves into the overflow menu.
+                    findItem(R.id.menu_delete).apply {
+                        isVisible = true
+                        setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
+                    }
+                    findItem(R.id.menu_slideshow).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
                     findItem(R.id.menu_rotate).isVisible = false
                     findItem(R.id.menu_hide).isVisible = false
                     findItem(R.id.menu_unhide).isVisible = false
                     findItem(R.id.menu_create_shortcut).isVisible = false
                     findItem(R.id.menu_open_with).isVisible = false
                     findItem(R.id.menu_set_as).isVisible = false
-                    findItem(R.id.menu_edit).isVisible = false
-                    findItem(R.id.menu_add_to_favorites).isVisible = false
-                    findItem(R.id.menu_remove_from_favorites).isVisible = false
                     findItem(R.id.menu_print).isVisible = false
                     findItem(R.id.menu_resize).isVisible = false
                     findItem(R.id.menu_show_on_map).isVisible = false
@@ -381,6 +391,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
             if (visibleBottomActions != 0) {
                 updateBottomActionIcons(currentMedium)
             }
+            initBottomActionsLayout()
         }
     }
 
@@ -1018,11 +1029,17 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     }
 
     private fun initBottomActionsLayout() {
-        if (config.bottomActions) {
+        if (config.bottomActions && !isCurrentMediumInVault()) {
             binding.bottomActions.root.beVisible()
         } else {
             binding.bottomActions.root.beGone()
         }
+    }
+
+    private fun isCurrentMediumInVault(): Boolean {
+        val currentMedium = getCurrentMedium() ?: return false
+        return CryptoManager.isVaultMediaPath(this, currentMedium.path) ||
+            (mDirectory.isVirtualAlbumPath() && isHiddenVirtualAlbumPath(mDirectory))
     }
 
     private fun initBottomActionButtons() {
