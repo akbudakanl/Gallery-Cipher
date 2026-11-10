@@ -4,7 +4,350 @@
     <string name="edit">Redaktə</string>
     <string name="open_camera">Kameranı aç</string>
     <string name="hidden">(gizli)</string>
-    <string name="pin_folder">Pin qovluğu</string>
-    <string name="unpin_folder">Unpin qovluğu</string>
-    <string name="toggle_favorite">Sevimlini göstər/gizlət</string>
+    <string name="excluded">(istisna edilmiş)</string>
+    <string name="pin_folder">Qovluğu bərkit</string>
+    <string name="unpin_folder">Bərkitməni ləğv et</string>
+    <string name="pin_to_the_top">Yuxarıya bərkit</string>
+    <string name="show_all">Bütün qovluqların məzmununu göstər</string>
+    <string name="all_folders">Bütün qovluqlar</string>
+    <string name="folder_view">Qovluq görünüşünə keç</string>
+    <string name="other_folder">Digər qovluq</string>
+    <string name="show_on_map">Xəritədə göstər</string>
+    <string name="unknown_location">Naməlum məkan</string>
+    <string name="volume">Səs səviyyəsi</string>
+    <string name="brightness">Parlaqlıq</string>
+    <string name="lock_orientation">İstiqaməti kilidlə</string>
+    <string name="unlock_orientation">İstiqamətin kilidini aç</string>
+    <string name="change_orientation">İstiqaməti dəyiş</string>
+    <string name="force_portrait">Şaquli rejimi məcbur et</string>
+    <string name="force_landscape">Üfüqi rejimi məcbur et</string>
+    <string name="force_landscape_reverse">Üfüqi rejimi məcbur et (əks)</string>
+    <string name="use_default_orientation">Susmaya görə istiqaməti işlət</string>
+    <string name="fix_date_taken">Çəkilmə tarixi dəyərini düzəlt</string>
+    <string name="fixing">Düzəldilir…</string>
+    <string name="dates_fixed_successfully">Tarixlər uğurla düzəldildi</string>
+    <string name="no_date_takens_found">Heç bir çəkilmə tarixi dəyəri tapılmadı</string>
+    <string name="share_resized">Ölçüsü dəyişdirilmiş versiyanı paylaş</string>
+    <string name="switch_to_file_search">Bütün görünən qovluqlar üzrə fayl axtarışına keç</string>
+    <string name="set_as_default_folder">Susmaya görə qovluq təyin et</string>
+    <string name="unset_as_default_folder">Susmaya görə qovluq təyinatını ləğv et</string>
+    <string name="reorder_by_dragging">Qovluqları sürüşdürərək yenidən sırala</string>
+    <string name="reorder_by_dragging_pro">Qovluqları sürüşdürərək yenidən sırala (Pro)</string>
+    <string name="restore_to_path">\'%s\' yoluna bərpa edilir</string>
+    <plurals name="restore_confirmation">
+        <item quantity="one">%d faylı bərpa etmək istədiyinizə əminsiniz?</item>
+        <item quantity="other">%d faylı bərpa etmək istədiyinizə əminsiniz?</item>
+    </plurals>
+    <string name="full_storage_permission_required">Fossify Qalereya bütün foto və videolarınızı göstərmək üçün tam giriş icazəsinə ehtiyac duyur. Parametrlər &gt; İcazələr &gt; Foto və videolar &gt; Hamısına icazə ver bölməsinə keçin.</string>
+
+    <!-- Filter -->
+    <string name="filter_media">Medianı süzgəcdən keçir</string>
+    <string name="images">Şəkillər</string>
+    <string name="videos">Videolar</string>
+    <string name="gifs">GIF-lər</string>
+    <string name="raw_images">RAW şəkillər</string>
+    <string name="svgs">SVG-lər</string>
+    <string name="portraits">Portretlər</string>
+    <string name="no_media_with_filters">Seçilmiş süzgəclərlə heç bir media faylı tapılmadı.</string>
+    <string name="change_filters_underlined"><u>Süzgəcləri dəyiş</u></string>
+
+    <!-- Hide / Exclude -->
+    <string name="hide_folder_description">Bu funksiya qovluğun içinə \'.nomedia\' faylı əlavə etməklə onu və bütün alt qovluqlarını gizlədir. Onları Parametrlərdə \'Gizli elementləri göstər\' seçimini aktivləşdirərək görə bilərsiniz. Davam edilsin?</string>
+    <string name="exclude_folder_description">Bu, seçilmiş qovluğu alt qovluqları ilə birlikdə yalnız Fossify Qalereyadan istisna edəcək. İstisna edilmiş qovluqları Parametrlərdən idarə edə bilərsiniz.</string>
+    <string name="exclude_folder_parent">Əvəzində üst qovluq istisna edilsin?</string>
+    <string name="excluded_activity_placeholder">Qovluqları istisna etmək onları alt qovluqları ilə birlikdə yalnız Fossify Qalereyada gizlədər, digər tətbiqlərdə görünməyə davam edər.\n\nƏgər onları digər tətbiqlərdən də gizlətmək istəyirsinizsə, Gizlət funksiyasından istifadə edin.</string>
+    <string name="hidden_folders">Gizli qovluqlar</string>
+    <string name="manage_hidden_folders">Gizli qovluqları idarə et</string>
+    <string name="hidden_folders_placeholder">Görünür, \".nomedia\" faylı ilə gizlədilmiş heç bir qovluğunuz yoxdur.</string>
+    <string name="hidden_all_files">Gizli faylları görmək üçün tətbiqə Bütün Fayllara giriş icazəsi verməlisiniz, əks halda işləməyəcək.</string>
+    <string name="cant_unhide_folder">Əgər qovluğun və ya onun üst qovluqlarından birinin adının əvvəlində nöqtə varsa, o gizlidir və bu yolla gizlədilməsi ləğv edilə bilməz. Adını dəyişərək nöqtəni silməlisiniz.</string>
+
+    <!-- Include folders -->
+    <string name="include_folders">Daxil edilmiş qovluqlar</string>
+    <string name="manage_included_folders">Daxil edilmiş qovluqları idarə et</string>
+    <string name="add_folder">Qovluq əlavə et</string>
+    <string name="included_activity_placeholder">Tərkibində media olan, lakin tətbiq tərəfindən tanınmayan qovluqlarınız varsa, onları bura əl ilə əlavə edə bilərsiniz.\n\nBura element əlavə etmək digər qovluqları istisna etməyəcək.</string>
+    <string name="no_media_add_included">Heç bir media faylı tapılmadı. Media faylları olan qovluqları əl ilə əlavə etməklə bunu həll edə bilərsiniz.</string>
+
+    <!-- Resizing -->
+    <string name="resize_and_save">Seçimi yenidən ölçüləndir və saxla</string>
+    <string name="width">En</string>
+    <string name="height">Hündürlük</string>
+    <string name="keep_aspect_ratio">Tərəf nisbətini qoru</string>
+    <string name="invalid_values">Zəhmət olmasa, düzgün qətnamə daxil edin</string>
+    <string name="resize_multiple_images">Birdən çox şəklin ölçüsünü dəyiş</string>
+    <string name="resize_factor">Ölçü dəyişmə əmsalı</string>
+    <string name="resize_factor_info">Şəkillərin ölçüsünü göstərilən faizə görə dəyişin, dəyər 10 ilə 90 arasında olmalıdır.</string>
+    <string name="resize_factor_error">10 ilə 90 arasında bir rəqəm daxil edin</string>
+    <plurals name="failed_to_resize_images">
+        <item quantity="one">%d şəklin ölçüsünü dəyişmək mümkün olmadı</item>
+        <item quantity="other">%d şəklin ölçüsünü dəyişmək mümkün olmadı</item>
+    </plurals>
+    <string name="images_resized_successfully">Şəkillərin ölçüsü uğurla dəyişdirildi</string>
+
+    <!-- Editor -->
+    <string name="editor">Redaktor</string>
+    <string name="basic_editor">Sadə Redaktor</string>
+    <string name="advanced_editor">Təkmil Redaktor</string>
+    <string name="rotate">Döndər</string>
+    <string name="invalid_image_path">Yanlış şəkil yolu</string>
+    <string name="invalid_video_path">Yanlış video yolu</string>
+    <string name="image_editing_failed">Şəklin redaktəsi uğursuz oldu</string>
+    <string name="video_editing_failed">Videonun redaktəsi uğursuz oldu</string>
+    <string name="image_editing_cancelled">Şəklin redaktəsi ləğv edildi</string>
+    <string name="video_editing_cancelled">Videonun redaktəsi ləğv edildi</string>
+    <string name="file_edited_successfully">Fayl uğurla redaktə edildi</string>
+    <string name="image_edited_successfully">Şəkil uğurla redaktə edildi</string>
+    <string name="video_edited_successfully">Video uğurla redaktə edildi</string>
+    <string name="edit_image_with">Şəkli bununla redaktə et:</string>
+    <string name="edit_video_with">Videonu bununla redaktə et:</string>
+    <string name="no_image_editor_found">Şəkil redaktoru tapılmadı</string>
+    <string name="no_video_editor_found">Video redaktoru tapılmadı</string>
+    <string name="unknown_file_location">Naməlum fayl yeri</string>
+    <string name="overwrite_original">Orijinalın üzərinə yaz</string>
+    <string name="error_saving_file">Mənbə faylın üzərinə yazmaq mümkün olmadı</string>
+    <string name="rotate_left">Sola döndər</string>
+    <string name="rotate_right">Sağa döndər</string>
+    <string name="rotate_one_eighty">180º döndər</string>
+    <string name="transform">Çevirmə</string>
+    <string name="crop">Kəs</string>
+    <string name="draw">Çək</string>
+    <string name="flip">Əks etdir</string>
+    <string name="flip_horizontally">Üfüqi əks etdir</string>
+    <string name="flip_vertically">Şaquli əks etdir</string>
+    <string name="free_aspect_ratio">Sərbəst</string>
+    <string name="other_aspect_ratio">Digər</string>
+
+    <!-- Set wallpaper -->
+    <string name="wallpaper">Divar kağızı</string>
+    <string name="set_as_wallpaper">Divar kağızı kimi təyin et</string>
+    <string name="set_as_wallpaper_failed">Divar kağızı kimi təyin etmək uğursuz oldu</string>
+    <string name="set_as_wallpaper_with">Bununla divar kağızı kimi təyin et:</string>
+    <string name="setting_wallpaper">Divar kağızı təyin edilir&#8230;</string>
+    <string name="wallpaper_set_successfully">Divar kağızı uğurla təyin edildi</string>
+    <string name="portrait_aspect_ratio">Şaquli tərəf nisbəti</string>
+    <string name="landscape_aspect_ratio">Üfüqi tərəf nisbəti</string>
+    <string name="home_screen">Əsas ekran</string>
+    <string name="lock_screen">Kilid ekranı</string>
+    <string name="home_and_lock_screen">Əsas və kilid ekranı</string>
+    <string name="allow_changing_aspect_ratio">Tərəf nisbətini dəyişməyə icazə ver</string>
+
+    <!-- Slideshow -->
+    <string name="slideshow">Slayd-şou</string>
+    <string name="interval">İnterval</string>
+    <string name="include_photos">Fotoları daxil et</string>
+    <string name="include_videos">Videoları daxil et</string>
+    <string name="include_gifs">GIF-ləri daxil et</string>
+    <string name="random_order">Təsadüfi sıra</string>
+    <string name="move_backwards">Geriyə get</string>
+    <string name="loop_slideshow">Slayd-şounu təkrarla</string>
+    <string name="animation">Animasiya</string>
+    <string name="no_animation">Yoxdur</string>
+    <string name="fade">Solğunlaşma</string>
+    <string name="slide">Sürüşmə</string>
+    <string name="slideshow_ended">Slayd-şou başa çatdı</string>
+    <string name="no_media_for_slideshow">Slayd-şou üçün media tapılmadı</string>
+
+    <!-- View types -->
+    <string name="group_direct_subfolders">Birbaşa alt qovluqları qruplaşdır</string>
+
+    <!-- Grouping at media thumbnails -->
+    <string name="group_by">Qruplaşdırma</string>
+    <string name="do_not_group_files">Faylları qruplaşdırma</string>
+    <string name="by_folder">Qovluq</string>
+    <string name="by_last_modified">Son dəyişdirilmə</string>
+    <string name="by_last_modified_daily">Son dəyişdirilmə (gündəlik)</string>
+    <string name="by_last_modified_monthly">Son dəyişdirilmə (aylıq)</string>
+    <string name="by_date_taken">Çəkilmə tarixi</string>
+    <string name="by_date_taken_daily">Çəkilmə tarixi (gündəlik)</string>
+    <string name="by_date_taken_monthly">Çəkilmə tarixi (aylıq)</string>
+    <string name="by_file_type">Fayl növü</string>
+    <string name="by_extension">Uzantı</string>
+    <string name="show_file_count_section_header">Bölmə başlıqlarında fayl sayını göstər</string>
+    <string name="grouping_and_sorting">Nəzərə alın ki, qruplaşdırma və sıralama 2 müstəqil sahədir</string>
+
+    <!-- Widgets -->
+    <string name="folder_on_widget">Vidcetdə göstərilən qovluq:</string>
+    <string name="show_folder_name">Qovluq adını göstər</string>
+
+    <!-- Settings -->
+    <string name="autoplay_videos">Videoları avtomatik oxut</string>
+    <string name="remember_last_video_position">Videonun son oxutma mövqeyini yadda saxla</string>
+    <string name="loop_videos">Videoları təkrarla</string>
+    <string name="video_double_tap_duration">İkiqat toxunuşla irəli/geri çəkmə müddəti</string>
+    <string name="video_seek_duration_seconds">%d saniyə</string>
+    <string name="animate_gifs">Miniatürlərdə GIF-ləri canlandır</string>
+    <string name="max_brightness">Tam ekran mediaya baxarkən maksimum parlaqlıq</string>
+    <string name="render_ultra_hdr_photos">Ultra HDR fotoları HDR rejimində göstər</string>
+    <string name="crop_thumbnails">Miniatürləri kvadrat şəklində kəs</string>
+    <string name="show_thumbnail_video_duration">Video müddətlərini göstər</string>
+    <string name="screen_rotation_by">Tam ekran medianı buna görə döndər:</string>
+    <string name="screen_rotation_system_setting">Sistem parametri</string>
+    <string name="screen_rotation_device_rotation">Cihazın döndərilməsi</string>
+    <string name="screen_rotation_aspect_ratio">Tərəf nisbəti</string>
+    <string name="black_background_at_fullscreen">Tam ekran mediada qara fon</string>
+    <string name="scroll_thumbnails_horizontally">Miniatürləri üfüqi sürüşdür</string>
+    <string name="hide_system_ui_at_fullscreen">Tam ekran mediada sistem interfeysini avtomatik gizlət</string>
+    <string name="delete_empty_folders">Məzmunu sildikdən sonra boş qovluqları sil</string>
+    <string name="keep_screen_on_fullscreen_photos">Tam ekran fotolara baxarkən ekranı açıq saxla</string>
+    <string name="allow_photo_gestures">Şaquli jestlərlə foto parlaqlığını idarə etməyə icazə ver</string>
+    <string name="allow_video_gestures">Şaquli jestlərlə video səsini və parlaqlığını idarə etməyə icazə ver</string>
+    <string name="playback_speed">Oxutma sürəti</string>
+    <string name="show_media_count">Əsas görünüşdə qovluq media sayını göstər</string>
+    <string name="show_extended_details">Tam ekran media üzərində ətraflı məlumatı göstər</string>
+    <string name="manage_extended_details">Ətraflı məlumatı idarə et</string>
+    <string name="one_finger_zoom">Tam ekran mediada tək barmaqla yaxınlaşdırmaya icazə ver</string>
+    <string name="allow_instant_change">Ekran kənarlarına klikləməklə medianı dərhal dəyişməyə icazə ver</string>
+    <string name="allow_deep_zooming_images">Şəkillərin dərin yaxınlaşdırılmasına icazə ver</string>
+    <string name="hide_extended_details">Status sətri gizlədildikdə ətraflı məlumatı gizlət</string>
+    <string name="show_at_bottom">Ekranın aşağısında bəzi əməliyyat düymələrini göstər</string>
+    <string name="show_recycle_bin">Qovluqlar ekranında zibil qutusunu göstər</string>
+    <string name="deep_zoomable_images">Dərin yaxınlaşdırılan şəkillər</string>
+    <string name="show_highest_quality">Şəkilləri mümkün olan ən yüksək keyfiyyətdə göstər</string>
+    <string name="show_recycle_bin_last">Zibil qutusunu əsas ekranda sonuncu element kimi göstər</string>
+    <string name="allow_down_gesture">Aşağıya doğru jestlə tam ekran görünüşünü bağlamağa icazə ver</string>
+    <string name="allow_one_to_one_zoom">İki dəfə ikiqat toxunuşla 1:1 yaxınlaşdırmaya icazə ver</string>
+    <string name="open_videos_on_separate_screen">Videoları üfüqi jestlərlə ayrı ekranda oxut</string>
+    <string name="on_video_tap">Videoya toxunduqda</string>
+    <string name="open_in_app_player">Tətbiqdaxili pleyerdə aç</string>
+    <string name="open_system_default_player">Susmaya görə pleyer tətbiqində aç</string>
+    <string name="show_notch">Varsa ekran kəsiyini göstər</string>
+    <string name="allow_rotating_gestures">Şəkilləri jestlərlə döndərməyə icazə ver</string>
+    <string name="file_loading_priority">Fayl yükləmə prioriteti</string>
+    <string name="speed">Sürət</string>
+    <string name="compromise">Tarazlı</string>
+    <string name="avoid_showing_invalid_files">Etibarsız faylları göstərməkdən yayın</string>
+    <string name="show_image_file_types">Şəkil faylı növlərini göstər</string>
+    <string name="allow_zooming_videos">İkiqat toxunuşla videoları yaxınlaşdırmağa icazə ver</string>
+    <string name="folder_thumbnail_style">Qovluq miniatürü üslubu</string>
+    <string name="file_thumbnail_style">Fayl miniatürü üslubu</string>
+    <string name="mark_favorite_items">Sevimli elementləri işarələ</string>
+    <string name="thumbnail_spacing">Miniatürlər arası məsafə</string>
+    <string name="show_file_count_line">Fayl sayını ayrı sətirdə göstər</string>
+    <string name="show_file_count_brackets">Fayl sayını mötərizədə göstər</string>
+    <string name="show_file_count_none">Fayl sayını göstərmə</string>
+    <string name="limit_folder_title">Uzun qovluq adlarını 1 sətirlə məhdudlaşdır</string>
+    <string name="square">Kvadrat</string>
+    <string name="rounded_corners">Dairəvi künclər</string>
+    <string name="export_favorite_paths">Sevimliləri ixrac et</string>
+    <string name="import_favorite_paths">Sevimliləri idxal et</string>
+    <string name="paths_imported_successfully">Yollar uğurla idxal edildi</string>
+    <string name="media_management_prompt">Bütün fayl əməliyyatlarının etibarlı işləməsini təmin etmək üçün, zəhmət olmasa, cihaz parametrlərində bu tətbiqi Media idarəetmə tətbiqi kimi təyin edin.</string>
+    <string name="password_protect_excluded">İstisna edilmiş qovluqların görünməsini parolla qoru</string>
+    <string name="media_management_manual">Xəta baş verdi. Zəhmət olmasa, cihazınızın Parametrlər - Tətbiqlər - Xüsusi tətbiq girişi - Media idarəetmə tətbiqləri bölməsinə keçin və bu tətbiqə medianı idarə etməyə icazə verin.</string>
+    <string name="media_management_note">Yönləndirmə işləməzsə, zəhmət olmasa, cihazınızın Parametrlər - Tətbiqlər - Xüsusi tətbiq girişi - Media idarəetmə tətbiqləri bölməsinə keçin və bu tətbiqə medianı idarə etməyə icazə verin.</string>
+    <string name="media_management_alternative">Bunu etmək istəmirsinizsə, cihazınızın Parametrlər - Tətbiqlər - Xüsusi tətbiq girişi - Media idarəetmə tətbiqləri bölməsinə keçib bu tətbiqə medianı idarə etməyə icazə verə bilərsiniz.</string>
+    <string name="alternative_media_access">Alternativ olaraq, yalnız media fayllarına girişə icazə verə bilərsiniz. Lakin bu halda gizli fayllarla işləyə bilməyəcəksiniz.</string>
+    <string name="media_only">Yalnız media</string>
+    <string name="all_files">Bütün fayllar</string>
+    <string name="search_all_files">Əsas ekranda qovluqlar əvəzinə bütün fayllarda axtar</string>
+    <string name="show_all_folders">Bütün qovluqların məzmununu göstər seçimini tez dəyişmək üçün menyu düyməsini göstər</string>
+
+    <!-- Setting sections -->
+    <string name="thumbnails">Miniatürlər</string>
+    <string name="fullscreen_media">Tam ekran media</string>
+    <string name="extended_details">Ətraflı məlumat</string>
+    <string name="bottom_actions">Alt əməliyyatlar</string>
+
+    <!-- Bottom actions -->
+    <string name="manage_bottom_actions">Görünən alt əməliyyatları idarə et</string>
+    <string name="toggle_favorite">Sevimliyə əlavə et/çıxar</string>
+    <string name="toggle_file_visibility">Faylın görünməsini dəyiş</string>
+
+    <!-- Errors -->
+    <string name="failed_to_load_media">Medianı yükləmək mümkün olmadı.</string>
+    <string name="file_is_malformed_or_corrupted">Fayl pozulub və ya yanlış formatdadır.</string>
+    <string name="media_exceeds_device_capabilities">Media cihazın imkanlarını aşır.</string>
+    <string name="unsupported_format">Dəstəklənməyən format.</string>
+
+    <!-- Player-->
+    <string name="video_no_sound">Bu videoda səs yoxdur</string>
+
+    <!-- FAQ -->
+    <string name="faq_1_title">Fossify Qalereyanı necə susmaya görə cihaz qalereyası edə bilərəm?</string>
+    <string name="faq_1_text">Əvvəlcə cihaz parametrlərinizin Tətbiqlər bölməsində hazırda susmaya görə təyin edilmiş qalereyanı tapmalı, \"Susmaya görə aç\" kimi bir düyməyə toxunub \"Susmaya görə tənzimləmələri təmizlə\" seçimini etməlisiniz.\nNövbəti dəfə şəkil və ya video açmağa çalışdığınızda tətbiq seçicisi görünəcək; oradan Fossify Qalereyanı seçib susmaya görə tətbiq edə bilərsiniz.</string>
+    <string name="faq_2_title">Tətbiqi parolla kilidlədim, amma unutdum. Nə edə bilərəm?</string>
+    <string name="faq_2_text">Bunu 2 yolla həll edə bilərsiniz. Ya tətbiqi yenidən quraşdırın, ya da cihaz parametrlərindən tətbiqi tapıb \"Məlumatları təmizlə\" seçin. Bu, bütün parametrlərinizi sıfırlayacaq, lakin heç bir media faylını silməyəcək.</string>
+    <string name="faq_3_title">Bir albomun həmişə ən yuxarıda görünməsini necə təmin edə bilərəm?</string>
+    <string name="faq_3_text">İstədiyiniz albomun üzərinə uzun basıb əməliyyatlar menyusundan Bərkit işarəsini seçə bilərsiniz, bu onu yuxarıya bərkidəcək. Birdən çox qovluğu da bərkidə bilərsiniz; bərkidilmiş elementlər susmaya görə sıralama üsulu ilə düzüləcək.</string>
+    <string name="faq_4_title">Videoları necə sürətlə irəli çəkə bilərəm?</string>
+    <string name="faq_4_text">Bunu ekranın kənarına iki dəfə toxunmaqla və ya axtarış zolağının yanındakı cari və ya maksimum müddət yazılarına toxunmaqla edə bilərsiniz. Tətbiq parametrlərində videoların ayrı ekranda açılmasını aktivləşdirsəniz, üfüqi jestlərdən də istifadə edə bilərsiniz.</string>
+    <string name="faq_5_title">Qovluğu gizlətmək ilə istisna etmək arasında fərq nədir?</string>
+    <string name="faq_5_text">İstisna et qovluğun yalnız Fossify Qalereyada göstərilməsinin qarşısını alır, Gizlət isə sistem səviyyəsində işləyir və qovluğu digər qalereyalardan da gizlədir. Bu, həmin qovluqda boş \".nomedia\" faylı yaratmaqla işləyir və onu istənilən fayl meneceri ilə də silə bilərsiniz. Nəzərə alın ki, bəzi cihazlar Camera, Screenshots və Downloads kimi qovluqların gizlədilməsinə icazə vermir.</string>
+    <string name="faq_6_title">Niyə musiqi üz qabıqları və ya stikerlər olan qovluqlar görünür?</string>
+    <string name="faq_6_text">Bəzən qeyri-adi albomların göründüyünü müşahidə edə bilərsiniz. Onların üzərinə uzun basıb İstisna et seçməklə asanlıqla gizlədə bilərsiniz. Növbəti pəncərədə üst qovluğu seçə bilərsiniz; çox güman ki, bu, əlaqəli digər albomların da görünməsinin qarşısını alacaq.</string>
+    <string name="faq_7_title">Şəkillər olan qovluq görünmür və ya bütün elementləri göstərmir. Nə edə bilərəm?</string>
+    <string name="faq_7_text">Bunun bir neçə səbəbi ola bilər, lakin həlli asandır. Sadəcə Parametrlər -&gt; Daxil edilmiş qovluqları idarə et bölməsinə keçin, Üstəgəl işarəsini seçin və lazım olan qovluğa gedin.</string>
+    <string name="faq_8_title">Bəs yalnız bir neçə müəyyən qovluğun görünməsini istəyirəmsə nə edim?</string>
+    <string name="faq_8_text">Daxil edilmiş qovluqlara qovluq əlavə etmək avtomatik olaraq heç nəyi istisna etmir. Edə biləcəyiniz şey Parametrlər -&gt; İstisna edilmiş qovluqları idarə et bölməsinə keçib kök qovluğu \"/\" istisna etmək, sonra isə Parametrlər -&gt; Daxil edilmiş qovluqları idarə et bölməsindən istədiyiniz qovluqları əlavə etməkdir.\nHəm istisna etmə, həm də daxil etmə rekursiv işlədiyindən və bir qovluq həm istisna edilib, həm də daxil edildikdə göründüyündən, bu üsul yalnız seçilmiş qovluqları görünən edəcək.</string>
+    <string name="faq_10_title">Bu tətbiqlə şəkilləri kəsə bilərəmmi?</string>
+    <string name="faq_10_text">Bəli, redaktorda şəkil künclərini sürüşdürərək şəkilləri kəsə bilərsiniz. Redaktora şəkil miniatürünə uzun basıb Redaktə seçməklə və ya tam ekran görünüşündən Redaktə seçməklə keçə bilərsiniz.</string>
+    <string name="faq_11_title">Media fayllarının miniatürlərini necəsə qruplaşdıra bilərəmmi?</string>
+    <string name="faq_11_text">Əlbəttə, miniatürlər görünüşündə \"Qruplaşdırma\" menyu bəndindən istifadə edin. Faylları Çəkilmə tarixi daxil olmaqla bir neçə meyara görə qruplaşdıra bilərsiniz. \"Bütün qovluqların məzmununu göstər\" funksiyasından istifadə etsəniz, onları qovluqlara görə də qruplaşdıra bilərsiniz.</string>
+    <string name="faq_12_title">Çəkilmə tarixinə görə sıralama düzgün işləmir, necə düzəldə bilərəm?</string>
+    <string name="faq_12_text">Bu, çox güman ki, faylların haradansa köçürülməsindən qaynaqlanır. Fayl miniatürlərini seçib \"Çəkilmə tarixi dəyərini düzəlt\" seçimini etməklə bunu düzəldə bilərsiniz.</string>
+    <string name="faq_13_title">Şəkillərdə rəng zolaqlanması görürəm. Keyfiyyəti necə artıra bilərəm?</string>
+    <string name="faq_13_text">Şəkillərin göstərilməsi üçün mövcud həll əksər hallarda yaxşı işləyir, lakin daha yüksək görüntü keyfiyyəti istəyirsinizsə, tətbiq parametrlərində \"Dərin yaxınlaşdırılan şəkillər\" bölməsində \"Şəkilləri mümkün olan ən yüksək keyfiyyətdə göstər\" seçimini aktivləşdirə bilərsiniz.</string>
+    <string name="faq_14_title">Bir faylı/qovluğu gizlətmişəm. Onu necə yenidən görünən edə bilərəm?</string>
+    <string name="faq_14_text">Gizli elementi görmək üçün əsas ekranda \"Gizli elementləri müvəqqəti göstər\" menyu bəndinə toxuna və ya tətbiq parametrlərində \"Gizli elementləri göstər\" seçimini aktivləşdirə bilərsiniz. Gizlətməni ləğv etmək üçün üzərinə uzun basıb \"Gizlətməni ləğv et\" seçin. Qovluqlar içinə gizli \".nomedia\" faylı əlavə edilərək gizlədilir, həmin faylı istənilən fayl meneceri ilə də silə bilərsiniz. Unutmayın ki, gizlətmə rekursiv işləyir; yəni bir qovluğu gizlətsəniz, bütün alt qovluqlar da gizlənir. Ona görə alt qovluqları görünən etmək üçün üst qovluğun gizlədilməsini ləğv etməlisiniz.</string>
+    <string name="faq_15_title">Tətbiq niyə bu qədər çox yer tutur?</string>
+    <string name="faq_15_text">Tətbiq keşi 250 MB-a qədər yer tuta bilər, bu, şəkillərin daha sürətli yüklənməsini təmin edir. Tətbiq bundan daha çox yer tutursa, böyük ehtimalla zibil qutusunda elementləriniz var. Həmin fayllar tətbiqin ölçüsünə daxil edilir. Zibil qutusunu açıb bütün faylları silməklə və ya tətbiq parametrlərindən onu təmizləyə bilərsiniz. Zibil qutusundakı hər fayl 30 gündən sonra avtomatik silinir.</string>
+    <string name="faq_16_title">Fayl və qovluq gizlətməyə nə oldu və niyə artıq gizli elementləri görə bilmirəm?</string>
+    <string name="faq_16_text">Android 11-dən başlayaraq sistem məhdudiyyətlərinə görə artıq fayl və ya qovluqları gizlədə, gizlətməsini ləğv edə və ya qalereya tətbiqlərində gizli olanları görə bilmirsiniz. Bunun üçün hansısa fayl menecerindən istifadə etməli olacaqsınız.</string>
+    <string name="faq_16_text_extra">Və ya cihaz parametrləri vasitəsilə bu qalereyaya Bütün Fayllara giriş icazəsi verə bilərsiniz; bu, bizə gizli elementləri göstərməyə və ümumilikdə fayl əməliyyatlarını daha etibarlı etməyə imkan verəcək.</string>
+    <string name="faq_17_title">Niyə artıq görünməyən qovluqları daxil edə bilmirəm?</string>
+    <string name="faq_17_text">Bu da Android 11 ilə gələn sistem dəyişikliklərinə görə işləməyi dayandırdı; tətbiq artıq real qovluqlara baxa bilmir və məlumatları almaq üçün MediaStore adlanan mexanizmə əsaslanır.</string>
+    <string name="faq_18_title">Video oxudularkən niyə reklamlar görürəm?</string>
+    <string name="faq_18_text">Tətbiqlərimizdə heç bir reklam yoxdur. Video oxudularkən reklam görürsünüzsə, başqa bir tətbiqin video pleyerindən istifadə edirsiniz. Cihaz parametrlərində susmaya görə video pleyerinizi tapıb \"Susmaya görə tənzimləmələri təmizlə\" əməliyyatını edin. Növbəti dəfə video açdıqda istifadə etmək istədiyiniz tətbiqi seçə biləcəyiniz bir tətbiq seçicisi görünəcək.</string>
+
+    <!-- Virtual albums -->
+    <string name="create_virtual_album">Virtual albom yarat</string>
+    <string name="new_virtual_album">Yeni albom…</string>
+    <string name="rename_virtual_album">Albomun adını dəyiş</string>
+    <string name="album_name">Albom adı</string>
+    <string name="virtual_folder_name">Virtual qovluq adı</string>
+    <string name="virtual_album_name_empty">Albom adı boş ola bilməz</string>
+    <string name="virtual_album_exists">Bu adda albom artıq mövcuddur</string>
+    <string name="add_to_virtual_album">Alboma əlavə et</string>
+    <string name="remove_from_virtual_album">Albomdan çıxar</string>
+    <string name="added_to_virtual_album">\"%s\" albomuna əlavə edildi</string>
+    <string name="already_in_virtual_album">Artıq \"%s\" albomundadır</string>
+    <string name="removed_from_virtual_album">Albomdan çıxarıldı</string>
+    <string name="delete_virtual_album_confirmation">%s albomu silinsin? Yalnız albom silinir, foto və videolarınız olduğu yerdə qalır.</string>
+    <string name="virtual_album_empty">Bu albom boşdur. İstənilən qovluqda elementləri seçin və \"Köçür\" seçimindən istifadə edin.</string>
+    <string name="virtual_album_cannot_be_modified">Bu əməliyyat virtual albomlar üçün əlçatan deyil</string>
+    <string name="alphanumeric_password">Parol</string>
+    <string name="enter_password">Parolu daxil edin</string>
+    <string name="repeat_password">Parolu təkrarlayın</string>
+    <string name="wrong_password">Yanlış parol</string>
+    <string name="encrypting_files">Fayllar şifrələnir…</string>
+    <string name="encrypting_folder">Qovluq şifrələnir…</string>
+    <string name="folder_encrypted_successfully">Qovluq uğurla şifrələndi</string>
+    <string name="decrypting_folder">Qovluğun şifrəsi açılır…</string>
+    <string name="folder_decrypted_successfully">Qovluğun şifrəsi uğurla açıldı</string>
+    <string name="decrypting_files">Faylların şifrəsi açılır…</string>
+    <string name="place_finger_prompt">Zəhmət olmasa, barmağınızı barmaq izi sensoruna qoyun</string>
+    <string name="connect_at_least_4_dots_prompt">Ən azı 4 nöqtəni birləşdirin</string>
+    <string name="access_existing_cipher_secrets_prompt">Mövcud Cipher_Secrets qovluğunuza daxil olmaq istəyirsiniz?</string>
+    <string name="delete_and_recreate_cipher_secrets_prompt">Mövcud Cipher_Secrets qovluğu silinəcək və yenisi yaradılacaq. Əminsiniz?</string>
+    <string name="confirm_checkbox_label">Təsdiqləyirəm</string>
+    <string name="secret_vault">Gizli Seyf</string>
+    <string name="secret_vault_empty">Gizli Seyf boşdur</string>
+    <string name="confirm_decrypt_hidden_file">Gizli faylın(ların) şifrəsini açmaq istədiyinizə əminsiniz?</string>
+    <string name="copy_to_clipboard_disabled_in_vault">Təhlükəsizlik məqsədilə seyf açıq olarkən mübadilə buferinə köçürmə deaktiv edilib.</string>
+    <string name="on_vault_exit">Gizli bölmədən çıxarkən</string>
+    <string name="on_vault_exit_keep_showing_all">Bütün gizli albomları göstərməyə davam et</string>
+    <string name="on_vault_exit_show_encrypted_only">Yalnız şifrələnmiş albomları göstər</string>
+    <string name="on_vault_exit_show_other_only">Yalnız digər gizli albomları göstər</string>
+    <string name="on_vault_exit_hide_all">Bütün gizli albomları gizlət</string>
+    <string name="on_vault_exit_ask_every_time">Hər dəfə soruş</string>
+    <string name="vault_exit_dialog_title">Gizli Bölmədən Çıxış</string>
+    <string name="vault_exit_keep_showing">Gizli albomları göstərməyə davam et</string>
+    <string name="vault_exit_hide">Gizli albomları gizlət</string>
+    <string name="vault_exit_remember_my_choice">Seçimimi yadda saxla</string>
+    <string name="vault_exit_settings_hint">Əlavə seçimlər üçün Parametrlər &gt; Gizli bölmədən çıxarkən bölməsinə baxın</string>
+    <string name="search">Axtar</string>
+    <string name="system_default">Sistem (susmaya görə)</string>
+    <string name="language">Dil</string>
+    <string name="open_system_language_settings">Sistem dil parametrlərini aç</string>
 </resources>

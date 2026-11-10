@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_launcher_name">Galleri</string>
-    <string name="edit">Gjer om</string>
+    <string name="edit">Rediger</string>
     <string name="open_camera">Opna kameraet</string>
+    <string name="hidden">(skjult)</string>
+    <string name="excluded">(ekskludert)</string>
     <string name="pin_folder">Fest mappa</string>
     <string name="unpin_folder">Løys mappa</string>
     <string name="pin_to_the_top">Fest øvst</string>
@@ -14,9 +16,338 @@
     <string name="unknown_location">Ukjend plassering</string>
     <string name="volume">Ljodstyrke</string>
     <string name="brightness">Ljosstyrke</string>
+    <string name="lock_orientation">Lås skjermretning</string>
+    <string name="unlock_orientation">Lås opp skjermretning</string>
+    <string name="change_orientation">Endra retning</string>
     <string name="force_portrait">Tvinga portrettmodus</string>
     <string name="force_landscape">Tvinga landskapsmodus</string>
-    <string name="force_landscape_reverse">Tvinga landskapsmodus (vrengd)</string>
+    <string name="force_landscape_reverse">Tvinga landskapsmodus (omvend)</string>
+    <string name="use_default_orientation">Bruk standardretning</string>
     <string name="fix_date_taken">Retta dato på opptak</string>
     <string name="fixing">Rettar…</string>
+    <string name="dates_fixed_successfully">Datoar er retta</string>
+    <string name="no_date_takens_found">Fann ingen verdiar for dato på opptak</string>
+    <string name="share_resized">Del ei utgåve med endra storleik</string>
+    <string name="switch_to_file_search">Byt til filsøk i alle synlege mapper</string>
+    <string name="set_as_default_folder">Set som standardmappe</string>
+    <string name="unset_as_default_folder">Ikkje bruk som standardmappe lenger</string>
+    <string name="reorder_by_dragging">Endra mapperekkjefølgje ved å dra</string>
+    <string name="reorder_by_dragging_pro">Endra mapperekkjefølgje ved å dra (Pro)</string>
+    <string name="restore_to_path">Gjenopprettar til \'%s\'</string>
+    <plurals name="restore_confirmation">
+        <item quantity="one">Er du sikker på at du vil gjenoppretta %d fil?</item>
+        <item quantity="other">Er du sikker på at du vil gjenoppretta %d filer?</item>
+    </plurals>
+    <string name="full_storage_permission_required">Fossify Gallery treng full tilgang for å syna alle bileta og videoane dine. Gå til Innstillingar &gt; Løyve &gt; Bilete og videoar &gt; Tillat alle.</string>
+
+    <!-- Filter -->
+    <string name="filter_media">Filtrer media</string>
+    <string name="images">Bilete</string>
+    <string name="videos">Videoar</string>
+    <string name="gifs">GIF-bilete</string>
+    <string name="raw_images">RAW-bilete</string>
+    <string name="svgs">SVG-bilete</string>
+    <string name="portraits">Portrett</string>
+    <string name="no_media_with_filters">Fann ingen mediafiler med dei valde filtra.</string>
+    <string name="change_filters_underlined"><u>Endra filtre</u></string>
+
+    <!-- Hide / Exclude -->
+    <string name="hide_folder_description">Denne funksjonen skjuler mappa ved å leggja til ei \'.nomedia\'-fil i henne, og skjuler alle undermapper òg. Du kan sjå dei ved å slå på valet \'Syn skjulte element\' i Innstillingar. Halda fram?</string>
+    <string name="exclude_folder_description">Dette vil ekskludera utvalet saman med undermapper berre frå Fossify Gallery. Du kan handsama ekskluderte mapper i Innstillingar.</string>
+    <string name="exclude_folder_parent">Ekskludera ei overordna mappe i staden?</string>
+    <string name="excluded_activity_placeholder">Ekskludering av mapper gjer dei og undermappene deira skjulte berre i Fossify Gallery; dei vil framleis vera synlege i andre appar.\n\nViss du vil skjula dei frå andre appar òg, bruk Skjul-funksjonen.</string>
+    <string name="hidden_folders">Skjulte mapper</string>
+    <string name="manage_hidden_folders">Handsama skjulte mapper</string>
+    <string name="hidden_folders_placeholder">Det ser ikkje ut til at du har nokon mapper skjulte med ei \".nomedia\"-fil.</string>
+    <string name="hidden_all_files">Du må gje appen tilgang til alle filer for å sjå skjulte filer, elles fungerer det ikkje.</string>
+    <string name="cant_unhide_folder">Viss ei mappe eller ei av dei overordna mappene har eit punktum framfor namnet, er ho skjult og kan ikkje synast att slik. Du må fjerna punktumet ved å gje henne nytt namn.</string>
+
+    <!-- Include folders -->
+    <string name="include_folders">Inkluderte mapper</string>
+    <string name="manage_included_folders">Handsama inkluderte mapper</string>
+    <string name="add_folder">Legg til mappe</string>
+    <string name="included_activity_placeholder">Viss du har mapper som inneheld media, men som ikkje vart attkjende av appen, kan du leggja dei til manuelt her.\n\nÅ leggja til element her ekskluderer ikkje andre mapper.</string>
+    <string name="no_media_add_included">Fann ingen mediafiler. Du kan løysa det ved å leggja til mappene som inneheld mediafiler manuelt.</string>
+
+    <!-- Resizing -->
+    <string name="resize_and_save">Endra storleik på utval og lagra</string>
+    <string name="width">Breidd</string>
+    <string name="height">Høgd</string>
+    <string name="keep_aspect_ratio">Hald sideforhold</string>
+    <string name="invalid_values">Ver venleg og oppgje ei gyldig oppløysing</string>
+    <string name="resize_multiple_images">Endra storleik på fleire bilete</string>
+    <string name="resize_factor">Storleiksfaktor</string>
+    <string name="resize_factor_info">Endra storleiken på bilete til den oppgjevne prosenten; verdien må vera mellom 10 og 90.</string>
+    <string name="resize_factor_error">Skriv inn eit tal mellom 10 og 90</string>
+    <plurals name="failed_to_resize_images">
+        <item quantity="one">Klarte ikkje å endra storleik på %d bilete</item>
+        <item quantity="other">Klarte ikkje å endra storleik på %d bilete</item>
+    </plurals>
+    <string name="images_resized_successfully">Storleiken på bileta vart endra</string>
+
+    <!-- Editor -->
+    <string name="editor">Redigering</string>
+    <string name="basic_editor">Enkel redigering</string>
+    <string name="advanced_editor">Avansert redigering</string>
+    <string name="rotate">Roter</string>
+    <string name="invalid_image_path">Ugyldig biletsti</string>
+    <string name="invalid_video_path">Ugyldig videosti</string>
+    <string name="image_editing_failed">Biletredigering mislukkast</string>
+    <string name="video_editing_failed">Videoredigering mislukkast</string>
+    <string name="image_editing_cancelled">Biletredigering avbroten</string>
+    <string name="video_editing_cancelled">Videoredigering avbroten</string>
+    <string name="file_edited_successfully">Fila vart redigert</string>
+    <string name="image_edited_successfully">Biletet vart redigert</string>
+    <string name="video_edited_successfully">Videoen vart redigert</string>
+    <string name="edit_image_with">Rediger bilete med:</string>
+    <string name="edit_video_with">Rediger video med:</string>
+    <string name="no_image_editor_found">Fann ingen biletredigeringsapp</string>
+    <string name="no_video_editor_found">Fann ingen videoredigeringsapp</string>
+    <string name="unknown_file_location">Ukjend filplassering</string>
+    <string name="overwrite_original">Overskriv original</string>
+    <string name="error_saving_file">Kunne ikkje overskriva kjeldefila</string>
+    <string name="rotate_left">Roter mot venstre</string>
+    <string name="rotate_right">Roter mot høgre</string>
+    <string name="rotate_one_eighty">Roter 180º</string>
+    <string name="transform">Transformer</string>
+    <string name="crop">Beskjer</string>
+    <string name="draw">Teikn</string>
+    <string name="flip">Speglvend</string>
+    <string name="flip_horizontally">Speglvend vassrett</string>
+    <string name="flip_vertically">Speglvend loddrett</string>
+    <string name="free_aspect_ratio">Fri</string>
+    <string name="other_aspect_ratio">Anna</string>
+
+    <!-- Set wallpaper -->
+    <string name="wallpaper">Bakgrunnsbilete</string>
+    <string name="set_as_wallpaper">Set som bakgrunnsbilete</string>
+    <string name="set_as_wallpaper_failed">Kunne ikkje setja som bakgrunnsbilete</string>
+    <string name="set_as_wallpaper_with">Set som bakgrunnsbilete med:</string>
+    <string name="setting_wallpaper">Set bakgrunnsbilete…</string>
+    <string name="wallpaper_set_successfully">Bakgrunnsbiletet vart sett</string>
+    <string name="portrait_aspect_ratio">Portrett-sideforhold</string>
+    <string name="landscape_aspect_ratio">Landskap-sideforhold</string>
+    <string name="home_screen">Heimeskjerm</string>
+    <string name="lock_screen">Låseskjerm</string>
+    <string name="home_and_lock_screen">Heime- og låseskjerm</string>
+    <string name="allow_changing_aspect_ratio">Tillat endring av sideforholdet</string>
+
+    <!-- Slideshow -->
+    <string name="slideshow">Lysbileteframsyning</string>
+    <string name="interval">Intervall</string>
+    <string name="include_photos">Ta med foto</string>
+    <string name="include_videos">Ta med videoar</string>
+    <string name="include_gifs">Ta med GIF-bilete</string>
+    <string name="random_order">Tilfeldig rekkjefølgje</string>
+    <string name="move_backwards">Spel baklengs</string>
+    <string name="loop_slideshow">Gjenta lysbileteframsyning</string>
+    <string name="animation">Animasjon</string>
+    <string name="no_animation">Ingen</string>
+    <string name="fade">Ton ut</string>
+    <string name="slide">Gliding</string>
+    <string name="slideshow_ended">Lysbileteframsyninga er slutt</string>
+    <string name="no_media_for_slideshow">Fann ikkje media til lysbileteframsyninga</string>
+
+    <!-- View types -->
+    <string name="group_direct_subfolders">Grupper direkte undermapper</string>
+
+    <!-- Grouping at media thumbnails -->
+    <string name="group_by">Grupper etter</string>
+    <string name="do_not_group_files">Ikkje grupper filer</string>
+    <string name="by_folder">Mappe</string>
+    <string name="by_last_modified">Sist endra</string>
+    <string name="by_last_modified_daily">Sist endra (dagleg)</string>
+    <string name="by_last_modified_monthly">Sist endra (månadleg)</string>
+    <string name="by_date_taken">Dato teken</string>
+    <string name="by_date_taken_daily">Dato teken (dagleg)</string>
+    <string name="by_date_taken_monthly">Dato teken (månadleg)</string>
+    <string name="by_file_type">Filtype</string>
+    <string name="by_extension">Filending</string>
+    <string name="show_file_count_section_header">Syn filtal i seksjonsoverskrifter</string>
+    <string name="grouping_and_sorting">Merk at gruppering og sortering er to uavhengige felt</string>
+
+    <!-- Widgets -->
+    <string name="folder_on_widget">Mappe synt på modulen:</string>
+    <string name="show_folder_name">Syn mappenamn</string>
+
+    <!-- Settings -->
+    <string name="autoplay_videos">Spel av videoar automatisk</string>
+    <string name="remember_last_video_position">Hugs siste videoavspelingsposisjon</string>
+    <string name="loop_videos">Gjenta videoar</string>
+    <string name="video_double_tap_duration">Søketid ved dobbelttrykk</string>
+    <string name="video_seek_duration_seconds">%d sekund</string>
+    <string name="animate_gifs">Animer GIF-bilete i minibilete</string>
+    <string name="max_brightness">Maks ljosstyrke ved fullskjermsvisning</string>
+    <string name="render_ultra_hdr_photos">Syn Ultra HDR-bilete i HDR</string>
+    <string name="crop_thumbnails">Beskjer minibilete til kvadrat</string>
+    <string name="show_thumbnail_video_duration">Syn videolengd</string>
+    <string name="screen_rotation_by">Roter fullskjermsmedia etter</string>
+    <string name="screen_rotation_system_setting">Systeminnstilling</string>
+    <string name="screen_rotation_device_rotation">Einingsrotasjon</string>
+    <string name="screen_rotation_aspect_ratio">Sideforhold</string>
+    <string name="black_background_at_fullscreen">Svart bakgrunn ved fullskjermsmedia</string>
+    <string name="scroll_thumbnails_horizontally">Rull minibilete vassrett</string>
+    <string name="hide_system_ui_at_fullscreen">Skjul systemlinjer automatisk ved fullskjermsmedia</string>
+    <string name="delete_empty_folders">Slett tomme mapper etter sletting av innhaldet</string>
+    <string name="keep_screen_on_fullscreen_photos">Hald skjermen på ved syning av bilete i fullskjerm</string>
+    <string name="allow_photo_gestures">Tillat styring av bileteljosstyrke med loddrette rørsler</string>
+    <string name="allow_video_gestures">Tillat styring av videoljodstyrke og ljosstyrke med loddrette rørsler</string>
+    <string name="playback_speed">Avspelingsfart</string>
+    <string name="show_media_count">Syn tal på mediafiler i mapper på hovudsyninga</string>
+    <string name="show_extended_details">Syn utvida detaljar over fullskjermsmedia</string>
+    <string name="manage_extended_details">Handsama utvida detaljar</string>
+    <string name="one_finger_zoom">Tillat éin-finger-zoom i fullskjermsmedia</string>
+    <string name="allow_instant_change">Tillat å byta media straks ved å trykkja på skjermkantane</string>
+    <string name="allow_deep_zooming_images">Tillat djup zooming på bilete</string>
+    <string name="hide_extended_details">Skjul utvida detaljar når statuslinja er skjult</string>
+    <string name="show_at_bottom">Syn nokre handlingsknappar nedst på skjermen</string>
+    <string name="show_recycle_bin">Syn papirkorga på mappeskjermen</string>
+    <string name="deep_zoomable_images">Djupt zoombare bilete</string>
+    <string name="show_highest_quality">Syn bilete i høgst mogleg kvalitet</string>
+    <string name="show_recycle_bin_last">Syn papirkorga som siste element på hovudskjermen</string>
+    <string name="allow_down_gesture">Tillat å lukka fullskjermsvisninga med ei nedoverrørsle</string>
+    <string name="allow_one_to_one_zoom">Tillat 1:1-zooming med to dobbelttrykk</string>
+    <string name="open_videos_on_separate_screen">Spel videoar på ein eigen skjerm med vassrette rørsler</string>
+    <string name="on_video_tap">Ved videotrykk</string>
+    <string name="open_in_app_player">Opna spelar i appen</string>
+    <string name="open_system_default_player">Opna standardspelarapp</string>
+    <string name="show_notch">Syn skjermhakk viss tilgjengeleg</string>
+    <string name="allow_rotating_gestures">Tillat rotering av bilete med fingerrørsler</string>
+    <string name="file_loading_priority">Prioritet for fillasting</string>
+    <string name="speed">Fart</string>
+    <string name="compromise">Kompromiss</string>
+    <string name="avoid_showing_invalid_files">Unngå å syna ugyldige filer</string>
+    <string name="show_image_file_types">Syn biletfiltypar</string>
+    <string name="allow_zooming_videos">Tillat zooming av videoar med dobbelttrykk</string>
+    <string name="folder_thumbnail_style">Minibiletestil for mapper</string>
+    <string name="file_thumbnail_style">Minibiletestil for filer</string>
+    <string name="mark_favorite_items">Marker favoritelement</string>
+    <string name="thumbnail_spacing">Minibiletemellomrom</string>
+    <string name="show_file_count_line">Syn filtal på ei eiga linje</string>
+    <string name="show_file_count_brackets">Syn filtal i parentes</string>
+    <string name="show_file_count_none">Ikkje syn filtal</string>
+    <string name="limit_folder_title">Avgrens lange mappetitlar til 1 linje</string>
+    <string name="square">Firkanta</string>
+    <string name="rounded_corners">Avrunda hjørne</string>
+    <string name="export_favorite_paths">Eksporter favorittar</string>
+    <string name="import_favorite_paths">Importer favorittar</string>
+    <string name="paths_imported_successfully">Filstiar vart importerte</string>
+    <string name="media_management_prompt">For å vera sikker på at alle filoperasjonar fungerer påliteleg, gjer denne appen til ein mediaadministrasjonsapp i einingsinnstillingane.</string>
+    <string name="password_protect_excluded">Passordverna synlegheit for ekskludert mappe</string>
+    <string name="media_management_manual">Noko gjekk gale. Gå til eininga sine Innstillingar – Appar – Spesiell apptilgang – Appar for mediaadministrasjon, og lat denne appen administrera media.</string>
+    <string name="media_management_note">Viss omdirigeringa ikkje fungerer, gå til eininga sine Innstillingar – Appar – Spesiell apptilgang – Appar for mediaadministrasjon, og lat denne appen administrera media.</string>
+    <string name="media_management_alternative">Viss du ikkje vil gjera det, kan du òg gå til eininga sine Innstillingar – Appar – Spesiell apptilgang – Appar for mediaadministrasjon, og lat denne appen administrera media.</string>
+    <string name="alternative_media_access">Alternativt kan du berre tillata tilgang til mediafiler. I så fall vil du ikkje kunna arbeida med skjulte filer.</string>
+    <string name="media_only">Berre media</string>
+    <string name="all_files">Alle filer</string>
+    <string name="search_all_files">Søk i alle filer i staden for mapper på hovudskjermen</string>
+    <string name="show_all_folders">Syn ein menyknapp for raskt å slå av/på \"Syn innhaldet i alle mapper\"</string>
+
+    <!-- Setting sections -->
+    <string name="thumbnails">Minibilete</string>
+    <string name="fullscreen_media">Fullskjermsmedia</string>
+    <string name="extended_details">Utvida detaljar</string>
+    <string name="bottom_actions">Handlingar nedst</string>
+
+    <!-- Bottom actions -->
+    <string name="manage_bottom_actions">Handsama synlege nedre handlingar</string>
+    <string name="toggle_favorite">Slå av/på favoritt</string>
+    <string name="toggle_file_visibility">Slå av/på filsynlegheit</string>
+
+    <!-- Errors -->
+    <string name="failed_to_load_media">Kunne ikkje lasta inn media.</string>
+    <string name="file_is_malformed_or_corrupted">Fila er ugyldig eller øydelagd.</string>
+    <string name="media_exceeds_device_capabilities">Mediet overstig kapasiteten til eininga.</string>
+    <string name="unsupported_format">Formatet er ikkje støtta.</string>
+
+    <!-- Player-->
+    <string name="video_no_sound">Denne videoen har ingen ljod</string>
+
+    <!-- FAQ -->
+    <string name="faq_1_title">Korleis kan eg gjera Fossify Gallery til standardgalleriet på eininga?</string>
+    <string name="faq_1_text">Fyrst må du finna det gjeldande standardgalleriet i Appar-delen av einingsinnstillingane, sjå etter ein knapp som heiter noko slikt som \"Opna som standard\", trykkja på han og deretter velja \"Fjern standardval\".\nNeste gong du prøver å opna eit bilete eller ein video, skal du sjå ein appveljar der du kan velja Fossify Gallery og gjera han til standardapp.</string>
+    <string name="faq_2_title">Eg låste appen med eit passord, men eg har gløymt det. Kva kan eg gjera?</string>
+    <string name="faq_2_text">Du kan løysa det på to måtar. Du kan anten installera appen på nytt, eller finna appen i einingsinnstillingane og velja \"Fjern data\". Det vil nullstilla alle innstillingane dine, men fjernar ingen mediafiler.</string>
+    <string name="faq_3_title">Korleis kan eg få eit album til alltid å synast øvst?</string>
+    <string name="faq_3_text">Du kan trykkja og halda på ønskt album og velja Fest-ikonet i handlingsmenyen for å festa det øvst. Du kan festa fleire mapper òg; festa element vert sorterte etter standard sorteringsmetode.</string>
+    <string name="faq_4_title">Korleis kan eg spola framover i videoar?</string>
+    <string name="faq_4_text">Du kan gjera det ved å dobbelttrykkja på sida av skjermen, eller trykkja på teksten for gjeldande eller maksimal lengd nær søkelinja. Viss du slår på avspeling av videoar på ein eigen skjerm i appinnstillingane, kan du bruka vassrette rørsler òg.</string>
+    <string name="faq_5_title">Kva er skilnaden mellom å skjula og å ekskludera ei mappe?</string>
+    <string name="faq_5_text">Ekskluder hindrar at mappa vert synt berre i Fossify Gallery, medan Skjul verkar på systemnivå og skjuler mappa frå andre galleri òg. Det verkar ved å laga ei tom \".nomedia\"-fil i den gjeldande mappa, som du òg kan fjerna med ein kva som helst filhandsamar. Merk at somme einingar ikkje tillèt å skjula mapper som Camera, Screenshots og Downloads.</string>
+    <string name="faq_6_title">Kvifor dukkar det opp mapper med plateomslag eller klistremerke?</string>
+    <string name="faq_6_text">Det kan henda at uvanlege album dukkar opp. Du kan enkelt ekskludera dei ved å trykkja og halda på dei og velja Ekskluder. I den neste dialogen kan du velja den overordna mappa, noko som truleg hindrar at andre relaterte album vert synte òg.</string>
+    <string name="faq_7_title">Ei mappe med bilete vert ikkje synt, eller ho syner ikkje alle elementa. Kva kan eg gjera?</string>
+    <string name="faq_7_text">Det kan ha fleire årsaker, men det er enkelt å løysa. Berre gå til Innstillingar -&gt; Handsama inkluderte mapper, vel Pluss og naviger til den ønskte mappa.</string>
+    <string name="faq_8_title">Kva om eg berre vil at nokre bestemte mapper skal vera synlege?</string>
+    <string name="faq_8_text">Å leggja til ei mappe under Inkluderte mapper ekskluderer ikkje automatisk noko anna. Det du kan gjera, er å gå til Innstillingar -&gt; Handsama ekskluderte mapper, ekskludera rotmappa \"/\", og deretter leggja til dei ønskte mappene under Innstillingar -&gt; Handsama inkluderte mapper.\nDet vil gjera berre dei valde mappene synlege, sidan både ekskludering og inkludering er rekursive, og viss ei mappe både er ekskludert og inkludert, vil ho verta synt.</string>
+    <string name="faq_10_title">Kan eg beskjera bilete med denne appen?</string>
+    <string name="faq_10_text">Ja, du kan beskjera bilete i redigeringsverktøyet ved å dra i bilethjørna. Du kjem til redigeringsverktøyet anten ved å trykkja og halda på eit minibilete og velja Rediger, eller ved å velja Rediger frå fullskjermsvisninga.</string>
+    <string name="faq_11_title">Kan eg på nokon måte gruppera minibilete av mediafiler?</string>
+    <string name="faq_11_text">Sjølvsagt, berre bruk menyelementet \"Grupper etter\" når du er i minibiletevisninga. Du kan gruppera filer etter fleire kriterium, inkludert Dato teken. Viss du bruker funksjonen \"Syn innhaldet i alle mapper\", kan du gruppera dei etter mapper òg.</string>
+    <string name="faq_12_title">Sortering etter Dato teken ser ikkje ut til å fungera skikkeleg, korleis kan eg retta det?</string>
+    <string name="faq_12_text">Det kjem truleg av at filene er kopierte frå ein annan stad. Du kan retta det ved å merkja filminibileta og velja \"Retta dato på opptak\".</string>
+    <string name="faq_13_title">Eg ser fargeband på bileta. Korleis kan eg forbetra kvaliteten?</string>
+    <string name="faq_13_text">Den gjeldande løysinga for biletsyning fungerer fint i dei aller fleste tilfelle, men viss du vil ha endå betre biletkvalitet, kan du slå på \"Syn bilete i høgst mogleg kvalitet\" i appinnstillingane under delen \"Djupt zoombare bilete\".</string>
+    <string name="faq_14_title">Eg har skjult ei fil/mappe. Korleis kan eg gjera henne synleg att?</string>
+    <string name="faq_14_text">Du kan anten trykkja på menyelementet \"Syn skjulte element mellombels\" på hovudskjermen, eller slå på \"Syn skjulte element\" i appinnstillingane for å sjå det skjulte elementet. Viss du vil gjera det synleg att, trykkjer og held du berre på det og vel \"Syn att\". Mapper vert skjulte ved å leggja ei skjult \".nomedia\"-fil i dei; du kan sletta denne fila med ein kva som helst filhandsamar òg. Merk likevel at skjuling verkar rekursivt, så viss du skjuler ei mappe, vert alle undermapper skjulte òg. For å gjera undermappene synlege att må du difor gjera den overordna mappa synleg att.</string>
+    <string name="faq_15_title">Kvifor tek appen opp så mykje plass?</string>
+    <string name="faq_15_text">Appen sitt mellomlager kan ta opptil 250 MB; det syter for raskare lasting av bilete. Viss appen tek opp endå meir plass, kjem det truleg av at du har element i papirkorga. Desse filene tel med i appstorleiken. Du kan tøma papirkorga ved å opna henne og sletta alle filer, eller frå appinnstillingane. Kvar fil i papirkorga vert sletta automatisk etter 30 dagar.</string>
+    <string name="faq_16_title">Kva skjedde med skjuling av filer og mapper, og kvifor kan eg ikkje sjå skjulte element lenger?</string>
+    <string name="faq_16_text">Frå og med Android 11 kan du ikkje lenger skjula eller syna filer eller mapper, og du kan heller ikkje sjå dei skjulte i galleriappar på grunn av systemavgrensingar. Du må bruka ein filhandsamar til det.</string>
+    <string name="faq_16_text_extra">Eller du kan gje dette galleriet tilgang til Alle filer via einingsinnstillingane; det lèt oss syna skjulte element og gjer filoperasjonar meir pålitelege generelt.</string>
+    <string name="faq_17_title">Kvifor kan eg ikkje inkludera manglande mapper lenger?</string>
+    <string name="faq_17_text">Det slutta òg å fungera på grunn av systemendringane som kom med Android 11; appen kan ikkje bla gjennom verkelege mapper lenger, men er avhengig av såkalla MediaStore for å henta data.</string>
+    <string name="faq_18_title">Kvifor ser eg reklame under videoavspeling?</string>
+    <string name="faq_18_text">Appane våre har inga reklame i det heile. Viss du ser reklame under videoavspeling, bruker du truleg videospelaren til ein annan app. Prøv å finna standard videospelar i einingsinnstillingane, og vel \"Fjern standardval\" på han. Neste gong du opnar ein video, vil du sjå ein appveljar der du kan velja kva app du vil bruka.</string>
+
+    <!-- Virtual albums -->
+    <string name="create_virtual_album">Lag virtuelt album</string>
+    <string name="new_virtual_album">Nytt album…</string>
+    <string name="rename_virtual_album">Gje albumet nytt namn</string>
+    <string name="album_name">Albumnamn</string>
+    <string name="virtual_folder_name">Namn på virtuell mappe</string>
+    <string name="virtual_album_name_empty">Albumnamnet kan ikkje vera tomt</string>
+    <string name="virtual_album_exists">Eit album med dette namnet finst alt</string>
+    <string name="add_to_virtual_album">Legg til i album</string>
+    <string name="remove_from_virtual_album">Fjern frå album</string>
+    <string name="added_to_virtual_album">Lagt til i \"%s\"</string>
+    <string name="already_in_virtual_album">Allereie i \"%s\"</string>
+    <string name="removed_from_virtual_album">Fjerna frå albumet</string>
+    <string name="delete_virtual_album_confirmation">Sletta albumet %s? Berre albumet vert fjerna, bileta og videoane dine vert verande der dei er.</string>
+    <string name="virtual_album_empty">Dette albumet er tomt. Vel element i ei kva som helst mappe og bruk \"Kopier til\".</string>
+    <string name="virtual_album_cannot_be_modified">Denne handlinga er ikkje tilgjengeleg for virtuelle album</string>
+    <string name="alphanumeric_password">Passord</string>
+    <string name="enter_password">Skriv inn passord</string>
+    <string name="repeat_password">Gjenta passord</string>
+    <string name="wrong_password">Feil passord</string>
+    <string name="encrypting_files">Krypterer filer…</string>
+    <string name="encrypting_folder">Krypterer mappe…</string>
+    <string name="folder_encrypted_successfully">Mappa vart kryptert</string>
+    <string name="decrypting_folder">Dekrypterer mappe…</string>
+    <string name="folder_decrypted_successfully">Mappa vart dekryptert</string>
+    <string name="decrypting_files">Dekrypterer filer…</string>
+    <string name="place_finger_prompt">Plasser fingeren på fingeravtrykkssensoren</string>
+    <string name="connect_at_least_4_dots_prompt">Kopla saman minst 4 punkt</string>
+    <string name="access_existing_cipher_secrets_prompt">Vil du få tilgang til den eksisterande Cipher_Secrets-mappa di?</string>
+    <string name="delete_and_recreate_cipher_secrets_prompt">Eksisterande Cipher_Secrets-mappe vert sletta og ei ny vert laga. Er du sikker?</string>
+    <string name="confirm_checkbox_label">Eg stadfestar</string>
+    <string name="secret_vault">Hemmeleg kvelv</string>
+    <string name="secret_vault_empty">Det hemmelege kvelvet er tomt</string>
+    <string name="confirm_decrypt_hidden_file">Er du sikker på at du vil dekryptera den/dei skjulte fila/filene?</string>
+    <string name="copy_to_clipboard_disabled_in_vault">Kopiering til utklippstavla er deaktivert av tryggleiksomsyn medan kvelvet er låst opp.</string>
+    <string name="on_vault_exit">Når du forlèt skjult seksjon</string>
+    <string name="on_vault_exit_keep_showing_all">Hald fram med å syna alle skjulte album</string>
+    <string name="on_vault_exit_show_encrypted_only">Syn berre krypterte album</string>
+    <string name="on_vault_exit_show_other_only">Syn berre andre skjulte album</string>
+    <string name="on_vault_exit_hide_all">Skjul alle skjulte album</string>
+    <string name="on_vault_exit_ask_every_time">Spør alltid</string>
+    <string name="vault_exit_dialog_title">Forlèt skjult seksjon</string>
+    <string name="vault_exit_keep_showing">Hald fram med å syna skjulte album</string>
+    <string name="vault_exit_hide">Skjul skjulte album</string>
+    <string name="vault_exit_remember_my_choice">Hugs valet mitt</string>
+    <string name="vault_exit_settings_hint">For fleire alternativ, sjå Innstillingar &gt; Når du forlèt skjult seksjon</string>
+    <string name="search">Søk</string>
+    <string name="system_default">Systemstandard</string>
+    <string name="language">Språk</string>
+    <string name="open_system_language_settings">Opna språkinnstillingane i systemet</string>
 </resources>
