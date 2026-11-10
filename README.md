@@ -4,8 +4,6 @@ Fossify-Gallery-Cipher is a security-hardened personal fork of [Fossify Gallery]
 
 # Fossify Gallery Cipher
 
-<img alt="Logo" src="graphics/icon.webp" width="120" />
-
 Unleash memories, not personal data. Fossify Gallery Cipher is a security-hardened fork of the ultimate photo and video app that's as powerful as it is private. No ads, no internet permission, no unnecessary permissions – just a seamless experience tailored for you.
 
 **🖼️ PHOTO EDITING AT YOUR FINGERTIPS:**  
@@ -20,7 +18,7 @@ Lock down your memories with pin, pattern, or fingerprint protection. Secure spe
 **🔐 HARDWARE-HARDENED CRYPTOGRAPHIC VAULT:**  
 Go beyond simple folder hiding with an isolated, zero-network cryptographic vault (`Cipher_Secrets`). Media files are individually encrypted on disk using `AES-256-CTR` with `Poly1305-AES` integrity tags, metadata is protected by `AES-256-GCM`, and your Master Encryption Key is derived via `Argon2id` and wrapped by Android Keystore (`StrongBox` / `TEE`). Pre-wipe SHA-256 verification, CSPRNG overwriting, `FLAG_SECURE` screen protection, and automatic RAM zeroization ensure decrypted keys and frames never leak.
 
-**🥷 ZERO-FOOTPRINT VIRTUAL & STEALTH ALBUMS:**  
+**🔗 ZERO-FOOTPRINT VIRTUAL ALBUMS:**  
 Organize your media into Virtual Albums without duplicating files or consuming extra storage space. When created from encrypted vault items, they automatically become **Stealth Virtual Albums**—stored with HMAC-obfuscated filenames and `AES-256-GCM` encrypted titles and paths—remaining completely invisible outside the unlocked Secret Vault (accessible via the 3x bottom overscroll gesture).
 
 **🔄 RECOVER WITH EASE:**  
