@@ -1,6 +1,6 @@
 # Azerbaijani (values-az) Translation Revision & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-az/strings.xml` was reviewed from scratch: existing inaccurate translations were corrected, and all missing keys from `values/strings.xml` (307 `<string>` + 2 `<plurals>` + `search` inherited from `fossify-commons`) were completed.
+> **Scope:** `app/src/main/res/values-az/strings.xml` was reviewed from scratch: existing inaccurate translations were corrected, and all missing keys from `values/strings.xml` (326 `<string>` + 2 `<plurals>` = 328 app resource entries; `search` and 14 shared UI keys from `fossify-commons`; 345 total comparison rows) were completed.
 > **Key Terminology:** `Settings` → `Parametrlər` · `Default` → `Susmaya görə` · `Folder` → `Qovluq` · `Secret Vault` → `Gizli Seyf` · `Password` → `Parol` · `Encrypt/Decrypt` → `Şifrələ / Şifrəsini aç` · `Thumbnails` → `Miniatürlər` · `Recycle bin` → `Zibil qutusu` · `Clipboard` → `Mübadilə buferi`
 
 ## 1. Review of 11 Previously Existing Translations and Changes Made
@@ -18,6 +18,100 @@
 | `search` | Axtar | Axtar | Kept (Used in `fossify-commons` UI) |
 | `system_default` | Sistem standartı | Sistem (susmaya görə) | **Improved** (Standard Azerbaijani software terminology) |
 | `open_system_language_settings` | Sistem dil parametrlərini aç | Sistem dil parametrlərini aç | Kept |
+
+### `fossify-commons` Inherited UI Overrides (14 Keys)
+
+`org.fossify:commons:7.1.3` (`res/values-az/values-az.xml`) omitted these 14 UI strings, so local overrides were added to `app/src/main/res/values-az/strings.xml`:
+
+| # | Key (`name`) | English (`fossify-commons`) | Azerbaijani (`values-az/strings.xml`) | Source / Notes |
+|---:|---|---|---|---|
+| 1 | `change_date_and_time_format` | Change date and time format | Tarix və saat formatını dəyiş | Local override in `values-az/strings.xml` (Settings) |
+| 2 | `password_protect_file_deletion` | Password protect file deletion and moving | Faylların silinməsini və köçürülməsini parolla qoru | Local override in `values-az/strings.xml` (Settings) |
+| 3 | `keep_last_modified` | Keep old last-modified value at file operations | Fayl əməliyyatlarında köhnə son dəyişdirilmə dəyərini qoru | Local override in `values-az/strings.xml` (Settings) |
+| 4 | `clear_cache` | Clear cache | Keşi təmizlə | Local override in `values-az/strings.xml` (Settings) |
+| 5 | `export_settings` | Export settings | Parametrləri ixrac et | Local override in `values-az/strings.xml` (Settings) |
+| 6 | `import_settings` | Import settings | Parametrləri idxal et | Local override in `values-az/strings.xml` (Settings) |
+| 7 | `temporarily_show_excluded` | Temporarily show excluded | İstisna edilmişləri müvəqqəti göstər | Local override in `values-az/strings.xml` (Options menu) |
+| 8 | `change_view_type` | Change view type | Görünüş növünü dəyiş | Local override in `values-az/strings.xml` (Options menu) |
+| 9 | `contributors` | Contributors | Töhfə verənlər | Local override in `values-az/strings.xml` (About) |
+| 10 | `known_issues` | Known issues | Məlum problemlər | Local override in `values-az/strings.xml` (About) |
+| 11 | `donate_to_fossify` | Donate to Fossify | Fossify-a ianə et | Local override in `values-az/strings.xml` (About) |
+| 12 | `privacy_policy` | Privacy policy | Məxfilik siyasəti | Local override in `values-az/strings.xml` (About) |
+| 13 | `create_shortcut` | Create shortcut | Qısayol yarat | Local override in `values-az/strings.xml` (CAB / ViewPager menu) |
+| 14 | `print` | Print | Çap et | Local override in `values-az/strings.xml` (ViewPager menu) |
+| 15 | `search_files` | Search files | Faylları axtar | Local override in `values-az/strings.xml` (Search bar hint) |
+| 16 | `search_folders` | Search folders | Qovluqları axtar | Local override in `values-az/strings.xml` (Search bar hint) |
+
+### Newly Added Fork-Only Strings (63 Keys)
+
+These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
+
+| # | Key (`name`) | English (`values/strings.xml`) | Azerbaijani (`values-az/strings.xml`) | Notes |
+|---:|---|---|---|---|
+| 1 | 1 | `video_double_tap_duration` | Double-tap seek duration |  |
+| 2 | 2 | `video_seek_duration_seconds` | %d seconds |  |
+| 3 | 3 | `create_virtual_album` | Create virtual album |  |
+| 4 | 4 | `new_virtual_album` | New album… |  |
+| 5 | 5 | `rename_virtual_album` | Rename album |  |
+| 6 | 6 | `album_name` | Album name |  |
+| 7 | 7 | `virtual_folder_name` | Virtual folder name |  |
+| 8 | 8 | `virtual_album_name_empty` | The album name cannot be empty |  |
+| 9 | 9 | `virtual_album_exists` | An album with this name already exists |  |
+| 10 | 10 | `add_to_virtual_album` | Add to album |  |
+| 11 | 11 | `remove_from_virtual_album` | Remove from album |  |
+| 12 | 12 | `added_to_virtual_album` | Added to \"%s\" |  |
+| 13 | 13 | `already_in_virtual_album` | Already in \"%s\" |  |
+| 14 | 14 | `removed_from_virtual_album` | Removed from the album |  |
+| 15 | 15 | `delete_virtual_album_confirmation` | Delete the album %s? Only the album is removed, your photos and videos stay where they are. |  |
+| 16 | 16 | `virtual_album_empty` | This album is empty. Select items in any folder and use \"Copy to\". |  |
+| 17 | 17 | `virtual_album_cannot_be_modified` | This action is not available for virtual albums |  |
+| 18 | 18 | `alphanumeric_password` | Password |  |
+| 19 | 19 | `repeat_password` | Repeat password |  |
+| 20 | 20 | `wrong_password` | Wrong password |  |
+| 21 | 21 | `encrypting_files` | Encrypting files… |  |
+| 22 | 22 | `encrypting_folder` | Encrypting folder… |  |
+| 23 | 23 | `folder_encrypted_successfully` | Folder encrypted successfully |  |
+| 24 | 24 | `decrypting_folder` | Decrypting folder… |  |
+| 25 | 25 | `folder_decrypted_successfully` | Folder decrypted successfully |  |
+| 26 | 26 | `decrypting_files` | Decrypting files… |  |
+| 27 | 27 | `place_finger_prompt` | Please place your finger on the fingerprint sensor |  |
+| 28 | 28 | `connect_at_least_4_dots_prompt` | Connect at least 4 dots |  |
+| 29 | 29 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? |  |
+| 30 | 30 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? |  |
+| 31 | 31 | `confirm_checkbox_label` | I confirm |  |
+| 32 | 32 | `secret_vault` | Secret Vault |  |
+| 33 | 33 | `secret_vault_empty` | Secret Vault is empty |  |
+| 34 | 34 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? |  |
+| 35 | 35 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. |  |
+| 36 | 36 | `on_vault_exit` | On leaving encrypted section |  |
+| 37 | 37 | `on_vault_exit_keep_showing` | Keep showing encrypted albums |  |
+| 38 | 38 | `on_vault_exit_hide` | Hide encrypted albums |  |
+| 39 | 39 | `on_vault_exit_ask_every_time` | Always ask |  |
+| 40 | 40 | `vault_exit_dialog_title` | Exiting Encrypted Section |  |
+| 41 | 41 | `vault_exit_question_single` | Show encrypted album together with other albums? |  |
+| 42 | 42 | `vault_exit_question_multiple` | Show encrypted albums together with other albums? |  |
+| 43 | 43 | `vault_exit_settings_hint` | For more options, see Settings &gt; On leaving encrypted section |  |
+| 44 | 44 | `open_system_language_settings` | Open system language settings |  |
+| 45 | 45 | `file_encrypted_successfully` | File hidden successfully | Success toast after encrypting/hiding a single file |
+| 46 | 46 | `files_encrypted_successfully` | Files hidden successfully | Success toast after encrypting/hiding multiple files |
+| 47 | 47 | `file_decrypted_successfully` | File unhidden successfully | Success toast after decrypting/unhiding a single file |
+| 48 | 48 | `files_decrypted_successfully` | Files unhidden successfully | Success toast after decrypting/unhiding multiple files |
+| 49 | 49 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | Settings switch, setup prompt title, and vault security dialog button |
+| 50 | 50 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | Toast shown when enabling biometrics before hidden-item password protection |
+| 51 | 51 | `biometric_unlock_vault` | Unlock hidden vault | BiometricPrompt title when unlocking the hidden vault |
+| 52 | 52 | `biometric_unlock_prompt` | Verify your biometric identity to access hidden items | BiometricPrompt subtitle when unlocking hidden items |
+| 53 | 53 | `biometric_setup_prompt` | Confirm your biometric identity to enable biometric vault access | BiometricPrompt subtitle when enabling biometric vault access |
+| 54 | 54 | `use_password_or_pin` | Use PIN / Password | BiometricPrompt negative button to fall back to PIN/password |
+| 55 | 55 | `biometric_key_invalidated` | Biometric credentials have changed. Please enter your PIN or password. | Toast shown when biometric credentials changed and Keystore key invalidated |
+| 56 | 56 | `no_biometric_hardware_or_enrolled` | No biometric hardware or enrolled credentials found on this device | Toast shown when no biometric hardware or enrolled credentials exist |
+| 57 | 57 | `default_hidden_album` | Default Hidden Album | Settings / picker label for default hidden album |
+| 58 | 58 | `select_hidden_album` | Select Hidden Album | Dialog title for choosing target hidden album |
+| 59 | 59 | `create_new_hidden_album` | Create New Hidden Album | Action label to create a new hidden album |
+| 60 | 60 | `new_hidden_album` | New hidden album | Input hint / default label for new hidden album |
+| 61 | 61 | `hidden_album_name_empty` | Album name cannot be empty | Validation error when hidden album name is blank |
+| 62 | 62 | `file_hidden_to_album` | File hidden to \"%s\" | Success toast after hiding a single file into album `%s` |
+| 63 | 63 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | Success toast after hiding `%1$d` files into album `%2$s` |
+
 
 ## 2. Full 1-to-1 Comparison: English vs. Azerbaijani
 
@@ -233,105 +327,140 @@
 | 208 | `alternative_media_access` | Alternatively, you can allow accessing media files only. In that case you will not be able to work with hidden files though. | Alternativ olaraq, yalnız media fayllarına girişə icazə verə bilərsiniz. Lakin bu halda gizli fayllarla işləyə bilməyəcəksiniz. |
 | 209 | `media_only` | Media only | Yalnız media |
 | 210 | `all_files` | All files | Bütün fayllar |
-| 211 | `search_all_files` | Search all files instead of folders on the main screen | Əsas ekranda qovluqlar əvəzinə bütün fayllarda axtar |
-| 212 | `show_all_folders` | Show a menu button for toggling Show All Folders Content quickly | Bütün qovluqların məzmununu göstər seçimini tez dəyişmək üçün menyu düyməsini göstər |
-| 213 | `thumbnails` | Thumbnails | Miniatürlər |
-| 214 | `fullscreen_media` | Fullscreen media | Tam ekran media |
-| 215 | `extended_details` | Extended details | Ətraflı məlumat |
-| 216 | `bottom_actions` | Bottom actions | Alt əməliyyatlar |
-| 217 | `manage_bottom_actions` | Manage visible bottom actions | Görünən alt əməliyyatları idarə et |
-| 218 | `toggle_favorite` | Toggle favorite | Sevimliyə əlavə et/çıxar |
-| 219 | `toggle_file_visibility` | Toggle file visibility | Faylın görünməsini dəyiş |
-| 220 | `failed_to_load_media` | Failed to load media. | Medianı yükləmək mümkün olmadı. |
-| 221 | `file_is_malformed_or_corrupted` | File is malformed or corrupted. | Fayl pozulub və ya yanlış formatdadır. |
-| 222 | `media_exceeds_device_capabilities` | Media exceeds device capabilities. | Media cihazın imkanlarını aşır. |
-| 223 | `unsupported_format` | Unsupported format. | Dəstəklənməyən format. |
-| 224 | `video_no_sound` | This video has no audio | Bu videoda səs yoxdur |
-| 225 | `faq_1_title` | How can I make Fossify Gallery the default device gallery? | Fossify Qalereyanı necə susmaya görə cihaz qalereyası edə bilərəm? |
-| 226 | `faq_1_text` | First you have to find the currently default gallery in the Apps section of your device settings, look for a button that says something like \"Open by default\", click on it, then select \"Clear defaults\". The next time you will try opening an image or video you should see an app picker, where you can select Fossify Gallery and make it the default app. | Əvvəlcə cihaz parametrlərinizin Tətbiqlər bölməsində hazırda susmaya görə təyin edilmiş qalereyanı tapmalı, \"Susmaya görə aç\" kimi bir düyməyə toxunub \"Susmaya görə tənzimləmələri təmizlə\" seçimini etməlisiniz. Növbəti dəfə şəkil və ya video açmağa çalışdığınızda tətbiq seçicisi görünəcək; oradan Fossify Qalereyanı seçib susmaya görə tətbiq edə bilərsiniz. |
-| 227 | `faq_2_title` | I locked the app with a password, but I forgot it. What can I do? | Tətbiqi parolla kilidlədim, amma unutdum. Nə edə bilərəm? |
-| 228 | `faq_2_text` | You can solve it in 2 ways. You can either reinstall the app, or find the app in your device settings and select \"Clear data\". It will reset all your settings, it will not remove any media files. | Bunu 2 yolla həll edə bilərsiniz. Ya tətbiqi yenidən quraşdırın, ya da cihaz parametrlərindən tətbiqi tapıb \"Məlumatları təmizlə\" seçin. Bu, bütün parametrlərinizi sıfırlayacaq, lakin heç bir media faylını silməyəcək. |
-| 229 | `faq_3_title` | How can I make an album always appear at the top? | Bir albomun həmişə ən yuxarıda görünməsini necə təmin edə bilərəm? |
-| 230 | `faq_3_text` | You can long press the desired album and select the Pin icon at the actions menu, that will pin it to the top. You can pin multiple folders too, pinned items will be sorted by the default sorting method. | İstədiyiniz albomun üzərinə uzun basıb əməliyyatlar menyusundan Bərkit işarəsini seçə bilərsiniz, bu onu yuxarıya bərkidəcək. Birdən çox qovluğu da bərkidə bilərsiniz; bərkidilmiş elementlər susmaya görə sıralama üsulu ilə düzüləcək. |
-| 231 | `faq_4_title` | How can I fast forward videos? | Videoları necə sürətlə irəli çəkə bilərəm? |
-| 232 | `faq_4_text` | You can do it by double tapping the side of the screen, or tapping the current or max duration texts near the seekbar. If you enable opening videos on a separate screen in the app settings, you can use horizontal gestures too. | Bunu ekranın kənarına iki dəfə toxunmaqla və ya axtarış zolağının yanındakı cari və ya maksimum müddət yazılarına toxunmaqla edə bilərsiniz. Tətbiq parametrlərində videoların ayrı ekranda açılmasını aktivləşdirsəniz, üfüqi jestlərdən də istifadə edə bilərsiniz. |
-| 233 | `faq_5_title` | What is the difference between hiding and excluding a folder? | Qovluğu gizlətmək ilə istisna etmək arasında fərq nədir? |
-| 234 | `faq_5_text` | Exclude prevents displaying the folder only in Fossify Gallery, while Hide works system-wise and it hides the folder from other galleries too. It works by creating an empty \".nomedia\" file in the given folder, which you can then remove with any file manager too. Note that some devices do not allow hiding folders like Camera, Screenshots and Downloads. | İstisna et qovluğun yalnız Fossify Qalereyada göstərilməsinin qarşısını alır, Gizlət isə sistem səviyyəsində işləyir və qovluğu digər qalereyalardan da gizlədir. Bu, həmin qovluqda boş \".nomedia\" faylı yaratmaqla işləyir və onu istənilən fayl meneceri ilə də silə bilərsiniz. Nəzərə alın ki, bəzi cihazlar Camera, Screenshots və Downloads kimi qovluqların gizlədilməsinə icazə vermir. |
-| 235 | `faq_6_title` | Why do folders with music cover art or stickers show up? | Niyə musiqi üz qabıqları və ya stikerlər olan qovluqlar görünür? |
-| 236 | `faq_6_text` | It can happen that you will see some unusual albums show up. You can easily exclude them by long pressing them and selecting Exclude. In the next dialog you can then select the parent folder, chances are it will prevent the other related albums showing up too. | Bəzən qeyri-adi albomların göründüyünü müşahidə edə bilərsiniz. Onların üzərinə uzun basıb İstisna et seçməklə asanlıqla gizlədə bilərsiniz. Növbəti pəncərədə üst qovluğu seçə bilərsiniz; çox güman ki, bu, əlaqəli digər albomların da görünməsinin qarşısını alacaq. |
-| 237 | `faq_7_title` | A folder with images isn\'t showing up, or it doesn\'t show all items.  What can I do? | Şəkillər olan qovluq görünmür və ya bütün elementləri göstərmir. Nə edə bilərəm? |
-| 238 | `faq_7_text` | That can have multiple reasons, but solving it is easy. Just go in Settings -&gt; Manage Included Folders, select Plus and navigate to the required folder. | Bunun bir neçə səbəbi ola bilər, lakin həlli asandır. Sadəcə Parametrlər -&gt; Daxil edilmiş qovluqları idarə et bölməsinə keçin, Üstəgəl işarəsini seçin və lazım olan qovluğa gedin. |
-| 239 | `faq_8_title` | What if I want just a few particular folders visible? | Bəs yalnız bir neçə müəyyən qovluğun görünməsini istəyirəmsə nə edim? |
-| 240 | `faq_8_text` | Adding a folder at the Included Folders doesn\'t automatically exclude anything. What you can do is go in Settings -&gt; Manage Excluded Folders, exclude the root folder \"/\", then add the desired folders at Settings -&gt; Manage Included Folders. That will make only the selected folders visible, as both excluding and including are recursive and if a folder is both excluded and included, it will show up. | Daxil edilmiş qovluqlara qovluq əlavə etmək avtomatik olaraq heç nəyi istisna etmir. Edə biləcəyiniz şey Parametrlər -&gt; İstisna edilmiş qovluqları idarə et bölməsinə keçib kök qovluğu \"/\" istisna etmək, sonra isə Parametrlər -&gt; Daxil edilmiş qovluqları idarə et bölməsindən istədiyiniz qovluqları əlavə etməkdir. Həm istisna etmə, həm də daxil etmə rekursiv işlədiyindən və bir qovluq həm istisna edilib, həm də daxil edildikdə göründüyündən, bu üsul yalnız seçilmiş qovluqları görünən edəcək. |
-| 241 | `faq_10_title` | Can I crop images with this app? | Bu tətbiqlə şəkilləri kəsə bilərəmmi? |
-| 242 | `faq_10_text` | Yes, you can crop images in the editor, by dragging the image corners. You can get to the editor either by long pressing an image thumbnail and selecting Edit, or selecting Edit from the fullscreen view. | Bəli, redaktorda şəkil künclərini sürüşdürərək şəkilləri kəsə bilərsiniz. Redaktora şəkil miniatürünə uzun basıb Redaktə seçməklə və ya tam ekran görünüşündən Redaktə seçməklə keçə bilərsiniz. |
-| 243 | `faq_11_title` | Can I somehow group media file thumbnails? | Media fayllarının miniatürlərini necəsə qruplaşdıra bilərəmmi? |
-| 244 | `faq_11_text` | Sure, just use the \"Group by\" menu item while at the thumbnails view. You can group files by multiple criteria, including Date Taken. If you use the \"Show all folders content\" function you can group them by folders too. | Əlbəttə, miniatürlər görünüşündə \"Qruplaşdırma\" menyu bəndindən istifadə edin. Faylları Çəkilmə tarixi daxil olmaqla bir neçə meyara görə qruplaşdıra bilərsiniz. \"Bütün qovluqların məzmununu göstər\" funksiyasından istifadə etsəniz, onları qovluqlara görə də qruplaşdıra bilərsiniz. |
-| 245 | `faq_12_title` | Sorting by Date Taken doesn\'t seem to work properly, how can I fix it? | Çəkilmə tarixinə görə sıralama düzgün işləmir, necə düzəldə bilərəm? |
-| 246 | `faq_12_text` | It is most likely caused by the files being copied from somewhere. You can fix it by selecting the file thumbnails and selecting \"Fix Date Taken value\". | Bu, çox güman ki, faylların haradansa köçürülməsindən qaynaqlanır. Fayl miniatürlərini seçib \"Çəkilmə tarixi dəyərini düzəlt\" seçimini etməklə bunu düzəldə bilərsiniz. |
-| 247 | `faq_13_title` | I see some color banding on the images. How can I improve the quality? | Şəkillərdə rəng zolaqlanması görürəm. Keyfiyyəti necə artıra bilərəm? |
-| 248 | `faq_13_text` | The current solution for displaying images works fine in the vast majority of cases, but if you want even better image quality, you can enable the \"Show images in the highest possible quality\" at the app settings, in the \"Deep zoomable images\" section. | Şəkillərin göstərilməsi üçün mövcud həll əksər hallarda yaxşı işləyir, lakin daha yüksək görüntü keyfiyyəti istəyirsinizsə, tətbiq parametrlərində \"Dərin yaxınlaşdırılan şəkillər\" bölməsində \"Şəkilləri mümkün olan ən yüksək keyfiyyətdə göstər\" seçimini aktivləşdirə bilərsiniz. |
-| 249 | `faq_14_title` | I have hidden a file/folder. How can I unhide it? | Bir faylı/qovluğu gizlətmişəm. Onu necə yenidən görünən edə bilərəm? |
-| 250 | `faq_14_text` | You can either press the \"Temporarily show hidden items\" menu item at the main screen, or toggle \"Show hidden items\" in the app settings to see the hidden item. If you want to unhide it, just long press it and select \"Unhide\". Folders are hidden by adding a hidden \".nomedia\" file into them, you can delete the file with any file manager too. Note that hiding works recursively though, so if you hide a folder, all subfolders will become hidden too. So for unhiding the subfolders you have to unhide the parent folder. | Gizli elementi görmək üçün əsas ekranda \"Gizli elementləri müvəqqəti göstər\" menyu bəndinə toxuna və ya tətbiq parametrlərində \"Gizli elementləri göstər\" seçimini aktivləşdirə bilərsiniz. Gizlətməni ləğv etmək üçün üzərinə uzun basıb \"Gizlətməni ləğv et\" seçin. Qovluqlar içinə gizli \".nomedia\" faylı əlavə edilərək gizlədilir, həmin faylı istənilən fayl meneceri ilə də silə bilərsiniz. Unutmayın ki, gizlətmə rekursiv işləyir; yəni bir qovluğu gizlətsəniz, bütün alt qovluqlar da gizlənir. Ona görə alt qovluqları görünən etmək üçün üst qovluğun gizlədilməsini ləğv etməlisiniz. |
-| 251 | `faq_15_title` | Why does the app take up so much space? | Tətbiq niyə bu qədər çox yer tutur? |
-| 252 | `faq_15_text` | App cache can take up to 250MB, it ensures quicker image loading. If the app is taking up even more space, it is most likely caused by you having items in the recycle bin. Those files count to the app size. You can clear the recycle bin by opening it and deleting all files, or from the app settings. Every file in the bin is deleted automatically after 30 days. | Tətbiq keşi 250 MB-a qədər yer tuta bilər, bu, şəkillərin daha sürətli yüklənməsini təmin edir. Tətbiq bundan daha çox yer tutursa, böyük ehtimalla zibil qutusunda elementləriniz var. Həmin fayllar tətbiqin ölçüsünə daxil edilir. Zibil qutusunu açıb bütün faylları silməklə və ya tətbiq parametrlərindən onu təmizləyə bilərsiniz. Zibil qutusundakı hər fayl 30 gündən sonra avtomatik silinir. |
-| 253 | `faq_16_title` | What happened to file and folder hiding and why cannot I see hidden items anymore? | Fayl və qovluq gizlətməyə nə oldu və niyə artıq gizli elementləri görə bilmirəm? |
-| 254 | `faq_16_text` | Starting with Android 11 you cannot hide or unhide files or folders anymore, you cannot see the hidden ones in gallery apps due to system restrictions either. You will have to use some file manager for that. | Android 11-dən başlayaraq sistem məhdudiyyətlərinə görə artıq fayl və ya qovluqları gizlədə, gizlətməsini ləğv edə və ya qalereya tətbiqlərində gizli olanları görə bilmirsiniz. Bunun üçün hansısa fayl menecerindən istifadə etməli olacaqsınız. |
-| 255 | `faq_16_text_extra` | Or you can also grant this gallery access to All Files through your device settings, that will allow us showing hidden items and make file operations more reliable in general. | Və ya cihaz parametrləri vasitəsilə bu qalereyaya Bütün Fayllara giriş icazəsi verə bilərsiniz; bu, bizə gizli elementləri göstərməyə və ümumilikdə fayl əməliyyatlarını daha etibarlı etməyə imkan verəcək. |
-| 256 | `faq_17_title` | Why cannot I include missing folders anymore? | Niyə artıq görünməyən qovluqları daxil edə bilmirəm? |
-| 257 | `faq_17_text` | That stopped working due to the system changes that came with Android 11 too, the app cannot browse real folders anymore, it relies on the so called MediaStore at fetching data. | Bu da Android 11 ilə gələn sistem dəyişikliklərinə görə işləməyi dayandırdı; tətbiq artıq real qovluqlara baxa bilmir və məlumatları almaq üçün MediaStore adlanan mexanizmə əsaslanır. |
-| 258 | `faq_18_title` | Why do I see ads during video playback? | Video oxudularkən niyə reklamlar görürəm? |
-| 259 | `faq_18_text` | Our apps have no ads whatsoever. If you see them during video playback, you must be using some other apps video player. Try finding your default video player in the device settings, then do a \"Clear defaults\" on it. The next time you invoke some video intent you will see an app picker prompt, where you can select what app you want to use. | Tətbiqlərimizdə heç bir reklam yoxdur. Video oxudularkən reklam görürsünüzsə, başqa bir tətbiqin video pleyerindən istifadə edirsiniz. Cihaz parametrlərində susmaya görə video pleyerinizi tapıb \"Susmaya görə tənzimləmələri təmizlə\" əməliyyatını edin. Növbəti dəfə video açdıqda istifadə etmək istədiyiniz tətbiqi seçə biləcəyiniz bir tətbiq seçicisi görünəcək. |
-| 260 | `create_virtual_album` | Create virtual album | Virtual albom yarat |
-| 261 | `new_virtual_album` | New album… | Yeni albom… |
-| 262 | `rename_virtual_album` | Rename album | Albomun adını dəyiş |
-| 263 | `album_name` | Album name | Albom adı |
-| 264 | `virtual_folder_name` | Virtual folder name | Virtual qovluq adı |
-| 265 | `virtual_album_name_empty` | The album name cannot be empty | Albom adı boş ola bilməz |
-| 266 | `virtual_album_exists` | An album with this name already exists | Bu adda albom artıq mövcuddur |
-| 267 | `add_to_virtual_album` | Add to album | Alboma əlavə et |
-| 268 | `remove_from_virtual_album` | Remove from album | Albomdan çıxar |
-| 269 | `added_to_virtual_album` | Added to \"%s\" | \"%s\" albomuna əlavə edildi |
-| 270 | `already_in_virtual_album` | Already in \"%s\" | Artıq \"%s\" albomundadır |
-| 271 | `removed_from_virtual_album` | Removed from the album | Albomdan çıxarıldı |
-| 272 | `delete_virtual_album_confirmation` | Delete the album %s? Only the album is removed, your photos and videos stay where they are. | %s albomu silinsin? Yalnız albom silinir, foto və videolarınız olduğu yerdə qalır. |
-| 273 | `virtual_album_empty` | This album is empty. Select items in any folder and use \"Copy to\". | Bu albom boşdur. İstənilən qovluqda elementləri seçin və \"Köçür\" seçimindən istifadə edin. |
-| 274 | `virtual_album_cannot_be_modified` | This action is not available for virtual albums | Bu əməliyyat virtual albomlar üçün əlçatan deyil |
-| 275 | `alphanumeric_password` | Password | Parol |
-| 276 | `enter_password` | Enter password | Parolu daxil edin |
-| 277 | `repeat_password` | Repeat password | Parolu təkrarlayın |
-| 278 | `wrong_password` | Wrong password | Yanlış parol |
-| 279 | `encrypting_files` | Encrypting files… | Fayllar şifrələnir… |
-| 280 | `encrypting_folder` | Encrypting folder… | Qovluq şifrələnir… |
-| 281 | `folder_encrypted_successfully` | Folder encrypted successfully | Qovluq uğurla şifrələndi |
-| 282 | `decrypting_folder` | Decrypting folder… | Qovluğun şifrəsi açılır… |
-| 283 | `folder_decrypted_successfully` | Folder decrypted successfully | Qovluğun şifrəsi uğurla açıldı |
-| 284 | `decrypting_files` | Decrypting files… | Faylların şifrəsi açılır… |
-| 285 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | Zəhmət olmasa, barmağınızı barmaq izi sensoruna qoyun |
-| 286 | `connect_at_least_4_dots_prompt` | Connect at least 4 dots | Ən azı 4 nöqtəni birləşdirin |
-| 287 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | Mövcud Cipher_Secrets qovluğunuza daxil olmaq istəyirsiniz? |
-| 288 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | Mövcud Cipher_Secrets qovluğu silinəcək və yenisi yaradılacaq. Əminsiniz? |
-| 289 | `confirm_checkbox_label` | I confirm | Təsdiqləyirəm |
-| 290 | `secret_vault` | Secret Vault | Gizli Seyf |
-| 291 | `secret_vault_empty` | Secret Vault is empty | Gizli Seyf boşdur |
-| 292 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | Gizli faylın(ların) şifrəsini açmaq istədiyinizə əminsiniz? |
-| 293 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | Təhlükəsizlik məqsədilə seyf açıq olarkən mübadilə buferinə kopyalama deaktiv edilib. |
-| 294 | `on_vault_exit` | On leaving hidden section | Gizli bölmədən çıxarkən |
-| 295 | `on_vault_exit_keep_showing_all` | Keep showing all hidden albums | Bütün gizli albomları göstərməyə davam et |
-| 296 | `on_vault_exit_show_encrypted_only` | Only show encrypted albums | Yalnız şifrələnmiş albomları göstər |
-| 297 | `on_vault_exit_show_other_only` | Only show other hidden albums | Yalnız digər gizli albomları göstər |
-| 298 | `on_vault_exit_hide_all` | Hide all hidden albums | Bütün gizli albomları gizlət |
-| 299 | `on_vault_exit_ask_every_time` | Always ask | Hər dəfə soruş |
-| 300 | `vault_exit_dialog_title` | Exiting Hidden Section | Gizli Bölmədən Çıxış |
-| 301 | `vault_exit_keep_showing` | Keep showing hidden albums | Gizli albomları göstərməyə davam et |
-| 302 | `vault_exit_hide` | Hide hidden albums | Gizli albomları gizlət |
-| 303 | `vault_exit_remember_my_choice` | Remember my choice | Seçimimi yadda saxla |
-| 304 | `vault_exit_settings_hint` | For more options, see Settings &gt; On leaving hidden section | Əlavə seçimlər üçün Parametrlər &gt; Gizli bölmədən çıxarkən bölməsinə baxın |
-| 305 | `system_default` | System default | Sistem (susmaya görə) |
-| 306 | `language` | Language | Dil |
-| 307 | `open_system_language_settings` | Open system language settings | Sistem dil parametrlərini aç |
-| 308 | `restore_confirmation` (`one`) | Are you sure you want to restore %d file? | %d faylı bərpa etmək istədiyinizə əminsiniz? |
-| 309 | `restore_confirmation` (`other`) | Are you sure you want to restore %d files? | %d faylı bərpa etmək istədiyinizə əminsiniz? |
-| 310 | `failed_to_resize_images` (`one`) | Failed to resize %d image | %d şəklin ölçüsünü dəyişmək mümkün olmadı |
-| 311 | `failed_to_resize_images` (`other`) | Failed to resize %d images | %d şəklin ölçüsünü dəyişmək mümkün olmadı |
-| 312 | `search` *(fossify-commons)* | *(inherited from commons)* | Axtar |
+| 211 | `main_screen_view_on_launch` | Main screen view on launch | Açılışda əsas ekran görünüşü |
+| 212 | `show_folders` | Show folders | Qovluqları göstər |
+| 213 | `show_files` | Show files | Faylları göstər |
+| 214 | `show_all_folders` | Show a menu button for toggling Show All Folders Content quickly | Bütün qovluqların məzmununu göstər seçimini tez dəyişmək üçün menyu düyməsini göstər |
+| 215 | `thumbnails` | Thumbnails | Miniatürlər |
+| 216 | `fullscreen_media` | Fullscreen media | Tam ekran media |
+| 217 | `extended_details` | Extended details | Ətraflı məlumat |
+| 218 | `bottom_actions` | Bottom actions | Alt əməliyyatlar |
+| 219 | `manage_bottom_actions` | Manage visible bottom actions | Görünən alt əməliyyatları idarə et |
+| 220 | `toggle_favorite` | Toggle favorite | Sevimliyə əlavə et/çıxar |
+| 221 | `toggle_file_visibility` | Toggle file visibility | Faylın görünməsini dəyiş |
+| 222 | `failed_to_load_media` | Failed to load media. | Medianı yükləmək mümkün olmadı. |
+| 223 | `file_is_malformed_or_corrupted` | File is malformed or corrupted. | Fayl pozulub və ya yanlış formatdadır. |
+| 224 | `media_exceeds_device_capabilities` | Media exceeds device capabilities. | Media cihazın imkanlarını aşır. |
+| 225 | `unsupported_format` | Unsupported format. | Dəstəklənməyən format. |
+| 226 | `video_no_sound` | This video has no audio | Bu videoda səs yoxdur |
+| 227 | `faq_1_title` | How can I make Fossify Gallery the default device gallery? | Fossify Qalereyanı necə susmaya görə cihaz qalereyası edə bilərəm? |
+| 228 | `faq_1_text` | First you have to find the currently default gallery in the Apps section of your device settings, look for a button that says something like \"Open by default\", click on it, then select \"Clear defaults\". The next time you will try opening an image or video you should see an app picker, where you can select Fossify Gallery and make it the default app. | Əvvəlcə cihaz parametrlərinizin Tətbiqlər bölməsində hazırda susmaya görə təyin edilmiş qalereyanı tapmalı, \"Susmaya görə aç\" kimi bir düyməyə toxunub \"Susmaya görə tənzimləmələri təmizlə\" seçimini etməlisiniz. Növbəti dəfə şəkil və ya video açmağa çalışdığınızda tətbiq seçicisi görünəcək; oradan Fossify Qalereyanı seçib susmaya görə tətbiq edə bilərsiniz. |
+| 229 | `faq_2_title` | I locked the app with a password, but I forgot it. What can I do? | Tətbiqi parolla kilidlədim, amma unutdum. Nə edə bilərəm? |
+| 230 | `faq_2_text` | You can solve it in 2 ways. You can either reinstall the app, or find the app in your device settings and select \"Clear data\". It will reset all your settings, it will not remove any media files. | Bunu 2 yolla həll edə bilərsiniz. Ya tətbiqi yenidən quraşdırın, ya da cihaz parametrlərindən tətbiqi tapıb \"Məlumatları təmizlə\" seçin. Bu, bütün parametrlərinizi sıfırlayacaq, lakin heç bir media faylını silməyəcək. |
+| 231 | `faq_3_title` | How can I make an album always appear at the top? | Bir albomun həmişə ən yuxarıda görünməsini necə təmin edə bilərəm? |
+| 232 | `faq_3_text` | You can long press the desired album and select the Pin icon at the actions menu, that will pin it to the top. You can pin multiple folders too, pinned items will be sorted by the default sorting method. | İstədiyiniz albomun üzərinə uzun basıb əməliyyatlar menyusundan Bərkit işarəsini seçə bilərsiniz, bu onu yuxarıya bərkidəcək. Birdən çox qovluğu da bərkidə bilərsiniz; bərkidilmiş elementlər susmaya görə sıralama üsulu ilə düzüləcək. |
+| 233 | `faq_4_title` | How can I fast forward videos? | Videoları necə sürətlə irəli çəkə bilərəm? |
+| 234 | `faq_4_text` | You can do it by double tapping the side of the screen, or tapping the current or max duration texts near the seekbar. If you enable opening videos on a separate screen in the app settings, you can use horizontal gestures too. | Bunu ekranın kənarına iki dəfə toxunmaqla və ya axtarış zolağının yanındakı cari və ya maksimum müddət yazılarına toxunmaqla edə bilərsiniz. Tətbiq parametrlərində videoların ayrı ekranda açılmasını aktivləşdirsəniz, üfüqi jestlərdən də istifadə edə bilərsiniz. |
+| 235 | `faq_5_title` | What is the difference between hiding and excluding a folder? | Qovluğu gizlətmək ilə istisna etmək arasında fərq nədir? |
+| 236 | `faq_5_text` | Exclude prevents displaying the folder only in Fossify Gallery, while Hide works system-wise and it hides the folder from other galleries too. It works by creating an empty \".nomedia\" file in the given folder, which you can then remove with any file manager too. Note that some devices do not allow hiding folders like Camera, Screenshots and Downloads. | İstisna et qovluğun yalnız Fossify Qalereyada göstərilməsinin qarşısını alır, Gizlət isə sistem səviyyəsində işləyir və qovluğu digər qalereyalardan da gizlədir. Bu, həmin qovluqda boş \".nomedia\" faylı yaratmaqla işləyir və onu istənilən fayl meneceri ilə də silə bilərsiniz. Nəzərə alın ki, bəzi cihazlar Camera, Screenshots və Downloads kimi qovluqların gizlədilməsinə icazə vermir. |
+| 237 | `faq_6_title` | Why do folders with music cover art or stickers show up? | Niyə musiqi üz qabıqları və ya stikerlər olan qovluqlar görünür? |
+| 238 | `faq_6_text` | It can happen that you will see some unusual albums show up. You can easily exclude them by long pressing them and selecting Exclude. In the next dialog you can then select the parent folder, chances are it will prevent the other related albums showing up too. | Bəzən qeyri-adi albomların göründüyünü müşahidə edə bilərsiniz. Onların üzərinə uzun basıb İstisna et seçməklə asanlıqla gizlədə bilərsiniz. Növbəti pəncərədə üst qovluğu seçə bilərsiniz; çox güman ki, bu, əlaqəli digər albomların da görünməsinin qarşısını alacaq. |
+| 239 | `faq_7_title` | A folder with images isn\'t showing up, or it doesn\'t show all items.  What can I do? | Şəkillər olan qovluq görünmür və ya bütün elementləri göstərmir. Nə edə bilərəm? |
+| 240 | `faq_7_text` | That can have multiple reasons, but solving it is easy. Just go in Settings -&gt; Manage Included Folders, select Plus and navigate to the required folder. | Bunun bir neçə səbəbi ola bilər, lakin həlli asandır. Sadəcə Parametrlər -&gt; Daxil edilmiş qovluqları idarə et bölməsinə keçin, Üstəgəl işarəsini seçin və lazım olan qovluğa gedin. |
+| 241 | `faq_8_title` | What if I want just a few particular folders visible? | Bəs yalnız bir neçə müəyyən qovluğun görünməsini istəyirəmsə nə edim? |
+| 242 | `faq_8_text` | Adding a folder at the Included Folders doesn\'t automatically exclude anything. What you can do is go in Settings -&gt; Manage Excluded Folders, exclude the root folder \"/\", then add the desired folders at Settings -&gt; Manage Included Folders. That will make only the selected folders visible, as both excluding and including are recursive and if a folder is both excluded and included, it will show up. | Daxil edilmiş qovluqlara qovluq əlavə etmək avtomatik olaraq heç nəyi istisna etmir. Edə biləcəyiniz şey Parametrlər -&gt; İstisna edilmiş qovluqları idarə et bölməsinə keçib kök qovluğu \"/\" istisna etmək, sonra isə Parametrlər -&gt; Daxil edilmiş qovluqları idarə et bölməsindən istədiyiniz qovluqları əlavə etməkdir. Həm istisna etmə, həm də daxil etmə rekursiv işlədiyindən və bir qovluq həm istisna edilib, həm də daxil edildikdə göründüyündən, bu üsul yalnız seçilmiş qovluqları görünən edəcək. |
+| 243 | `faq_10_title` | Can I crop images with this app? | Bu tətbiqlə şəkilləri kəsə bilərəmmi? |
+| 244 | `faq_10_text` | Yes, you can crop images in the editor, by dragging the image corners. You can get to the editor either by long pressing an image thumbnail and selecting Edit, or selecting Edit from the fullscreen view. | Bəli, redaktorda şəkil künclərini sürüşdürərək şəkilləri kəsə bilərsiniz. Redaktora şəkil miniatürünə uzun basıb Redaktə seçməklə və ya tam ekran görünüşündən Redaktə seçməklə keçə bilərsiniz. |
+| 245 | `faq_11_title` | Can I somehow group media file thumbnails? | Media fayllarının miniatürlərini necəsə qruplaşdıra bilərəmmi? |
+| 246 | `faq_11_text` | Sure, just use the \"Group by\" menu item while at the thumbnails view. You can group files by multiple criteria, including Date Taken. If you use the \"Show all folders content\" function you can group them by folders too. | Əlbəttə, miniatürlər görünüşündə \"Qruplaşdırma\" menyu bəndindən istifadə edin. Faylları Çəkilmə tarixi daxil olmaqla bir neçə meyara görə qruplaşdıra bilərsiniz. \"Bütün qovluqların məzmununu göstər\" funksiyasından istifadə etsəniz, onları qovluqlara görə də qruplaşdıra bilərsiniz. |
+| 247 | `faq_12_title` | Sorting by Date Taken doesn\'t seem to work properly, how can I fix it? | Çəkilmə tarixinə görə sıralama düzgün işləmir, necə düzəldə bilərəm? |
+| 248 | `faq_12_text` | It is most likely caused by the files being copied from somewhere. You can fix it by selecting the file thumbnails and selecting \"Fix Date Taken value\". | Bu, çox güman ki, faylların haradansa köçürülməsindən qaynaqlanır. Fayl miniatürlərini seçib \"Çəkilmə tarixi dəyərini düzəlt\" seçimini etməklə bunu düzəldə bilərsiniz. |
+| 249 | `faq_13_title` | I see some color banding on the images. How can I improve the quality? | Şəkillərdə rəng zolaqlanması görürəm. Keyfiyyəti necə artıra bilərəm? |
+| 250 | `faq_13_text` | The current solution for displaying images works fine in the vast majority of cases, but if you want even better image quality, you can enable the \"Show images in the highest possible quality\" at the app settings, in the \"Deep zoomable images\" section. | Şəkillərin göstərilməsi üçün mövcud həll əksər hallarda yaxşı işləyir, lakin daha yüksək görüntü keyfiyyəti istəyirsinizsə, tətbiq parametrlərində \"Dərin yaxınlaşdırılan şəkillər\" bölməsində \"Şəkilləri mümkün olan ən yüksək keyfiyyətdə göstər\" seçimini aktivləşdirə bilərsiniz. |
+| 251 | `faq_14_title` | I have hidden a file/folder. How can I unhide it? | Bir faylı/qovluğu gizlətmişəm. Onu necə yenidən görünən edə bilərəm? |
+| 252 | `faq_14_text` | You can either press the \"Temporarily show hidden items\" menu item at the main screen, or toggle \"Show hidden items\" in the app settings to see the hidden item. If you want to unhide it, just long press it and select \"Unhide\". Folders are hidden by adding a hidden \".nomedia\" file into them, you can delete the file with any file manager too. Note that hiding works recursively though, so if you hide a folder, all subfolders will become hidden too. So for unhiding the subfolders you have to unhide the parent folder. | Gizli elementi görmək üçün əsas ekranda \"Gizli elementləri müvəqqəti göstər\" menyu bəndinə toxuna və ya tətbiq parametrlərində \"Gizli elementləri göstər\" seçimini aktivləşdirə bilərsiniz. Gizlətməni ləğv etmək üçün üzərinə uzun basıb \"Gizlətməni ləğv et\" seçin. Qovluqlar içinə gizli \".nomedia\" faylı əlavə edilərək gizlədilir, həmin faylı istənilən fayl meneceri ilə də silə bilərsiniz. Unutmayın ki, gizlətmə rekursiv işləyir; yəni bir qovluğu gizlətsəniz, bütün alt qovluqlar da gizlənir. Ona görə alt qovluqları görünən etmək üçün üst qovluğun gizlədilməsini ləğv etməlisiniz. |
+| 253 | `faq_15_title` | Why does the app take up so much space? | Tətbiq niyə bu qədər çox yer tutur? |
+| 254 | `faq_15_text` | App cache can take up to 250MB, it ensures quicker image loading. If the app is taking up even more space, it is most likely caused by you having items in the recycle bin. Those files count to the app size. You can clear the recycle bin by opening it and deleting all files, or from the app settings. Every file in the bin is deleted automatically after 30 days. | Tətbiq keşi 250 MB-a qədər yer tuta bilər, bu, şəkillərin daha sürətli yüklənməsini təmin edir. Tətbiq bundan daha çox yer tutursa, böyük ehtimalla zibil qutusunda elementləriniz var. Həmin fayllar tətbiqin ölçüsünə daxil edilir. Zibil qutusunu açıb bütün faylları silməklə və ya tətbiq parametrlərindən onu təmizləyə bilərsiniz. Zibil qutusundakı hər fayl 30 gündən sonra avtomatik silinir. |
+| 255 | `faq_16_title` | What happened to file and folder hiding and why cannot I see hidden items anymore? | Fayl və qovluq gizlətməyə nə oldu və niyə artıq gizli elementləri görə bilmirəm? |
+| 256 | `faq_16_text` | Starting with Android 11 you cannot hide or unhide files or folders anymore, you cannot see the hidden ones in gallery apps due to system restrictions either. You will have to use some file manager for that. | Android 11-dən başlayaraq sistem məhdudiyyətlərinə görə artıq fayl və ya qovluqları gizlədə, gizlətməsini ləğv edə və ya qalereya tətbiqlərində gizli olanları görə bilmirsiniz. Bunun üçün hansısa fayl menecerindən istifadə etməli olacaqsınız. |
+| 257 | `faq_16_text_extra` | Or you can also grant this gallery access to All Files through your device settings, that will allow us showing hidden items and make file operations more reliable in general. | Və ya cihaz parametrləri vasitəsilə bu qalereyaya Bütün Fayllara giriş icazəsi verə bilərsiniz; bu, bizə gizli elementləri göstərməyə və ümumilikdə fayl əməliyyatlarını daha etibarlı etməyə imkan verəcək. |
+| 258 | `faq_17_title` | Why cannot I include missing folders anymore? | Niyə artıq görünməyən qovluqları daxil edə bilmirəm? |
+| 259 | `faq_17_text` | That stopped working due to the system changes that came with Android 11 too, the app cannot browse real folders anymore, it relies on the so called MediaStore at fetching data. | Bu da Android 11 ilə gələn sistem dəyişikliklərinə görə işləməyi dayandırdı; tətbiq artıq real qovluqlara baxa bilmir və məlumatları almaq üçün MediaStore adlanan mexanizmə əsaslanır. |
+| 260 | `faq_18_title` | Why do I see ads during video playback? | Video oxudularkən niyə reklamlar görürəm? |
+| 261 | `faq_18_text` | Our apps have no ads whatsoever. If you see them during video playback, you must be using some other apps video player. Try finding your default video player in the device settings, then do a \"Clear defaults\" on it. The next time you invoke some video intent you will see an app picker prompt, where you can select what app you want to use. | Tətbiqlərimizdə heç bir reklam yoxdur. Video oxudularkən reklam görürsünüzsə, başqa bir tətbiqin video pleyerindən istifadə edirsiniz. Cihaz parametrlərində susmaya görə video pleyerinizi tapıb \"Susmaya görə tənzimləmələri təmizlə\" əməliyyatını edin. Növbəti dəfə video açdıqda istifadə etmək istədiyiniz tətbiqi seçə biləcəyiniz bir tətbiq seçicisi görünəcək. |
+| 262 | `create_virtual_album` | Create virtual album | Virtual albom yarat |
+| 263 | `new_virtual_album` | New album… | Yeni albom… |
+| 264 | `rename_virtual_album` | Rename album | Albomun adını dəyiş |
+| 265 | `album_name` | Album name | Albom adı |
+| 266 | `virtual_folder_name` | Virtual folder name | Virtual qovluq adı |
+| 267 | `virtual_album_name_empty` | The album name cannot be empty | Albom adı boş ola bilməz |
+| 268 | `virtual_album_exists` | An album with this name already exists | Bu adda albom artıq mövcuddur |
+| 269 | `add_to_virtual_album` | Add to album | Alboma əlavə et |
+| 270 | `remove_from_virtual_album` | Remove from album | Albomdan çıxar |
+| 271 | `added_to_virtual_album` | Added to \"%s\" | \"%s\" albomuna əlavə edildi |
+| 272 | `already_in_virtual_album` | Already in \"%s\" | Artıq \"%s\" albomundadır |
+| 273 | `removed_from_virtual_album` | Removed from the album | Albomdan çıxarıldı |
+| 274 | `delete_virtual_album_confirmation` | Delete the album %s? Only the album is removed, your photos and videos stay where they are. | %s albomu silinsin? Yalnız albom silinir, foto və videolarınız olduğu yerdə qalır. |
+| 275 | `virtual_album_empty` | This album is empty. Select items in any folder and use \"Copy to\". | Bu albom boşdur. İstənilən qovluqda elementləri seçin və \"Köçür\" seçimindən istifadə edin. |
+| 276 | `virtual_album_cannot_be_modified` | This action is not available for virtual albums | Bu əməliyyat virtual albomlar üçün əlçatan deyil |
+| 277 | `alphanumeric_password` | Password | Parol |
+| 278 | `enter_password` | Enter password | Parolu daxil edin |
+| 279 | `repeat_password` | Repeat password | Parolu təkrarlayın |
+| 280 | `wrong_password` | Wrong password | Yanlış parol |
+| 281 | `encrypting_files` | Encrypting files… | Fayllar şifrələnir… |
+| 282 | `encrypting_folder` | Encrypting folder… | Qovluq şifrələnir… |
+| 283 | `folder_encrypted_successfully` | Folder encrypted successfully | Qovluq uğurla şifrələndi |
+| 284 | `file_encrypted_successfully` | File hidden successfully | Fayl uğurla gizlədildi |
+| 285 | `files_encrypted_successfully` | Files hidden successfully | Fayllar uğurla gizlədildi |
+| 286 | `decrypting_folder` | Decrypting folder… | Qovluğun şifrəsi açılır… |
+| 287 | `folder_decrypted_successfully` | Folder decrypted successfully | Qovluğun şifrəsi uğurla açıldı |
+| 288 | `file_decrypted_successfully` | File unhidden successfully | Fayl uğurla göstərildi |
+| 289 | `files_decrypted_successfully` | Files unhidden successfully | Fayllar uğurla göstərildi |
+| 290 | `decrypting_files` | Decrypting files… | Faylların şifrəsi açılır… |
+| 291 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | Zəhmət olmasa, barmağınızı barmaq izi sensoruna qoyun |
+| 292 | `connect_at_least_4_dots_prompt` | Connect at least 4 dots | Ən azı 4 nöqtəni birləşdirin |
+| 293 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | Mövcud Cipher_Secrets qovluğunuza daxil olmaq istəyirsiniz? |
+| 294 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | Mövcud Cipher_Secrets qovluğu silinəcək və yenisi yaradılacaq. Əminsiniz? |
+| 295 | `confirm_checkbox_label` | I confirm | Təsdiqləyirəm |
+| 296 | `secret_vault` | Secret Vault | Gizli Seyf |
+| 297 | `secret_vault_empty` | Secret Vault is empty | Gizli Seyf boşdur |
+| 298 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | Gizli faylın(ların) şifrəsini açmaq istədiyinizə əminsiniz? |
+| 299 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | Təhlükəsizlik məqsədilə seyf açıq olarkən mübadilə buferinə kopyalama deaktiv edilib. |
+| 300 | `on_vault_exit` | On leaving encrypted section | Şifrələnmiş bölmədən çıxarkən |
+| 301 | `on_vault_exit_keep_showing` | Keep showing encrypted albums | Şifrələnmiş albomları göstərməyə davam et |
+| 302 | `on_vault_exit_hide` | Hide encrypted albums | Şifrələnmiş albomları gizlət |
+| 303 | `on_vault_exit_ask_every_time` | Always ask | Hər dəfə soruş |
+| 304 | `vault_exit_dialog_title` | Exiting Encrypted Section | Şifrələnmiş Bölmədən Çıxış |
+| 305 | `vault_exit_question_single` | Show encrypted album together with other albums? | Şifrələnmiş albom digər albomlarla birlikdə göstərilsin? |
+| 306 | `vault_exit_question_multiple` | Show encrypted albums together with other albums? | Şifrələnmiş albomlar digər albomlarla birlikdə göstərilsin? |
+| 307 | `vault_exit_settings_hint` | For more options, see Settings &gt; On leaving encrypted section | Əlavə seçimlər üçün Parametrlər &gt; Şifrələnmiş bölmədən çıxarkən bölməsinə baxın |
+| 308 | `stop_showing_hidden` | Stop showing encrypted media | Şifrələnmiş medianı göstərməyi dayandır |
+| 309 | `system_default` | System default | Sistem (susmaya görə) |
+| 310 | `language` | Language | Dil |
+| 311 | `open_system_language_settings` | Open system language settings | Sistem dil parametrlərini aç |
+| 312 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | Gizli elementlərə biometrika ilə daxil ol |
+| 313 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | Zəhmət olmasa, əvvəlcə gizli elementlərin parolla qorunmasını aktivləşdirin |
+| 314 | `biometric_unlock_vault` | Unlock hidden vault | Gizli seyfin kilidini aç |
+| 315 | `biometric_unlock_prompt` | Verify your biometric identity to access hidden items | Gizli elementlərə daxil olmaq üçün biometrik kimliyinizi təsdiqləyin |
+| 316 | `biometric_setup_prompt` | Confirm your biometric identity to enable biometric vault access | Seyfə biometrik girişi aktivləşdirmək üçün biometrik kimliyinizi təsdiqləyin |
+| 317 | `use_password_or_pin` | Use PIN / Password | PIN / Paroldan istifadə et |
+| 318 | `biometric_key_invalidated` | Biometric credentials have changed. Please enter your PIN or password. | Biometrik məlumatlar dəyişdirilib. Zəhmət olmasa, PIN və ya parolunuzu daxil edin. |
+| 319 | `no_biometric_hardware_or_enrolled` | No biometric hardware or enrolled credentials found on this device | Bu cihazda biometrik avadanlıq və ya qeydiyyatdan keçmiş məlumat tapılmadı |
+| 320 | `default_hidden_album` | Default Hidden Album | Defolt Gizli Albom |
+| 321 | `select_hidden_album` | Select Hidden Album | Gizli Albom Seçin |
+| 322 | `create_new_hidden_album` | Create New Hidden Album | Yeni Gizli Albom Yarat |
+| 323 | `new_hidden_album` | New hidden album | Yeni gizli albom |
+| 324 | `hidden_album_name_empty` | Album name cannot be empty | Albom adı boş ola bilməz |
+| 325 | `file_hidden_to_album` | File hidden to \"%s\" | Fayl \"%s\" albomuna gizlədildi |
+| 326 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | %1$d fayl \"%2$s\" albomuna gizlədildi |
+| 327 | `restore_confirmation` (`one`) | Are you sure you want to restore %d file? | %d faylı bərpa etmək istədiyinizə əminsiniz? |
+| 328 | `restore_confirmation` (`other`) | Are you sure you want to restore %d files? | %d faylı bərpa etmək istədiyinizə əminsiniz? |
+| 329 | `failed_to_resize_images` (`one`) | Failed to resize %d image | %d şəklin ölçüsünü dəyişmək mümkün olmadı |
+| 330 | `failed_to_resize_images` (`other`) | Failed to resize %d images | %d şəklin ölçüsünü dəyişmək mümkün olmadı |
+| 331 | `search` *(fossify-commons)* | *(inherited from commons)* | Axtar |
+| 332 | `change_date_and_time_format` *(fossify-commons)* | Change date and time format | Tarix və saat formatını dəyiş |
+| 333 | `password_protect_file_deletion` *(fossify-commons)* | Password protect file deletion and moving | Faylların silinməsini və köçürülməsini parolla qoru |
+| 334 | `keep_last_modified` *(fossify-commons)* | Keep old last-modified value at file operations | Fayl əməliyyatlarında köhnə son dəyişdirilmə dəyərini qoru |
+| 335 | `clear_cache` *(fossify-commons)* | Clear cache | Keşi təmizlə |
+| 336 | `export_settings` *(fossify-commons)* | Export settings | Parametrləri ixrac et |
+| 337 | `import_settings` *(fossify-commons)* | Import settings | Parametrləri idxal et |
+| 338 | `temporarily_show_excluded` *(fossify-commons)* | Temporarily show excluded | İstisna edilmişləri müvəqqəti göstər |
+| 339 | `change_view_type` *(fossify-commons)* | Change view type | Görünüş növünü dəyiş |
+| 340 | `contributors` *(fossify-commons)* | Contributors | Töhfə verənlər |
+| 341 | `known_issues` *(fossify-commons)* | Known issues | Məlum problemlər |
+| 342 | `donate_to_fossify` *(fossify-commons)* | Donate to Fossify | Fossify-a ianə et |
+| 343 | `privacy_policy` *(fossify-commons)* | Privacy policy | Məxfilik siyasəti |
+| 344 | `create_shortcut` *(fossify-commons)* | Create shortcut | Qısayol yarat |
+| 345 | `print` *(fossify-commons)* | Print | Çap et |
+| 346 | `search_files` *(fossify-commons)* | Search files | Faylları axtar |
+| 347 | `search_folders` *(fossify-commons)* | Search folders | Qovluqları axtar |

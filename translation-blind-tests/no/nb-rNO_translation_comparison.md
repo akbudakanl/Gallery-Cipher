@@ -1,9 +1,9 @@
 # Norwegian Bokmål (values-nb-rNO) Translation Completion & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-nb-rNO/strings.xml` was audited against `app/src/main/res/values/strings.xml`. Three existing errors/typos were corrected, two multiline placeholders were normalized, and all 91 missing strings were translated into Norwegian Bokmål and added, bringing `values-nb-rNO` to full parity (307 `<string>` + 2 `<plurals>` + `search` inherited from `fossify-commons` = 310 resource entries; 312 total comparison rows with plural forms expanded).
+> **Scope:** `app/src/main/res/values-nb-rNO/strings.xml` was audited against `app/src/main/res/values/strings.xml`. Three existing errors/typos were corrected, two multiline placeholders were normalized, and all 91 missing strings were translated into Norwegian Bokmål and added, bringing `values-nb-rNO` to full parity (326 `<string>` + 2 `<plurals>` = 328 app resource entries; `search` and 14 shared UI keys from `fossify-commons`; 345 total comparison rows with plural forms expanded).
 > **Key Terminology:** `Settings` → `Innstillinger` · `Default` → `Standard` / `Systemstandard` · `Folder` → `Mappe` · `Album` → `Album` · `Secret Vault` → `Hemmelig hvelv` · `Hidden` → `Skjult` · `Excluded` → `Ekskludert` · `Password` → `Passord` · `Encrypt / Decrypt` → `Krypter / Dekrypter` · `Thumbnails` → `Minibilder` · `Recycle bin` → `Papirkurv` · `Clipboard` → `Utklippstavlen`
 
-## 1. Summary of Revisions & 91 Newly Added Norwegian Bokmål Translations
+## 1. Summary of Revisions & Newly Added Norwegian Bokmål Strings & Translations
 
 ### 1.1 Revisions to Previously Existing Translations
 
@@ -15,101 +15,147 @@
 | `included_activity_placeholder` | *(literal newlines around `\n`)* | `...\n\n...` | **Normalized** (Removed stray spaces caused by literal XML newlines) |
 | `excluded_activity_placeholder` | *(literal newlines around `\n`)* | `...\n\n...` | **Normalized** (Removed stray spaces caused by literal XML newlines) |
 
-### 1.2 Newly Added Translations (91 Keys)
+### 1.2 Newly Added Fork-Only Strings (63 Keys)
+
+These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
+
+| 1 | 1 | `video_double_tap_duration` | Double-tap seek duration | Video settings: double-tap forward/rewind seek interval |
+| 2 | 2 | `video_seek_duration_seconds` | %d seconds | Used with durations 3, 5, 10, 15 via String.format |
+| 3 | 3 | `create_virtual_album` | Create virtual album | Virtual albums section action |
+| 4 | 4 | `new_virtual_album` | New album… | Action label for creating a new virtual album |
+| 5 | 5 | `rename_virtual_album` | Rename album | Action label to rename a virtual album |
+| 6 | 6 | `album_name` | Album name | Input hint / label for album name |
+| 7 | 7 | `virtual_folder_name` | Virtual folder name | Input hint / label for virtual folder |
+| 8 | 8 | `virtual_album_name_empty` | The album name cannot be empty | Validation error when album name is empty |
+| 9 | 9 | `virtual_album_exists` | An album with this name already exists | Validation error when album name already exists |
+| 10 | 10 | `add_to_virtual_album` | Add to album | Menu action to add items to an album |
+| 11 | 11 | `remove_from_virtual_album` | Remove from album | Menu action to remove items from an album |
+| 12 | 12 | `added_to_virtual_album` | Added to \"%s\" | Toast message preserving \"%s\" |
+| 13 | 13 | `already_in_virtual_album` | Already in \"%s\" | Toast message preserving \"%s\" |
+| 14 | 14 | `removed_from_virtual_album` | Removed from the album | Toast message after removing items from an album |
+| 15 | 15 | `delete_virtual_album_confirmation` | Delete the album %s? Only the album is removed, your photos and videos stay where they are. | No extra quotes around %s (formatted with album name or count) |
+| 16 | 16 | `virtual_album_empty` | This album is empty. Select items in any folder and use \"Copy to\". | Empty state placeholder referencing "Kopier til" (Copy to) |
+| 17 | 17 | `virtual_album_cannot_be_modified` | This action is not available for virtual albums | Toast message when action is unsupported on virtual albums |
+| 18 | 18 | `alphanumeric_password` | Password | Password input label |
+| 19 | 19 | `repeat_password` | Repeat password | Password confirmation prompt |
+| 20 | 20 | `wrong_password` | Wrong password | Password validation error |
+| 21 | 21 | `encrypting_files` | Encrypting files… | Progress message |
+| 22 | 22 | `encrypting_folder` | Encrypting folder… | Progress message |
+| 23 | 23 | `folder_encrypted_successfully` | Folder encrypted successfully | Success message |
+| 24 | 24 | `decrypting_folder` | Decrypting folder… | Progress message |
+| 25 | 25 | `folder_decrypted_successfully` | Folder decrypted successfully | Success message |
+| 26 | 26 | `decrypting_files` | Decrypting files… | Progress message |
+| 27 | 27 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | Fingerprint authentication prompt |
+| 28 | 28 | `connect_at_least_4_dots_prompt` | Connect at least 4 dots | Pattern lock validation prompt |
+| 29 | 29 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | Keeps literal folder name Cipher_Secrets |
+| 30 | 30 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | Keeps literal folder name Cipher_Secrets |
+| 31 | 31 | `confirm_checkbox_label` | I confirm | Checkbox label, suffixed with countdown (10) in dialog |
+| 32 | 32 | `secret_vault` | Secret Vault | Vault feature title ("Hemmelig hvelv") |
+| 33 | 33 | `secret_vault_empty` | Secret Vault is empty | Empty state placeholder for Secret Vault |
+| 34 | 34 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | Confirmation prompt for singular/plural file(s) |
+| 35 | 35 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | Security notice while vault is unlocked |
+| 36 | 36 | `on_vault_exit` | On leaving encrypted section | Settings label for behavior when leaving encrypted section |
+| 37 | 37 | `on_vault_exit_keep_showing` | Keep showing encrypted albums | Radio option |
+| 38 | 38 | `on_vault_exit_hide` | Hide encrypted albums | Radio option |
+| 39 | 39 | `on_vault_exit_ask_every_time` | Always ask | Radio option |
+| 40 | 40 | `vault_exit_dialog_title` | Exiting Encrypted Section | Dialog title |
+| 41 | 41 | `vault_exit_question_single` | Show encrypted album together with other albums? | Dialog question (single album) |
+| 42 | 42 | `vault_exit_question_multiple` | Show encrypted albums together with other albums? | Dialog question (multiple albums) |
+| 43 | 43 | `vault_exit_settings_hint` | For more options, see Settings &gt; On leaving encrypted section | References Innstillinger > Når du forlater kryptert seksjon |
+| 44 | 63 | `open_system_language_settings` | Open system language settings | Fork-only addition: opens the device language picker (not in the original Fossify Gallery) |
+| 45 | 44 | `file_encrypted_successfully` | File hidden successfully | Success toast after encrypting/hiding a single file |
+| 46 | 45 | `files_encrypted_successfully` | Files hidden successfully | Success toast after encrypting/hiding multiple files |
+| 47 | 46 | `file_decrypted_successfully` | File unhidden successfully | Success toast after decrypting/unhiding a single file |
+| 48 | 47 | `files_decrypted_successfully` | Files unhidden successfully | Success toast after decrypting/unhiding multiple files |
+| 49 | 48 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | Settings switch, setup prompt title, and vault security dialog button |
+| 50 | 49 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | Toast shown when enabling biometrics before hidden-item password protection |
+| 51 | 50 | `biometric_unlock_vault` | Unlock hidden vault | BiometricPrompt title when unlocking the hidden vault |
+| 52 | 51 | `biometric_unlock_prompt` | Verify your biometric identity to access hidden items | BiometricPrompt subtitle when unlocking hidden items |
+| 53 | 52 | `biometric_setup_prompt` | Confirm your biometric identity to enable biometric vault access | BiometricPrompt subtitle when enabling biometric vault access |
+| 54 | 53 | `use_password_or_pin` | Use PIN / Password | BiometricPrompt negative button to fall back to PIN/password |
+| 55 | 54 | `biometric_key_invalidated` | Biometric credentials have changed. Please enter your PIN or password. | Toast shown when biometric credentials changed and Keystore key invalidated |
+| 56 | 55 | `no_biometric_hardware_or_enrolled` | No biometric hardware or enrolled credentials found on this device | Toast shown when no biometric hardware or enrolled credentials exist |
+| 57 | 56 | `default_hidden_album` | Default Hidden Album | Settings / picker label for default hidden album |
+| 58 | 57 | `select_hidden_album` | Select Hidden Album | Dialog title for choosing target hidden album |
+| 59 | 58 | `create_new_hidden_album` | Create New Hidden Album | Action label to create a new hidden album |
+| 60 | 59 | `new_hidden_album` | New hidden album | Input hint / default label for new hidden album |
+| 61 | 60 | `hidden_album_name_empty` | Album name cannot be empty | Validation error when hidden album name is blank |
+| 62 | 61 | `file_hidden_to_album` | File hidden to \"%s\" | Success toast after hiding a single file into album `%s` |
+| 63 | 62 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | Success toast after hiding `%1$d` files into album `%2$s` |
+### 1.3 Newly Added Translations for Strings Already Present in the Original Fossify Gallery (45 Keys)
+
+These 45 strings already exist in the original Fossify Gallery (upstream); only the translations below were newly added in this fork:
 
 | # | Key (`name`) | English (`values/strings.xml`) | Norwegian Bokmål (`values-nb-rNO/strings.xml`) | Notes |
 |---:|---|---|---|---|
 | 1 | `cant_unhide_folder` | If a folder or one of its parent folders has a dot before its name, it is hidden and cannot be unhidden like this. You have to remove the dot by renaming it. | Hvis en mappe eller en av dens overordnede mapper har et punktum foran navnet, er den skjult og kan ikke vises igjen på denne måten. Du må fjerne punktumet ved å gi den nytt navn. | Explanation of dot-prefixed hidden folders |
 | 2 | `fade` | Fade | Uttoning | Slideshow transition animation option |
 | 3 | `slide` | Slide | Glidning | Slideshow transition animation option |
-| 4 | `video_double_tap_duration` | Double-tap seek duration | Søketid ved dobbelttrykk | Video settings: double-tap forward/rewind seek interval |
-| 5 | `video_seek_duration_seconds` | %d seconds | %d sekunder | Used with durations 3, 5, 10, 15 via String.format |
-| 6 | `render_ultra_hdr_photos` | Show Ultra HDR photos in HDR | Vis Ultra HDR-bilder i HDR | Media settings: render Ultra HDR photos in HDR |
-| 7 | `media_management_manual` | Something went wrong, please go into your device Settings - Apps - Special app access - Media management apps and allow this app to manage media. | Noe gikk galt. Gå til enhetens Innstillinger – Apper – Spesiell apptilgang – Apper for mediaadministrasjon, og tillat at denne appen administrerer media. | Error fallback directing user to Android Special app access settings |
-| 8 | `media_management_note` | If the redirection does not work, please go into your device Settings - Apps - Special app access - Media management apps and allow this app to manage media. | Hvis omdirigeringen ikke fungerer, gå til enhetens Innstillinger – Apper – Spesiell apptilgang – Apper for mediaadministrasjon, og tillat at denne appen administrerer media. | Redirect fallback note for Media management apps permission |
-| 9 | `media_management_alternative` | If you do not want to do it, you can also go into your device Settings - Apps - Special app access - Media management apps and allow this app to manage media. | Hvis du ikke vil gjøre det, kan du også gå til enhetens Innstillinger – Apper – Spesiell apptilgang – Apper for mediaadministrasjon, og tillat at denne appen administrerer media. | Alternative instructions for Media management apps permission |
-| 10 | `failed_to_load_media` | Failed to load media. | Kunne ikke laste inn media. | Media viewer error message |
-| 11 | `file_is_malformed_or_corrupted` | File is malformed or corrupted. | Filen er ugyldig eller ødelagt. | Media player/viewer error message |
-| 12 | `media_exceeds_device_capabilities` | Media exceeds device capabilities. | Mediet overstiger enhetens kapasitet. | Media player/viewer error message |
-| 13 | `faq_1_title` | How can I make Fossify Gallery the default device gallery? | Hvordan kan jeg gjøre Fossify Gallery til enhetens standardgalleri? | FAQ 1 question |
-| 14 | `faq_1_text` | First you have to find the currently default gallery in the Apps section of your device settings, look for a button that says something like \"Open by default\", click on it, then select \"Clear defaults\".         The next time you will try opening an image or video you should see an app picker, where you can select Fossify Gallery and make it the default app. | Først må du finne det nåværende standardgalleriet i Apper-delen av enhetsinnstillingene, se etter en knapp som heter noe slikt som \"Åpne som standard\", trykke på den og deretter velge \"Fjern standardvalg\".\nNeste gang du prøver å åpne et bilde eller en video, skal du se en appvelger der du kan velge Fossify Gallery og gjøre den til standardapp. | FAQ 1 answer; matches standard Norwegian Android settings labels |
-| 15 | `faq_2_title` | I locked the app with a password, but I forgot it. What can I do? | Jeg låste appen med et passord, men jeg har glemt det. Hva kan jeg gjøre? | FAQ 2 question |
-| 16 | `faq_2_text` | You can solve it in 2 ways. You can either reinstall the app, or find the app in your device settings and select \"Clear data\". It will reset all your settings, it will not remove any media files. | Du kan løse det på to måter. Du kan enten installere appen på nytt, eller finne appen i enhetsinnstillingene og velge \"Slett data\". Det vil tilbakestille alle innstillingene dine, men det vil ikke fjerne noen mediafiler. | FAQ 2 answer |
-| 17 | `faq_3_title` | How can I make an album always appear at the top? | Hvordan kan jeg få et album til å alltid vises øverst? | FAQ 3 question |
-| 18 | `faq_3_text` | You can long press the desired album and select the Pin icon at the actions menu, that will pin it to the top. You can pin multiple folders too, pinned items will be sorted by the default sorting method. | Du kan trykke og holde på ønsket album og velge Fest-ikonet i handlingsmenyen for å feste det til toppen. Du kan også feste flere mapper; festede elementer blir sortert etter standard sorteringsmetode. | FAQ 3 answer; matches "Fest" terminology |
-| 19 | `faq_4_title` | How can I fast forward videos? | Hvordan kan jeg spole fremover i videoer? | FAQ 4 question |
-| 20 | `faq_4_text` | You can do it by double tapping the side of the screen, or tapping the current or max duration texts near the seekbar. If you enable opening videos on a separate screen in the app settings, you can use horizontal gestures too. | Du kan gjøre det ved å dobbelttrykke på siden av skjermen, eller trykke på teksten for nåværende eller maksimal varighet nær søkelinjen. Hvis du aktiverer avspilling av videoer på en separat skjerm i appinnstillingene, kan du også bruke horisontale bevegelser. | FAQ 4 answer |
-| 21 | `faq_5_title` | What is the difference between hiding and excluding a folder? | Hva er forskjellen mellom å skjule og å ekskludere en mappe? | FAQ 5 question |
-| 22 | `faq_5_text` | Exclude prevents displaying the folder only in Fossify Gallery, while Hide works system-wise and it hides the folder from other galleries too. It works by creating an empty \".nomedia\" file in the given folder, which you can then remove with any file manager too. Note that some devices do not allow hiding folders like Camera, Screenshots and Downloads. | Ekskluder hindrer at mappen vises kun i Fossify Gallery, mens Skjul fungerer på systemnivå og skjuler mappen også for andre gallerier. Det fungerer ved å opprette en tom \".nomedia\"-fil i den aktuelle mappen, som du også kan fjerne med en hvilken som helst filbehandler. Merk at enkelte enheter ikke tillater å skjule mapper som Camera, Screenshots og Downloads. | FAQ 5 answer; keeps folder names Camera, Screenshots, Downloads literal |
-| 23 | `faq_6_title` | Why do folders with music cover art or stickers show up? | Hvorfor vises mapper med plateomslag eller klistremerker? | FAQ 6 question |
-| 24 | `faq_6_text` | It can happen that you will see some unusual albums show up. You can easily exclude them by long pressing them and selecting Exclude. In the next dialog you can then select the parent folder, chances are it will prevent the other related albums showing up too. | Det kan skje at uvanlige album dukker opp. Du kan enkelt ekskludere dem ved å trykke og holde på dem og velge Ekskluder. I den neste dialogen kan du så velge den overordnede mappen, noe som sannsynligvis også vil hindre at andre relaterte album vises. | FAQ 6 answer |
-| 25 | `faq_7_title` | A folder with images isn\'t showing up, or it doesn\'t show all items.  What can I do? | En mappe med bilder vises ikke, eller den viser ikke alle elementer. Hva kan jeg gjøre? | FAQ 7 question |
-| 26 | `faq_7_text` | That can have multiple reasons, but solving it is easy. Just go in Settings -&gt; Manage Included Folders, select Plus and navigate to the required folder. | Det kan ha flere årsaker, men det er enkelt å løse. Bare gå til Innstillinger -&gt; Håndter inkluderte mapper, velg Pluss og naviger til ønsket mappe. | FAQ 7 answer; matches "Håndter inkluderte mapper" |
-| 27 | `faq_8_title` | What if I want just a few particular folders visible? | Hva om jeg bare vil at noen bestemte mapper skal være synlige? | FAQ 8 question |
-| 28 | `faq_8_text` | Adding a folder at the Included Folders doesn\'t automatically exclude anything. What you can do is go in Settings -&gt; Manage Excluded Folders, exclude the root folder \"/\", then add the desired folders at Settings -&gt; Manage Included Folders.         That will make only the selected folders visible, as both excluding and including are recursive and if a folder is both excluded and included, it will show up. | Å legge til en mappe under Inkluderte mapper ekskluderer ikke automatisk noe annet. Det du kan gjøre er å gå til Innstillinger -&gt; Håndter ekskluderte mapper, ekskludere rotmappen \"/\", og deretter legge til ønskede mapper under Innstillinger -&gt; Håndter inkluderte mapper.\nDet vil gjøre bare de valgte mappene synlige, siden både ekskludering og inkludering er rekursive, og hvis en mappe både er ekskludert og inkludert, vil den vises. | FAQ 8 answer; matches "Håndter ekskluderte/inkluderte mapper" |
-| 29 | `faq_10_title` | Can I crop images with this app? | Kan jeg beskjære bilder med denne appen? | FAQ 10 question |
-| 30 | `faq_10_text` | Yes, you can crop images in the editor, by dragging the image corners. You can get to the editor either by long pressing an image thumbnail and selecting Edit, or selecting Edit from the fullscreen view. | Ja, du kan beskjære bilder i redigeringsverktøyet ved å dra i bildehjørnene. Du kommer til redigeringsverktøyet enten ved å trykke og holde på et minibilde og velge Rediger, eller ved å velge Rediger fra fullskjermvisningen. | FAQ 10 answer |
-| 31 | `faq_11_title` | Can I somehow group media file thumbnails? | Kan jeg på noen måte gruppere minibilder av mediafiler? | FAQ 11 question |
-| 32 | `faq_11_text` | Sure, just use the \"Group by\" menu item while at the thumbnails view. You can group files by multiple criteria, including Date Taken. If you use the \"Show all folders content\" function you can group them by folders too. | Selvfølgelig, bare bruk menyelementet \"Grupper etter\" når du er i minibildevisningen. Du kan gruppere filer etter flere kriterier, inkludert Dato tatt. Hvis du bruker funksjonen \"Vis alle mappers innhold\", kan du også gruppere dem etter mapper. | FAQ 11 answer; matches "Grupper etter", "Dato tatt", "Vis alle mappers innhold" |
-| 33 | `faq_12_title` | Sorting by Date Taken doesn\'t seem to work properly, how can I fix it? | Sortering etter Dato tatt ser ikke ut til å fungere skikkelig, hvordan kan jeg fikse det? | FAQ 12 question |
-| 34 | `faq_12_text` | It is most likely caused by the files being copied from somewhere. You can fix it by selecting the file thumbnails and selecting \"Fix Date Taken value\". | Det skyldes sannsynligvis at filene er kopiert fra et annet sted. Du kan fikse det ved å merke minibildene og velge \"Korriger Dato tatt-verdi\". | FAQ 12 answer; matches "Korriger Dato tatt-verdi" and "minibilder" |
-| 35 | `faq_13_title` | I see some color banding on the images. How can I improve the quality? | Jeg ser fargebånd på bildene. Hvordan kan jeg forbedre kvaliteten? | FAQ 13 question |
-| 36 | `faq_13_text` | The current solution for displaying images works fine in the vast majority of cases, but if you want even better image quality, you can enable the \"Show images in the highest possible quality\" at the app settings, in the \"Deep zoomable images\" section. | Den nåværende løsningen for bildevisning fungerer fint i de aller fleste tilfeller, men hvis du ønsker enda bedre bildekvalitet, kan du aktivere \"Vis bilder i høyest mulig kvalitet\" i appinnstillingene under delen \"Dyp zoombare bilder\". | FAQ 13 answer; matches "Vis bilder i høyest mulig kvalitet" and "Dyp zoombare bilder" |
-| 37 | `faq_14_title` | I have hidden a file/folder. How can I unhide it? | Jeg har skjult en fil/mappe. Hvordan kan jeg gjøre den synlig igjen? | FAQ 14 question |
-| 38 | `faq_14_text` | You can either press the \"Temporarily show hidden items\" menu item at the main screen, or toggle \"Show hidden items\" in the app settings to see the hidden item. If you want to unhide it, just long press it and select \"Unhide\". Folders are hidden by adding a hidden \".nomedia\" file into them, you can delete the file with any file manager too. Note that hiding works recursively though, so if you hide a folder, all subfolders will become hidden too. So for unhiding the subfolders you have to unhide the parent folder. | Du kan enten trykke på menyelementet \"Vis skjulte elementer midlertidig\" på hovedskjermen, eller slå på \"Vis skjulte elementer\" i appinnstillingene for å se det skjulte elementet. Hvis du vil gjøre det synlig igjen, trykker og holder du bare på det og velger \"Vis igjen\". Mapper skjules ved å legge til en skjult \".nomedia\"-fil i dem; du kan også slette denne filen med en hvilken som helst filbehandler. Merk imidlertid at skjuling fungerer rekursivt, så hvis du skjuler en mappe, blir alle undermapper også skjult. For å gjøre undermappene synlige igjen må du derfor gjøre den overordnede mappen synlig igjen. | FAQ 14 answer |
-| 39 | `faq_15_title` | Why does the app take up so much space? | Hvorfor tar appen opp så mye plass? | FAQ 15 question |
-| 40 | `faq_15_text` | App cache can take up to 250MB, it ensures quicker image loading. If the app is taking up even more space, it is most likely caused by you having items in the recycle bin. Those files count to the app size. You can clear the recycle bin by opening it and deleting all files, or from the app settings. Every file in the bin is deleted automatically after 30 days. | Appens hurtigbuffer kan ta opptil 250 MB; den sørger for raskere innlasting av bilder. Hvis appen tar opp enda mer plass, skyldes det sannsynligvis at du har elementer i papirkurven. Disse filene teller med i appstørrelsen. Du kan tømme papirkurven ved å åpne den og slette alle filer, eller fra appinnstillingene. Hver fil i papirkurven slettes automatisk etter 30 dager. | FAQ 15 answer; matches "papirkurven" |
-| 41 | `faq_16_title` | What happened to file and folder hiding and why cannot I see hidden items anymore? | Hva skjedde med skjuling av filer og mapper, og hvorfor kan jeg ikke se skjulte elementer lenger? | FAQ 16 question (faq_16_text was already present) |
-| 42 | `faq_16_text_extra` | Or you can also grant this gallery access to All Files through your device settings, that will allow us showing hidden items and make file operations more reliable in general. | Eller du kan også gi dette galleriet tilgang til Alle filer via enhetsinnstillingene; det lar oss vise skjulte elementer og gjør filoperasjoner mer pålitelige generelt. | FAQ 16 follow-up regarding All Files access |
-| 43 | `faq_17_title` | Why cannot I include missing folders anymore? | Hvorfor kan jeg ikke inkludere manglende mapper lenger? | FAQ 17 question |
-| 44 | `faq_17_text` | That stopped working due to the system changes that came with Android 11 too, the app cannot browse real folders anymore, it relies on the so called MediaStore at fetching data. | Det sluttet også å fungere på grunn av systemendringene som kom med Android 11; appen kan ikke lenger bla gjennom ekte mapper, men er avhengig av såkalte MediaStore for å hente data. | FAQ 17 answer; keeps MediaStore literal |
-| 45 | `faq_18_title` | Why do I see ads during video playback? | Hvorfor ser jeg reklame under videoavspilling? | FAQ 18 question |
-| 46 | `faq_18_text` | Our apps have no ads whatsoever. If you see them during video playback, you must be using some other apps video player. Try finding your default video player in the device settings, then do a \"Clear defaults\" on it. The next time you invoke some video intent you will see an app picker prompt, where you can select what app you want to use. | Appene våre har ingen reklame overhodet. Hvis du ser reklame under videoavspilling, bruker du sannsynligvis videospilleren til en annen app. Prøv å finne standard videospiller i enhetsinnstillingene, og velg \"Fjern standardvalg\" på den. Neste gang du åpner en video, vil du se en appvelger der du kan velge hvilken app du vil bruke. | FAQ 18 answer |
-| 47 | `create_virtual_album` | Create virtual album | Opprett virtuelt album | Virtual albums section action |
-| 48 | `new_virtual_album` | New album… | Nytt album… | Action label for creating a new virtual album |
-| 49 | `rename_virtual_album` | Rename album | Gi albumet nytt navn | Action label to rename a virtual album |
-| 50 | `album_name` | Album name | Albumnavn | Input hint / label for album name |
-| 51 | `virtual_folder_name` | Virtual folder name | Navn på virtuell mappe | Input hint / label for virtual folder |
-| 52 | `virtual_album_name_empty` | The album name cannot be empty | Albumnavnet kan ikke være tomt | Validation error when album name is empty |
-| 53 | `virtual_album_exists` | An album with this name already exists | Et album med dette navnet finnes allerede | Validation error when album name already exists |
-| 54 | `add_to_virtual_album` | Add to album | Legg til i album | Menu action to add items to an album |
-| 55 | `remove_from_virtual_album` | Remove from album | Fjern fra album | Menu action to remove items from an album |
-| 56 | `added_to_virtual_album` | Added to \"%s\" | Lagt til i \"%s\" | Toast message preserving \"%s\" |
-| 57 | `already_in_virtual_album` | Already in \"%s\" | Allerede i \"%s\" | Toast message preserving \"%s\" |
-| 58 | `removed_from_virtual_album` | Removed from the album | Fjernet fra albumet | Toast message after removing items from an album |
-| 59 | `delete_virtual_album_confirmation` | Delete the album %s? Only the album is removed, your photos and videos stay where they are. | Slette albumet %s? Bare albumet fjernes, bildene og videoene dine forblir der de er. | No extra quotes around %s (formatted with album name or count) |
-| 60 | `virtual_album_empty` | This album is empty. Select items in any folder and use \"Copy to\". | Dette albumet er tomt. Velg elementer i en hvilken som helst mappe og bruk \"Kopier til\". | Empty state placeholder referencing "Kopier til" (Copy to) |
-| 61 | `virtual_album_cannot_be_modified` | This action is not available for virtual albums | Denne handlingen er ikke tilgjengelig for virtuelle album | Toast message when action is unsupported on virtual albums |
-| 62 | `alphanumeric_password` | Password | Passord | Password input label |
-| 63 | `enter_password` | Enter password | Skriv inn passord | Password prompt |
-| 64 | `repeat_password` | Repeat password | Gjenta passord | Password confirmation prompt |
-| 65 | `wrong_password` | Wrong password | Feil passord | Password validation error |
-| 66 | `encrypting_files` | Encrypting files… | Krypterer filer… | Progress message |
-| 67 | `encrypting_folder` | Encrypting folder… | Krypterer mappe… | Progress message |
-| 68 | `folder_encrypted_successfully` | Folder encrypted successfully | Mappen ble kryptert | Success message |
-| 69 | `decrypting_folder` | Decrypting folder… | Dekrypterer mappe… | Progress message |
-| 70 | `folder_decrypted_successfully` | Folder decrypted successfully | Mappen ble dekryptert | Success message |
-| 71 | `decrypting_files` | Decrypting files… | Dekrypterer filer… | Progress message |
-| 72 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | Plasser fingeren på fingeravtrykkssensoren | Fingerprint authentication prompt |
-| 73 | `connect_at_least_4_dots_prompt` | Connect at least 4 dots | Koble sammen minst 4 punkter | Pattern lock validation prompt |
-| 74 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | Vil du få tilgang til din eksisterende Cipher_Secrets-mappe? | Keeps literal folder name Cipher_Secrets |
-| 75 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | Eksisterende Cipher_Secrets-mappe vil bli slettet og en ny vil bli opprettet. Er du sikker? | Keeps literal folder name Cipher_Secrets |
-| 76 | `confirm_checkbox_label` | I confirm | Jeg bekrefter | Checkbox label, suffixed with countdown (10) in dialog |
-| 77 | `secret_vault` | Secret Vault | Hemmelig hvelv | Vault feature title ("Hemmelig hvelv") |
-| 78 | `secret_vault_empty` | Secret Vault is empty | Det hemmelige hvelvet er tomt | Empty state placeholder for Secret Vault |
-| 79 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | Er du sikker på at du vil dekryptere de(n) skjulte filen(e)? | Confirmation prompt for singular/plural file(s) |
-| 80 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | Kopiering til utklippstavlen er deaktivert av sikkerhetshensyn mens hvelvet er låst opp. | Security notice while vault is unlocked |
-| 81 | `on_vault_exit` | On leaving hidden section | Når du forlater skjult seksjon | Settings label for behavior when leaving hidden section |
-| 82 | `on_vault_exit_keep_showing_all` | Keep showing all hidden albums | Fortsett å vise alle skjulte album | Radio option |
-| 83 | `on_vault_exit_show_encrypted_only` | Only show encrypted albums | Vis kun krypterte album | Radio option |
-| 84 | `on_vault_exit_show_other_only` | Only show other hidden albums | Vis kun andre skjulte album | Radio option |
-| 85 | `on_vault_exit_hide_all` | Hide all hidden albums | Skjul alle skjulte album | Radio option |
-| 86 | `on_vault_exit_ask_every_time` | Always ask | Spør alltid | Radio option |
-| 87 | `vault_exit_dialog_title` | Exiting Hidden Section | Forlater skjult seksjon | Dialog title |
-| 88 | `vault_exit_keep_showing` | Keep showing hidden albums | Fortsett å vise skjulte album | Dialog radio option |
-| 89 | `vault_exit_hide` | Hide hidden albums | Skjul skjulte album | Dialog radio option |
-| 90 | `vault_exit_remember_my_choice` | Remember my choice | Husk valget mitt | Dialog checkbox label |
-| 91 | `vault_exit_settings_hint` | For more options, see Settings &gt; On leaving hidden section | For flere alternativer, se Innstillinger &gt; Når du forlater skjult seksjon | References Innstillinger > Når du forlater skjult seksjon |
+| 4 | `render_ultra_hdr_photos` | Show Ultra HDR photos in HDR | Vis Ultra HDR-bilder i HDR | Media settings: render Ultra HDR photos in HDR |
+| 5 | `media_management_manual` | Something went wrong, please go into your device Settings - Apps - Special app access - Media management apps and allow this app to manage media. | Noe gikk galt. Gå til enhetens Innstillinger – Apper – Spesiell apptilgang – Apper for mediaadministrasjon, og tillat at denne appen administrerer media. | Error fallback directing user to Android Special app access settings |
+| 6 | `media_management_note` | If the redirection does not work, please go into your device Settings - Apps - Special app access - Media management apps and allow this app to manage media. | Hvis omdirigeringen ikke fungerer, gå til enhetens Innstillinger – Apper – Spesiell apptilgang – Apper for mediaadministrasjon, og tillat at denne appen administrerer media. | Redirect fallback note for Media management apps permission |
+| 7 | `media_management_alternative` | If you do not want to do it, you can also go into your device Settings - Apps - Special app access - Media management apps and allow this app to manage media. | Hvis du ikke vil gjøre det, kan du også gå til enhetens Innstillinger – Apper – Spesiell apptilgang – Apper for mediaadministrasjon, og tillat at denne appen administrerer media. | Alternative instructions for Media management apps permission |
+| 8 | `failed_to_load_media` | Failed to load media. | Kunne ikke laste inn media. | Media viewer error message |
+| 9 | `file_is_malformed_or_corrupted` | File is malformed or corrupted. | Filen er ugyldig eller ødelagt. | Media player/viewer error message |
+| 10 | `media_exceeds_device_capabilities` | Media exceeds device capabilities. | Mediet overstiger enhetens kapasitet. | Media player/viewer error message |
+| 11 | `faq_1_title` | How can I make Fossify Gallery the default device gallery? | Hvordan kan jeg gjøre Fossify Gallery til enhetens standardgalleri? | FAQ 1 question |
+| 12 | `faq_1_text` | First you have to find the currently default gallery in the Apps section of your device settings, look for a button that says something like \"Open by default\", click on it, then select \"Clear defaults\".         The next time you will try opening an image or video you should see an app picker, where you can select Fossify Gallery and make it the default app. | Først må du finne det nåværende standardgalleriet i Apper-delen av enhetsinnstillingene, se etter en knapp som heter noe slikt som \"Åpne som standard\", trykke på den og deretter velge \"Fjern standardvalg\".\nNeste gang du prøver å åpne et bilde eller en video, skal du se en appvelger der du kan velge Fossify Gallery og gjøre den til standardapp. | FAQ 1 answer; matches standard Norwegian Android settings labels |
+| 13 | `faq_2_title` | I locked the app with a password, but I forgot it. What can I do? | Jeg låste appen med et passord, men jeg har glemt det. Hva kan jeg gjøre? | FAQ 2 question |
+| 14 | `faq_2_text` | You can solve it in 2 ways. You can either reinstall the app, or find the app in your device settings and select \"Clear data\". It will reset all your settings, it will not remove any media files. | Du kan løse det på to måter. Du kan enten installere appen på nytt, eller finne appen i enhetsinnstillingene og velge \"Slett data\". Det vil tilbakestille alle innstillingene dine, men det vil ikke fjerne noen mediafiler. | FAQ 2 answer |
+| 15 | `faq_3_title` | How can I make an album always appear at the top? | Hvordan kan jeg få et album til å alltid vises øverst? | FAQ 3 question |
+| 16 | `faq_3_text` | You can long press the desired album and select the Pin icon at the actions menu, that will pin it to the top. You can pin multiple folders too, pinned items will be sorted by the default sorting method. | Du kan trykke og holde på ønsket album og velge Fest-ikonet i handlingsmenyen for å feste det til toppen. Du kan også feste flere mapper; festede elementer blir sortert etter standard sorteringsmetode. | FAQ 3 answer; matches "Fest" terminology |
+| 17 | `faq_4_title` | How can I fast forward videos? | Hvordan kan jeg spole fremover i videoer? | FAQ 4 question |
+| 18 | `faq_4_text` | You can do it by double tapping the side of the screen, or tapping the current or max duration texts near the seekbar. If you enable opening videos on a separate screen in the app settings, you can use horizontal gestures too. | Du kan gjøre det ved å dobbelttrykke på siden av skjermen, eller trykke på teksten for nåværende eller maksimal varighet nær søkelinjen. Hvis du aktiverer avspilling av videoer på en separat skjerm i appinnstillingene, kan du også bruke horisontale bevegelser. | FAQ 4 answer |
+| 19 | `faq_5_title` | What is the difference between hiding and excluding a folder? | Hva er forskjellen mellom å skjule og å ekskludere en mappe? | FAQ 5 question |
+| 20 | `faq_5_text` | Exclude prevents displaying the folder only in Fossify Gallery, while Hide works system-wise and it hides the folder from other galleries too. It works by creating an empty \".nomedia\" file in the given folder, which you can then remove with any file manager too. Note that some devices do not allow hiding folders like Camera, Screenshots and Downloads. | Ekskluder hindrer at mappen vises kun i Fossify Gallery, mens Skjul fungerer på systemnivå og skjuler mappen også for andre gallerier. Det fungerer ved å opprette en tom \".nomedia\"-fil i den aktuelle mappen, som du også kan fjerne med en hvilken som helst filbehandler. Merk at enkelte enheter ikke tillater å skjule mapper som Camera, Screenshots og Downloads. | FAQ 5 answer; keeps folder names Camera, Screenshots, Downloads literal |
+| 21 | `faq_6_title` | Why do folders with music cover art or stickers show up? | Hvorfor vises mapper med plateomslag eller klistremerker? | FAQ 6 question |
+| 22 | `faq_6_text` | It can happen that you will see some unusual albums show up. You can easily exclude them by long pressing them and selecting Exclude. In the next dialog you can then select the parent folder, chances are it will prevent the other related albums showing up too. | Det kan skje at uvanlige album dukker opp. Du kan enkelt ekskludere dem ved å trykke og holde på dem og velge Ekskluder. I den neste dialogen kan du så velge den overordnede mappen, noe som sannsynligvis også vil hindre at andre relaterte album vises. | FAQ 6 answer |
+| 23 | `faq_7_title` | A folder with images isn\'t showing up, or it doesn\'t show all items.  What can I do? | En mappe med bilder vises ikke, eller den viser ikke alle elementer. Hva kan jeg gjøre? | FAQ 7 question |
+| 24 | `faq_7_text` | That can have multiple reasons, but solving it is easy. Just go in Settings -&gt; Manage Included Folders, select Plus and navigate to the required folder. | Det kan ha flere årsaker, men det er enkelt å løse. Bare gå til Innstillinger -&gt; Håndter inkluderte mapper, velg Pluss og naviger til ønsket mappe. | FAQ 7 answer; matches "Håndter inkluderte mapper" |
+| 25 | `faq_8_title` | What if I want just a few particular folders visible? | Hva om jeg bare vil at noen bestemte mapper skal være synlige? | FAQ 8 question |
+| 26 | `faq_8_text` | Adding a folder at the Included Folders doesn\'t automatically exclude anything. What you can do is go in Settings -&gt; Manage Excluded Folders, exclude the root folder \"/\", then add the desired folders at Settings -&gt; Manage Included Folders.         That will make only the selected folders visible, as both excluding and including are recursive and if a folder is both excluded and included, it will show up. | Å legge til en mappe under Inkluderte mapper ekskluderer ikke automatisk noe annet. Det du kan gjøre er å gå til Innstillinger -&gt; Håndter ekskluderte mapper, ekskludere rotmappen \"/\", og deretter legge til ønskede mapper under Innstillinger -&gt; Håndter inkluderte mapper.\nDet vil gjøre bare de valgte mappene synlige, siden både ekskludering og inkludering er rekursive, og hvis en mappe både er ekskludert og inkludert, vil den vises. | FAQ 8 answer; matches "Håndter ekskluderte/inkluderte mapper" |
+| 27 | `faq_10_title` | Can I crop images with this app? | Kan jeg beskjære bilder med denne appen? | FAQ 10 question |
+| 28 | `faq_10_text` | Yes, you can crop images in the editor, by dragging the image corners. You can get to the editor either by long pressing an image thumbnail and selecting Edit, or selecting Edit from the fullscreen view. | Ja, du kan beskjære bilder i redigeringsverktøyet ved å dra i bildehjørnene. Du kommer til redigeringsverktøyet enten ved å trykke og holde på et minibilde og velge Rediger, eller ved å velge Rediger fra fullskjermvisningen. | FAQ 10 answer |
+| 29 | `faq_11_title` | Can I somehow group media file thumbnails? | Kan jeg på noen måte gruppere minibilder av mediafiler? | FAQ 11 question |
+| 30 | `faq_11_text` | Sure, just use the \"Group by\" menu item while at the thumbnails view. You can group files by multiple criteria, including Date Taken. If you use the \"Show all folders content\" function you can group them by folders too. | Selvfølgelig, bare bruk menyelementet \"Grupper etter\" når du er i minibildevisningen. Du kan gruppere filer etter flere kriterier, inkludert Dato tatt. Hvis du bruker funksjonen \"Vis alle mappers innhold\", kan du også gruppere dem etter mapper. | FAQ 11 answer; matches "Grupper etter", "Dato tatt", "Vis alle mappers innhold" |
+| 31 | `faq_12_title` | Sorting by Date Taken doesn\'t seem to work properly, how can I fix it? | Sortering etter Dato tatt ser ikke ut til å fungere skikkelig, hvordan kan jeg fikse det? | FAQ 12 question |
+| 32 | `faq_12_text` | It is most likely caused by the files being copied from somewhere. You can fix it by selecting the file thumbnails and selecting \"Fix Date Taken value\". | Det skyldes sannsynligvis at filene er kopiert fra et annet sted. Du kan fikse det ved å merke minibildene og velge \"Korriger Dato tatt-verdi\". | FAQ 12 answer; matches "Korriger Dato tatt-verdi" and "minibilder" |
+| 33 | `faq_13_title` | I see some color banding on the images. How can I improve the quality? | Jeg ser fargebånd på bildene. Hvordan kan jeg forbedre kvaliteten? | FAQ 13 question |
+| 34 | `faq_13_text` | The current solution for displaying images works fine in the vast majority of cases, but if you want even better image quality, you can enable the \"Show images in the highest possible quality\" at the app settings, in the \"Deep zoomable images\" section. | Den nåværende løsningen for bildevisning fungerer fint i de aller fleste tilfeller, men hvis du ønsker enda bedre bildekvalitet, kan du aktivere \"Vis bilder i høyest mulig kvalitet\" i appinnstillingene under delen \"Dyp zoombare bilder\". | FAQ 13 answer; matches "Vis bilder i høyest mulig kvalitet" and "Dyp zoombare bilder" |
+| 35 | `faq_14_title` | I have hidden a file/folder. How can I unhide it? | Jeg har skjult en fil/mappe. Hvordan kan jeg gjøre den synlig igjen? | FAQ 14 question |
+| 36 | `faq_14_text` | You can either press the \"Temporarily show hidden items\" menu item at the main screen, or toggle \"Show hidden items\" in the app settings to see the hidden item. If you want to unhide it, just long press it and select \"Unhide\". Folders are hidden by adding a hidden \".nomedia\" file into them, you can delete the file with any file manager too. Note that hiding works recursively though, so if you hide a folder, all subfolders will become hidden too. So for unhiding the subfolders you have to unhide the parent folder. | Du kan enten trykke på menyelementet \"Vis skjulte elementer midlertidig\" på hovedskjermen, eller slå på \"Vis skjulte elementer\" i appinnstillingene for å se det skjulte elementet. Hvis du vil gjøre det synlig igjen, trykker og holder du bare på det og velger \"Vis igjen\". Mapper skjules ved å legge til en skjult \".nomedia\"-fil i dem; du kan også slette denne filen med en hvilken som helst filbehandler. Merk imidlertid at skjuling fungerer rekursivt, så hvis du skjuler en mappe, blir alle undermapper også skjult. For å gjøre undermappene synlige igjen må du derfor gjøre den overordnede mappen synlig igjen. | FAQ 14 answer |
+| 37 | `faq_15_title` | Why does the app take up so much space? | Hvorfor tar appen opp så mye plass? | FAQ 15 question |
+| 38 | `faq_15_text` | App cache can take up to 250MB, it ensures quicker image loading. If the app is taking up even more space, it is most likely caused by you having items in the recycle bin. Those files count to the app size. You can clear the recycle bin by opening it and deleting all files, or from the app settings. Every file in the bin is deleted automatically after 30 days. | Appens hurtigbuffer kan ta opptil 250 MB; den sørger for raskere innlasting av bilder. Hvis appen tar opp enda mer plass, skyldes det sannsynligvis at du har elementer i papirkurven. Disse filene teller med i appstørrelsen. Du kan tømme papirkurven ved å åpne den og slette alle filer, eller fra appinnstillingene. Hver fil i papirkurven slettes automatisk etter 30 dager. | FAQ 15 answer; matches "papirkurven" |
+| 39 | `faq_16_title` | What happened to file and folder hiding and why cannot I see hidden items anymore? | Hva skjedde med skjuling av filer og mapper, og hvorfor kan jeg ikke se skjulte elementer lenger? | FAQ 16 question (faq_16_text was already present) |
+| 40 | `faq_16_text_extra` | Or you can also grant this gallery access to All Files through your device settings, that will allow us showing hidden items and make file operations more reliable in general. | Eller du kan også gi dette galleriet tilgang til Alle filer via enhetsinnstillingene; det lar oss vise skjulte elementer og gjør filoperasjoner mer pålitelige generelt. | FAQ 16 follow-up regarding All Files access |
+| 41 | `faq_17_title` | Why cannot I include missing folders anymore? | Hvorfor kan jeg ikke inkludere manglende mapper lenger? | FAQ 17 question |
+| 42 | `faq_17_text` | That stopped working due to the system changes that came with Android 11 too, the app cannot browse real folders anymore, it relies on the so called MediaStore at fetching data. | Det sluttet også å fungere på grunn av systemendringene som kom med Android 11; appen kan ikke lenger bla gjennom ekte mapper, men er avhengig av såkalte MediaStore for å hente data. | FAQ 17 answer; keeps MediaStore literal |
+| 43 | `faq_18_title` | Why do I see ads during video playback? | Hvorfor ser jeg reklame under videoavspilling? | FAQ 18 question |
+| 44 | `faq_18_text` | Our apps have no ads whatsoever. If you see them during video playback, you must be using some other apps video player. Try finding your default video player in the device settings, then do a \"Clear defaults\" on it. The next time you invoke some video intent you will see an app picker prompt, where you can select what app you want to use. | Appene våre har ingen reklame overhodet. Hvis du ser reklame under videoavspilling, bruker du sannsynligvis videospilleren til en annen app. Prøv å finne standard videospiller i enhetsinnstillingene, og velg \"Fjern standardvalg\" på den. Neste gang du åpner en video, vil du se en appvelger der du kan velge hvilken app du vil bruke. | FAQ 18 answer |
+| 45 | `enter_password` | Enter password | Skriv inn passord | Password prompt |
+
+### 1.4 `fossify-commons` Inherited UI Strings & Local Overrides (14 Keys)
+
+10 of these 14 shared UI keys are inherited from `org.fossify:commons:7.1.3` (`res/values-nb-rNO/values-nb-rNO.xml`), while `contributors`, `known_issues`, `donate_to_fossify`, and `privacy_policy` were missing and added as local overrides in `app/src/main/res/values-nb-rNO/strings.xml`:
+
+| # | Key (`name`) | English (`fossify-commons`) | Norwegian Bokmål | Source / Notes |
+|---:|---|---|---|---|
+| 1 | `change_date_and_time_format` | Change date and time format | Endre format for dato og klokkeslett | Inherited from `fossify-commons` (Settings) |
+| 2 | `password_protect_file_deletion` | Password protect file deletion and moving | Passordbeskytt sletting og flytting av filer | Inherited from `fossify-commons` (Settings) |
+| 3 | `keep_last_modified` | Keep old last-modified value at file operations | Behold sist-endret-verdi ved filoperasjoner | Inherited from `fossify-commons` (Settings) |
+| 4 | `clear_cache` | Clear cache | Tøm hurtiglager | Inherited from `fossify-commons` (Settings) |
+| 5 | `export_settings` | Export settings | Eksporter innstillinger | Inherited from `fossify-commons` (Settings) |
+| 6 | `import_settings` | Import settings | Importer innstillinger | Inherited from `fossify-commons` (Settings) |
+| 7 | `temporarily_show_excluded` | Temporarily show excluded | Vis ekskluderte midlertidig | Inherited from `fossify-commons` (Options menu) |
+| 8 | `change_view_type` | Change view type | Endre visningstype | Inherited from `fossify-commons` (Options menu) |
+| 9 | `contributors` | Contributors | Bidragsytere | Local override in `values-nb-rNO/strings.xml` (About) |
+| 10 | `known_issues` | Known issues | Kjente problemer | Local override in `values-nb-rNO/strings.xml` (About) |
+| 11 | `donate_to_fossify` | Donate to Fossify | Doner til Fossify | Local override in `values-nb-rNO/strings.xml` (About) |
+| 12 | `privacy_policy` | Privacy policy | Personvernerklæring | Local override in `values-nb-rNO/strings.xml` (About) |
+| 13 | `create_shortcut` | Create shortcut | Opprett snarvei | Inherited from `fossify-commons` (CAB / ViewPager menu) |
+| 14 | `print` | Print | Skriv ut | Inherited from `fossify-commons` (ViewPager menu) |
+| 15 | `search_files` | Search files | Søk i filer | Local override in `values-nb-rNO/strings.xml` (Search bar hint) |
+| 16 | `search_folders` | Search folders | Søk i mapper | Local override in `values-nb-rNO/strings.xml` (Search bar hint) |
 
 ## 2. Full 1-to-1 Comparison: English vs. Norwegian Bokmål
 
@@ -325,105 +371,140 @@
 | 208 | `alternative_media_access` | Alternatively, you can allow accessing media files only. In that case you will not be able to work with hidden files though. | Alternativt kan du kun tillate tilgang til mediafiler. I dette tilfellet vil du riktignok ikke kunne arbeide med skjulte filer. |
 | 209 | `media_only` | Media only | Kun media |
 | 210 | `all_files` | All files | Alle filer |
-| 211 | `search_all_files` | Search all files instead of folders on the main screen | Søk alle filer istedenfor mapper på hovedskjermen |
-| 212 | `show_all_folders` | Show a menu button for toggling Show All Folders Content quickly | Vis en menyknapp for å raskt slå av/på \"Vis alle mappers innhold\" |
-| 213 | `thumbnails` | Thumbnails | Minibilder |
-| 214 | `fullscreen_media` | Fullscreen media | Mediavisning |
-| 215 | `extended_details` | Extended details | Utvidede detaljer |
-| 216 | `bottom_actions` | Bottom actions | Handlinger nederst |
-| 217 | `manage_bottom_actions` | Manage visible bottom actions | Behandle nedre handlingsknapper |
-| 218 | `toggle_favorite` | Toggle favorite | Slå av/på favoritt |
-| 219 | `toggle_file_visibility` | Toggle file visibility | Filsynlighet av/på |
-| 220 | `failed_to_load_media` | Failed to load media. | Kunne ikke laste inn media. |
-| 221 | `file_is_malformed_or_corrupted` | File is malformed or corrupted. | Filen er ugyldig eller ødelagt. |
-| 222 | `media_exceeds_device_capabilities` | Media exceeds device capabilities. | Mediet overstiger enhetens kapasitet. |
-| 223 | `unsupported_format` | Unsupported format. | Ikke-støttet format. |
-| 224 | `video_no_sound` | This video has no audio | Denne videoen har ingen lyd |
-| 225 | `faq_1_title` | How can I make Fossify Gallery the default device gallery? | Hvordan kan jeg gjøre Fossify Gallery til enhetens standardgalleri? |
-| 226 | `faq_1_text` | First you have to find the currently default gallery in the Apps section of your device settings, look for a button that says something like \"Open by default\", click on it, then select \"Clear defaults\".         The next time you will try opening an image or video you should see an app picker, where you can select Fossify Gallery and make it the default app. | Først må du finne det nåværende standardgalleriet i Apper-delen av enhetsinnstillingene, se etter en knapp som heter noe slikt som \"Åpne som standard\", trykke på den og deretter velge \"Fjern standardvalg\".\nNeste gang du prøver å åpne et bilde eller en video, skal du se en appvelger der du kan velge Fossify Gallery og gjøre den til standardapp. |
-| 227 | `faq_2_title` | I locked the app with a password, but I forgot it. What can I do? | Jeg låste appen med et passord, men jeg har glemt det. Hva kan jeg gjøre? |
-| 228 | `faq_2_text` | You can solve it in 2 ways. You can either reinstall the app, or find the app in your device settings and select \"Clear data\". It will reset all your settings, it will not remove any media files. | Du kan løse det på to måter. Du kan enten installere appen på nytt, eller finne appen i enhetsinnstillingene og velge \"Slett data\". Det vil tilbakestille alle innstillingene dine, men det vil ikke fjerne noen mediafiler. |
-| 229 | `faq_3_title` | How can I make an album always appear at the top? | Hvordan kan jeg få et album til å alltid vises øverst? |
-| 230 | `faq_3_text` | You can long press the desired album and select the Pin icon at the actions menu, that will pin it to the top. You can pin multiple folders too, pinned items will be sorted by the default sorting method. | Du kan trykke og holde på ønsket album og velge Fest-ikonet i handlingsmenyen for å feste det til toppen. Du kan også feste flere mapper; festede elementer blir sortert etter standard sorteringsmetode. |
-| 231 | `faq_4_title` | How can I fast forward videos? | Hvordan kan jeg spole fremover i videoer? |
-| 232 | `faq_4_text` | You can do it by double tapping the side of the screen, or tapping the current or max duration texts near the seekbar. If you enable opening videos on a separate screen in the app settings, you can use horizontal gestures too. | Du kan gjøre det ved å dobbelttrykke på siden av skjermen, eller trykke på teksten for nåværende eller maksimal varighet nær søkelinjen. Hvis du aktiverer avspilling av videoer på en separat skjerm i appinnstillingene, kan du også bruke horisontale bevegelser. |
-| 233 | `faq_5_title` | What is the difference between hiding and excluding a folder? | Hva er forskjellen mellom å skjule og å ekskludere en mappe? |
-| 234 | `faq_5_text` | Exclude prevents displaying the folder only in Fossify Gallery, while Hide works system-wise and it hides the folder from other galleries too. It works by creating an empty \".nomedia\" file in the given folder, which you can then remove with any file manager too. Note that some devices do not allow hiding folders like Camera, Screenshots and Downloads. | Ekskluder hindrer at mappen vises kun i Fossify Gallery, mens Skjul fungerer på systemnivå og skjuler mappen også for andre gallerier. Det fungerer ved å opprette en tom \".nomedia\"-fil i den aktuelle mappen, som du også kan fjerne med en hvilken som helst filbehandler. Merk at enkelte enheter ikke tillater å skjule mapper som Camera, Screenshots og Downloads. |
-| 235 | `faq_6_title` | Why do folders with music cover art or stickers show up? | Hvorfor vises mapper med plateomslag eller klistremerker? |
-| 236 | `faq_6_text` | It can happen that you will see some unusual albums show up. You can easily exclude them by long pressing them and selecting Exclude. In the next dialog you can then select the parent folder, chances are it will prevent the other related albums showing up too. | Det kan skje at uvanlige album dukker opp. Du kan enkelt ekskludere dem ved å trykke og holde på dem og velge Ekskluder. I den neste dialogen kan du så velge den overordnede mappen, noe som sannsynligvis også vil hindre at andre relaterte album vises. |
-| 237 | `faq_7_title` | A folder with images isn\'t showing up, or it doesn\'t show all items.  What can I do? | En mappe med bilder vises ikke, eller den viser ikke alle elementer. Hva kan jeg gjøre? |
-| 238 | `faq_7_text` | That can have multiple reasons, but solving it is easy. Just go in Settings -&gt; Manage Included Folders, select Plus and navigate to the required folder. | Det kan ha flere årsaker, men det er enkelt å løse. Bare gå til Innstillinger -&gt; Håndter inkluderte mapper, velg Pluss og naviger til ønsket mappe. |
-| 239 | `faq_8_title` | What if I want just a few particular folders visible? | Hva om jeg bare vil at noen bestemte mapper skal være synlige? |
-| 240 | `faq_8_text` | Adding a folder at the Included Folders doesn\'t automatically exclude anything. What you can do is go in Settings -&gt; Manage Excluded Folders, exclude the root folder \"/\", then add the desired folders at Settings -&gt; Manage Included Folders.         That will make only the selected folders visible, as both excluding and including are recursive and if a folder is both excluded and included, it will show up. | Å legge til en mappe under Inkluderte mapper ekskluderer ikke automatisk noe annet. Det du kan gjøre er å gå til Innstillinger -&gt; Håndter ekskluderte mapper, ekskludere rotmappen \"/\", og deretter legge til ønskede mapper under Innstillinger -&gt; Håndter inkluderte mapper.\nDet vil gjøre bare de valgte mappene synlige, siden både ekskludering og inkludering er rekursive, og hvis en mappe både er ekskludert og inkludert, vil den vises. |
-| 241 | `faq_10_title` | Can I crop images with this app? | Kan jeg beskjære bilder med denne appen? |
-| 242 | `faq_10_text` | Yes, you can crop images in the editor, by dragging the image corners. You can get to the editor either by long pressing an image thumbnail and selecting Edit, or selecting Edit from the fullscreen view. | Ja, du kan beskjære bilder i redigeringsverktøyet ved å dra i bildehjørnene. Du kommer til redigeringsverktøyet enten ved å trykke og holde på et minibilde og velge Rediger, eller ved å velge Rediger fra fullskjermvisningen. |
-| 243 | `faq_11_title` | Can I somehow group media file thumbnails? | Kan jeg på noen måte gruppere minibilder av mediafiler? |
-| 244 | `faq_11_text` | Sure, just use the \"Group by\" menu item while at the thumbnails view. You can group files by multiple criteria, including Date Taken. If you use the \"Show all folders content\" function you can group them by folders too. | Selvfølgelig, bare bruk menyelementet \"Grupper etter\" når du er i minibildevisningen. Du kan gruppere filer etter flere kriterier, inkludert Dato tatt. Hvis du bruker funksjonen \"Vis alle mappers innhold\", kan du også gruppere dem etter mapper. |
-| 245 | `faq_12_title` | Sorting by Date Taken doesn\'t seem to work properly, how can I fix it? | Sortering etter Dato tatt ser ikke ut til å fungere skikkelig, hvordan kan jeg fikse det? |
-| 246 | `faq_12_text` | It is most likely caused by the files being copied from somewhere. You can fix it by selecting the file thumbnails and selecting \"Fix Date Taken value\". | Det skyldes sannsynligvis at filene er kopiert fra et annet sted. Du kan fikse det ved å merke minibildene og velge \"Korriger Dato tatt-verdi\". |
-| 247 | `faq_13_title` | I see some color banding on the images. How can I improve the quality? | Jeg ser fargebånd på bildene. Hvordan kan jeg forbedre kvaliteten? |
-| 248 | `faq_13_text` | The current solution for displaying images works fine in the vast majority of cases, but if you want even better image quality, you can enable the \"Show images in the highest possible quality\" at the app settings, in the \"Deep zoomable images\" section. | Den nåværende løsningen for bildevisning fungerer fint i de aller fleste tilfeller, men hvis du ønsker enda bedre bildekvalitet, kan du aktivere \"Vis bilder i høyest mulig kvalitet\" i appinnstillingene under delen \"Dyp zoombare bilder\". |
-| 249 | `faq_14_title` | I have hidden a file/folder. How can I unhide it? | Jeg har skjult en fil/mappe. Hvordan kan jeg gjøre den synlig igjen? |
-| 250 | `faq_14_text` | You can either press the \"Temporarily show hidden items\" menu item at the main screen, or toggle \"Show hidden items\" in the app settings to see the hidden item. If you want to unhide it, just long press it and select \"Unhide\". Folders are hidden by adding a hidden \".nomedia\" file into them, you can delete the file with any file manager too. Note that hiding works recursively though, so if you hide a folder, all subfolders will become hidden too. So for unhiding the subfolders you have to unhide the parent folder. | Du kan enten trykke på menyelementet \"Vis skjulte elementer midlertidig\" på hovedskjermen, eller slå på \"Vis skjulte elementer\" i appinnstillingene for å se det skjulte elementet. Hvis du vil gjøre det synlig igjen, trykker og holder du bare på det og velger \"Vis igjen\". Mapper skjules ved å legge til en skjult \".nomedia\"-fil i dem; du kan også slette denne filen med en hvilken som helst filbehandler. Merk imidlertid at skjuling fungerer rekursivt, så hvis du skjuler en mappe, blir alle undermapper også skjult. For å gjøre undermappene synlige igjen må du derfor gjøre den overordnede mappen synlig igjen. |
-| 251 | `faq_15_title` | Why does the app take up so much space? | Hvorfor tar appen opp så mye plass? |
-| 252 | `faq_15_text` | App cache can take up to 250MB, it ensures quicker image loading. If the app is taking up even more space, it is most likely caused by you having items in the recycle bin. Those files count to the app size. You can clear the recycle bin by opening it and deleting all files, or from the app settings. Every file in the bin is deleted automatically after 30 days. | Appens hurtigbuffer kan ta opptil 250 MB; den sørger for raskere innlasting av bilder. Hvis appen tar opp enda mer plass, skyldes det sannsynligvis at du har elementer i papirkurven. Disse filene teller med i appstørrelsen. Du kan tømme papirkurven ved å åpne den og slette alle filer, eller fra appinnstillingene. Hver fil i papirkurven slettes automatisk etter 30 dager. |
-| 253 | `faq_16_title` | What happened to file and folder hiding and why cannot I see hidden items anymore? | Hva skjedde med skjuling av filer og mapper, og hvorfor kan jeg ikke se skjulte elementer lenger? |
-| 254 | `faq_16_text` | Starting with Android 11 you cannot hide or unhide files or folders anymore, you cannot see the hidden ones in gallery apps due to system restrictions either. You will have to use some file manager for that. | Fra og med Android 11 kan du ikke lenger skjule/vise filer eller mapper, du kan heller ikke se de skjulte i galleriapper pga. systemrestriksjoner. Du må bruke en filbehandlingsapp for det. |
-| 255 | `faq_16_text_extra` | Or you can also grant this gallery access to All Files through your device settings, that will allow us showing hidden items and make file operations more reliable in general. | Eller du kan også gi dette galleriet tilgang til Alle filer via enhetsinnstillingene; det lar oss vise skjulte elementer og gjør filoperasjoner mer pålitelige generelt. |
-| 256 | `faq_17_title` | Why cannot I include missing folders anymore? | Hvorfor kan jeg ikke inkludere manglende mapper lenger? |
-| 257 | `faq_17_text` | That stopped working due to the system changes that came with Android 11 too, the app cannot browse real folders anymore, it relies on the so called MediaStore at fetching data. | Det sluttet også å fungere på grunn av systemendringene som kom med Android 11; appen kan ikke lenger bla gjennom ekte mapper, men er avhengig av såkalte MediaStore for å hente data. |
-| 258 | `faq_18_title` | Why do I see ads during video playback? | Hvorfor ser jeg reklame under videoavspilling? |
-| 259 | `faq_18_text` | Our apps have no ads whatsoever. If you see them during video playback, you must be using some other apps video player. Try finding your default video player in the device settings, then do a \"Clear defaults\" on it. The next time you invoke some video intent you will see an app picker prompt, where you can select what app you want to use. | Appene våre har ingen reklame overhodet. Hvis du ser reklame under videoavspilling, bruker du sannsynligvis videospilleren til en annen app. Prøv å finne standard videospiller i enhetsinnstillingene, og velg \"Fjern standardvalg\" på den. Neste gang du åpner en video, vil du se en appvelger der du kan velge hvilken app du vil bruke. |
-| 260 | `create_virtual_album` | Create virtual album | Opprett virtuelt album |
-| 261 | `new_virtual_album` | New album… | Nytt album… |
-| 262 | `rename_virtual_album` | Rename album | Gi albumet nytt navn |
-| 263 | `album_name` | Album name | Albumnavn |
-| 264 | `virtual_folder_name` | Virtual folder name | Navn på virtuell mappe |
-| 265 | `virtual_album_name_empty` | The album name cannot be empty | Albumnavnet kan ikke være tomt |
-| 266 | `virtual_album_exists` | An album with this name already exists | Et album med dette navnet finnes allerede |
-| 267 | `add_to_virtual_album` | Add to album | Legg til i album |
-| 268 | `remove_from_virtual_album` | Remove from album | Fjern fra album |
-| 269 | `added_to_virtual_album` | Added to \"%s\" | Lagt til i \"%s\" |
-| 270 | `already_in_virtual_album` | Already in \"%s\" | Allerede i \"%s\" |
-| 271 | `removed_from_virtual_album` | Removed from the album | Fjernet fra albumet |
-| 272 | `delete_virtual_album_confirmation` | Delete the album %s? Only the album is removed, your photos and videos stay where they are. | Slette albumet %s? Bare albumet fjernes, bildene og videoene dine forblir der de er. |
-| 273 | `virtual_album_empty` | This album is empty. Select items in any folder and use \"Copy to\". | Dette albumet er tomt. Velg elementer i en hvilken som helst mappe og bruk \"Kopier til\". |
-| 274 | `virtual_album_cannot_be_modified` | This action is not available for virtual albums | Denne handlingen er ikke tilgjengelig for virtuelle album |
-| 275 | `alphanumeric_password` | Password | Passord |
-| 276 | `enter_password` | Enter password | Skriv inn passord |
-| 277 | `repeat_password` | Repeat password | Gjenta passord |
-| 278 | `wrong_password` | Wrong password | Feil passord |
-| 279 | `encrypting_files` | Encrypting files… | Krypterer filer… |
-| 280 | `encrypting_folder` | Encrypting folder… | Krypterer mappe… |
-| 281 | `folder_encrypted_successfully` | Folder encrypted successfully | Mappen ble kryptert |
-| 282 | `decrypting_folder` | Decrypting folder… | Dekrypterer mappe… |
-| 283 | `folder_decrypted_successfully` | Folder decrypted successfully | Mappen ble dekryptert |
-| 284 | `decrypting_files` | Decrypting files… | Dekrypterer filer… |
-| 285 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | Plasser fingeren på fingeravtrykkssensoren |
-| 286 | `connect_at_least_4_dots_prompt` | Connect at least 4 dots | Koble sammen minst 4 punkter |
-| 287 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | Vil du få tilgang til din eksisterende Cipher_Secrets-mappe? |
-| 288 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | Eksisterende Cipher_Secrets-mappe vil bli slettet og en ny vil bli opprettet. Er du sikker? |
-| 289 | `confirm_checkbox_label` | I confirm | Jeg bekrefter |
-| 290 | `secret_vault` | Secret Vault | Hemmelig hvelv |
-| 291 | `secret_vault_empty` | Secret Vault is empty | Det hemmelige hvelvet er tomt |
-| 292 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | Er du sikker på at du vil dekryptere de(n) skjulte filen(e)? |
-| 293 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | Kopiering til utklippstavlen er deaktivert av sikkerhetshensyn mens hvelvet er låst opp. |
-| 294 | `on_vault_exit` | On leaving hidden section | Når du forlater skjult seksjon |
-| 295 | `on_vault_exit_keep_showing_all` | Keep showing all hidden albums | Fortsett å vise alle skjulte album |
-| 296 | `on_vault_exit_show_encrypted_only` | Only show encrypted albums | Vis kun krypterte album |
-| 297 | `on_vault_exit_show_other_only` | Only show other hidden albums | Vis kun andre skjulte album |
-| 298 | `on_vault_exit_hide_all` | Hide all hidden albums | Skjul alle skjulte album |
-| 299 | `on_vault_exit_ask_every_time` | Always ask | Spør alltid |
-| 300 | `vault_exit_dialog_title` | Exiting Hidden Section | Forlater skjult seksjon |
-| 301 | `vault_exit_keep_showing` | Keep showing hidden albums | Fortsett å vise skjulte album |
-| 302 | `vault_exit_hide` | Hide hidden albums | Skjul skjulte album |
-| 303 | `vault_exit_remember_my_choice` | Remember my choice | Husk valget mitt |
-| 304 | `vault_exit_settings_hint` | For more options, see Settings &gt; On leaving hidden section | For flere alternativer, se Innstillinger &gt; Når du forlater skjult seksjon |
-| 305 | `system_default` | System default | Systemstandard |
-| 306 | `language` | Language | Språk |
-| 307 | `open_system_language_settings` | Open system language settings | Åpne systemets språkinnstillinger |
-| 308 | `restore_confirmation` (`one`) | Are you sure you want to restore %d file? | Er du sikker på du vil gjenopprette %d fil? |
-| 309 | `restore_confirmation` (`other`) | Are you sure you want to restore %d files? | Er du sikker på du vil gjenopprette %d filer? |
-| 310 | `failed_to_resize_images` (`one`) | Failed to resize %d image | Klarte ikke endre størrelse på %d bilde |
-| 311 | `failed_to_resize_images` (`other`) | Failed to resize %d images | Klarte ikke endre størrelse på %d bilder |
-| 312 | `search` *(fossify-commons)* | *(inherited from commons)* | Søk |
+| 211 | `main_screen_view_on_launch` | Main screen view on launch | Hovedskjermvisning ved oppstart |
+| 212 | `show_folders` | Show folders | Vis mapper |
+| 213 | `show_files` | Show files | Vis filer |
+| 214 | `show_all_folders` | Show a menu button for toggling Show All Folders Content quickly | Vis en menyknapp for å raskt slå av/på \"Vis alle mappers innhold\" |
+| 215 | `thumbnails` | Thumbnails | Minibilder |
+| 216 | `fullscreen_media` | Fullscreen media | Mediavisning |
+| 217 | `extended_details` | Extended details | Utvidede detaljer |
+| 218 | `bottom_actions` | Bottom actions | Handlinger nederst |
+| 219 | `manage_bottom_actions` | Manage visible bottom actions | Behandle nedre handlingsknapper |
+| 220 | `toggle_favorite` | Toggle favorite | Slå av/på favoritt |
+| 221 | `toggle_file_visibility` | Toggle file visibility | Filsynlighet av/på |
+| 222 | `failed_to_load_media` | Failed to load media. | Kunne ikke laste inn media. |
+| 223 | `file_is_malformed_or_corrupted` | File is malformed or corrupted. | Filen er ugyldig eller ødelagt. |
+| 224 | `media_exceeds_device_capabilities` | Media exceeds device capabilities. | Mediet overstiger enhetens kapasitet. |
+| 225 | `unsupported_format` | Unsupported format. | Ikke-støttet format. |
+| 226 | `video_no_sound` | This video has no audio | Denne videoen har ingen lyd |
+| 227 | `faq_1_title` | How can I make Fossify Gallery the default device gallery? | Hvordan kan jeg gjøre Fossify Gallery til enhetens standardgalleri? |
+| 228 | `faq_1_text` | First you have to find the currently default gallery in the Apps section of your device settings, look for a button that says something like \"Open by default\", click on it, then select \"Clear defaults\".         The next time you will try opening an image or video you should see an app picker, where you can select Fossify Gallery and make it the default app. | Først må du finne det nåværende standardgalleriet i Apper-delen av enhetsinnstillingene, se etter en knapp som heter noe slikt som \"Åpne som standard\", trykke på den og deretter velge \"Fjern standardvalg\".\nNeste gang du prøver å åpne et bilde eller en video, skal du se en appvelger der du kan velge Fossify Gallery og gjøre den til standardapp. |
+| 229 | `faq_2_title` | I locked the app with a password, but I forgot it. What can I do? | Jeg låste appen med et passord, men jeg har glemt det. Hva kan jeg gjøre? |
+| 230 | `faq_2_text` | You can solve it in 2 ways. You can either reinstall the app, or find the app in your device settings and select \"Clear data\". It will reset all your settings, it will not remove any media files. | Du kan løse det på to måter. Du kan enten installere appen på nytt, eller finne appen i enhetsinnstillingene og velge \"Slett data\". Det vil tilbakestille alle innstillingene dine, men det vil ikke fjerne noen mediafiler. |
+| 231 | `faq_3_title` | How can I make an album always appear at the top? | Hvordan kan jeg få et album til å alltid vises øverst? |
+| 232 | `faq_3_text` | You can long press the desired album and select the Pin icon at the actions menu, that will pin it to the top. You can pin multiple folders too, pinned items will be sorted by the default sorting method. | Du kan trykke og holde på ønsket album og velge Fest-ikonet i handlingsmenyen for å feste det til toppen. Du kan også feste flere mapper; festede elementer blir sortert etter standard sorteringsmetode. |
+| 233 | `faq_4_title` | How can I fast forward videos? | Hvordan kan jeg spole fremover i videoer? |
+| 234 | `faq_4_text` | You can do it by double tapping the side of the screen, or tapping the current or max duration texts near the seekbar. If you enable opening videos on a separate screen in the app settings, you can use horizontal gestures too. | Du kan gjøre det ved å dobbelttrykke på siden av skjermen, eller trykke på teksten for nåværende eller maksimal varighet nær søkelinjen. Hvis du aktiverer avspilling av videoer på en separat skjerm i appinnstillingene, kan du også bruke horisontale bevegelser. |
+| 235 | `faq_5_title` | What is the difference between hiding and excluding a folder? | Hva er forskjellen mellom å skjule og å ekskludere en mappe? |
+| 236 | `faq_5_text` | Exclude prevents displaying the folder only in Fossify Gallery, while Hide works system-wise and it hides the folder from other galleries too. It works by creating an empty \".nomedia\" file in the given folder, which you can then remove with any file manager too. Note that some devices do not allow hiding folders like Camera, Screenshots and Downloads. | Ekskluder hindrer at mappen vises kun i Fossify Gallery, mens Skjul fungerer på systemnivå og skjuler mappen også for andre gallerier. Det fungerer ved å opprette en tom \".nomedia\"-fil i den aktuelle mappen, som du også kan fjerne med en hvilken som helst filbehandler. Merk at enkelte enheter ikke tillater å skjule mapper som Camera, Screenshots og Downloads. |
+| 237 | `faq_6_title` | Why do folders with music cover art or stickers show up? | Hvorfor vises mapper med plateomslag eller klistremerker? |
+| 238 | `faq_6_text` | It can happen that you will see some unusual albums show up. You can easily exclude them by long pressing them and selecting Exclude. In the next dialog you can then select the parent folder, chances are it will prevent the other related albums showing up too. | Det kan skje at uvanlige album dukker opp. Du kan enkelt ekskludere dem ved å trykke og holde på dem og velge Ekskluder. I den neste dialogen kan du så velge den overordnede mappen, noe som sannsynligvis også vil hindre at andre relaterte album vises. |
+| 239 | `faq_7_title` | A folder with images isn\'t showing up, or it doesn\'t show all items.  What can I do? | En mappe med bilder vises ikke, eller den viser ikke alle elementer. Hva kan jeg gjøre? |
+| 240 | `faq_7_text` | That can have multiple reasons, but solving it is easy. Just go in Settings -&gt; Manage Included Folders, select Plus and navigate to the required folder. | Det kan ha flere årsaker, men det er enkelt å løse. Bare gå til Innstillinger -&gt; Håndter inkluderte mapper, velg Pluss og naviger til ønsket mappe. |
+| 241 | `faq_8_title` | What if I want just a few particular folders visible? | Hva om jeg bare vil at noen bestemte mapper skal være synlige? |
+| 242 | `faq_8_text` | Adding a folder at the Included Folders doesn\'t automatically exclude anything. What you can do is go in Settings -&gt; Manage Excluded Folders, exclude the root folder \"/\", then add the desired folders at Settings -&gt; Manage Included Folders.         That will make only the selected folders visible, as both excluding and including are recursive and if a folder is both excluded and included, it will show up. | Å legge til en mappe under Inkluderte mapper ekskluderer ikke automatisk noe annet. Det du kan gjøre er å gå til Innstillinger -&gt; Håndter ekskluderte mapper, ekskludere rotmappen \"/\", og deretter legge til ønskede mapper under Innstillinger -&gt; Håndter inkluderte mapper.\nDet vil gjøre bare de valgte mappene synlige, siden både ekskludering og inkludering er rekursive, og hvis en mappe både er ekskludert og inkludert, vil den vises. |
+| 243 | `faq_10_title` | Can I crop images with this app? | Kan jeg beskjære bilder med denne appen? |
+| 244 | `faq_10_text` | Yes, you can crop images in the editor, by dragging the image corners. You can get to the editor either by long pressing an image thumbnail and selecting Edit, or selecting Edit from the fullscreen view. | Ja, du kan beskjære bilder i redigeringsverktøyet ved å dra i bildehjørnene. Du kommer til redigeringsverktøyet enten ved å trykke og holde på et minibilde og velge Rediger, eller ved å velge Rediger fra fullskjermvisningen. |
+| 245 | `faq_11_title` | Can I somehow group media file thumbnails? | Kan jeg på noen måte gruppere minibilder av mediafiler? |
+| 246 | `faq_11_text` | Sure, just use the \"Group by\" menu item while at the thumbnails view. You can group files by multiple criteria, including Date Taken. If you use the \"Show all folders content\" function you can group them by folders too. | Selvfølgelig, bare bruk menyelementet \"Grupper etter\" når du er i minibildevisningen. Du kan gruppere filer etter flere kriterier, inkludert Dato tatt. Hvis du bruker funksjonen \"Vis alle mappers innhold\", kan du også gruppere dem etter mapper. |
+| 247 | `faq_12_title` | Sorting by Date Taken doesn\'t seem to work properly, how can I fix it? | Sortering etter Dato tatt ser ikke ut til å fungere skikkelig, hvordan kan jeg fikse det? |
+| 248 | `faq_12_text` | It is most likely caused by the files being copied from somewhere. You can fix it by selecting the file thumbnails and selecting \"Fix Date Taken value\". | Det skyldes sannsynligvis at filene er kopiert fra et annet sted. Du kan fikse det ved å merke minibildene og velge \"Korriger Dato tatt-verdi\". |
+| 249 | `faq_13_title` | I see some color banding on the images. How can I improve the quality? | Jeg ser fargebånd på bildene. Hvordan kan jeg forbedre kvaliteten? |
+| 250 | `faq_13_text` | The current solution for displaying images works fine in the vast majority of cases, but if you want even better image quality, you can enable the \"Show images in the highest possible quality\" at the app settings, in the \"Deep zoomable images\" section. | Den nåværende løsningen for bildevisning fungerer fint i de aller fleste tilfeller, men hvis du ønsker enda bedre bildekvalitet, kan du aktivere \"Vis bilder i høyest mulig kvalitet\" i appinnstillingene under delen \"Dyp zoombare bilder\". |
+| 251 | `faq_14_title` | I have hidden a file/folder. How can I unhide it? | Jeg har skjult en fil/mappe. Hvordan kan jeg gjøre den synlig igjen? |
+| 252 | `faq_14_text` | You can either press the \"Temporarily show hidden items\" menu item at the main screen, or toggle \"Show hidden items\" in the app settings to see the hidden item. If you want to unhide it, just long press it and select \"Unhide\". Folders are hidden by adding a hidden \".nomedia\" file into them, you can delete the file with any file manager too. Note that hiding works recursively though, so if you hide a folder, all subfolders will become hidden too. So for unhiding the subfolders you have to unhide the parent folder. | Du kan enten trykke på menyelementet \"Vis skjulte elementer midlertidig\" på hovedskjermen, eller slå på \"Vis skjulte elementer\" i appinnstillingene for å se det skjulte elementet. Hvis du vil gjøre det synlig igjen, trykker og holder du bare på det og velger \"Vis igjen\". Mapper skjules ved å legge til en skjult \".nomedia\"-fil i dem; du kan også slette denne filen med en hvilken som helst filbehandler. Merk imidlertid at skjuling fungerer rekursivt, så hvis du skjuler en mappe, blir alle undermapper også skjult. For å gjøre undermappene synlige igjen må du derfor gjøre den overordnede mappen synlig igjen. |
+| 253 | `faq_15_title` | Why does the app take up so much space? | Hvorfor tar appen opp så mye plass? |
+| 254 | `faq_15_text` | App cache can take up to 250MB, it ensures quicker image loading. If the app is taking up even more space, it is most likely caused by you having items in the recycle bin. Those files count to the app size. You can clear the recycle bin by opening it and deleting all files, or from the app settings. Every file in the bin is deleted automatically after 30 days. | Appens hurtigbuffer kan ta opptil 250 MB; den sørger for raskere innlasting av bilder. Hvis appen tar opp enda mer plass, skyldes det sannsynligvis at du har elementer i papirkurven. Disse filene teller med i appstørrelsen. Du kan tømme papirkurven ved å åpne den og slette alle filer, eller fra appinnstillingene. Hver fil i papirkurven slettes automatisk etter 30 dager. |
+| 255 | `faq_16_title` | What happened to file and folder hiding and why cannot I see hidden items anymore? | Hva skjedde med skjuling av filer og mapper, og hvorfor kan jeg ikke se skjulte elementer lenger? |
+| 256 | `faq_16_text` | Starting with Android 11 you cannot hide or unhide files or folders anymore, you cannot see the hidden ones in gallery apps due to system restrictions either. You will have to use some file manager for that. | Fra og med Android 11 kan du ikke lenger skjule/vise filer eller mapper, du kan heller ikke se de skjulte i galleriapper pga. systemrestriksjoner. Du må bruke en filbehandlingsapp for det. |
+| 257 | `faq_16_text_extra` | Or you can also grant this gallery access to All Files through your device settings, that will allow us showing hidden items and make file operations more reliable in general. | Eller du kan også gi dette galleriet tilgang til Alle filer via enhetsinnstillingene; det lar oss vise skjulte elementer og gjør filoperasjoner mer pålitelige generelt. |
+| 258 | `faq_17_title` | Why cannot I include missing folders anymore? | Hvorfor kan jeg ikke inkludere manglende mapper lenger? |
+| 259 | `faq_17_text` | That stopped working due to the system changes that came with Android 11 too, the app cannot browse real folders anymore, it relies on the so called MediaStore at fetching data. | Det sluttet også å fungere på grunn av systemendringene som kom med Android 11; appen kan ikke lenger bla gjennom ekte mapper, men er avhengig av såkalte MediaStore for å hente data. |
+| 260 | `faq_18_title` | Why do I see ads during video playback? | Hvorfor ser jeg reklame under videoavspilling? |
+| 261 | `faq_18_text` | Our apps have no ads whatsoever. If you see them during video playback, you must be using some other apps video player. Try finding your default video player in the device settings, then do a \"Clear defaults\" on it. The next time you invoke some video intent you will see an app picker prompt, where you can select what app you want to use. | Appene våre har ingen reklame overhodet. Hvis du ser reklame under videoavspilling, bruker du sannsynligvis videospilleren til en annen app. Prøv å finne standard videospiller i enhetsinnstillingene, og velg \"Fjern standardvalg\" på den. Neste gang du åpner en video, vil du se en appvelger der du kan velge hvilken app du vil bruke. |
+| 262 | `create_virtual_album` | Create virtual album | Opprett virtuelt album |
+| 263 | `new_virtual_album` | New album… | Nytt album… |
+| 264 | `rename_virtual_album` | Rename album | Gi albumet nytt navn |
+| 265 | `album_name` | Album name | Albumnavn |
+| 266 | `virtual_folder_name` | Virtual folder name | Navn på virtuell mappe |
+| 267 | `virtual_album_name_empty` | The album name cannot be empty | Albumnavnet kan ikke være tomt |
+| 268 | `virtual_album_exists` | An album with this name already exists | Et album med dette navnet finnes allerede |
+| 269 | `add_to_virtual_album` | Add to album | Legg til i album |
+| 270 | `remove_from_virtual_album` | Remove from album | Fjern fra album |
+| 271 | `added_to_virtual_album` | Added to \"%s\" | Lagt til i \"%s\" |
+| 272 | `already_in_virtual_album` | Already in \"%s\" | Allerede i \"%s\" |
+| 273 | `removed_from_virtual_album` | Removed from the album | Fjernet fra albumet |
+| 274 | `delete_virtual_album_confirmation` | Delete the album %s? Only the album is removed, your photos and videos stay where they are. | Slette albumet %s? Bare albumet fjernes, bildene og videoene dine forblir der de er. |
+| 275 | `virtual_album_empty` | This album is empty. Select items in any folder and use \"Copy to\". | Dette albumet er tomt. Velg elementer i en hvilken som helst mappe og bruk \"Kopier til\". |
+| 276 | `virtual_album_cannot_be_modified` | This action is not available for virtual albums | Denne handlingen er ikke tilgjengelig for virtuelle album |
+| 277 | `alphanumeric_password` | Password | Passord |
+| 278 | `enter_password` | Enter password | Skriv inn passord |
+| 279 | `repeat_password` | Repeat password | Gjenta passord |
+| 280 | `wrong_password` | Wrong password | Feil passord |
+| 281 | `encrypting_files` | Encrypting files… | Krypterer filer… |
+| 282 | `encrypting_folder` | Encrypting folder… | Krypterer mappe… |
+| 283 | `folder_encrypted_successfully` | Folder encrypted successfully | Mappen ble kryptert |
+| 284 | `file_encrypted_successfully` | File hidden successfully | Filen ble skjult |
+| 285 | `files_encrypted_successfully` | Files hidden successfully | Filene ble skjult |
+| 286 | `decrypting_folder` | Decrypting folder… | Dekrypterer mappe… |
+| 287 | `folder_decrypted_successfully` | Folder decrypted successfully | Mappen ble dekryptert |
+| 288 | `file_decrypted_successfully` | File unhidden successfully | Filen ble vist |
+| 289 | `files_decrypted_successfully` | Files unhidden successfully | Filene ble vist |
+| 290 | `decrypting_files` | Decrypting files… | Dekrypterer filer… |
+| 291 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | Plasser fingeren på fingeravtrykkssensoren |
+| 292 | `connect_at_least_4_dots_prompt` | Connect at least 4 dots | Koble sammen minst 4 punkter |
+| 293 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | Vil du få tilgang til din eksisterende Cipher_Secrets-mappe? |
+| 294 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | Eksisterende Cipher_Secrets-mappe vil bli slettet og en ny vil bli opprettet. Er du sikker? |
+| 295 | `confirm_checkbox_label` | I confirm | Jeg bekrefter |
+| 296 | `secret_vault` | Secret Vault | Hemmelig hvelv |
+| 297 | `secret_vault_empty` | Secret Vault is empty | Det hemmelige hvelvet er tomt |
+| 298 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | Er du sikker på at du vil dekryptere de(n) skjulte filen(e)? |
+| 299 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | Kopiering til utklippstavlen er deaktivert av sikkerhetshensyn mens hvelvet er låst opp. |
+| 300 | `on_vault_exit` | On leaving encrypted section | Når du forlater kryptert seksjon |
+| 301 | `on_vault_exit_keep_showing` | Keep showing encrypted albums | Fortsett å vise krypterte album |
+| 302 | `on_vault_exit_hide` | Hide encrypted albums | Skjul krypterte album |
+| 303 | `on_vault_exit_ask_every_time` | Always ask | Spør alltid |
+| 304 | `vault_exit_dialog_title` | Exiting Encrypted Section | Forlater kryptert seksjon |
+| 305 | `vault_exit_question_single` | Show encrypted album together with other albums? | Vise kryptert album sammen med andre album? |
+| 306 | `vault_exit_question_multiple` | Show encrypted albums together with other albums? | Vise krypterte album sammen med andre album? |
+| 307 | `vault_exit_settings_hint` | For more options, see Settings &gt; On leaving encrypted section | For flere alternativer, se Innstillinger &gt; Når du forlater kryptert seksjon |
+| 308 | `stop_showing_hidden` | Stop showing encrypted media | Slutt å vise krypterte medier |
+| 309 | `system_default` | System default | Systemstandard |
+| 310 | `language` | Language | Språk |
+| 311 | `open_system_language_settings` | Open system language settings | Åpne systemets språkinnstillinger |
+| 312 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | Få tilgang til skjulte elementer med biometri |
+| 313 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | Aktiver passordbeskyttelse for skjulte elementer først |
+| 314 | `biometric_unlock_vault` | Unlock hidden vault | Lås opp skjult hvelv |
+| 315 | `biometric_unlock_prompt` | Verify your biometric identity to access hidden items | Bekreft din biometriske identitet for å få tilgang til skjulte elementer |
+| 316 | `biometric_setup_prompt` | Confirm your biometric identity to enable biometric vault access | Bekreft din biometriske identitet for å aktivere biometrisk tilgang til hvelvet |
+| 317 | `use_password_or_pin` | Use PIN / Password | Bruk PIN / Passord |
+| 318 | `biometric_key_invalidated` | Biometric credentials have changed. Please enter your PIN or password. | Biometriske data er endret. Vennligst skriv inn PIN eller passord. |
+| 319 | `no_biometric_hardware_or_enrolled` | No biometric hardware or enrolled credentials found on this device | Ingen biometrisk maskinvare eller registrerte biometriske data funnet på denne enheten |
+| 320 | `default_hidden_album` | Default Hidden Album | Standard skjult album |
+| 321 | `select_hidden_album` | Select Hidden Album | Velg skjult album |
+| 322 | `create_new_hidden_album` | Create New Hidden Album | Opprett nytt skjult album |
+| 323 | `new_hidden_album` | New hidden album | Nytt skjult album |
+| 324 | `hidden_album_name_empty` | Album name cannot be empty | Albumnavn kan ikke være tomt |
+| 325 | `file_hidden_to_album` | File hidden to \"%s\" | Fil skjult i «%s» |
+| 326 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | %1$d filer skjult i «%2$s» |
+| 327 | `restore_confirmation` (`one`) | Are you sure you want to restore %d file? | Er du sikker på du vil gjenopprette %d fil? |
+| 328 | `restore_confirmation` (`other`) | Are you sure you want to restore %d files? | Er du sikker på du vil gjenopprette %d filer? |
+| 329 | `failed_to_resize_images` (`one`) | Failed to resize %d image | Klarte ikke endre størrelse på %d bilde |
+| 330 | `failed_to_resize_images` (`other`) | Failed to resize %d images | Klarte ikke endre størrelse på %d bilder |
+| 331 | `search` *(fossify-commons)* | *(inherited from commons)* | Søk |
+| 332 | `change_date_and_time_format` *(fossify-commons)* | Change date and time format | Endre format for dato og klokkeslett |
+| 333 | `password_protect_file_deletion` *(fossify-commons)* | Password protect file deletion and moving | Passordbeskytt sletting og flytting av filer |
+| 334 | `keep_last_modified` *(fossify-commons)* | Keep old last-modified value at file operations | Behold sist-endret-verdi ved filoperasjoner |
+| 335 | `clear_cache` *(fossify-commons)* | Clear cache | Tøm hurtiglager |
+| 336 | `export_settings` *(fossify-commons)* | Export settings | Eksporter innstillinger |
+| 337 | `import_settings` *(fossify-commons)* | Import settings | Importer innstillinger |
+| 338 | `temporarily_show_excluded` *(fossify-commons)* | Temporarily show excluded | Vis ekskluderte midlertidig |
+| 339 | `change_view_type` *(fossify-commons)* | Change view type | Endre visningstype |
+| 340 | `contributors` *(fossify-commons)* | Contributors | Bidragsytere |
+| 341 | `known_issues` *(fossify-commons)* | Known issues | Kjente problemer |
+| 342 | `donate_to_fossify` *(fossify-commons)* | Donate to Fossify | Doner til Fossify |
+| 343 | `privacy_policy` *(fossify-commons)* | Privacy policy | Personvernerklæring |
+| 344 | `create_shortcut` *(fossify-commons)* | Create shortcut | Opprett snarvei |
+| 345 | `print` *(fossify-commons)* | Print | Skriv ut |
+| 346 | `search_files` *(fossify-commons)* | Search files | Søk i filer |
+| 347 | `search_folders` *(fossify-commons)* | Search folders | Søk i mapper |

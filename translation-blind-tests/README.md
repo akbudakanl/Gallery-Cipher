@@ -44,21 +44,23 @@ translation-blind-tests/
 
 ## Purpose & Methodology
 
-1. **Completeness Audit:** Every target `values-<lang>/strings.xml` file is checked against the canonical English source file (`app/src/main/res/values/strings.xml`, which currently contains `307 <string>` and `2 <plurals>` entries = `309` resource entries).
+1. **Dual-Source Completeness Audit (App + `fossify-commons`):** Every target `values-<lang>/strings.xml` file must be checked against **both** string sources:
+   - **App-owned resources:** `app/src/main/res/values/strings.xml` (`326 <string>` and `2 <plurals>` entries = `328` resource entries).
+   - **Inherited library resources (`org.fossify:commons`):** Strings used in Settings, Options menus, About (`AboutActivity`), contextual action bars (CAB), and shared dialogs (such as `change_date_and_time_format`, `password_protect_file_deletion`, `keep_last_modified`, `clear_cache`, `export_settings`, `import_settings`, `temporarily_show_excluded`, `change_view_type`, `contributors`, `known_issues`, `donate_to_fossify`, `privacy_policy`, `create_shortcut`, `print`, and `search`) live in the `org.fossify:commons` AAR dependency (`res/values/values.xml` and `res/values-<lang>/values-<lang>.xml`) rather than `app/src/main/res/values/strings.xml`. Because several locales in `org.fossify:commons` are incomplete, any missing `fossify-commons` keys should be overridden locally in `app/src/main/res/values-<lang>/strings.xml`.
 2. **Blind Translation & Consistency Review:** Missing or inaccurate strings are translated independently from the English source while matching existing Fossify Gallery terminology, UI tone, placeholders (`%s`, `%d`), HTML/escape sequences (`&gt;`, `\'`, `\"`, `\n`), and plural rules (CLDR categories per language).
 3. **1-to-1 Comparison Report:** Each `<lang>_translation_comparison.md` file documents:
    - Scope and key terminology glossary.
    - Section 1: Summary of newly added or revised translations with contextual notes.
-   - Section 2: Full 1-to-1 comparison table pairing every English source entry with its localized counterpart.
+   - Section 2: Full 1-to-1 comparison table pairing every English source entry (plus any overridden `fossify-commons` keys) with its localized counterpart.
 
 ## Notes on Shared & Inherited Resources
 
-- **`fossify-commons` inherited keys (e.g., `search`):** Some keys referenced by layouts or shared UI components (such as `@string/search` in `app/src/main/res/layout/dialog_select_language.xml`) are not defined in `app/src/main/res/values/strings.xml` because the default English value is inherited from the `org.fossify.commons` dependency. Certain locale files (such as `values-az/strings.xml`) define a local override (e.g., `<string name="search">Axtar</string>`) to ensure the localized term appears consistently.
+- **Why `fossify-commons` must be checked alongside `values/strings.xml`:** Checking only `app/src/main/res/values/strings.xml` can leave visible UI labels in English if `org.fossify:commons`'s own `res/values-<lang>/values-<lang>.xml` is missing those keys. Adding local `<string>` overrides in `app/src/main/res/values-<lang>/strings.xml` takes precedence during Android resource merging without duplicating the entire `fossify-commons` resource table into `app/src/main/res/values/strings.xml`.
 - **Plural forms (`<plurals>`):** English defines `one` and `other` quantities for `restore_confirmation` and `failed_to_resize_images`. Languages with different CLDR plural rules (for example, Japanese using only `other`) map accordingly in XML while retaining full row-by-row parity in the comparison table.
 
 ## Adding a New Language Audit
 
 1. Create a subfolder named after the Android locale code (e.g., `fr/`, `es/`, `zh-rCN/`).
-2. Audit `app/src/main/res/values-<lang>/strings.xml` against `app/src/main/res/values/strings.xml` and complete any missing entries.
+2. Audit `app/src/main/res/values-<lang>/strings.xml` against **both** `app/src/main/res/values/strings.xml` **and** `org.fossify:commons`'s `res/values/values.xml` / `res/values-<lang>/values-<lang>.xml`, and add any missing entries or local `fossify-commons` overrides to `app/src/main/res/values-<lang>/strings.xml`.
 3. Add `<lang>_translation_comparison.md` inside `translation-blind-tests/<lang>/` with English descriptions, a summary of added/updated keys, and the full English-vs-target comparison table.
 4. Register the new subfolder in the table above.

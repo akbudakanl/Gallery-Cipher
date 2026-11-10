@@ -1,6 +1,6 @@
 # Traditional Chinese (Taiwan, values-zh-rTW) Translation Audit, Revision & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-zh-rTW/strings.xml` was audited against `app/src/main/res/values/strings.xml` and `fossify-commons` (`values-zh-rTW`). 14 existing entries with mistranslations, Mainland Chinese phrasing, terminology mismatches, or formatting bugs were revised, and all 50 missing strings were translated into Taiwanese Traditional Chinese (`zh-rTW`) and added, bringing `values-zh-rTW` to full parity (307 `<string>` + 2 `<plurals>` = 309 resource entries; 311 total comparison rows with English `one`/`other` plural forms expanded alongside Chinese CLDR `other`-only plural entries).
+> **Scope:** `app/src/main/res/values-zh-rTW/strings.xml` was audited against `app/src/main/res/values/strings.xml` and `fossify-commons` (`values-zh-rTW`). 14 existing entries with mistranslations, Mainland Chinese phrasing, terminology mismatches, or formatting bugs were revised, and all 50 missing strings were translated into Taiwanese Traditional Chinese (`zh-rTW`) and added, bringing `values-zh-rTW` to full parity (326 `<string>` + 2 `<plurals>` = 328 resource entries; 345 total comparison rows including English `one`/`other` plural forms and 15 `fossify-commons` UI keys).
 > **Key Terminology:** `Settings` → `設定` · `Default` → `預設` / `系統預設` · `Folder` → `資料夾` · `Album` → `相簿` · `Secret Vault` → `秘密保險箱` · `Hidden` → `隱藏` · `Excluded` → `已排除` · `Password` → `密碼` · `Encrypt / Decrypt` → `加密 / 解密` · `Copy to` → `複製` (matches `fossify-commons`) · `Clipboard` → `剪貼簿` · `Search` → `搜尋` (inherited from `fossify-commons`)
 
 ## 1. Audit of Existing Translations & Newly Added Entries
@@ -26,7 +26,11 @@
 
 *(Note: `on_video_tap` and `open_in_app_player` are listed together above for conciseness, totaling 15 adjusted string entries across 14 audit items.)*
 
-### 1.2 Summary of 50 Newly Added Taiwanese Translations
+
+
+### 1.2 Newly Added Fork-Only Strings (63 Keys)
+
+These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
 
 | # | Key (`name`) | English (`values/strings.xml`) | Taiwanese (`values-zh-rTW/strings.xml`) | Notes |
 |---:|---|---|---|---|
@@ -48,38 +52,84 @@
 | 16 | `virtual_album_empty` | This album is empty. Select items in any folder and use \"Copy to\". | 此相簿為空。請在任意資料夾中選取項目，並使用「複製」。 | References `fossify-commons` `copy_to` (`複製`) |
 | 17 | `virtual_album_cannot_be_modified` | This action is not available for virtual albums | 此操作不適用於虛擬相簿 | Toast message when action is unsupported on virtual albums |
 | 18 | `alphanumeric_password` | Password | 密碼 | Matches `fossify-commons` `password` (`密碼`) |
-| 19 | `enter_password` | Enter password | 輸入密碼 | Matches `fossify-commons` `enter_password` (`輸入密碼`) |
-| 20 | `repeat_password` | Repeat password | 再次輸入密碼 | Matches `fossify-commons` `repeat_pin` (`再次輸入PIN碼`) |
-| 21 | `wrong_password` | Wrong password | 密碼錯誤 | Matches `fossify-commons` `wrong_pin` (`PIN碼錯誤`) |
-| 22 | `encrypting_files` | Encrypting files… | 正在加密檔案… | Progress message using `正在…` style |
-| 23 | `encrypting_folder` | Encrypting folder… | 正在加密資料夾… | Progress message using `正在…` style |
-| 24 | `folder_encrypted_successfully` | Folder encrypted successfully | 資料夾加密成功 | Success message matching `圖片尺寸調整成功` |
-| 25 | `decrypting_folder` | Decrypting folder… | 正在解密資料夾… | Progress message using `正在…` style |
-| 26 | `folder_decrypted_successfully` | Folder decrypted successfully | 資料夾解密成功 | Success message matching `圖片尺寸調整成功` |
-| 27 | `decrypting_files` | Decrypting files… | 正在解密檔案… | Progress message using `正在…` style |
-| 28 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | 請將手指放在指紋感應器上 | Matches `fossify-commons` `place_finger` terminology (`指紋感應器`) |
-| 29 | `connect_at_least_4_dots_prompt` | Connect at least 4 dots | 請至少連接 4 個點 | Pattern lock validation prompt |
-| 30 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | 您要存取現有的 Cipher_Secrets 資料夾嗎？ | Keeps literal folder name `Cipher_Secrets` |
-| 31 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | 現有的 Cipher_Secrets 資料夾將會被刪除並建立新的資料夾。確定要繼續嗎？ | Keeps literal folder name `Cipher_Secrets` |
-| 32 | `confirm_checkbox_label` | I confirm | 我確認 | Checkbox label, suffixed with countdown `(10)` in dialog |
-| 33 | `secret_vault` | Secret Vault | 秘密保險箱 | Vault feature title |
-| 34 | `secret_vault_empty` | Secret Vault is empty | 秘密保險箱為空 | Empty state placeholder for Secret Vault |
-| 35 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | 確定要解密隱藏的檔案嗎？ | Confirmation prompt for decrypting hidden file(s) |
-| 36 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | 基於安全考量，保險箱解鎖期間已停用複製到剪貼簿功能。 | Security notice using `剪貼簿` matching `fossify-commons` |
-| 37 | `on_vault_exit` | On leaving hidden section | 離開隱藏區域時 | Settings label for behavior when leaving hidden section |
-| 38 | `on_vault_exit_keep_showing_all` | Keep showing all hidden albums | 繼續顯示所有隱藏相簿 | Radio option |
-| 39 | `on_vault_exit_show_encrypted_only` | Only show encrypted albums | 僅顯示已加密相簿 | Radio option |
-| 40 | `on_vault_exit_show_other_only` | Only show other hidden albums | 僅顯示其他隱藏相簿 | Radio option |
-| 41 | `on_vault_exit_hide_all` | Hide all hidden albums | 隱藏所有已隱藏相簿 | Radio option; uses `已隱藏` to distinguish verb and adjective |
-| 42 | `on_vault_exit_ask_every_time` | Always ask | 每次詢問 | Radio option |
-| 43 | `vault_exit_dialog_title` | Exiting Hidden Section | 正在離開隱藏區域 | Dialog title |
-| 44 | `vault_exit_keep_showing` | Keep showing hidden albums | 繼續顯示隱藏相簿 | Dialog radio option |
-| 45 | `vault_exit_hide` | Hide hidden albums | 隱藏已隱藏的相簿 | Dialog radio option; consistent with `on_vault_exit_hide_all` |
-| 46 | `vault_exit_remember_my_choice` | Remember my choice | 記住我的選擇 | Dialog checkbox label |
-| 47 | `vault_exit_settings_hint` | For more options, see Settings &gt; On leaving hidden section | 如需更多選項，請前往「設定」&gt;「離開隱藏區域時」 | References `設定` and `離開隱藏區域時` |
-| 48 | `system_default` | System default | 系統預設 | Matches `fossify-commons` `system_default` (`系統預設`) |
-| 49 | `language` | Language | 語言 | Matches `fossify-commons` `language` (`語言`) |
-| 50 | `open_system_language_settings` | Open system language settings | 開啟系統語言設定 | Neutral dialog button in language picker |
+| 19 | `repeat_password` | Repeat password | 再次輸入密碼 | Matches `fossify-commons` `repeat_pin` (`再次輸入PIN碼`) |
+| 20 | `wrong_password` | Wrong password | 密碼錯誤 | Matches `fossify-commons` `wrong_pin` (`PIN碼錯誤`) |
+| 21 | `encrypting_files` | Encrypting files… | 正在加密檔案… | Progress message using `正在…` style |
+| 22 | `encrypting_folder` | Encrypting folder… | 正在加密資料夾… | Progress message using `正在…` style |
+| 23 | `folder_encrypted_successfully` | Folder encrypted successfully | 資料夾加密成功 | Success message matching `圖片尺寸調整成功` |
+| 24 | `decrypting_folder` | Decrypting folder… | 正在解密資料夾… | Progress message using `正在…` style |
+| 25 | `folder_decrypted_successfully` | Folder decrypted successfully | 資料夾解密成功 | Success message matching `圖片尺寸調整成功` |
+| 26 | `decrypting_files` | Decrypting files… | 正在解密檔案… | Progress message using `正在…` style |
+| 27 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | 請將手指放在指紋感應器上 | Matches `fossify-commons` `place_finger` terminology (`指紋感應器`) |
+| 28 | `connect_at_least_4_dots_prompt` | Connect at least 4 dots | 請至少連接 4 個點 | Pattern lock validation prompt |
+| 29 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | 您要存取現有的 Cipher_Secrets 資料夾嗎？ | Keeps literal folder name `Cipher_Secrets` |
+| 30 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | 現有的 Cipher_Secrets 資料夾將會被刪除並建立新的資料夾。確定要繼續嗎？ | Keeps literal folder name `Cipher_Secrets` |
+| 31 | `confirm_checkbox_label` | I confirm | 我確認 | Checkbox label, suffixed with countdown `(10)` in dialog |
+| 32 | `secret_vault` | Secret Vault | 秘密保險箱 | Vault feature title |
+| 33 | `secret_vault_empty` | Secret Vault is empty | 秘密保險箱為空 | Empty state placeholder for Secret Vault |
+| 34 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | 確定要解密隱藏的檔案嗎？ | Confirmation prompt for decrypting hidden file(s) |
+| 35 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | 基於安全考量，保險箱解鎖期間已停用複製到剪貼簿功能。 | Security notice using `剪貼簿` matching `fossify-commons` |
+| 36 | `on_vault_exit` | On leaving encrypted section | 離開加密區域時 | Settings label for behavior when leaving encrypted section |
+| 37 | `on_vault_exit_keep_showing` | Keep showing encrypted albums | 繼續顯示加密相簿 | Radio option |
+| 38 | `on_vault_exit_hide` | Hide encrypted albums | 隱藏加密相簿 | Radio option |
+| 39 | `on_vault_exit_ask_every_time` | Always ask | 每次詢問 | Radio option |
+| 40 | `vault_exit_dialog_title` | Exiting Encrypted Section | 正在離開加密區域 | Dialog title |
+| 41 | `vault_exit_question_single` | Show encrypted album together with other albums? | 是否將加密相簿與其他相簿一起顯示？ | Dialog question (single album) |
+| 42 | `vault_exit_question_multiple` | Show encrypted albums together with other albums? | 是否將加密相簿與其他相簿一起顯示？ | Dialog question (multiple albums) |
+| 43 | `vault_exit_settings_hint` | For more options, see Settings &gt; On leaving encrypted section | 如需更多選項，請前往「設定」&gt;「離開加密區域時」 | References `設定` and `離開加密區域時` |
+| 44 | `open_system_language_settings` | Open system language settings | 開啟系統語言設定 | Neutral dialog button in language picker |
+| 45 | `file_encrypted_successfully` | File hidden successfully | 已成功隱藏檔案 | Success toast after encrypting/hiding a single file |
+| 46 | `files_encrypted_successfully` | Files hidden successfully | 已成功隱藏檔案 | Success toast after encrypting/hiding multiple files |
+| 47 | `file_decrypted_successfully` | File unhidden successfully | 已成功解除隱藏檔案 | Success toast after decrypting/unhiding a single file |
+| 48 | `files_decrypted_successfully` | Files unhidden successfully | 已成功解除隱藏檔案 | Success toast after decrypting/unhiding multiple files |
+| 49 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | 使用生物辨識存取隱藏項目 | Settings switch, setup prompt title, and vault security dialog button |
+| 50 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | 請先啟用隱藏項目的密碼保護 | Toast shown when enabling biometrics before hidden-item password protection |
+| 51 | `biometric_unlock_vault` | Unlock hidden vault | 解鎖隱藏保險箱 | BiometricPrompt title when unlocking the hidden vault |
+| 52 | `biometric_unlock_prompt` | Verify your biometric identity to access hidden items | 驗證您的生物辨識身分以存取隱藏項目 | BiometricPrompt subtitle when unlocking hidden items |
+| 53 | `biometric_setup_prompt` | Confirm your biometric identity to enable biometric vault access | 確認您的生物辨識身分以啟用保險箱的生物辨識存取 | BiometricPrompt subtitle when enabling biometric vault access |
+| 54 | `use_password_or_pin` | Use PIN / Password | 使用 PIN 碼 / 密碼 | BiometricPrompt negative button to fall back to PIN/password |
+| 55 | `biometric_key_invalidated` | Biometric credentials have changed. Please enter your PIN or password. | 生物辨識憑證已變更，請輸入您的 PIN 碼或密碼。 | Toast shown when biometric credentials changed and Keystore key invalidated |
+| 56 | `no_biometric_hardware_or_enrolled` | No biometric hardware or enrolled credentials found on this device | 此裝置上找不到生物辨識硬體或已註冊的憑證 | Toast shown when no biometric hardware or enrolled credentials exist |
+| 57 | `default_hidden_album` | Default Hidden Album | 預設隱藏相簿 | Settings / picker label for default hidden album |
+| 58 | `select_hidden_album` | Select Hidden Album | 選擇隱藏相簿 | Dialog title for choosing target hidden album |
+| 59 | `create_new_hidden_album` | Create New Hidden Album | 建立新隱藏相簿 | Action label to create a new hidden album |
+| 60 | `new_hidden_album` | New hidden album | 新隱藏相簿 | Input hint / default label for new hidden album |
+| 61 | `hidden_album_name_empty` | Album name cannot be empty | 相簿名稱不能為空 | Validation error when hidden album name is blank |
+| 62 | `file_hidden_to_album` | File hidden to \"%s\" | 檔案已隱藏至「%s」 | Success toast after hiding a single file into album `%s` |
+| 63 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | %1$d 個檔案已隱藏至「%2$s」 | Success toast after hiding `%1$d` files into album `%2$s` |
+
+### 1.3 Newly Added Translations for Strings Already Present in the Original Fossify Gallery (3 Keys)
+
+These 3 strings already exist in the original Fossify Gallery (upstream); only the translations below were newly added in this fork:
+
+| # | Key (`name`) | English (`values/strings.xml`) | Taiwanese (`values-zh-rTW/strings.xml`) | Notes |
+|---:|---|---|---|---|
+| 1 | `enter_password` | Enter password | 輸入密碼 | Matches `fossify-commons` `enter_password` (`輸入密碼`) |
+| 2 | `system_default` | System default | 系統預設 | Matches `fossify-commons` `system_default` (`系統預設`) |
+| 3 | `language` | Language | 語言 | Matches `fossify-commons` `language` (`語言`) |
+
+### 1.4 `fossify-commons` Inherited UI Strings (14 Keys)
+
+All 14 shared UI keys below are already localized in `org.fossify:commons:7.1.3` (`res/values-zh-rTW/values-zh-rTW.xml`); no local override in `values-zh-rTW/strings.xml` was required:
+
+| # | Key (`name`) | English (`fossify-commons`) | Taiwanese (`fossify-commons`) | Source / Notes |
+|---:|---|---|---|---|
+| 1 | `change_date_and_time_format` | Change date and time format | 更改日期和時間格式 | Inherited from `fossify-commons` (Settings) |
+| 2 | `password_protect_file_deletion` | Password protect file deletion and moving | 保護檔案刪除和移動 | Inherited from `fossify-commons` (Settings) |
+| 3 | `keep_last_modified` | Keep old last-modified value at file operations | 變更檔案後仍保留原有的最後修改日期 | Inherited from `fossify-commons` (Settings) |
+| 4 | `clear_cache` | Clear cache | 清除快取 | Inherited from `fossify-commons` (Settings) |
+| 5 | `export_settings` | Export settings | 匯出設定 | Inherited from `fossify-commons` (Settings) |
+| 6 | `import_settings` | Import settings | 匯入設定 | Inherited from `fossify-commons` (Settings) |
+| 7 | `temporarily_show_excluded` | Temporarily show excluded | 暫停排除項目 | Inherited from `fossify-commons` (Options menu) |
+| 8 | `change_view_type` | Change view type | 顯示方式 | Inherited from `fossify-commons` (Options menu) |
+| 9 | `contributors` | Contributors | 貢獻者 | Inherited from `fossify-commons` (About) |
+| 10 | `known_issues` | Known issues | 已知問題 | Inherited from `fossify-commons` (About) |
+| 11 | `donate_to_fossify` | Donate to Fossify | 贊助 Fossify | Inherited from `fossify-commons` (About) |
+| 12 | `privacy_policy` | Privacy policy | 隱私政策 | Inherited from `fossify-commons` (About) |
+| 13 | `create_shortcut` | Create shortcut | 建立捷徑 | Inherited from `fossify-commons` (CAB / ViewPager menu) |
+| 14 | `print` | Print | 列印 | Inherited from `fossify-commons` (ViewPager menu) |
+| 15 | `search_files` | Search files | 搜尋檔案 | Inherited from `fossify-commons` (Search bar hint) |
+| 16 | `search_folders` | Search folders | 搜尋資料夾 | Inherited from `fossify-commons` (Search bar hint) |
 
 ## 2. Full 1-to-1 Comparison: English vs. Traditional Chinese (Taiwan)
 
@@ -295,104 +345,140 @@
 | 208 | `alternative_media_access` | Alternatively, you can allow accessing media files only. In that case you will not be able to work with hidden files though. | 或者，您只能允許存取媒體檔案。但在這種情況下，您將無法處理隱藏檔案。 |
 | 209 | `media_only` | Media only | 僅媒體 |
 | 210 | `all_files` | All files | 所有檔案 |
-| 211 | `search_all_files` | Search all files instead of folders on the main screen | 在主畫面搜尋所有檔案 |
-| 212 | `show_all_folders` | Show a menu button for toggling Show All Folders Content quickly | 顯示一個選單按鈕，快速切換「顯示所有資料夾內容」 |
-| 213 | `thumbnails` | Thumbnails | 縮圖 |
-| 214 | `fullscreen_media` | Fullscreen media | 全螢幕媒體檔案 |
-| 215 | `extended_details` | Extended details | 詳細資訊 |
-| 216 | `bottom_actions` | Bottom actions | 底部操作 |
-| 217 | `manage_bottom_actions` | Manage visible bottom actions | 管理要顯示的底部操作 |
-| 218 | `toggle_favorite` | Toggle favorite | 切換我的最愛 |
-| 219 | `toggle_file_visibility` | Toggle file visibility | 切換檔案可見性 |
-| 220 | `failed_to_load_media` | Failed to load media. | 載入媒體失敗。 |
-| 221 | `file_is_malformed_or_corrupted` | File is malformed or corrupted. | 檔案格式錯誤或損毀。 |
-| 222 | `media_exceeds_device_capabilities` | Media exceeds device capabilities. | 媒體超出裝置的播放能力。 |
-| 223 | `unsupported_format` | Unsupported format. | 不支援的格式。 |
-| 224 | `video_no_sound` | This video has no audio | 此影片沒有音訊 |
-| 225 | `faq_1_title` | How can I make Fossify Gallery the default device gallery? | 怎樣將 Fossify Gallery 設為本裝置的預設相簿？ |
-| 226 | `faq_1_text` | First you have to find the currently default gallery in the Apps section of your device settings, look for a button that says something like \"Open by default\", click on it, then select \"Clear defaults\". The next time you will try opening an image or video you should see an app picker, where you can select Fossify Gallery and make it the default app. | 首先，您需要在裝置設定的應用程式部分找到目前預設的相簿，尋找一個寫著「預設開啟」之類的按鈕，點擊它，然後選擇「清除預設」。下次嘗試開啟圖片或影片時，您應該會看到一個應用程式選擇器，您可以在其中選擇 Fossify Gallery 並將其設為預設應用程式。 |
-| 227 | `faq_2_title` | I locked the app with a password, but I forgot it. What can I do? | 用密碼把這個應用程式上鎖後忘記密碼該怎麼辦？ |
-| 228 | `faq_2_text` | You can solve it in 2 ways. You can either reinstall the app, or find the app in your device settings and select \"Clear data\". It will reset all your settings, it will not remove any media files. | 有兩種解決方法。一是重新安裝本應用程式。一是在裝置的設定中找到本應用程式，然後按「清除資料」（或「清除儲存空間」等類似的字眼），應用程式的設定將會被重設，但不會移除任何媒體檔案。 |
-| 229 | `faq_3_title` | How can I make an album always appear at the top? | 如何使某個相簿顯示在最頂端？ |
-| 230 | `faq_3_text` | You can long press the desired album and select the Pin icon at the actions menu, that will pin it to the top. You can pin multiple folders too, pinned items will be sorted by the default sorting method. | 長按該相簿，接著按圖釘圖示或選單中的「釘選在頂端」。您可以同時釘選數個相簿，它們將會依照預設排序方式排序。 |
-| 231 | `faq_4_title` | How can I fast forward videos? | 如何快轉影片？ |
-| 232 | `faq_4_text` | You can do it by double tapping the side of the screen, or tapping the current or max duration texts near the seekbar. If you enable opening videos on a separate screen in the app settings, you can use horizontal gestures too. | 點兩下螢幕邊邊，或者按一下進度條旁邊的目前播放時間／影片時長文字。若您在設定中啟用了「總是用新的水平手勢在獨立畫面開啟影片」，則您也可以使用水平手勢快轉。 |
-| 233 | `faq_5_title` | What is the difference between hiding and excluding a folder? | 「隱藏」與「排除」資料夾之間有什麼差別？ |
-| 234 | `faq_5_text` | Exclude prevents displaying the folder only in Fossify Gallery, while Hide works system-wise and it hides the folder from other galleries too. It works by creating an empty \".nomedia\" file in the given folder, which you can then remove with any file manager too. Note that some devices do not allow hiding folders like Camera, Screenshots and Downloads. | 排除是指僅在 Fossify Gallery 中不顯示該資料夾，而隱藏則是系統層級的操作，它也會將資料夾隱藏於其他相簿。這是透過在指定資料夾建立一個名為「.nomedia」的空檔案來實現的，您也可以使用任何檔案管理員刪除它。請注意，有些裝置不允許隱藏像是相機、螢幕截圖和下載等資料夾。 |
-| 235 | `faq_6_title` | Why do folders with music cover art or stickers show up? | 為何出現了音樂的封面圖或是貼圖的資料夾？ |
-| 236 | `faq_6_text` | It can happen that you will see some unusual albums show up. You can easily exclude them by long pressing them and selecting Exclude. In the next dialog you can then select the parent folder, chances are it will prevent the other related albums showing up too. | 有時候會出現一些異常的相簿。長按並點選排除可排除它們，在接下來的對話框選擇它們的上層資料夾的話，有機會避免相關的相簿出現。 |
-| 237 | `faq_7_title` | A folder with images isn\'t showing up, or it doesn\'t show all items.  What can I do? | 有個含有圖片的資料夾沒出現，抑或是沒有顯示所有項目時，該怎麼辦？ |
-| 238 | `faq_7_text` | That can have multiple reasons, but solving it is easy. Just go in Settings -&gt; Manage Included Folders, select Plus and navigate to the required folder. | 可能有很多種原因，但解法很簡單。前往「設定」 -&gt; 「管理包含資料夾」、按加號（+）、選擇該資料夾即可。 |
-| 239 | `faq_8_title` | What if I want just a few particular folders visible? | 如果只想顯示特定資料夾呢？ |
-| 240 | `faq_8_text` | Adding a folder at the Included Folders doesn\'t automatically exclude anything. What you can do is go in Settings -&gt; Manage Excluded Folders, exclude the root folder \"/\", then add the desired folders at Settings -&gt; Manage Included Folders. That will make only the selected folders visible, as both excluding and including are recursive and if a folder is both excluded and included, it will show up. | 如果只將某資料夾加入至「包含資料夾」的話，其他的資料夾並不會被自動排除。請前往「設定」-&gt;「管理排除資料夾」、將根資料夾「/」排除，並在「設定」-&gt;「管理包含資料夾」中加入欲顯示的資料夾。 這樣就只會顯示所選的資料夾，因為排除與包含都是遞迴的，所以若某資料夾同時被包含及排除，其將會顯示。 |
-| 241 | `faq_10_title` | Can I crop images with this app? | 這個應用程式可以裁剪圖片嗎？ |
-| 242 | `faq_10_text` | Yes, you can crop images in the editor, by dragging the image corners. You can get to the editor either by long pressing an image thumbnail and selecting Edit, or selecting Edit from the fullscreen view. | 可以，在編輯工具中拖動圖片的角落即可裁剪圖片。對縮圖長按並選擇編輯，或者在全螢幕檢視時選擇編輯皆可進入編輯工具。 |
-| 243 | `faq_11_title` | Can I somehow group media file thumbnails? | 有辦法分類縮圖嗎？ |
-| 244 | `faq_11_text` | Sure, just use the \"Group by\" menu item while at the thumbnails view. You can group files by multiple criteria, including Date Taken. If you use the \"Show all folders content\" function you can group them by folders too. | 可以，在檢視縮圖時使用選單中的「分組方式」即可，有多種分類方式可供選擇，包含拍攝日期等。若使用了「資料夾內容全部顯示」功能，則也可以依資料夾來分類。 |
-| 245 | `faq_12_title` | Sorting by Date Taken doesn\'t seem to work properly, how can I fix it? | 依照拍攝日期的排序好像排得不太對，要怎麼修正？ |
-| 246 | `faq_12_text` | It is most likely caused by the files being copied from somewhere. You can fix it by selecting the file thumbnails and selecting \"Fix Date Taken value\". | 很有可能是因為檔案是從其他地方複製過來的。選擇縮圖並選擇「修復拍攝日期數值」即可修正。 |
-| 247 | `faq_13_title` | I see some color banding on the images. How can I improve the quality? | 看到圖片上出現了色帶問題，要如何改善畫質？ |
-| 248 | `faq_13_text` | The current solution for displaying images works fine in the vast majority of cases, but if you want even better image quality, you can enable the \"Show images in the highest possible quality\" at the app settings, in the \"Deep zoomable images\" section. | 目前顯示圖片的方式在大多數情況下都能正常運作，但若想要更好的畫質，可以啟用「設定」-&gt;「可強制放大的圖片」段落中的「以最高品質顯示圖片」。 |
-| 249 | `faq_14_title` | I have hidden a file/folder. How can I unhide it? | 如何取消隱藏檔案／資料夾？ |
-| 250 | `faq_14_text` | You can either press the \"Temporarily show hidden items\" menu item at the main screen, or toggle \"Show hidden items\" in the app settings to see the hidden item. If you want to unhide it, just long press it and select \"Unhide\". Folders are hidden by adding a hidden \".nomedia\" file into them, you can delete the file with any file manager too. Note that hiding works recursively though, so if you hide a folder, all subfolders will become hidden too. So for unhiding the subfolders you have to unhide the parent folder. | 按主畫面選單中的「暫時顯示隱藏的檔案」或設定中的「顯示隱藏的項目」就能看到隱藏的項目。若要取消隱藏，長按並選擇「取消隱藏」即可。資料夾隱藏的原理是在其內新增一個「.nomedia」檔案，因此可用任意檔案管理器將其刪除。檔案／資料夾是以遞迴的方式被隱藏的，因此若某資料夾被隱藏，其子資料夾也會被隱藏。若要取消隱藏子資料夾，其上層資料夾需先被取消隱藏。 |
-| 251 | `faq_15_title` | Why does the app take up so much space? | 這個應用程式怎麼佔用了這麼多空間？ |
-| 252 | `faq_15_text` | App cache can take up to 250MB, it ensures quicker image loading. If the app is taking up even more space, it is most likely caused by you having items in the recycle bin. Those files count to the app size. You can clear the recycle bin by opening it and deleting all files, or from the app settings. Every file in the bin is deleted automatically after 30 days. | 應用程式快取可協助圖片載入更快，最高僅佔 250 MB。如果此應用程式佔用超過 250 MB 空間，可能是回收桶中的檔案仍在佔用空間。您可刪除回收桶中的所有檔案，或在設定中快速清除。檔案進入回收桶的 30 天後將自動刪除。 |
-| 253 | `faq_16_title` | What happened to file and folder hiding and why cannot I see hidden items anymore? | 檔案／資料夾隱藏怎麼了？為什麼我看不到隱藏的項目了？ |
-| 254 | `faq_16_text` | Starting with Android 11 you cannot hide or unhide files or folders anymore, you cannot see the hidden ones in gallery apps due to system restrictions either. You will have to use some file manager for that. | 自 Android 11 開始，因系統限制，無法隱藏或解除隱藏檔案或資料夾，也無法在相簿應用程式中看到已隱藏的項目。請使用檔案管理程式達成上述操作。 |
-| 255 | `faq_16_text_extra` | Or you can also grant this gallery access to All Files through your device settings, that will allow us showing hidden items and make file operations more reliable in general. | 或者，您也可以透過您的裝置設定授予此相簿存取所有檔案的權限，這將允許我們顯示隱藏項目並使檔案操作更為可靠。 |
-| 256 | `faq_17_title` | Why cannot I include missing folders anymore? | 為什麼不能再包含缺漏的資料夾了？ |
-| 257 | `faq_17_text` | That stopped working due to the system changes that came with Android 11 too, the app cannot browse real folders anymore, it relies on the so called MediaStore at fetching data. | 因 Android 11 的系統變更，這項功能無法再運作。應用程式沒辦法瀏覽實際的資料夾，而是透過所謂的 MediaStore 來擷取資料。 |
-| 258 | `faq_18_title` | Why do I see ads during video playback? | 為什麼我在播放影片時看到廣告？ |
-| 259 | `faq_18_text` | Our apps have no ads whatsoever. If you see them during video playback, you must be using some other apps video player. Try finding your default video player in the device settings, then do a \"Clear defaults\" on it. The next time you invoke some video intent you will see an app picker prompt, where you can select what app you want to use. | 我們的應用程式完全沒有廣告。如果您在播放影片時看到它們，那麼您一定是在使用其他應用程式的影片播放器。請試著在裝置設定中找到您的預設影片播放器，並清除其預設值。下次您嘗試播放影片時，系統會提示您選擇應用程式，您可以在此選擇您想要使用的影片播放器。 |
-| 260 | `create_virtual_album` | Create virtual album | 建立虛擬相簿 |
-| 261 | `new_virtual_album` | New album… | 新增相簿… |
-| 262 | `rename_virtual_album` | Rename album | 重新命名相簿 |
-| 263 | `album_name` | Album name | 相簿名稱 |
-| 264 | `virtual_folder_name` | Virtual folder name | 虛擬資料夾名稱 |
-| 265 | `virtual_album_name_empty` | The album name cannot be empty | 相簿名稱不可為空 |
-| 266 | `virtual_album_exists` | An album with this name already exists | 已存在相同名稱的相簿 |
-| 267 | `add_to_virtual_album` | Add to album | 加入相簿 |
-| 268 | `remove_from_virtual_album` | Remove from album | 從相簿中移除 |
-| 269 | `added_to_virtual_album` | Added to \"%s\" | 已加入「%s」 |
-| 270 | `already_in_virtual_album` | Already in \"%s\" | 已在「%s」中 |
-| 271 | `removed_from_virtual_album` | Removed from the album | 已從相簿中移除 |
-| 272 | `delete_virtual_album_confirmation` | Delete the album %s? Only the album is removed, your photos and videos stay where they are. | 確定要刪除相簿 %s 嗎？僅會移除相簿本身，您的相片和影片仍會保留在原處。 |
-| 273 | `virtual_album_empty` | This album is empty. Select items in any folder and use \"Copy to\". | 此相簿為空。請在任意資料夾中選取項目，並使用「複製」。 |
-| 274 | `virtual_album_cannot_be_modified` | This action is not available for virtual albums | 此操作不適用於虛擬相簿 |
-| 275 | `alphanumeric_password` | Password | 密碼 |
-| 276 | `enter_password` | Enter password | 輸入密碼 |
-| 277 | `repeat_password` | Repeat password | 再次輸入密碼 |
-| 278 | `wrong_password` | Wrong password | 密碼錯誤 |
-| 279 | `encrypting_files` | Encrypting files… | 正在加密檔案… |
-| 280 | `encrypting_folder` | Encrypting folder… | 正在加密資料夾… |
-| 281 | `folder_encrypted_successfully` | Folder encrypted successfully | 資料夾加密成功 |
-| 282 | `decrypting_folder` | Decrypting folder… | 正在解密資料夾… |
-| 283 | `folder_decrypted_successfully` | Folder decrypted successfully | 資料夾解密成功 |
-| 284 | `decrypting_files` | Decrypting files… | 正在解密檔案… |
-| 285 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | 請將手指放在指紋感應器上 |
-| 286 | `connect_at_least_4_dots_prompt` | Connect at least 4 dots | 請至少連接 4 個點 |
-| 287 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | 您要存取現有的 Cipher_Secrets 資料夾嗎？ |
-| 288 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | 現有的 Cipher_Secrets 資料夾將會被刪除並建立新的資料夾。確定要繼續嗎？ |
-| 289 | `confirm_checkbox_label` | I confirm | 我確認 |
-| 290 | `secret_vault` | Secret Vault | 秘密保險箱 |
-| 291 | `secret_vault_empty` | Secret Vault is empty | 秘密保險箱為空 |
-| 292 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | 確定要解密隱藏的檔案嗎？ |
-| 293 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | 基於安全考量，保險箱解鎖期間已停用複製到剪貼簿功能。 |
-| 294 | `on_vault_exit` | On leaving hidden section | 離開隱藏區域時 |
-| 295 | `on_vault_exit_keep_showing_all` | Keep showing all hidden albums | 繼續顯示所有隱藏相簿 |
-| 296 | `on_vault_exit_show_encrypted_only` | Only show encrypted albums | 僅顯示已加密相簿 |
-| 297 | `on_vault_exit_show_other_only` | Only show other hidden albums | 僅顯示其他隱藏相簿 |
-| 298 | `on_vault_exit_hide_all` | Hide all hidden albums | 隱藏所有已隱藏相簿 |
-| 299 | `on_vault_exit_ask_every_time` | Always ask | 每次詢問 |
-| 300 | `vault_exit_dialog_title` | Exiting Hidden Section | 正在離開隱藏區域 |
-| 301 | `vault_exit_keep_showing` | Keep showing hidden albums | 繼續顯示隱藏相簿 |
-| 302 | `vault_exit_hide` | Hide hidden albums | 隱藏已隱藏的相簿 |
-| 303 | `vault_exit_remember_my_choice` | Remember my choice | 記住我的選擇 |
-| 304 | `vault_exit_settings_hint` | For more options, see Settings &gt; On leaving hidden section | 如需更多選項，請前往「設定」&gt;「離開隱藏區域時」 |
-| 305 | `system_default` | System default | 系統預設 |
-| 306 | `language` | Language | 語言 |
-| 307 | `open_system_language_settings` | Open system language settings | 開啟系統語言設定 |
-| 308 | `restore_confirmation` (`one`) | Are you sure you want to restore %d file? | 您確定要還原 %d 個檔案嗎？ *(CLDR `other`)* |
-| 309 | `restore_confirmation` (`other`) | Are you sure you want to restore %d files? | 您確定要還原 %d 個檔案嗎？ |
-| 310 | `failed_to_resize_images` (`one`) | Failed to resize %d image | %d 張圖片尺寸調整失敗 *(CLDR `other`)* |
-| 311 | `failed_to_resize_images` (`other`) | Failed to resize %d images | %d 張圖片尺寸調整失敗 |
+| 211 | `main_screen_view_on_launch` | Main screen view on launch | 啟動時的主畫面檢視 |
+| 212 | `show_folders` | Show folders | 顯示資料夾 |
+| 213 | `show_files` | Show files | 顯示檔案 |
+| 214 | `show_all_folders` | Show a menu button for toggling Show All Folders Content quickly | 顯示一個選單按鈕，快速切換「顯示所有資料夾內容」 |
+| 215 | `thumbnails` | Thumbnails | 縮圖 |
+| 216 | `fullscreen_media` | Fullscreen media | 全螢幕媒體檔案 |
+| 217 | `extended_details` | Extended details | 詳細資訊 |
+| 218 | `bottom_actions` | Bottom actions | 底部操作 |
+| 219 | `manage_bottom_actions` | Manage visible bottom actions | 管理要顯示的底部操作 |
+| 220 | `toggle_favorite` | Toggle favorite | 切換我的最愛 |
+| 221 | `toggle_file_visibility` | Toggle file visibility | 切換檔案可見性 |
+| 222 | `failed_to_load_media` | Failed to load media. | 載入媒體失敗。 |
+| 223 | `file_is_malformed_or_corrupted` | File is malformed or corrupted. | 檔案格式錯誤或損毀。 |
+| 224 | `media_exceeds_device_capabilities` | Media exceeds device capabilities. | 媒體超出裝置的播放能力。 |
+| 225 | `unsupported_format` | Unsupported format. | 不支援的格式。 |
+| 226 | `video_no_sound` | This video has no audio | 此影片沒有音訊 |
+| 227 | `faq_1_title` | How can I make Fossify Gallery the default device gallery? | 怎樣將 Fossify Gallery 設為本裝置的預設相簿？ |
+| 228 | `faq_1_text` | First you have to find the currently default gallery in the Apps section of your device settings, look for a button that says something like \"Open by default\", click on it, then select \"Clear defaults\". The next time you will try opening an image or video you should see an app picker, where you can select Fossify Gallery and make it the default app. | 首先，您需要在裝置設定的應用程式部分找到目前預設的相簿，尋找一個寫著「預設開啟」之類的按鈕，點擊它，然後選擇「清除預設」。下次嘗試開啟圖片或影片時，您應該會看到一個應用程式選擇器，您可以在其中選擇 Fossify Gallery 並將其設為預設應用程式。 |
+| 229 | `faq_2_title` | I locked the app with a password, but I forgot it. What can I do? | 用密碼把這個應用程式上鎖後忘記密碼該怎麼辦？ |
+| 230 | `faq_2_text` | You can solve it in 2 ways. You can either reinstall the app, or find the app in your device settings and select \"Clear data\". It will reset all your settings, it will not remove any media files. | 有兩種解決方法。一是重新安裝本應用程式。一是在裝置的設定中找到本應用程式，然後按「清除資料」（或「清除儲存空間」等類似的字眼），應用程式的設定將會被重設，但不會移除任何媒體檔案。 |
+| 231 | `faq_3_title` | How can I make an album always appear at the top? | 如何使某個相簿顯示在最頂端？ |
+| 232 | `faq_3_text` | You can long press the desired album and select the Pin icon at the actions menu, that will pin it to the top. You can pin multiple folders too, pinned items will be sorted by the default sorting method. | 長按該相簿，接著按圖釘圖示或選單中的「釘選在頂端」。您可以同時釘選數個相簿，它們將會依照預設排序方式排序。 |
+| 233 | `faq_4_title` | How can I fast forward videos? | 如何快轉影片？ |
+| 234 | `faq_4_text` | You can do it by double tapping the side of the screen, or tapping the current or max duration texts near the seekbar. If you enable opening videos on a separate screen in the app settings, you can use horizontal gestures too. | 點兩下螢幕邊邊，或者按一下進度條旁邊的目前播放時間／影片時長文字。若您在設定中啟用了「總是用新的水平手勢在獨立畫面開啟影片」，則您也可以使用水平手勢快轉。 |
+| 235 | `faq_5_title` | What is the difference between hiding and excluding a folder? | 「隱藏」與「排除」資料夾之間有什麼差別？ |
+| 236 | `faq_5_text` | Exclude prevents displaying the folder only in Fossify Gallery, while Hide works system-wise and it hides the folder from other galleries too. It works by creating an empty \".nomedia\" file in the given folder, which you can then remove with any file manager too. Note that some devices do not allow hiding folders like Camera, Screenshots and Downloads. | 排除是指僅在 Fossify Gallery 中不顯示該資料夾，而隱藏則是系統層級的操作，它也會將資料夾隱藏於其他相簿。這是透過在指定資料夾建立一個名為「.nomedia」的空檔案來實現的，您也可以使用任何檔案管理員刪除它。請注意，有些裝置不允許隱藏像是相機、螢幕截圖和下載等資料夾。 |
+| 237 | `faq_6_title` | Why do folders with music cover art or stickers show up? | 為何出現了音樂的封面圖或是貼圖的資料夾？ |
+| 238 | `faq_6_text` | It can happen that you will see some unusual albums show up. You can easily exclude them by long pressing them and selecting Exclude. In the next dialog you can then select the parent folder, chances are it will prevent the other related albums showing up too. | 有時候會出現一些異常的相簿。長按並點選排除可排除它們，在接下來的對話框選擇它們的上層資料夾的話，有機會避免相關的相簿出現。 |
+| 239 | `faq_7_title` | A folder with images isn\'t showing up, or it doesn\'t show all items.  What can I do? | 有個含有圖片的資料夾沒出現，抑或是沒有顯示所有項目時，該怎麼辦？ |
+| 240 | `faq_7_text` | That can have multiple reasons, but solving it is easy. Just go in Settings -&gt; Manage Included Folders, select Plus and navigate to the required folder. | 可能有很多種原因，但解法很簡單。前往「設定」 -&gt; 「管理包含資料夾」、按加號（+）、選擇該資料夾即可。 |
+| 241 | `faq_8_title` | What if I want just a few particular folders visible? | 如果只想顯示特定資料夾呢？ |
+| 242 | `faq_8_text` | Adding a folder at the Included Folders doesn\'t automatically exclude anything. What you can do is go in Settings -&gt; Manage Excluded Folders, exclude the root folder \"/\", then add the desired folders at Settings -&gt; Manage Included Folders. That will make only the selected folders visible, as both excluding and including are recursive and if a folder is both excluded and included, it will show up. | 如果只將某資料夾加入至「包含資料夾」的話，其他的資料夾並不會被自動排除。請前往「設定」-&gt;「管理排除資料夾」、將根資料夾「/」排除，並在「設定」-&gt;「管理包含資料夾」中加入欲顯示的資料夾。 這樣就只會顯示所選的資料夾，因為排除與包含都是遞迴的，所以若某資料夾同時被包含及排除，其將會顯示。 |
+| 243 | `faq_10_title` | Can I crop images with this app? | 這個應用程式可以裁剪圖片嗎？ |
+| 244 | `faq_10_text` | Yes, you can crop images in the editor, by dragging the image corners. You can get to the editor either by long pressing an image thumbnail and selecting Edit, or selecting Edit from the fullscreen view. | 可以，在編輯工具中拖動圖片的角落即可裁剪圖片。對縮圖長按並選擇編輯，或者在全螢幕檢視時選擇編輯皆可進入編輯工具。 |
+| 245 | `faq_11_title` | Can I somehow group media file thumbnails? | 有辦法分類縮圖嗎？ |
+| 246 | `faq_11_text` | Sure, just use the \"Group by\" menu item while at the thumbnails view. You can group files by multiple criteria, including Date Taken. If you use the \"Show all folders content\" function you can group them by folders too. | 可以，在檢視縮圖時使用選單中的「分組方式」即可，有多種分類方式可供選擇，包含拍攝日期等。若使用了「資料夾內容全部顯示」功能，則也可以依資料夾來分類。 |
+| 247 | `faq_12_title` | Sorting by Date Taken doesn\'t seem to work properly, how can I fix it? | 依照拍攝日期的排序好像排得不太對，要怎麼修正？ |
+| 248 | `faq_12_text` | It is most likely caused by the files being copied from somewhere. You can fix it by selecting the file thumbnails and selecting \"Fix Date Taken value\". | 很有可能是因為檔案是從其他地方複製過來的。選擇縮圖並選擇「修復拍攝日期數值」即可修正。 |
+| 249 | `faq_13_title` | I see some color banding on the images. How can I improve the quality? | 看到圖片上出現了色帶問題，要如何改善畫質？ |
+| 250 | `faq_13_text` | The current solution for displaying images works fine in the vast majority of cases, but if you want even better image quality, you can enable the \"Show images in the highest possible quality\" at the app settings, in the \"Deep zoomable images\" section. | 目前顯示圖片的方式在大多數情況下都能正常運作，但若想要更好的畫質，可以啟用「設定」-&gt;「可強制放大的圖片」段落中的「以最高品質顯示圖片」。 |
+| 251 | `faq_14_title` | I have hidden a file/folder. How can I unhide it? | 如何取消隱藏檔案／資料夾？ |
+| 252 | `faq_14_text` | You can either press the \"Temporarily show hidden items\" menu item at the main screen, or toggle \"Show hidden items\" in the app settings to see the hidden item. If you want to unhide it, just long press it and select \"Unhide\". Folders are hidden by adding a hidden \".nomedia\" file into them, you can delete the file with any file manager too. Note that hiding works recursively though, so if you hide a folder, all subfolders will become hidden too. So for unhiding the subfolders you have to unhide the parent folder. | 按主畫面選單中的「暫時顯示隱藏的檔案」或設定中的「顯示隱藏的項目」就能看到隱藏的項目。若要取消隱藏，長按並選擇「取消隱藏」即可。資料夾隱藏的原理是在其內新增一個「.nomedia」檔案，因此可用任意檔案管理器將其刪除。檔案／資料夾是以遞迴的方式被隱藏的，因此若某資料夾被隱藏，其子資料夾也會被隱藏。若要取消隱藏子資料夾，其上層資料夾需先被取消隱藏。 |
+| 253 | `faq_15_title` | Why does the app take up so much space? | 這個應用程式怎麼佔用了這麼多空間？ |
+| 254 | `faq_15_text` | App cache can take up to 250MB, it ensures quicker image loading. If the app is taking up even more space, it is most likely caused by you having items in the recycle bin. Those files count to the app size. You can clear the recycle bin by opening it and deleting all files, or from the app settings. Every file in the bin is deleted automatically after 30 days. | 應用程式快取可協助圖片載入更快，最高僅佔 250 MB。如果此應用程式佔用超過 250 MB 空間，可能是回收桶中的檔案仍在佔用空間。您可刪除回收桶中的所有檔案，或在設定中快速清除。檔案進入回收桶的 30 天後將自動刪除。 |
+| 255 | `faq_16_title` | What happened to file and folder hiding and why cannot I see hidden items anymore? | 檔案／資料夾隱藏怎麼了？為什麼我看不到隱藏的項目了？ |
+| 256 | `faq_16_text` | Starting with Android 11 you cannot hide or unhide files or folders anymore, you cannot see the hidden ones in gallery apps due to system restrictions either. You will have to use some file manager for that. | 自 Android 11 開始，因系統限制，無法隱藏或解除隱藏檔案或資料夾，也無法在相簿應用程式中看到已隱藏的項目。請使用檔案管理程式達成上述操作。 |
+| 257 | `faq_16_text_extra` | Or you can also grant this gallery access to All Files through your device settings, that will allow us showing hidden items and make file operations more reliable in general. | 或者，您也可以透過您的裝置設定授予此相簿存取所有檔案的權限，這將允許我們顯示隱藏項目並使檔案操作更為可靠。 |
+| 258 | `faq_17_title` | Why cannot I include missing folders anymore? | 為什麼不能再包含缺漏的資料夾了？ |
+| 259 | `faq_17_text` | That stopped working due to the system changes that came with Android 11 too, the app cannot browse real folders anymore, it relies on the so called MediaStore at fetching data. | 因 Android 11 的系統變更，這項功能無法再運作。應用程式沒辦法瀏覽實際的資料夾，而是透過所謂的 MediaStore 來擷取資料。 |
+| 260 | `faq_18_title` | Why do I see ads during video playback? | 為什麼我在播放影片時看到廣告？ |
+| 261 | `faq_18_text` | Our apps have no ads whatsoever. If you see them during video playback, you must be using some other apps video player. Try finding your default video player in the device settings, then do a \"Clear defaults\" on it. The next time you invoke some video intent you will see an app picker prompt, where you can select what app you want to use. | 我們的應用程式完全沒有廣告。如果您在播放影片時看到它們，那麼您一定是在使用其他應用程式的影片播放器。請試著在裝置設定中找到您的預設影片播放器，並清除其預設值。下次您嘗試播放影片時，系統會提示您選擇應用程式，您可以在此選擇您想要使用的影片播放器。 |
+| 262 | `create_virtual_album` | Create virtual album | 建立虛擬相簿 |
+| 263 | `new_virtual_album` | New album… | 新增相簿… |
+| 264 | `rename_virtual_album` | Rename album | 重新命名相簿 |
+| 265 | `album_name` | Album name | 相簿名稱 |
+| 266 | `virtual_folder_name` | Virtual folder name | 虛擬資料夾名稱 |
+| 267 | `virtual_album_name_empty` | The album name cannot be empty | 相簿名稱不可為空 |
+| 268 | `virtual_album_exists` | An album with this name already exists | 已存在相同名稱的相簿 |
+| 269 | `add_to_virtual_album` | Add to album | 加入相簿 |
+| 270 | `remove_from_virtual_album` | Remove from album | 從相簿中移除 |
+| 271 | `added_to_virtual_album` | Added to \"%s\" | 已加入「%s」 |
+| 272 | `already_in_virtual_album` | Already in \"%s\" | 已在「%s」中 |
+| 273 | `removed_from_virtual_album` | Removed from the album | 已從相簿中移除 |
+| 274 | `delete_virtual_album_confirmation` | Delete the album %s? Only the album is removed, your photos and videos stay where they are. | 確定要刪除相簿 %s 嗎？僅會移除相簿本身，您的相片和影片仍會保留在原處。 |
+| 275 | `virtual_album_empty` | This album is empty. Select items in any folder and use \"Copy to\". | 此相簿為空。請在任意資料夾中選取項目，並使用「複製」。 |
+| 276 | `virtual_album_cannot_be_modified` | This action is not available for virtual albums | 此操作不適用於虛擬相簿 |
+| 277 | `alphanumeric_password` | Password | 密碼 |
+| 278 | `enter_password` | Enter password | 輸入密碼 |
+| 279 | `repeat_password` | Repeat password | 再次輸入密碼 |
+| 280 | `wrong_password` | Wrong password | 密碼錯誤 |
+| 281 | `encrypting_files` | Encrypting files… | 正在加密檔案… |
+| 282 | `encrypting_folder` | Encrypting folder… | 正在加密資料夾… |
+| 283 | `folder_encrypted_successfully` | Folder encrypted successfully | 資料夾加密成功 |
+| 284 | `file_encrypted_successfully` | File hidden successfully | 已成功隱藏檔案 |
+| 285 | `files_encrypted_successfully` | Files hidden successfully | 已成功隱藏檔案 |
+| 286 | `decrypting_folder` | Decrypting folder… | 正在解密資料夾… |
+| 287 | `folder_decrypted_successfully` | Folder decrypted successfully | 資料夾解密成功 |
+| 288 | `file_decrypted_successfully` | File unhidden successfully | 已成功解除隱藏檔案 |
+| 289 | `files_decrypted_successfully` | Files unhidden successfully | 已成功解除隱藏檔案 |
+| 290 | `decrypting_files` | Decrypting files… | 正在解密檔案… |
+| 291 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | 請將手指放在指紋感應器上 |
+| 292 | `connect_at_least_4_dots_prompt` | Connect at least 4 dots | 請至少連接 4 個點 |
+| 293 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | 您要存取現有的 Cipher_Secrets 資料夾嗎？ |
+| 294 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | 現有的 Cipher_Secrets 資料夾將會被刪除並建立新的資料夾。確定要繼續嗎？ |
+| 295 | `confirm_checkbox_label` | I confirm | 我確認 |
+| 296 | `secret_vault` | Secret Vault | 秘密保險箱 |
+| 297 | `secret_vault_empty` | Secret Vault is empty | 秘密保險箱為空 |
+| 298 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | 確定要解密隱藏的檔案嗎？ |
+| 299 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | 基於安全考量，保險箱解鎖期間已停用複製到剪貼簿功能。 |
+| 300 | `on_vault_exit` | On leaving encrypted section | 離開加密區域時 |
+| 301 | `on_vault_exit_keep_showing` | Keep showing encrypted albums | 繼續顯示加密相簿 |
+| 302 | `on_vault_exit_hide` | Hide encrypted albums | 隱藏加密相簿 |
+| 303 | `on_vault_exit_ask_every_time` | Always ask | 每次詢問 |
+| 304 | `vault_exit_dialog_title` | Exiting Encrypted Section | 正在離開加密區域 |
+| 305 | `vault_exit_question_single` | Show encrypted album together with other albums? | 是否將加密相簿與其他相簿一起顯示？ |
+| 306 | `vault_exit_question_multiple` | Show encrypted albums together with other albums? | 是否將加密相簿與其他相簿一起顯示？ |
+| 307 | `vault_exit_settings_hint` | For more options, see Settings &gt; On leaving encrypted section | 如需更多選項，請前往「設定」&gt;「離開加密區域時」 |
+| 308 | `stop_showing_hidden` | Stop showing encrypted media | 停止顯示已加密媒體 |
+| 309 | `system_default` | System default | 系統預設 |
+| 310 | `language` | Language | 語言 |
+| 311 | `open_system_language_settings` | Open system language settings | 開啟系統語言設定 |
+| 312 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | 使用生物辨識存取隱藏項目 |
+| 313 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | 請先啟用隱藏項目的密碼保護 |
+| 314 | `biometric_unlock_vault` | Unlock hidden vault | 解鎖隱藏保險箱 |
+| 315 | `biometric_unlock_prompt` | Verify your biometric identity to access hidden items | 驗證您的生物辨識身分以存取隱藏項目 |
+| 316 | `biometric_setup_prompt` | Confirm your biometric identity to enable biometric vault access | 確認您的生物辨識身分以啟用保險箱的生物辨識存取 |
+| 317 | `use_password_or_pin` | Use PIN / Password | 使用 PIN 碼 / 密碼 |
+| 318 | `biometric_key_invalidated` | Biometric credentials have changed. Please enter your PIN or password. | 生物辨識憑證已變更，請輸入您的 PIN 碼或密碼。 |
+| 319 | `no_biometric_hardware_or_enrolled` | No biometric hardware or enrolled credentials found on this device | 此裝置上找不到生物辨識硬體或已註冊的憑證 |
+| 320 | `default_hidden_album` | Default Hidden Album | 預設隱藏相簿 |
+| 321 | `select_hidden_album` | Select Hidden Album | 選擇隱藏相簿 |
+| 322 | `create_new_hidden_album` | Create New Hidden Album | 建立新隱藏相簿 |
+| 323 | `new_hidden_album` | New hidden album | 新隱藏相簿 |
+| 324 | `hidden_album_name_empty` | Album name cannot be empty | 相簿名稱不能為空 |
+| 325 | `file_hidden_to_album` | File hidden to \"%s\" | 檔案已隱藏至「%s」 |
+| 326 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | %1$d 個檔案已隱藏至「%2$s」 |
+| 327 | `restore_confirmation` (`one`) | Are you sure you want to restore %d file? | 您確定要還原 %d 個檔案嗎？ *(CLDR `other`)* |
+| 328 | `restore_confirmation` (`other`) | Are you sure you want to restore %d files? | 您確定要還原 %d 個檔案嗎？ |
+| 329 | `failed_to_resize_images` (`one`) | Failed to resize %d image | %d 張圖片尺寸調整失敗 *(CLDR `other`)* |
+| 330 | `failed_to_resize_images` (`other`) | Failed to resize %d images | %d 張圖片尺寸調整失敗 |
+| 331 | `search` *(fossify-commons)* | *(inherited from commons)* | 搜尋 |
+| 332 | `change_date_and_time_format` *(fossify-commons)* | Change date and time format | 更改日期和時間格式 |
+| 333 | `password_protect_file_deletion` *(fossify-commons)* | Password protect file deletion and moving | 保護檔案刪除和移動 |
+| 334 | `keep_last_modified` *(fossify-commons)* | Keep old last-modified value at file operations | 變更檔案後仍保留原有的最後修改日期 |
+| 335 | `clear_cache` *(fossify-commons)* | Clear cache | 清除快取 |
+| 336 | `export_settings` *(fossify-commons)* | Export settings | 匯出設定 |
+| 337 | `import_settings` *(fossify-commons)* | Import settings | 匯入設定 |
+| 338 | `temporarily_show_excluded` *(fossify-commons)* | Temporarily show excluded | 暫停排除項目 |
+| 339 | `change_view_type` *(fossify-commons)* | Change view type | 顯示方式 |
+| 340 | `contributors` *(fossify-commons)* | Contributors | 貢獻者 |
+| 341 | `known_issues` *(fossify-commons)* | Known issues | 已知問題 |
+| 342 | `donate_to_fossify` *(fossify-commons)* | Donate to Fossify | 贊助 Fossify |
+| 343 | `privacy_policy` *(fossify-commons)* | Privacy policy | 隱私政策 |
+| 344 | `create_shortcut` *(fossify-commons)* | Create shortcut | 建立捷徑 |
+| 345 | `print` *(fossify-commons)* | Print | 列印 |
+| 346 | `search_files` *(fossify-commons)* | Search files | 搜尋檔案 |
+| 347 | `search_folders` *(fossify-commons)* | Search folders | 搜尋資料夾 |

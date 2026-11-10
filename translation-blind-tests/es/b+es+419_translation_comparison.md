@@ -1,6 +1,6 @@
 # Spanish (Latin America, values-b+es+419) Translation Completion & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-b+es+419/strings.xml` was updated to full parity using Standard Spanish (`values-es/strings.xml`) as reference and adapting all entries to Latin American Spanish (`es-419`) and `fossify-commons` (`values-b+es+419`). Previously, `values-b+es+419` contained only 21 `<string>` entries (and 0 `<plurals>`). All 21 existing valid regional entries were preserved, and all 286 missing `<string>` entries plus 2 `<plurals>` blocks were added (307 `<string>` + 2 `<plurals>` = 309 resource entries; `search` is inherited as `Buscar` from `fossify-commons`; 313 total comparison rows).
+> **Scope:** `app/src/main/res/values-b+es+419/strings.xml` was updated to full parity using Standard Spanish (`values-es/strings.xml`) as reference and adapting all entries to Latin American Spanish (`es-419`) and `fossify-commons` (`values-b+es+419`). Previously, `values-b+es+419` contained only 21 `<string>` entries (and 0 `<plurals>`). All 21 existing valid regional entries were preserved, and all 286 missing `<string>` entries plus 2 `<plurals>` blocks were added (326 `<string>` + 2 `<plurals>` = 328 resource entries; `search` and 14 shared UI keys from `fossify-commons`; 347 total comparison rows).
 > **Key Terminology & Regional Adaptations vs. `values-es`:** `Ajustes` → `Configuración` · `vídeo/vídeos` → `video/videos` · `ficheros` → `archivos` · `añadir` → `agregar` · `Gestionar` → `Administrar` (matches `fossify-commons` `values-b+es+419`) · `Sistema por defecto` → `Predeterminado del sistema` · `Introduzca la contraseña` → `Ingresar contraseña` · `pegatinas` → `stickers` · `pulsado` → `presionado` · `Por favor, pon el dedo…` → `Por favor, apoye su dedo sobre el sensor de huellas`
 
 ## 1. Existing Regional Entries & Key Adaptations from Standard Spanish
@@ -23,6 +23,100 @@ All 21 previously existing strings in `values-b+es+419/strings.xml` were verifie
 | Fingerprint prompt | `Por favor, pon el dedo en el lector de huellas` | `Por favor, apoye su dedo sobre el sensor de huellas` | Matches `fossify-commons` `values-b+es+419` |
 | Hidden items menu | `Mostrar elementos ocultos` / `Mostrar ocultos temporalmente` | `Mostrar ítems ocultados` / `Temporalmente mostrar ocultados` | Matches `fossify-commons` `values-b+es+419` UI labels |
 | UI & FAQ terms | `pegatinas`, `mantener pulsado`, `icono`, `compromiso` | `stickers`, `mantener presionado`, `ícono`, `equilibrio` | Natural Latin American Spanish usage |
+
+### 1.3 `fossify-commons` Inherited UI Strings & Local Overrides (14 Keys)
+
+12 of these 14 shared UI keys are inherited from `org.fossify:commons:7.1.3` (`res/values-b+es+419/values-b+es+419.xml`), while `contributors` and `donate_to_fossify` were missing and added as local overrides in `app/src/main/res/values-b+es+419/strings.xml`:
+
+| # | Key (`name`) | English (`fossify-commons`) | Spanish (Latin America) | Source / Notes |
+|---:|---|---|---|---|
+| 1 | `change_date_and_time_format` | Change date and time format | Cambiar formato de hora y fecha | Inherited from `fossify-commons` (Settings) |
+| 2 | `password_protect_file_deletion` | Password protect file deletion and moving | Proteger con contraseña la eliminación y movimiento de archivos | Inherited from `fossify-commons` (Settings) |
+| 3 | `keep_last_modified` | Keep old last-modified value at file operations | Mantener el último valor modificado viejo en las operaciones de archivo | Inherited from `fossify-commons` (Settings) |
+| 4 | `clear_cache` | Clear cache | Limpiar la caché | Inherited from `fossify-commons` (Settings) |
+| 5 | `export_settings` | Export settings | Exportar configuraciones | Inherited from `fossify-commons` (Settings) |
+| 6 | `import_settings` | Import settings | Importar configuraciones | Inherited from `fossify-commons` (Settings) |
+| 7 | `temporarily_show_excluded` | Temporarily show excluded | Temporalmente mostrar excluidas | Inherited from `fossify-commons` (Options menu) |
+| 8 | `change_view_type` | Change view type | Cambiar tipo de vista | Inherited from `fossify-commons` (Options menu) |
+| 9 | `contributors` | Contributors | Colaboradores | Local override in `values-b+es+419/strings.xml` (About) |
+| 10 | `known_issues` | Known issues | Errores conocidos | Inherited from `fossify-commons` (About) |
+| 11 | `donate_to_fossify` | Donate to Fossify | Donar a Fossify | Local override in `values-b+es+419/strings.xml` (About) |
+| 12 | `privacy_policy` | Privacy policy | Política de privacidad | Inherited from `fossify-commons` (About) |
+| 13 | `create_shortcut` | Create shortcut | Crear atajo | Inherited from `fossify-commons` (CAB / ViewPager menu) |
+| 14 | `print` | Print | Imprimir | Inherited from `fossify-commons` (ViewPager menu) |
+| 15 | `search_files` | Search files | Buscar archivos | Inherited from `fossify-commons` (Search bar hint) |
+| 16 | `search_folders` | Search folders | Buscar carpetas | Inherited from `fossify-commons` (Search bar hint) |
+
+### 1.4 Newly Added Fork-Only Strings (63 Keys)
+
+These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
+
+|   # | Key (`name`) | English (`values/strings.xml`)              | Spanish (Latin America) (`values-b+es+419/strings.xml`)                                     | Notes                                                                       |
+| --: | ------------ | ------------------------------------------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+|   1 | 1            | `video_double_tap_duration`                 | Double-tap seek duration                                                                    |                                                                             |
+|   2 | 2            | `video_seek_duration_seconds`               | %d seconds                                                                                  |                                                                             |
+|   3 | 3            | `create_virtual_album`                      | Create virtual album                                                                        |                                                                             |
+|   4 | 4            | `new_virtual_album`                         | New album…                                                                                  |                                                                             |
+|   5 | 5            | `rename_virtual_album`                      | Rename album                                                                                |                                                                             |
+|   6 | 6            | `album_name`                                | Album name                                                                                  |                                                                             |
+|   7 | 7            | `virtual_folder_name`                       | Virtual folder name                                                                         |                                                                             |
+|   8 | 8            | `virtual_album_name_empty`                  | The album name cannot be empty                                                              |                                                                             |
+|   9 | 9            | `virtual_album_exists`                      | An album with this name already exists                                                      |                                                                             |
+|  10 | 10           | `add_to_virtual_album`                      | Add to album                                                                                |                                                                             |
+|  11 | 11           | `remove_from_virtual_album`                 | Remove from album                                                                           |                                                                             |
+|  12 | 12           | `added_to_virtual_album`                    | Added to \"%s\"                                                                             |                                                                             |
+|  13 | 13           | `already_in_virtual_album`                  | Already in \"%s\"                                                                           |                                                                             |
+|  14 | 14           | `removed_from_virtual_album`                | Removed from the album                                                                      |                                                                             |
+|  15 | 15           | `delete_virtual_album_confirmation`         | Delete the album %s? Only the album is removed, your photos and videos stay where they are. |                                                                             |
+|  16 | 16           | `virtual_album_empty`                       | This album is empty. Select items in any folder and use \"Copy to\".                        |                                                                             |
+|  17 | 17           | `virtual_album_cannot_be_modified`          | This action is not available for virtual albums                                             |                                                                             |
+|  18 | 18           | `alphanumeric_password`                     | Password                                                                                    |                                                                             |
+|  19 | 19           | `repeat_password`                           | Repeat password                                                                             |                                                                             |
+|  20 | 20           | `wrong_password`                            | Wrong password                                                                              |                                                                             |
+|  21 | 21           | `encrypting_files`                          | Encrypting files…                                                                           |                                                                             |
+|  22 | 22           | `encrypting_folder`                         | Encrypting folder…                                                                          |                                                                             |
+|  23 | 23           | `folder_encrypted_successfully`             | Folder encrypted successfully                                                               |                                                                             |
+|  24 | 24           | `decrypting_folder`                         | Decrypting folder…                                                                          |                                                                             |
+|  25 | 25           | `folder_decrypted_successfully`             | Folder decrypted successfully                                                               |                                                                             |
+|  26 | 26           | `decrypting_files`                          | Decrypting files…                                                                           |                                                                             |
+|  27 | 27           | `place_finger_prompt`                       | Please place your finger on the fingerprint sensor                                          |                                                                             |
+|  28 | 28           | `connect_at_least_4_dots_prompt`            | Connect at least 4 dots                                                                     |                                                                             |
+|  29 | 29           | `access_existing_cipher_secrets_prompt`     | Do you want to access your existing Cipher_Secrets folder?                                  |                                                                             |
+|  30 | 30           | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? |                                                                             |
+|  31 | 31           | `confirm_checkbox_label`                    | I confirm                                                                                   |                                                                             |
+|  32 | 32           | `secret_vault`                              | Secret Vault                                                                                |                                                                             |
+|  33 | 33           | `secret_vault_empty`                        | Secret Vault is empty                                                                       |                                                                             |
+|  34 | 34           | `confirm_decrypt_hidden_file`               | Are you sure you want to decrypt the hidden file(s)?                                        |                                                                             |
+|  35 | 35           | `copy_to_clipboard_disabled_in_vault`       | Copying to clipboard is disabled while vault is unlocked for security.                      |                                                                             |
+|  36 | 36           | `on_vault_exit`                             | On leaving encrypted section                                                                |                                                                             |
+|  37 | 37           | `on_vault_exit_keep_showing`                | Keep showing encrypted albums                                                               |                                                                             |
+|  38 | 38           | `on_vault_exit_hide`                        | Hide encrypted albums                                                                       |                                                                             |
+|  39 | 39           | `on_vault_exit_ask_every_time`              | Always ask                                                                                  |                                                                             |
+|  40 | 40           | `vault_exit_dialog_title`                   | Exiting Encrypted Section                                                                   |                                                                             |
+|  41 | 41           | `vault_exit_question_single`                | Show encrypted album together with other albums?                                            |                                                                             |
+|  42 | 42           | `vault_exit_question_multiple`              | Show encrypted albums together with other albums?                                           |                                                                             |
+|  43 | 43           | `vault_exit_settings_hint`                  | For more options, see Settings &gt; On leaving encrypted section                            |                                                                             |
+|  44 | 44           | `open_system_language_settings`             | Open system language settings                                                               |                                                                             |
+|  45 | 45           | `file_encrypted_successfully`               | File hidden successfully                                                                    | Success toast after encrypting/hiding a single file                         |
+|  46 | 46           | `files_encrypted_successfully`              | Files hidden successfully                                                                   | Success toast after encrypting/hiding multiple files                        |
+|  47 | 47           | `file_decrypted_successfully`               | File unhidden successfully                                                                  | Success toast after decrypting/unhiding a single file                       |
+|  48 | 48           | `files_decrypted_successfully`              | Files unhidden successfully                                                                 | Success toast after decrypting/unhiding multiple files                      |
+|  49 | 49           | `access_hidden_items_with_biometrics`       | Access hidden items with biometrics                                                         | Settings switch, setup prompt title, and vault security dialog button       |
+|  50 | 50           | `enable_hidden_protection_first_prompt`     | Please enable hidden item password protection first                                         | Toast shown when enabling biometrics before hidden-item password protection |
+|  51 | 51           | `biometric_unlock_vault`                    | Unlock hidden vault                                                                         | BiometricPrompt title when unlocking the hidden vault                       |
+|  52 | 52           | `biometric_unlock_prompt`                   | Verify your biometric identity to access hidden items                                       | BiometricPrompt subtitle when unlocking hidden items                        |
+|  53 | 53           | `biometric_setup_prompt`                    | Confirm your biometric identity to enable biometric vault access                            | BiometricPrompt subtitle when enabling biometric vault access               |
+|  54 | 54           | `use_password_or_pin`                       | Use PIN / Password                                                                          | BiometricPrompt negative button to fall back to PIN/password                |
+|  55 | 55           | `biometric_key_invalidated`                 | Biometric credentials have changed. Please enter your PIN or password.                      | Toast shown when biometric credentials changed and Keystore key invalidated |
+|  56 | 56           | `no_biometric_hardware_or_enrolled`         | No biometric hardware or enrolled credentials found on this device                          | Toast shown when no biometric hardware or enrolled credentials exist        |
+|  57 | 57           | `default_hidden_album`                      | Default Hidden Album                                                                        | Settings / picker label for default hidden album                            |
+|  58 | 58           | `select_hidden_album`                       | Select Hidden Album                                                                         | Dialog title for choosing target hidden album                               |
+|  59 | 59           | `create_new_hidden_album`                   | Create New Hidden Album                                                                     | Action label to create a new hidden album                                   |
+|  60 | 60           | `new_hidden_album`                          | New hidden album                                                                            | Input hint / default label for new hidden album                             |
+|  61 | 61           | `hidden_album_name_empty`                   | Album name cannot be empty                                                                  | Validation error when hidden album name is blank                            |
+|  62 | 62           | `file_hidden_to_album`                      | File hidden to \"%s\"                                                                       | Success toast after hiding a single file into album `%s`                    |
+|  63 | 63           | `files_hidden_to_album`                     | %1$d files hidden to \"%2$s\"                                                               | Success toast after hiding `%1$d` files into album `%2$s`                   |
+
 
 ## 2. Full 1-to-1 Comparison: English vs. Spanish (Latin America)
 
@@ -238,106 +332,142 @@ All 21 previously existing strings in `values-b+es+419/strings.xml` were verifie
 | 208 | `alternative_media_access` | Alternatively, you can allow accessing media files only. In that case you will not be able to work with hidden files though. | Como alternativa, puedes permitir el acceso solo a archivos multimedia. Sin embargo, en ese caso no podrás trabajar con archivos ocultos. |
 | 209 | `media_only` | Media only | Solo multimedia |
 | 210 | `all_files` | All files | Todos los archivos |
-| 211 | `search_all_files` | Search all files instead of folders on the main screen | Buscar todos los archivos en lugar de carpetas en la pantalla principal |
-| 212 | `show_all_folders` | Show a menu button for toggling Show All Folders Content quickly | Mostrar un botón de menú para alternar rápidamente Mostrar el contenido de todas las carpetas |
-| 213 | `thumbnails` | Thumbnails | Miniaturas |
-| 214 | `fullscreen_media` | Fullscreen media | Medios en pantalla completa |
-| 215 | `extended_details` | Extended details | Detalles extendidos |
-| 216 | `bottom_actions` | Bottom actions | Acciones inferiores |
-| 217 | `manage_bottom_actions` | Manage visible bottom actions | Administrar acciones inferiores visibles |
-| 218 | `toggle_favorite` | Toggle favorite | Alternar favorito |
-| 219 | `toggle_file_visibility` | Toggle file visibility | Alternar visibilidad del archivo |
-| 220 | `failed_to_load_media` | Failed to load media. | Error al cargar el medio. |
-| 221 | `file_is_malformed_or_corrupted` | File is malformed or corrupted. | El archivo está dañado o tiene un formato incorrecto. |
-| 222 | `media_exceeds_device_capabilities` | Media exceeds device capabilities. | El medio supera las capacidades del dispositivo. |
-| 223 | `unsupported_format` | Unsupported format. | Formato no compatible. |
-| 224 | `video_no_sound` | This video has no audio | Este video no tiene audio |
-| 225 | `faq_1_title` | How can I make Fossify Gallery the default device gallery? | ¿Cómo puedo hacer que la Galería Fossify sea la galería predeterminada del dispositivo? |
-| 226 | `faq_1_text` | First you have to find the currently default gallery in the Apps section of your device settings, look for a button that says something like \"Open by default\", click on it, then select \"Clear defaults\". The next time you will try opening an image or video you should see an app picker, where you can select Fossify Gallery and make it the default app. | Primero debes buscar la galería predeterminada actual en la sección Aplicaciones de la configuración de tu dispositivo, buscar un botón que diga algo como \"Abrir de forma predeterminada\", tocarlo y luego seleccionar \"Borrar valores predeterminados\". La próxima vez que intentes abrir una imagen o un video verás un selector de aplicaciones, donde podrás elegir la Galería Fossify y establecerla como aplicación predeterminada. |
-| 227 | `faq_2_title` | I locked the app with a password, but I forgot it. What can I do? | Bloqueé la aplicación con una contraseña, pero la olvidé. ¿Qué puedo hacer? |
-| 228 | `faq_2_text` | You can solve it in 2 ways. You can either reinstall the app, or find the app in your device settings and select \"Clear data\". It will reset all your settings, it will not remove any media files. | Puedes solucionarlo de 2 maneras. Puedes reinstalar la aplicación o buscarla en la configuración de tu dispositivo y seleccionar \"Borrar datos\". Esto restablecerá toda tu configuración, pero no eliminará ningún archivo multimedia. |
-| 229 | `faq_3_title` | How can I make an album always appear at the top? | ¿Cómo puedo hacer que un álbum aparezca siempre arriba de todo? |
-| 230 | `faq_3_text` | You can long press the desired album and select the Pin icon at the actions menu, that will pin it to the top. You can pin multiple folders too, pinned items will be sorted by the default sorting method. | Puedes mantener presionado el álbum deseado y seleccionar el ícono Fijar en el menú de acciones, lo que lo fijará arriba de todo. También puedes fijar varias carpetas; los elementos fijados se ordenarán según el método de ordenación predeterminado. |
-| 231 | `faq_4_title` | How can I fast forward videos? | ¿Cómo puedo adelantar videos? |
-| 232 | `faq_4_text` | You can do it by double tapping the side of the screen, or tapping the current or max duration texts near the seekbar. If you enable opening videos on a separate screen in the app settings, you can use horizontal gestures too. | Puedes hacerlo tocando dos veces el lado de la pantalla o tocando los textos de duración actual o máxima cerca de la barra de progreso. Si activas la reproducción de videos en una pantalla separada en la configuración de la aplicación, también puedes usar gestos horizontales. |
-| 233 | `faq_5_title` | What is the difference between hiding and excluding a folder? | ¿Cuál es la diferencia entre ocultar y excluir una carpeta? |
-| 234 | `faq_5_text` | Exclude prevents displaying the folder only in Fossify Gallery, while Hide works system-wise and it hides the folder from other galleries too. It works by creating an empty \".nomedia\" file in the given folder, which you can then remove with any file manager too. Note that some devices do not allow hiding folders like Camera, Screenshots and Downloads. | Excluir evita que la carpeta se muestre solo en la Galería Fossify, mientras que Ocultar funciona a nivel del sistema y la oculta también de otras galerías. Funciona creando un archivo vacío \".nomedia\" en la carpeta indicada, que luego también puedes borrar con cualquier administrador de archivos. Ten en cuenta que algunos dispositivos no permiten ocultar carpetas como Cámara, Capturas de pantalla y Descargas. |
-| 235 | `faq_6_title` | Why do folders with music cover art or stickers show up? | ¿Por qué aparecen carpetas con portadas de música o stickers? |
-| 236 | `faq_6_text` | It can happen that you will see some unusual albums show up. You can easily exclude them by long pressing them and selecting Exclude. In the next dialog you can then select the parent folder, chances are it will prevent the other related albums showing up too. | Puede ocurrir que aparezcan algunos álbumes inusuales. Puedes excluirlos fácilmente manteniéndolos presionados y seleccionando Excluir. En el siguiente cuadro de diálogo puedes seleccionar la carpeta superior; es muy probable que esto evite también que aparezcan otros álbumes relacionados. |
-| 237 | `faq_7_title` | A folder with images isn\'t showing up, or it doesn\'t show all items.  What can I do? | Una carpeta con imágenes no aparece o no muestra todos los elementos. ¿Qué puedo hacer? |
-| 238 | `faq_7_text` | That can have multiple reasons, but solving it is easy. Just go in Settings -&gt; Manage Included Folders, select Plus and navigate to the required folder. | Eso puede deberse a varios motivos, pero solucionarlo es fácil. Solo ve a Configuración -&gt; Administrar carpetas incluidas, selecciona el signo Más y navega hasta la carpeta deseada. |
-| 239 | `faq_8_title` | What if I want just a few particular folders visible? | ¿Qué hago si solo quiero ver algunas carpetas en particular? |
-| 240 | `faq_8_text` | Adding a folder at the Included Folders doesn\'t automatically exclude anything. What you can do is go in Settings -&gt; Manage Excluded Folders, exclude the root folder \"/\", then add the desired folders at Settings -&gt; Manage Included Folders. That will make only the selected folders visible, as both excluding and including are recursive and if a folder is both excluded and included, it will show up. | Agregar una carpeta en Carpetas incluidas no excluye nada automáticamente. Lo que puedes hacer es ir a Configuración -&gt; Administrar carpetas excluidas, excluir la carpeta raíz \"/\" y luego agregar las carpetas deseadas en Configuración -&gt; Administrar carpetas incluidas. Eso hará que solo se vean las carpetas seleccionadas, ya que tanto la exclusión como la inclusión son recursivas y, si una carpeta está excluida e incluida a la vez, se mostrará. |
-| 241 | `faq_10_title` | Can I crop images with this app? | ¿Puedo recortar imágenes con esta aplicación? |
-| 242 | `faq_10_text` | Yes, you can crop images in the editor, by dragging the image corners. You can get to the editor either by long pressing an image thumbnail and selecting Edit, or selecting Edit from the fullscreen view. | Sí, puedes recortar imágenes en el editor arrastrando las esquinas de la imagen. Puedes acceder al editor manteniendo presionada la miniatura de una imagen y seleccionando Editar, o seleccionando Editar desde la vista de pantalla completa. |
-| 243 | `faq_11_title` | Can I somehow group media file thumbnails? | ¿Puedo agrupar de alguna forma las miniaturas de archivos multimedia? |
-| 244 | `faq_11_text` | Sure, just use the \"Group by\" menu item while at the thumbnails view. You can group files by multiple criteria, including Date Taken. If you use the \"Show all folders content\" function you can group them by folders too. | Claro, solo usa la opción \"Agrupar por\" mientras estás en la vista de miniaturas. Puedes agrupar archivos según varios criterios, incluida la Fecha de captura. Si usas la función \"Mostrar el contenido de todas las carpetas\", también puedes agruparlos por carpetas. |
-| 245 | `faq_12_title` | Sorting by Date Taken doesn\'t seem to work properly, how can I fix it? | La ordenación por fecha de captura no parece funcionar correctamente, ¿cómo puedo solucionarlo? |
-| 246 | `faq_12_text` | It is most likely caused by the files being copied from somewhere. You can fix it by selecting the file thumbnails and selecting \"Fix Date Taken value\". | Lo más probable es que se deba a que los archivos se copiaron desde otro lugar. Puedes solucionarlo seleccionando las miniaturas de los archivos y eligiendo \"Arreglar fecha de la toma\". |
-| 247 | `faq_13_title` | I see some color banding on the images. How can I improve the quality? | Veo bandas de color en las imágenes. ¿Cómo puedo mejorar la calidad? |
-| 248 | `faq_13_text` | The current solution for displaying images works fine in the vast majority of cases, but if you want even better image quality, you can enable the \"Show images in the highest possible quality\" at the app settings, in the \"Deep zoomable images\" section. | La solución actual para mostrar imágenes funciona bien en la gran mayoría de los casos, pero si quieres una calidad de imagen aún mejor, puedes activar \"Mostrar imágenes con la mayor calidad posible\" en la configuración de la aplicación, en la sección \"Imágenes con zoom profundo\". |
-| 249 | `faq_14_title` | I have hidden a file/folder. How can I unhide it? | Oculté un archivo o una carpeta. ¿Cómo puedo volver a mostrarlo? |
-| 250 | `faq_14_text` | You can either press the \"Temporarily show hidden items\" menu item at the main screen, or toggle \"Show hidden items\" in the app settings to see the hidden item. If you want to unhide it, just long press it and select \"Unhide\". Folders are hidden by adding a hidden \".nomedia\" file into them, you can delete the file with any file manager too. Note that hiding works recursively though, so if you hide a folder, all subfolders will become hidden too. So for unhiding the subfolders you have to unhide the parent folder. | Puedes presionar la opción \"Temporalmente mostrar ocultados\" en la pantalla principal o activar \"Mostrar ítems ocultados\" en la configuración de la aplicación para ver el elemento oculto. Si deseas volver a mostrarlo, solo mantenlo presionado y selecciona \"Mostrar\". Las carpetas se ocultan agregando un archivo oculto \".nomedia\" en ellas; también puedes borrar ese archivo con cualquier administrador de archivos. Ten en cuenta que la ocultación funciona de forma recursiva, por lo que si ocultas una carpeta, todas sus subcarpetas también quedarán ocultas. Por eso, para mostrar las subcarpetas debes volver a mostrar la carpeta superior. |
-| 251 | `faq_15_title` | Why does the app take up so much space? | ¿Por qué la aplicación ocupa tanto espacio? |
-| 252 | `faq_15_text` | App cache can take up to 250MB, it ensures quicker image loading. If the app is taking up even more space, it is most likely caused by you having items in the recycle bin. Those files count to the app size. You can clear the recycle bin by opening it and deleting all files, or from the app settings. Every file in the bin is deleted automatically after 30 days. | La caché de la aplicación puede ocupar hasta 250 MB para garantizar una carga más rápida de las imágenes. Si la aplicación ocupa aún más espacio, lo más probable es que tengas elementos en la papelera de reciclaje, ya que esos archivos cuentan dentro del tamaño de la aplicación. Puedes vaciar la papelera abriéndola y borrando todos los archivos, o desde la configuración de la aplicación. Cada archivo en la papelera se borra automáticamente después de 30 días. |
-| 253 | `faq_16_title` | What happened to file and folder hiding and why cannot I see hidden items anymore? | ¿Qué pasó con la ocultación de archivos y carpetas y por qué ya no puedo ver los elementos ocultos? |
-| 254 | `faq_16_text` | Starting with Android 11 you cannot hide or unhide files or folders anymore, you cannot see the hidden ones in gallery apps due to system restrictions either. You will have to use some file manager for that. | A partir de Android 11 ya no es posible ocultar ni mostrar archivos o carpetas, ni ver los elementos ocultos en aplicaciones de galería debido a restricciones del sistema. Tendrás que usar algún administrador de archivos para hacerlo. |
-| 255 | `faq_16_text_extra` | Or you can also grant this gallery access to All Files through your device settings, that will allow us showing hidden items and make file operations more reliable in general. | También puedes otorgarle a esta galería acceso a Todos los archivos desde la configuración de tu dispositivo, lo que nos permitirá mostrar elementos ocultos y hacer que las operaciones con archivos sean más confiables en general. |
-| 256 | `faq_17_title` | Why cannot I include missing folders anymore? | ¿Por qué ya no puedo incluir carpetas faltantes? |
-| 257 | `faq_17_text` | That stopped working due to the system changes that came with Android 11 too, the app cannot browse real folders anymore, it relies on the so called MediaStore at fetching data. | Eso también dejó de funcionar debido a los cambios del sistema que llegaron con Android 11; la aplicación ya no puede explorar carpetas reales y depende del llamado MediaStore para obtener los datos. |
-| 258 | `faq_18_title` | Why do I see ads during video playback? | ¿Por qué veo anuncios durante la reproducción de videos? |
-| 259 | `faq_18_text` | Our apps have no ads whatsoever. If you see them during video playback, you must be using some other apps video player. Try finding your default video player in the device settings, then do a \"Clear defaults\" on it. The next time you invoke some video intent you will see an app picker prompt, where you can select what app you want to use. | Nuestras aplicaciones no tienen ningún tipo de anuncios. Si los ves al reproducir videos, seguramente estás usando el reproductor de video de otra aplicación. Busca tu reproductor de video predeterminado en la configuración del dispositivo y selecciona \"Borrar valores predeterminados\". La próxima vez que abras un video verás un selector de aplicaciones donde podrás elegir qué aplicación usar. |
-| 260 | `create_virtual_album` | Create virtual album | Crear álbum virtual |
-| 261 | `new_virtual_album` | New album… | Nuevo álbum… |
-| 262 | `rename_virtual_album` | Rename album | Renombrar álbum |
-| 263 | `album_name` | Album name | Nombre del álbum |
-| 264 | `virtual_folder_name` | Virtual folder name | Nombre de la carpeta virtual |
-| 265 | `virtual_album_name_empty` | The album name cannot be empty | El nombre del álbum no puede estar vacío |
-| 266 | `virtual_album_exists` | An album with this name already exists | Ya existe un álbum con este nombre |
-| 267 | `add_to_virtual_album` | Add to album | Agregar al álbum |
-| 268 | `remove_from_virtual_album` | Remove from album | Quitar del álbum |
-| 269 | `added_to_virtual_album` | Added to \"%s\" | Agregado a \"%s\" |
-| 270 | `already_in_virtual_album` | Already in \"%s\" | Ya está en \"%s\" |
-| 271 | `removed_from_virtual_album` | Removed from the album | Quitado del álbum |
-| 272 | `delete_virtual_album_confirmation` | Delete the album %s? Only the album is removed, your photos and videos stay where they are. | ¿Eliminar el álbum %s? Solo se eliminará el álbum; tus fotos y videos permanecerán donde están. |
-| 273 | `virtual_album_empty` | This album is empty. Select items in any folder and use \"Copy to\". | Este álbum está vacío. Selecciona elementos en cualquier carpeta y usa \"Copiar a\". |
-| 274 | `virtual_album_cannot_be_modified` | This action is not available for virtual albums | Esta acción no está disponible para álbumes virtuales |
-| 275 | `alphanumeric_password` | Password | Contraseña |
-| 276 | `enter_password` | Enter password | Ingresar contraseña |
-| 277 | `repeat_password` | Repeat password | Repetir contraseña |
-| 278 | `wrong_password` | Wrong password | Contraseña incorrecta |
-| 279 | `encrypting_files` | Encrypting files… | Cifrando archivos… |
-| 280 | `encrypting_folder` | Encrypting folder… | Cifrando carpeta… |
-| 281 | `folder_encrypted_successfully` | Folder encrypted successfully | Carpeta cifrada correctamente |
-| 282 | `decrypting_folder` | Decrypting folder… | Descifrando carpeta… |
-| 283 | `folder_decrypted_successfully` | Folder decrypted successfully | Carpeta descifrada correctamente |
-| 284 | `decrypting_files` | Decrypting files… | Descifrando archivos… |
-| 285 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | Por favor, apoya tu dedo sobre el sensor de huellas |
-| 286 | `connect_at_least_4_dots_prompt` | Connect at least 4 dots | Conecta al menos 4 puntos |
-| 287 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | ¿Deseas acceder a tu carpeta Cipher_Secrets existente? |
-| 288 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | Se eliminará la carpeta Cipher_Secrets existente y se creará una nueva. ¿Estás seguro? |
-| 289 | `confirm_checkbox_label` | I confirm | Confirmo |
-| 290 | `secret_vault` | Secret Vault | Bóveda secreta |
-| 291 | `secret_vault_empty` | Secret Vault is empty | La bóveda secreta está vacía |
-| 292 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | ¿Seguro que quieres descifrar los archivos ocultos? |
-| 293 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | Por seguridad, copiar al portapapeles está deshabilitado mientras la bóveda está desbloqueada. |
-| 294 | `on_vault_exit` | On leaving hidden section | Al salir de la sección oculta |
-| 295 | `on_vault_exit_keep_showing_all` | Keep showing all hidden albums | Seguir mostrando todos los álbumes ocultos |
-| 296 | `on_vault_exit_show_encrypted_only` | Only show encrypted albums | Mostrar solo álbumes cifrados |
-| 297 | `on_vault_exit_show_other_only` | Only show other hidden albums | Mostrar solo otros álbumes ocultos |
-| 298 | `on_vault_exit_hide_all` | Hide all hidden albums | Ocultar todos los álbumes ocultos |
-| 299 | `on_vault_exit_ask_every_time` | Always ask | Preguntar siempre |
-| 300 | `vault_exit_dialog_title` | Exiting Hidden Section | Saliendo de la sección oculta |
-| 301 | `vault_exit_keep_showing` | Keep showing hidden albums | Seguir mostrando los álbumes ocultos |
-| 302 | `vault_exit_hide` | Hide hidden albums | Ocultar álbumes ocultos |
-| 303 | `vault_exit_remember_my_choice` | Remember my choice | Recordar mi elección |
-| 304 | `vault_exit_settings_hint` | For more options, see Settings &gt; On leaving hidden section | Para más opciones, consulta Configuración &gt; Al salir de la sección oculta |
-| 305 | `system_default` | System default | Predeterminado del sistema |
-| 306 | `language` | Language | Idioma |
-| 307 | `open_system_language_settings` | Open system language settings | Abrir configuración de idioma del sistema |
-| 308 | `restore_confirmation` (`one`) | Are you sure you want to restore %d file? | ¿Confirmas que quieres restaurar %d archivo? |
-| 309 | `restore_confirmation` (`many`) | *(CLDR `many` — falls back to English `other`)* | ¿Confirmas que quieres restaurar %d archivos? |
-| 310 | `restore_confirmation` (`other`) | Are you sure you want to restore %d files? | ¿Confirmas que quieres restaurar %d archivos? |
-| 311 | `failed_to_resize_images` (`one`) | Failed to resize %d image | Error al cambiar el tamaño de %d imagen |
-| 312 | `failed_to_resize_images` (`many`) | *(CLDR `many` — falls back to English `other`)* | Error al cambiar el tamaño de %d imágenes |
-| 313 | `failed_to_resize_images` (`other`) | Failed to resize %d images | Error al cambiar el tamaño de %d imágenes |
+| 211 | `main_screen_view_on_launch` | Main screen view on launch | Vista de la pantalla principal al iniciar |
+| 212 | `show_folders` | Show folders | Mostrar carpetas |
+| 213 | `show_files` | Show files | Mostrar archivos |
+| 214 | `show_all_folders` | Show a menu button for toggling Show All Folders Content quickly | Mostrar un botón de menú para alternar rápidamente Mostrar el contenido de todas las carpetas |
+| 215 | `thumbnails` | Thumbnails | Miniaturas |
+| 216 | `fullscreen_media` | Fullscreen media | Medios en pantalla completa |
+| 217 | `extended_details` | Extended details | Detalles extendidos |
+| 218 | `bottom_actions` | Bottom actions | Acciones inferiores |
+| 219 | `manage_bottom_actions` | Manage visible bottom actions | Administrar acciones inferiores visibles |
+| 220 | `toggle_favorite` | Toggle favorite | Alternar favorito |
+| 221 | `toggle_file_visibility` | Toggle file visibility | Alternar visibilidad del archivo |
+| 222 | `failed_to_load_media` | Failed to load media. | Error al cargar el medio. |
+| 223 | `file_is_malformed_or_corrupted` | File is malformed or corrupted. | El archivo está dañado o tiene un formato incorrecto. |
+| 224 | `media_exceeds_device_capabilities` | Media exceeds device capabilities. | El medio supera las capacidades del dispositivo. |
+| 225 | `unsupported_format` | Unsupported format. | Formato no compatible. |
+| 226 | `video_no_sound` | This video has no audio | Este video no tiene audio |
+| 227 | `faq_1_title` | How can I make Fossify Gallery the default device gallery? | ¿Cómo puedo hacer que la Galería Fossify sea la galería predeterminada del dispositivo? |
+| 228 | `faq_1_text` | First you have to find the currently default gallery in the Apps section of your device settings, look for a button that says something like \"Open by default\", click on it, then select \"Clear defaults\". The next time you will try opening an image or video you should see an app picker, where you can select Fossify Gallery and make it the default app. | Primero debes buscar la galería predeterminada actual en la sección Aplicaciones de la configuración de tu dispositivo, buscar un botón que diga algo como \"Abrir de forma predeterminada\", tocarlo y luego seleccionar \"Borrar valores predeterminados\". La próxima vez que intentes abrir una imagen o un video verás un selector de aplicaciones, donde podrás elegir la Galería Fossify y establecerla como aplicación predeterminada. |
+| 229 | `faq_2_title` | I locked the app with a password, but I forgot it. What can I do? | Bloqueé la aplicación con una contraseña, pero la olvidé. ¿Qué puedo hacer? |
+| 230 | `faq_2_text` | You can solve it in 2 ways. You can either reinstall the app, or find the app in your device settings and select \"Clear data\". It will reset all your settings, it will not remove any media files. | Puedes solucionarlo de 2 maneras. Puedes reinstalar la aplicación o buscarla en la configuración de tu dispositivo y seleccionar \"Borrar datos\". Esto restablecerá toda tu configuración, pero no eliminará ningún archivo multimedia. |
+| 231 | `faq_3_title` | How can I make an album always appear at the top? | ¿Cómo puedo hacer que un álbum aparezca siempre arriba de todo? |
+| 232 | `faq_3_text` | You can long press the desired album and select the Pin icon at the actions menu, that will pin it to the top. You can pin multiple folders too, pinned items will be sorted by the default sorting method. | Puedes mantener presionado el álbum deseado y seleccionar el ícono Fijar en el menú de acciones, lo que lo fijará arriba de todo. También puedes fijar varias carpetas; los elementos fijados se ordenarán según el método de ordenación predeterminado. |
+| 233 | `faq_4_title` | How can I fast forward videos? | ¿Cómo puedo adelantar videos? |
+| 234 | `faq_4_text` | You can do it by double tapping the side of the screen, or tapping the current or max duration texts near the seekbar. If you enable opening videos on a separate screen in the app settings, you can use horizontal gestures too. | Puedes hacerlo tocando dos veces el lado de la pantalla o tocando los textos de duración actual o máxima cerca de la barra de progreso. Si activas la reproducción de videos en una pantalla separada en la configuración de la aplicación, también puedes usar gestos horizontales. |
+| 235 | `faq_5_title` | What is the difference between hiding and excluding a folder? | ¿Cuál es la diferencia entre ocultar y excluir una carpeta? |
+| 236 | `faq_5_text` | Exclude prevents displaying the folder only in Fossify Gallery, while Hide works system-wise and it hides the folder from other galleries too. It works by creating an empty \".nomedia\" file in the given folder, which you can then remove with any file manager too. Note that some devices do not allow hiding folders like Camera, Screenshots and Downloads. | Excluir evita que la carpeta se muestre solo en la Galería Fossify, mientras que Ocultar funciona a nivel del sistema y la oculta también de otras galerías. Funciona creando un archivo vacío \".nomedia\" en la carpeta indicada, que luego también puedes borrar con cualquier administrador de archivos. Ten en cuenta que algunos dispositivos no permiten ocultar carpetas como Cámara, Capturas de pantalla y Descargas. |
+| 237 | `faq_6_title` | Why do folders with music cover art or stickers show up? | ¿Por qué aparecen carpetas con portadas de música o stickers? |
+| 238 | `faq_6_text` | It can happen that you will see some unusual albums show up. You can easily exclude them by long pressing them and selecting Exclude. In the next dialog you can then select the parent folder, chances are it will prevent the other related albums showing up too. | Puede ocurrir que aparezcan algunos álbumes inusuales. Puedes excluirlos fácilmente manteniéndolos presionados y seleccionando Excluir. En el siguiente cuadro de diálogo puedes seleccionar la carpeta superior; es muy probable que esto evite también que aparezcan otros álbumes relacionados. |
+| 239 | `faq_7_title` | A folder with images isn\'t showing up, or it doesn\'t show all items.  What can I do? | Una carpeta con imágenes no aparece o no muestra todos los elementos. ¿Qué puedo hacer? |
+| 240 | `faq_7_text` | That can have multiple reasons, but solving it is easy. Just go in Settings -&gt; Manage Included Folders, select Plus and navigate to the required folder. | Eso puede deberse a varios motivos, pero solucionarlo es fácil. Solo ve a Configuración -&gt; Administrar carpetas incluidas, selecciona el signo Más y navega hasta la carpeta deseada. |
+| 241 | `faq_8_title` | What if I want just a few particular folders visible? | ¿Qué hago si solo quiero ver algunas carpetas en particular? |
+| 242 | `faq_8_text` | Adding a folder at the Included Folders doesn\'t automatically exclude anything. What you can do is go in Settings -&gt; Manage Excluded Folders, exclude the root folder \"/\", then add the desired folders at Settings -&gt; Manage Included Folders. That will make only the selected folders visible, as both excluding and including are recursive and if a folder is both excluded and included, it will show up. | Agregar una carpeta en Carpetas incluidas no excluye nada automáticamente. Lo que puedes hacer es ir a Configuración -&gt; Administrar carpetas excluidas, excluir la carpeta raíz \"/\" y luego agregar las carpetas deseadas en Configuración -&gt; Administrar carpetas incluidas. Eso hará que solo se vean las carpetas seleccionadas, ya que tanto la exclusión como la inclusión son recursivas y, si una carpeta está excluida e incluida a la vez, se mostrará. |
+| 243 | `faq_10_title` | Can I crop images with this app? | ¿Puedo recortar imágenes con esta aplicación? |
+| 244 | `faq_10_text` | Yes, you can crop images in the editor, by dragging the image corners. You can get to the editor either by long pressing an image thumbnail and selecting Edit, or selecting Edit from the fullscreen view. | Sí, puedes recortar imágenes en el editor arrastrando las esquinas de la imagen. Puedes acceder al editor manteniendo presionada la miniatura de una imagen y seleccionando Editar, o seleccionando Editar desde la vista de pantalla completa. |
+| 245 | `faq_11_title` | Can I somehow group media file thumbnails? | ¿Puedo agrupar de alguna forma las miniaturas de archivos multimedia? |
+| 246 | `faq_11_text` | Sure, just use the \"Group by\" menu item while at the thumbnails view. You can group files by multiple criteria, including Date Taken. If you use the \"Show all folders content\" function you can group them by folders too. | Claro, solo usa la opción \"Agrupar por\" mientras estás en la vista de miniaturas. Puedes agrupar archivos según varios criterios, incluida la Fecha de captura. Si usas la función \"Mostrar el contenido de todas las carpetas\", también puedes agruparlos por carpetas. |
+| 247 | `faq_12_title` | Sorting by Date Taken doesn\'t seem to work properly, how can I fix it? | La ordenación por fecha de captura no parece funcionar correctamente, ¿cómo puedo solucionarlo? |
+| 248 | `faq_12_text` | It is most likely caused by the files being copied from somewhere. You can fix it by selecting the file thumbnails and selecting \"Fix Date Taken value\". | Lo más probable es que se deba a que los archivos se copiaron desde otro lugar. Puedes solucionarlo seleccionando las miniaturas de los archivos y eligiendo \"Arreglar fecha de la toma\". |
+| 249 | `faq_13_title` | I see some color banding on the images. How can I improve the quality? | Veo bandas de color en las imágenes. ¿Cómo puedo mejorar la calidad? |
+| 250 | `faq_13_text` | The current solution for displaying images works fine in the vast majority of cases, but if you want even better image quality, you can enable the \"Show images in the highest possible quality\" at the app settings, in the \"Deep zoomable images\" section. | La solución actual para mostrar imágenes funciona bien en la gran mayoría de los casos, pero si quieres una calidad de imagen aún mejor, puedes activar \"Mostrar imágenes con la mayor calidad posible\" en la configuración de la aplicación, en la sección \"Imágenes con zoom profundo\". |
+| 251 | `faq_14_title` | I have hidden a file/folder. How can I unhide it? | Oculté un archivo o una carpeta. ¿Cómo puedo volver a mostrarlo? |
+| 252 | `faq_14_text` | You can either press the \"Temporarily show hidden items\" menu item at the main screen, or toggle \"Show hidden items\" in the app settings to see the hidden item. If you want to unhide it, just long press it and select \"Unhide\". Folders are hidden by adding a hidden \".nomedia\" file into them, you can delete the file with any file manager too. Note that hiding works recursively though, so if you hide a folder, all subfolders will become hidden too. So for unhiding the subfolders you have to unhide the parent folder. | Puedes presionar la opción \"Temporalmente mostrar ocultados\" en la pantalla principal o activar \"Mostrar ítems ocultados\" en la configuración de la aplicación para ver el elemento oculto. Si deseas volver a mostrarlo, solo mantenlo presionado y selecciona \"Mostrar\". Las carpetas se ocultan agregando un archivo oculto \".nomedia\" en ellas; también puedes borrar ese archivo con cualquier administrador de archivos. Ten en cuenta que la ocultación funciona de forma recursiva, por lo que si ocultas una carpeta, todas sus subcarpetas también quedarán ocultas. Por eso, para mostrar las subcarpetas debes volver a mostrar la carpeta superior. |
+| 253 | `faq_15_title` | Why does the app take up so much space? | ¿Por qué la aplicación ocupa tanto espacio? |
+| 254 | `faq_15_text` | App cache can take up to 250MB, it ensures quicker image loading. If the app is taking up even more space, it is most likely caused by you having items in the recycle bin. Those files count to the app size. You can clear the recycle bin by opening it and deleting all files, or from the app settings. Every file in the bin is deleted automatically after 30 days. | La caché de la aplicación puede ocupar hasta 250 MB para garantizar una carga más rápida de las imágenes. Si la aplicación ocupa aún más espacio, lo más probable es que tengas elementos en la papelera de reciclaje, ya que esos archivos cuentan dentro del tamaño de la aplicación. Puedes vaciar la papelera abriéndola y borrando todos los archivos, o desde la configuración de la aplicación. Cada archivo en la papelera se borra automáticamente después de 30 días. |
+| 255 | `faq_16_title` | What happened to file and folder hiding and why cannot I see hidden items anymore? | ¿Qué pasó con la ocultación de archivos y carpetas y por qué ya no puedo ver los elementos ocultos? |
+| 256 | `faq_16_text` | Starting with Android 11 you cannot hide or unhide files or folders anymore, you cannot see the hidden ones in gallery apps due to system restrictions either. You will have to use some file manager for that. | A partir de Android 11 ya no es posible ocultar ni mostrar archivos o carpetas, ni ver los elementos ocultos en aplicaciones de galería debido a restricciones del sistema. Tendrás que usar algún administrador de archivos para hacerlo. |
+| 257 | `faq_16_text_extra` | Or you can also grant this gallery access to All Files through your device settings, that will allow us showing hidden items and make file operations more reliable in general. | También puedes otorgarle a esta galería acceso a Todos los archivos desde la configuración de tu dispositivo, lo que nos permitirá mostrar elementos ocultos y hacer que las operaciones con archivos sean más confiables en general. |
+| 258 | `faq_17_title` | Why cannot I include missing folders anymore? | ¿Por qué ya no puedo incluir carpetas faltantes? |
+| 259 | `faq_17_text` | That stopped working due to the system changes that came with Android 11 too, the app cannot browse real folders anymore, it relies on the so called MediaStore at fetching data. | Eso también dejó de funcionar debido a los cambios del sistema que llegaron con Android 11; la aplicación ya no puede explorar carpetas reales y depende del llamado MediaStore para obtener los datos. |
+| 260 | `faq_18_title` | Why do I see ads during video playback? | ¿Por qué veo anuncios durante la reproducción de videos? |
+| 261 | `faq_18_text` | Our apps have no ads whatsoever. If you see them during video playback, you must be using some other apps video player. Try finding your default video player in the device settings, then do a \"Clear defaults\" on it. The next time you invoke some video intent you will see an app picker prompt, where you can select what app you want to use. | Nuestras aplicaciones no tienen ningún tipo de anuncios. Si los ves al reproducir videos, seguramente estás usando el reproductor de video de otra aplicación. Busca tu reproductor de video predeterminado en la configuración del dispositivo y selecciona \"Borrar valores predeterminados\". La próxima vez que abras un video verás un selector de aplicaciones donde podrás elegir qué aplicación usar. |
+| 262 | `create_virtual_album` | Create virtual album | Crear álbum virtual |
+| 263 | `new_virtual_album` | New album… | Nuevo álbum… |
+| 264 | `rename_virtual_album` | Rename album | Renombrar álbum |
+| 265 | `album_name` | Album name | Nombre del álbum |
+| 266 | `virtual_folder_name` | Virtual folder name | Nombre de la carpeta virtual |
+| 267 | `virtual_album_name_empty` | The album name cannot be empty | El nombre del álbum no puede estar vacío |
+| 268 | `virtual_album_exists` | An album with this name already exists | Ya existe un álbum con este nombre |
+| 269 | `add_to_virtual_album` | Add to album | Agregar al álbum |
+| 270 | `remove_from_virtual_album` | Remove from album | Quitar del álbum |
+| 271 | `added_to_virtual_album` | Added to \"%s\" | Agregado a \"%s\" |
+| 272 | `already_in_virtual_album` | Already in \"%s\" | Ya está en \"%s\" |
+| 273 | `removed_from_virtual_album` | Removed from the album | Quitado del álbum |
+| 274 | `delete_virtual_album_confirmation` | Delete the album %s? Only the album is removed, your photos and videos stay where they are. | ¿Eliminar el álbum %s? Solo se eliminará el álbum; tus fotos y videos permanecerán donde están. |
+| 275 | `virtual_album_empty` | This album is empty. Select items in any folder and use \"Copy to\". | Este álbum está vacío. Selecciona elementos en cualquier carpeta y usa \"Copiar a\". |
+| 276 | `virtual_album_cannot_be_modified` | This action is not available for virtual albums | Esta acción no está disponible para álbumes virtuales |
+| 277 | `alphanumeric_password` | Password | Contraseña |
+| 278 | `enter_password` | Enter password | Ingresar contraseña |
+| 279 | `repeat_password` | Repeat password | Repetir contraseña |
+| 280 | `wrong_password` | Wrong password | Contraseña incorrecta |
+| 281 | `encrypting_files` | Encrypting files… | Cifrando archivos… |
+| 282 | `encrypting_folder` | Encrypting folder… | Cifrando carpeta… |
+| 283 | `folder_encrypted_successfully` | Folder encrypted successfully | Carpeta cifrada correctamente |
+| 284 | `file_encrypted_successfully` | File hidden successfully | Archivo ocultado correctamente |
+| 285 | `files_encrypted_successfully` | Files hidden successfully | Archivos ocultados correctamente |
+| 286 | `decrypting_folder` | Decrypting folder… | Descifrando carpeta… |
+| 287 | `folder_decrypted_successfully` | Folder decrypted successfully | Carpeta descifrada correctamente |
+| 288 | `file_decrypted_successfully` | File unhidden successfully | Archivo mostrado correctamente |
+| 289 | `files_decrypted_successfully` | Files unhidden successfully | Archivos mostrados correctamente |
+| 290 | `decrypting_files` | Decrypting files… | Descifrando archivos… |
+| 291 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | Por favor, apoya tu dedo sobre el sensor de huellas |
+| 292 | `connect_at_least_4_dots_prompt` | Connect at least 4 dots | Conecta al menos 4 puntos |
+| 293 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | ¿Deseas acceder a tu carpeta Cipher_Secrets existente? |
+| 294 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | Se eliminará la carpeta Cipher_Secrets existente y se creará una nueva. ¿Estás seguro? |
+| 295 | `confirm_checkbox_label` | I confirm | Confirmo |
+| 296 | `secret_vault` | Secret Vault | Bóveda secreta |
+| 297 | `secret_vault_empty` | Secret Vault is empty | La bóveda secreta está vacía |
+| 298 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | ¿Seguro que quieres descifrar los archivos ocultos? |
+| 299 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | Por seguridad, copiar al portapapeles está deshabilitado mientras la bóveda está desbloqueada. |
+| 300 | `on_vault_exit` | On leaving encrypted section | Al salir de la sección cifrada |
+| 301 | `on_vault_exit_keep_showing` | Keep showing encrypted albums | Seguir mostrando álbumes cifrados |
+| 302 | `on_vault_exit_hide` | Hide encrypted albums | Ocultar álbumes cifrados |
+| 303 | `on_vault_exit_ask_every_time` | Always ask | Preguntar siempre |
+| 304 | `vault_exit_dialog_title` | Exiting Encrypted Section | Saliendo de la sección cifrada |
+| 305 | `vault_exit_question_single` | Show encrypted album together with other albums? | ¿Mostrar el álbum cifrado junto con otros álbumes? |
+| 306 | `vault_exit_question_multiple` | Show encrypted albums together with other albums? | ¿Mostrar los álbumes cifrados junto con otros álbumes? |
+| 307 | `vault_exit_settings_hint` | For more options, see Settings &gt; On leaving encrypted section | Para más opciones, consulta Configuración &gt; Al salir de la sección cifrada |
+| 308 | `stop_showing_hidden` | Stop showing encrypted media | Dejar de mostrar medios cifrados |
+| 309 | `system_default` | System default | Predeterminado del sistema |
+| 310 | `language` | Language | Idioma |
+| 311 | `open_system_language_settings` | Open system language settings | Abrir configuración de idioma del sistema |
+| 312 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | Acceder a elementos ocultos con biometría |
+| 313 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | Por favor, activa primero la protección con contraseña para elementos ocultos |
+| 314 | `biometric_unlock_vault` | Unlock hidden vault | Desbloquear bóveda oculta |
+| 315 | `biometric_unlock_prompt` | Verify your biometric identity to access hidden items | Verifica tu identidad biométrica para acceder a los elementos ocultos |
+| 316 | `biometric_setup_prompt` | Confirm your biometric identity to enable biometric vault access | Confirma tu identidad biométrica para activar el acceso biométrico a la bóveda |
+| 317 | `use_password_or_pin` | Use PIN / Password | Usar PIN / Contraseña |
+| 318 | `biometric_key_invalidated` | Biometric credentials have changed. Please enter your PIN or password. | Las credenciales biométricas han cambiado. Por favor, ingresa tu PIN o contraseña. |
+| 319 | `no_biometric_hardware_or_enrolled` | No biometric hardware or enrolled credentials found on this device | No se encontró hardware biométrico ni credenciales registradas en este dispositivo |
+| 320 | `default_hidden_album` | Default Hidden Album | Álbum oculto predeterminado |
+| 321 | `select_hidden_album` | Select Hidden Album | Seleccionar álbum oculto |
+| 322 | `create_new_hidden_album` | Create New Hidden Album | Crear nuevo álbum oculto |
+| 323 | `new_hidden_album` | New hidden album | Nuevo álbum oculto |
+| 324 | `hidden_album_name_empty` | Album name cannot be empty | El nombre del álbum no puede estar vacío |
+| 325 | `file_hidden_to_album` | File hidden to \"%s\" | Archivo ocultado en \"%s\" |
+| 326 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | %1$d archivos ocultados en \"%2$s\" |
+| 327 | `restore_confirmation` (`one`) | Are you sure you want to restore %d file? | ¿Confirmas que quieres restaurar %d archivo? |
+| 328 | `restore_confirmation` (`many`) | *(CLDR `many` — falls back to English `other`)* | ¿Confirmas que quieres restaurar %d archivos? |
+| 329 | `restore_confirmation` (`other`) | Are you sure you want to restore %d files? | ¿Confirmas que quieres restaurar %d archivos? |
+| 330 | `failed_to_resize_images` (`one`) | Failed to resize %d image | Error al cambiar el tamaño de %d imagen |
+| 331 | `failed_to_resize_images` (`many`) | *(CLDR `many` — falls back to English `other`)* | Error al cambiar el tamaño de %d imágenes |
+| 332 | `failed_to_resize_images` (`other`) | Failed to resize %d images | Error al cambiar el tamaño de %d imágenes |
+| 333 | `search` *(fossify-commons)* | *(inherited from commons)* | Buscar |
+| 334 | `change_date_and_time_format` *(fossify-commons)* | Change date and time format | Cambiar formato de hora y fecha |
+| 335 | `password_protect_file_deletion` *(fossify-commons)* | Password protect file deletion and moving | Proteger con contraseña la eliminación y movimiento de archivos |
+| 336 | `keep_last_modified` *(fossify-commons)* | Keep old last-modified value at file operations | Mantener el último valor modificado viejo en las operaciones de archivo |
+| 337 | `clear_cache` *(fossify-commons)* | Clear cache | Limpiar la caché |
+| 338 | `export_settings` *(fossify-commons)* | Export settings | Exportar configuraciones |
+| 339 | `import_settings` *(fossify-commons)* | Import settings | Importar configuraciones |
+| 340 | `temporarily_show_excluded` *(fossify-commons)* | Temporarily show excluded | Temporalmente mostrar excluidas |
+| 341 | `change_view_type` *(fossify-commons)* | Change view type | Cambiar tipo de vista |
+| 342 | `contributors` *(fossify-commons)* | Contributors | Colaboradores |
+| 343 | `known_issues` *(fossify-commons)* | Known issues | Errores conocidos |
+| 344 | `donate_to_fossify` *(fossify-commons)* | Donate to Fossify | Donar a Fossify |
+| 345 | `privacy_policy` *(fossify-commons)* | Privacy policy | Política de privacidad |
+| 346 | `create_shortcut` *(fossify-commons)* | Create shortcut | Crear atajo |
+| 347 | `print` *(fossify-commons)* | Print | Imprimir |
+| 348 | `search_files` *(fossify-commons)* | Search files | Buscar archivos |
+| 349 | `search_folders` *(fossify-commons)* | Search folders | Buscar carpetas |
