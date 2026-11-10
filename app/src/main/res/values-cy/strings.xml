@@ -177,4 +177,8 @@
     <string name="allow_down_gesture">Caniatáu cau\'r olyg sgrin lawn gydag ystum i lawr</string>
     <string name="avoid_showing_invalid_files">Osgoi dangos ffeiliau annilys</string>
     <string name="show_file_count_line">Dangos nifer y ffeiliau ar ei linell ei hunan</string>
+    <string name="language">Iaith</string>
+    <string name="search">Chwilio</string>
+    <string name="system_default">Rhagosodiad y system</string>
+    <string name="open_system_language_settings">Agor gosodiadau iaith y system</string>
 </resources>

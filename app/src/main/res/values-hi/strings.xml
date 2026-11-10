@@ -261,4 +261,8 @@
         <item quantity="one">क्या आप वाकई %d फ़ाइल को पुनर्स्थापित करना चाहते हैं?</item>
         <item quantity="other">क्या आप वाकई %d फ़ाइलें पुनर्स्थापित करना चाहते हैं?</item>
     </plurals>
+    <string name="language">भाषा</string>
+    <string name="search">खोजें</string>
+    <string name="system_default">सिस्टम डिफ़ॉल्ट</string>
+    <string name="open_system_language_settings">सिस्टम भाषा सेटिंग्स खोलें</string>
 </resources>

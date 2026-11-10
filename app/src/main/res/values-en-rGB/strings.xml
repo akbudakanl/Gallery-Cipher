@@ -10,4 +10,8 @@
         <item quantity="one">Failed to resize %d image</item>
         <item quantity="other">Failed to resize %d images</item>
     </plurals>
+    <string name="language">Language</string>
+    <string name="search">Search</string>
+    <string name="system_default">System default</string>
+    <string name="open_system_language_settings">Open system language settings</string>
 </resources>

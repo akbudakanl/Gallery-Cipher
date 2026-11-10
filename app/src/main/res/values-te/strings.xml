@@ -1,2 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="language">భాష</string>
+    <string name="search">శోధించండి</string>
+    <string name="system_default">సిస్టమ్ డిఫాల్ట్</string>
+    <string name="open_system_language_settings">సిస్టమ్ భాషా సెట్టింగ్‌లను తెరవండి</string>
+</resources>

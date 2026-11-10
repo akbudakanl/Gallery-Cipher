@@ -1,2 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="language">Bahasa</string>
+    <string name="search">Cari</string>
+    <string name="system_default">Lalai sistem</string>
+    <string name="open_system_language_settings">Buka tetapan bahasa sistem</string>
+</resources>

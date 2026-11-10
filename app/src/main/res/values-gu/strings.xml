@@ -104,4 +104,8 @@
     <string name="set_as_wallpaper_with">આ અપ્પ થી વોલપેપર બનાવો:</string>
     <string name="setting_wallpaper">વોલપેપર બનાવી રહ્યા છે…</string>
     <string name="wallpaper_set_successfully">વોલપેપર બનાવમાં સફળ</string>
+    <string name="language">ભાષા</string>
+    <string name="search">શોધો</string>
+    <string name="system_default">સિસ્ટમ ડિફૉલ્ટ</string>
+    <string name="open_system_language_settings">સિસ્ટમ ભાષા સેટિંગ્સ ખોલો</string>
 </resources>

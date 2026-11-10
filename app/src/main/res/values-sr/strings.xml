@@ -242,4 +242,8 @@
         <item quantity="few">Неуспешна промена величине %d слике</item>
         <item quantity="other">Неуспешна промена величине %d слика</item>
     </plurals>
+    <string name="language">Језик</string>
+    <string name="search">Претрага</string>
+    <string name="system_default">Системски подразумевано</string>
+    <string name="open_system_language_settings">Отвори системска језичка подешавања</string>
 </resources>

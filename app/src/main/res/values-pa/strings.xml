@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="edit">ਸੰਪਾਦਨ</string>
+    <string name="language">ਭਾਸ਼ਾ</string>
+    <string name="search">ਖੋਜ</string>
+    <string name="system_default">ਸਿਸਟਮ ਡਿਫੌਲਟ</string>
+    <string name="open_system_language_settings">ਸਿਸਟਮ ਭਾਸ਼ਾ ਸੈਟਿੰਗਾਂ ਖੋਲ੍ਹੋ</string>
 </resources>

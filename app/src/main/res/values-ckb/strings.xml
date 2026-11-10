@@ -8,4 +8,8 @@
     <string name="hidden">(شاراوە)</string>
     <string name="excluded">(بەدەر)</string>
     <string name="all_folders">هەموو بوخچەکان</string>
+    <string name="language">زمان</string>
+    <string name="search">گەڕان</string>
+    <string name="system_default">سیستەمی بنەڕەتی</string>
+    <string name="open_system_language_settings">کردنەوەی ڕێکخستنەکانی زمانی سیستەم</string>
 </resources>

@@ -1,2 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="language">භාෂාව</string>
+    <string name="search">සොයන්න</string>
+    <string name="system_default">පද්ධති පෙරනිමිය</string>
+    <string name="open_system_language_settings">පද්ධති භාෂා සැකසීම් විවෘත කරන්න</string>
+</resources>

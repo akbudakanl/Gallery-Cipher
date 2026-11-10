@@ -1,2 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="language">ⵜⵓⵜⵍⴰⵢⵜ</string>
+    <string name="search">ⴰⵔⵣⵣⵓ</string>
+    <string name="system_default">ⴰⵎⵉⵡⴰⵏ ⵏ ⵓⵏⴳⵔⴰⵡ</string>
+    <string name="open_system_language_settings">ⴰⵔⵥⵥⵓ ⵉⵙⵖⴰⵍⵏ ⵏ ⵜⵓⵜⵍⴰⵢⵜ ⵏ ⵓⵏⴳⵔⴰⵡ</string>
+</resources>

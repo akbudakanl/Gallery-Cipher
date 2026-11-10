@@ -23,4 +23,8 @@
     <string name="render_ultra_hdr_photos">Rādīt Ultra HDR fotoattēlus kā HDR</string>
     <string name="crop_thumbnails">Apcirpt sīktēlus kā kvadrātus</string>
     <string name="show_thumbnail_video_duration">Rādīt video ilgumu</string>
+    <string name="language">Valoda</string>
+    <string name="search">Meklēt</string>
+    <string name="system_default">Sistēmas noklusējums</string>
+    <string name="open_system_language_settings">Atvērt sistēmas valodas iestatījumus</string>
 </resources>

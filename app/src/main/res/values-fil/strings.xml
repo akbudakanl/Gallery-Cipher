@@ -1,2 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="language">Wika</string>
+    <string name="search">Maghanap</string>
+    <string name="system_default">Default ng system</string>
+    <string name="open_system_language_settings">Buksan ang mga setting ng wika ng system</string>
+</resources>

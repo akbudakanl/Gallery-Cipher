@@ -1,2 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="language">ಭಾಷೆ</string>
+    <string name="search">ಹುಡುಕಿ</string>
+    <string name="system_default">ಸಿಸ್ಟಂ ಡೀಫಾಲ್ಟ್</string>
+    <string name="open_system_language_settings">ಸಿಸ್ಟಂ ಭಾಷಾ ಸೆಟ್ಟಿಂಗ್‌ಗಳನ್ನು ತೆರೆಯಿರಿ</string>
+</resources>

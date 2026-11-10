@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_launcher_name">Галерија</string>
+    <string name="language">Јазик</string>
+    <string name="search">Пребарај</string>
+    <string name="system_default">Системски стандардно</string>
+    <string name="open_system_language_settings">Отвори системски јазични поставки</string>
 </resources>

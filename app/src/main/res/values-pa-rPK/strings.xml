@@ -28,4 +28,8 @@
     <string name="compromise">سمجھوتا</string>
     <string name="square">ورگ</string>
     <string name="thumbnails">تھمنیل</string>
+    <string name="language">بولی</string>
+    <string name="search">کھوجو</string>
+    <string name="system_default">سسٹم دا مول</string>
+    <string name="open_system_language_settings">سسٹم بولی دیاں سیٹنگاں کھولو</string>
 </resources>

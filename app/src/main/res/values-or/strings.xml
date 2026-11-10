@@ -1,2 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="language">ଭାଷା</string>
+    <string name="search">ସନ୍ଧାନ</string>
+    <string name="system_default">ସିଷ୍ଟମ୍ ଡିଫଲ୍ଟ</string>
+    <string name="open_system_language_settings">ସିଷ୍ଟମ୍ ଭାଷା ସେଟିଂସ୍ ଖୋଲନ୍ତୁ</string>
+</resources>

@@ -43,4 +43,8 @@
     <string name="screen_rotation_system_setting">सिस्टम सेटिङ</string>
     <string name="speed">गति</string>
     <string name="show_image_file_types">तस्बिरको फाईल किसिम देखाउनुहोस</string>
+    <string name="language">भाषा</string>
+    <string name="search">खोज्नुहोस्</string>
+    <string name="system_default">प्रणाली पूर्वनिर्धारित</string>
+    <string name="open_system_language_settings">प्रणाली भाषा सेटिङहरू खोल्नुहोस्</string>
 </resources>

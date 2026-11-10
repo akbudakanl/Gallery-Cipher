@@ -1,2 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="language">Language</string>
+    <string name="search">Search</string>
+    <string name="system_default">System default</string>
+    <string name="open_system_language_settings">Open system language settings</string>
+</resources>

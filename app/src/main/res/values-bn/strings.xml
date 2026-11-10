@@ -120,4 +120,8 @@
     <string name="fullscreen_media">পুরো স্ক্রিনের মিডিয়া</string>
     <string name="extended_details">বর্ধিত বিশদ</string>
     <string name="bottom_actions">নিচের অংশের ক্রিয়াগুলো</string>
+    <string name="language">ভাষা</string>
+    <string name="search">অনুসন্ধান</string>
+    <string name="system_default">সিস্টেম ডিফল্ট</string>
+    <string name="open_system_language_settings">সিস্টেম ভাষা সেটিংস খুলুন</string>
 </resources>

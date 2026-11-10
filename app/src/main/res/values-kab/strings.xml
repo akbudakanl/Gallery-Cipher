@@ -263,4 +263,8 @@
     <string name="on_video_tap">Deg tesfift n uvidyu</string>
     <string name="open_in_app_player">Ldi ameɣri usliɣ deg usnas</string>
     <string name="open_system_default_player">Ldi asnas n umeɣri amezwer</string>
+    <string name="language">Tutlayt</string>
+    <string name="search">Nadi</string>
+    <string name="system_default">Amezwer n unagraw</string>
+    <string name="open_system_language_settings">Ldi iɣewwaren n tutlayt n unagraw</string>
 </resources>

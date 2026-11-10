@@ -95,4 +95,8 @@
     <string name="random_order">ترتیب تساڌۊفی</string>
     <string name="move_backwards">نشووݩ داڌن ز دیندا</string>
     <string name="loop_slideshow">ز سر گرؽڌن نشووݩ داڌن</string>
+    <string name="language">زووݩ</string>
+    <string name="search">جوستن</string>
+    <string name="system_default">پیش‌فرض سامانه</string>
+    <string name="open_system_language_settings">گوشاد کِردِن تنظیمات زووݩ سامانه</string>
 </resources>

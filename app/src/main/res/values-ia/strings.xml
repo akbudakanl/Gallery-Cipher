@@ -13,4 +13,8 @@
     <string name="show_all">Monstrar le contento de tote le dossieres</string>
     <string name="images">Imagines</string>
     <string name="videos">Videos</string>
+    <string name="language">Lingua</string>
+    <string name="search">Cerca</string>
+    <string name="system_default">Predefinite del systema</string>
+    <string name="open_system_language_settings">Aperir configurationes de lingua del systema</string>
 </resources>

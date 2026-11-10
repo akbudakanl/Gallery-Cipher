@@ -5,4 +5,8 @@
     <string name="edit">Kemmañ</string>
     <string name="thumbnails">Skeudennigoù</string>
     <string name="excluded">(laosket da gostez)</string>
+    <string name="language">Yezh</string>
+    <string name="search">Klask</string>
+    <string name="system_default">Dre ziouer ar reizhiad</string>
+    <string name="open_system_language_settings">Digeriñ arventennoù yezh ar reizhiad</string>
 </resources>

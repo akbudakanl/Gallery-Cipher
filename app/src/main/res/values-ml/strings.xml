@@ -1,2 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="language">ഭാഷ</string>
+    <string name="search">തിരയുക</string>
+    <string name="system_default">സിസ്റ്റം ഡിഫോൾട്ട്</string>
+    <string name="open_system_language_settings">സിസ്റ്റം ഭാഷാ ക്രമീകരണങ്ങൾ തുറക്കുക</string>
+</resources>

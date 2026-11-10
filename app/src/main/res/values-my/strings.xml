@@ -1,2 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="language">ဘာသာစကား</string>
+    <string name="search">ရှာဖွေပါ</string>
+    <string name="system_default">စနစ်မူရင်း</string>
+    <string name="open_system_language_settings">စနစ်ဘာသာစကား ဆက်တင်များကို ဖွင့်ပါ</string>
+</resources>
