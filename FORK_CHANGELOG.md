@@ -9,6 +9,34 @@ For full architectural details, cryptography specifications, and user guides, se
 
 ---
 
+## [1.18.2-cipher] - 2026-11-10
+### Changed
+- **Refined In-App Language Selector (`ChangeLanguageDialog`, `SettingsActivity`):**
+  - Removed the hardcoded top pinning of `Türkçe` and `English`; all 82 supported languages are now displayed strictly by their native display names and sorted alphabetically using a locale-aware `Collator` (`PRIMARY` strength).
+  - Replaced `Locale.getDefault()` guessing with a 5-tier `getDeviceSystemLocale` resolver (`LocaleManager.systemLocales` on Android 13+, `android.os.SystemProperties`, `Settings.System` `system_locales`, persisted `lastSystemLocaleTag` in `Config`, and `Resources.getSystem()` fallback) to reliably show the real OS language even when an app-specific locale is active.
+  - Standardized the top entry and Settings summary format to `System default - <Language>` via `getSystemLanguageLabel`.
+
+### Fixed
+- **System Default Locale Reset (`ChangeLanguageDialog`):**
+  - Fixed `config.useEnglish` remaining `true` when switching back from English to `System default` (`code.isEmpty()`).
+- **Language Dialog String Coverage (34 Locales):**
+  - Added localized `language`, `search`, `system_default`, and `open_system_language_settings` strings across 34 additional `values-*/strings.xml` files (`bn`, `bn-rBD`, `bqi`, `br`, `ckb`, `cr`, `cy`, `en-rGB`, `en-rIN`, `fil`, `gu`, `hi`, `ia`, `is`, `kab`, `kn`, `kr`, `lt`, `ltg`, `lv`, `mk`, `ml`, `ms`, `my`, `ne`, `or`, `pa`, `pa-rPK`, `sat`, `si`, `sr`, `ta`, `te`, `zgh`).
+- **Full Localization Parity & Error Fixes (9 Audited Locales):**
+  - Brought `values-az`, `values-b+es+419`, `values-es-rUS`, `values-es`, `values-de`, `values-ja`, `values-nb-rNO`, `values-nn`, and `values-zh-rTW` to full parity with the canonical English source (`values/strings.xml`: 307 `<string>` + 2 `<plurals>` = 309 resource entries).
+  - Corrected existing mistranslations, typos, missing clauses, formatting bugs, and regional terminology inconsistencies across `es` (29 revised entries), `zh-rTW` (14 revised entries), `nb-rNO` (3 fixes + 2 whitespace normalizations), `az` (3 fixes), `nn` (3 fixes), and `b+es+419` (1 revision).
+
+### Documentation & Audit Terminology
+- **Translation Blind-Test & Parity Reports (`translation-blind-tests/`):**
+  - Added [`translation-blind-tests/README.md`](translation-blind-tests/README.md) and 9 detailed audit reports covering Azerbaijani (`az`), German (`de`), Spanish (`es`, `b+es+419`, `es-rUS`), Japanese (`ja`), Norwegian (`nb-rNO`, `nn`), and Traditional Chinese (`zh-rTW`).
+  - **Audit Terminology Explained:**
+    - **Completeness Audit:** Automated and manual key-by-key verification of each target `values-<lang>/strings.xml` against `app/src/main/res/values/strings.xml` (plus `fossify-commons` inherited keys such as `search`) to guarantee zero missing entries.
+    - **Blind Translation & Consistency Review ("Blind Test"):** Missing or suspect strings are translated independently directly from the English source—without copying flawed legacy phrasing—and cross-checked against a standardized **Key Terminology Glossary** per language (e.g., consistent terms for `Settings`, `Default`, `Folder`, `Album`, `Secret Vault`, `Hidden`, `Excluded`, `Encrypt / Decrypt`, `Clipboard`), exact format placeholders (`%s`, `%d`), escape sequences (`&gt;`, `\'`, `\"`, `\n`), and language-specific CLDR plural categories (`one`, `many`, `other`).
+    - **1-to-1 Parity Comparison:** Every report concludes with a complete row-by-row table pairing every canonical English resource entry with its localized counterpart for transparent verification.
+
+### Notes — Translation Requests & Feedback
+- **New Languages & Translation Corrections:**
+  - If you notice any inaccurate, unnatural, or missing translations—or would like to request full audit/support for a new language—please submit a report, complaint, or Pull Request on the project's [GitHub Issues](https://github.com/akbudakanl/Fossify-Gallery-Cipher/issues) page.
+
 ## [1.18.1-cipher] - 2026-11-10
 ### Fixed
 - **In-App Language Selection & Crash Resolution (`SettingsActivity`):**
