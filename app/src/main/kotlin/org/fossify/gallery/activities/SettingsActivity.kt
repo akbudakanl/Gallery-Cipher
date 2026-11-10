@@ -18,6 +18,8 @@ import org.fossify.gallery.dialogs.*
 import org.fossify.gallery.extensions.*
 import org.fossify.gallery.helpers.*
 import org.fossify.gallery.models.AlbumCover
+import org.fossify.gallery.dialogs.ChangeLanguageDialog
+import androidx.appcompat.app.AppCompatDelegate
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
@@ -153,21 +155,35 @@ class SettingsActivity : SimpleActivity() {
     }
 
     private fun setupUseEnglish() {
-        binding.settingsUseEnglishHolder.beVisibleIf((config.wasUseEnglishToggled || Locale.getDefault().language != "en") && !isTiramisuPlus())
-        binding.settingsUseEnglish.isChecked = config.useEnglish
-        binding.settingsUseEnglishHolder.setOnClickListener {
-            binding.settingsUseEnglish.toggle()
-            config.useEnglish = binding.settingsUseEnglish.isChecked
-            exitProcess(0)
-        }
+        binding.settingsUseEnglishHolder.beGone()
     }
 
     private fun setupLanguage() {
-        binding.settingsLanguage.text = Locale.getDefault().displayLanguage
-        binding.settingsLanguageHolder.beVisibleIf(isTiramisuPlus())
+        binding.settingsUseEnglishHolder.beGone()
+        binding.settingsLanguageHolder.beVisible()
+        binding.settingsLanguage.text = getCurrentLanguageDisplayName()
         binding.settingsLanguageHolder.setOnClickListener {
-            launchChangeAppLanguageIntent()
+            ChangeLanguageDialog(this) {
+                binding.settingsLanguage.text = getCurrentLanguageDisplayName()
+            }
         }
+    }
+
+    private fun getCurrentLanguageDisplayName(): String {
+        val appLocales = AppCompatDelegate.getApplicationLocales()
+        if (!appLocales.isEmpty) {
+            val locale = appLocales.get(0)
+            if (locale != null) {
+                return locale.getDisplayName(locale)
+                    .replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
+            }
+        } else if (config.useEnglish) {
+            return "English"
+        }
+        val defaultLocale = Locale.getDefault()
+        val defaultName = defaultLocale.getDisplayName(defaultLocale)
+            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(defaultLocale) else it.toString() }
+        return "${getString(R.string.system_default)} ($defaultName)"
     }
 
     private fun setupChangeDateTimeFormat() {

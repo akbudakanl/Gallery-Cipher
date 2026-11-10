@@ -351,4 +351,7 @@
     <string name="vault_exit_hide">Hide hidden albums</string>
     <string name="vault_exit_remember_my_choice">Remember my choice</string>
     <string name="vault_exit_settings_hint">For more options, see Settings &gt; On leaving hidden section</string>
+    <string name="system_default">System default</string>
+    <string name="language">Language</string>
+    <string name="open_system_language_settings">Open system language settings</string>
 </resources>

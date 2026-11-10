@@ -9,6 +9,18 @@ For full architectural details, cryptography specifications, and user guides, se
 
 ---
 
+## [1.18.1-cipher] - 2026-11-10
+### Fixed
+- **In-App Language Selection & Crash Resolution (`SettingsActivity`):**
+  - Resolved application crash when tapping "General > Language" on devices with customized OEM ROMs (MIUI/HyperOS, ColorOS, One UI, etc.) caused by unhandled failures in `android.settings.APP_LOCALE_SETTINGS`.
+  - Replaced the external system intent launch with a native in-app `ChangeLanguageDialog` with real-time search filtering.
+  - Pinned System Default, Türkçe, and English at the top, followed by 75+ supported languages with both native and English names.
+  - Integrated `AppCompatDelegate.setApplicationLocales` for seamless runtime language switching across all Android versions.
+  - Registered `AppLocalesMetadataHolderService` in `AndroidManifest.xml` for automatic locale persistence on Android 12 and below.
+- **Localization Refinements:**
+  - Corrected `virtual_folder_name` Turkish string ("Virtual Klasör adı" -> "Sanal klasör adı").
+  - Standardized progress percentage formatting in `CryptoProgressDialog` to `(50%)` format.
+
 ## [1.18.0-cipher] - 2026-11-10
 ### Security
 - **Complete Removal of Network Permissions & Code-Level Network Lockdown:**

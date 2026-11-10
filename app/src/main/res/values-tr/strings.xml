@@ -276,7 +276,7 @@
     <string name="new_virtual_album">Yeni albüm…</string>
     <string name="rename_virtual_album">Albümü yeniden adlandır</string>
     <string name="album_name">Albüm adı</string>
-    <string name="virtual_folder_name">Virtual Klasör adı</string>
+    <string name="virtual_folder_name">Sanal klasör adı</string>
     <string name="virtual_album_name_empty">Albüm adı boş olamaz</string>
     <string name="virtual_album_exists">Bu adda bir albüm zaten var</string>
     <string name="add_to_virtual_album">Albüme ekle</string>
@@ -317,4 +317,7 @@
     <string name="vault_exit_hide">Gizli albümleri gizle</string>
     <string name="vault_exit_remember_my_choice">Seçimimi hatırla</string>
     <string name="vault_exit_settings_hint">Daha fazla seçenek için Ayarlar &gt; Gizli bölümden çıkıldığında bölümüne bakın</string>
+    <string name="system_default">Sistem varsayılanı</string>
+    <string name="language">Dil</string>
+    <string name="open_system_language_settings">Sistem dil ayarlarını aç</string>
 </resources>

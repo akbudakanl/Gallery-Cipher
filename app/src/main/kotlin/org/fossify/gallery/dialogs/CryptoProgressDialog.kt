@@ -20,7 +20,7 @@ class CryptoProgressDialog(
         binding.cryptoProgressBar.progress = 0
         binding.cryptoProgressBar.isIndeterminate = max <= 0
         val percent = 0
-        binding.cryptoProgressCount.text = "0 / $max (%$percent)"
+        binding.cryptoProgressCount.text = "0 / $max ($percent%)"
 
         activity.getAlertDialogBuilder().apply {
             setCancelable(false)
@@ -38,7 +38,7 @@ class CryptoProgressDialog(
         binding.cryptoProgressBar.max = safeTotal
         binding.cryptoProgressBar.progress = current
         val percent = if (total > 0) ((current.toFloat() / total) * 100).toInt().coerceIn(0, 100) else 0
-        binding.cryptoProgressCount.text = "$current / $total (%$percent)"
+        binding.cryptoProgressCount.text = "$current / $total ($percent%)"
     }
 
     fun dismiss() {
