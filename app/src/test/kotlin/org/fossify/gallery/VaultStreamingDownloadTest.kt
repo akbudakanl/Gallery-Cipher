@@ -6,28 +6,8 @@ import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.security.SecureRandom
-import java.util.regex.Pattern
 
 class VaultStreamingDownloadTest {
-
-    @Test
-    fun testUrlPatternExtraction() {
-        val pattern = Pattern.compile("https?://[^\\s\"'<>]+", Pattern.CASE_INSENSITIVE)
-
-        val directUrl = "https://example.com/gallery/image123.jpg"
-        val matcher1 = pattern.matcher(directUrl)
-        assertTrue(matcher1.find())
-        assertEquals("https://example.com/gallery/image123.jpg", matcher1.group())
-
-        val textWithUrl = "Check out this video: https://cdn.site.org/media/clip.mp4?hd=1&token=xyz in the chat"
-        val matcher2 = pattern.matcher(textWithUrl)
-        assertTrue(matcher2.find())
-        assertEquals("https://cdn.site.org/media/clip.mp4?hd=1&token=xyz", matcher2.group())
-
-        val invalidText = "There is no link here at all"
-        val matcher3 = pattern.matcher(invalidText)
-        assertFalse(matcher3.find())
-    }
 
     @Test
     fun testStreamingEncryptionAndDecryptionRoundtrip() {

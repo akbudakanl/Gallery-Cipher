@@ -588,8 +588,6 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         }
 
         binding.mainMenu.requireToolbar().menu.apply {
-            val hasEncryptedActive = mIsSecretVaultView || (CryptoManager.isVaultUnlocked && (mHiddenDisplayMode == DISPLAY_ALL_HIDDEN || mHiddenDisplayMode == DISPLAY_ENCRYPTED_ONLY))
-            findItem(R.id.menu_vault_browser)?.isVisible = hasEncryptedActive
             findItem(R.id.temporarily_show_hidden)?.isVisible = false
             findItem(R.id.stop_showing_hidden)?.isVisible =
                 (!isRPlus() || isExternalStorageManager()) && config.temporarilyShowHidden
@@ -627,7 +625,6 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             when (menuItem.itemId) {
                 R.id.sort -> showSortingDialog()
                 R.id.filter -> showFilterMediaDialog()
-                R.id.menu_vault_browser -> launchVaultBrowser()
                 R.id.open_camera -> launchCamera()
                 R.id.show_all -> showAllMedia()
                 R.id.change_view_type -> changeViewType()
@@ -645,12 +642,6 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                 else -> return@setOnMenuItemClickListener false
             }
             return@setOnMenuItemClickListener true
-        }
-    }
-
-    private fun launchVaultBrowser() {
-        Intent(this, VaultWebViewActivity::class.java).apply {
-            startActivity(this)
         }
     }
 

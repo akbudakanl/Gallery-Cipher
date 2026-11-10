@@ -9,6 +9,27 @@ For full architectural details, cryptography specifications, and user guides, se
 
 ---
 
+## [1.18.0-cipher] - 2026-11-10
+### Security
+- **Complete Removal of Network Permissions & Code-Level Network Lockdown:**
+  - Permanently removed `android.permission.INTERNET` (enforced via `tools:node="remove"` in `AndroidManifest.xml` so no third-party AAR/dependency can re-introduce it during manifest merging) and `android.permission.WAKE_LOCK`.
+  - Added strict `network_security_config.xml` (`cleartextTrafficPermitted="false"`, empty `<trust-anchors />`) and `android:usesCleartextTraffic="false"` to reject both cleartext HTTP and TLS connections.
+  - Added defense-in-depth code-level network blocking in `App.kt` (`URL.setURLStreamHandlerFactory` blocking `http`, `https`, `ftp`, `ws`, `wss`, `gopher`; `ProxySelector.setDefault` rejecting network URIs with `SecurityException`; Picasso no-op `Downloader`) and replaced Glide's `GlideUrl` network loader in `SvgModule.kt` with `DisabledGlideNetworkLoader`.
+
+### Removed
+- **Removal of URL Sharing (`VaultShareActivity`, `VaultDownloader`) and In-App Vault Browser (`VaultWebViewActivity`):**
+  - Removed `VaultShareActivity`, `VaultWebViewActivity`, `VaultDownloader`, `PickVaultAlbumDialog`, `menu_vault_browser`, and associated layouts, drawables, and string resources.
+  - **Why these features were removed from the gallery:**
+    - In Android, `android.permission.INTERNET` is granted per **Linux UID (entire APK)** rather than per Activity. It is not possible to grant network access exclusively to `VaultWebViewActivity` while cryptographically or kernel-isolating the rest of the app within the same APK.
+    - Because a gallery application bundles numerous third-party media decoders and native `.so` libraries (`avif`, `jxl`, `awebp`, `apng`, `media3`, `android-gif-drawable`, `bouncycastle`, etc.), keeping `INTERNET` in the gallery introduces a supply-chain and vulnerability risk: if any dependency is compromised, code running in the same UID could bypass Java-level restrictions (e.g., via native syscalls) and exfiltrate gallery media over the network.
+    - Removing `INTERNET` at the manifest/kernel boundary guarantees **zero network exfiltration capability** for the gallery out of the box—without requiring Android system network restrictions or external firewall apps.
+
+### Notes & Safer Alternatives
+- **Recommended Workflow — Offline Desktop CLI (`tools/fossify-cipher-cli/cipher_vault.py`):**
+  - For maximum security, use the offline Linux/Tails CLI tool (`tools/fossify-cipher-cli/cipher_vault.py`). Running it on **Tails OS (in RAM)** encrypts photos and videos into `.bin` ciphertext offline before they ever reach your phone, keeping both your media and the Android gallery app completely air-gapped.
+- **Upcoming Standalone Mobile Browser Project:**
+  - To enable safe, zero-disk encrypted downloads directly on Android without a PC, **an independent, external WebView browser/downloader project** (a separate minimal APK with its own Linux UID and zero gallery read/decryption access) is currently in development.
+
 ## [1.17.2-cipher] - 2026-11-09
 ### Fixed
 - **GIF Decoder Deduplication (`PhotoFragment`):**
