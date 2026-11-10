@@ -119,7 +119,7 @@
 | 32 | `reorder_by_dragging` | Reorder folders by dragging | 拖曳以重新排序資料夾 |
 | 33 | `reorder_by_dragging_pro` | Reorder folders by dragging (Pro) | 拖曳以重新排序資料夾（專業版） |
 | 34 | `restore_to_path` | Restoring to \'%s\' | 還原至「%s」 |
-| 35 | `full_storage_permission_required` | Fossify Gallery needs full access to display all your photos and videos. Go to Settings > Permissions > Photos and videos > Allow all. | Fossify 圖庫需要完整存取權限才能顯示您所有的照片與影片。請到「設定」→「隱私權」→「應用程式權限」→「相片和影片」→「一律全部允許」。 |
+| 35 | `full_storage_permission_required` | Fossify Gallery needs full access to display all your photos and videos. Go to Settings &gt; Permissions &gt; Photos and videos &gt; Allow all. | Fossify 圖庫需要完整存取權限才能顯示您所有的照片與影片。請到「設定」→「隱私權」→「應用程式權限」→「相片和影片」→「一律全部允許」。 |
 | 36 | `filter_media` | Filter media | 篩選媒體檔案 |
 | 37 | `images` | Images | 圖片 |
 | 38 | `videos` | Videos | 影片 |
@@ -188,7 +188,7 @@
 | 101 | `set_as_wallpaper` | Set as Wallpaper | 設為桌布 |
 | 102 | `set_as_wallpaper_failed` | Setting as Wallpaper failed | 設為桌布失敗 |
 | 103 | `set_as_wallpaper_with` | Set as wallpaper with: | 用其他程式設為桌布: |
-| 104 | `setting_wallpaper` | Setting wallpaper&#8230; | 正在設定桌布… |
+| 104 | `setting_wallpaper` | Setting wallpaper… | 正在設定桌布… |
 | 105 | `wallpaper_set_successfully` | Wallpaper set successfully | 成功設為桌布 |
 | 106 | `portrait_aspect_ratio` | Portrait aspect ratio | 直向長寬比 |
 | 107 | `landscape_aspect_ratio` | Landscape aspect ratio | 橫向長寬比 |
@@ -287,10 +287,10 @@
 | 200 | `export_favorite_paths` | Export favorites | 匯出我的最愛 |
 | 201 | `import_favorite_paths` | Import favorites | 匯入我的最愛 |
 | 202 | `paths_imported_successfully` | Paths imported successfully | 路徑匯入成功 |
-| 203 | `media_management_prompt` | To make sure that all file operations work reliably, please make this app a Media management app in your device settings. | 為了確保所有檔案操作都能可靠地運作，請將此 app 設為裝置設定中的媒體管理 app。 |
+| 203 | `media_management_prompt` | To make sure that all file operations work reliably, please make this app a Media management app in your device settings. | 為了確保所有檔案操作都能可靠地運作，請將此應用程式設為裝置設定中的媒體管理應用程式。 |
 | 204 | `password_protect_excluded` | Password protect excluded folder visibility | 以密碼保護已排除資料夾的可見性 |
-| 205 | `media_management_manual` | Something went wrong, please go into your device Settings - Apps - Special app access - Media management apps and allow this app to manage media. | 出錯了，請至裝置的設定 - 應用程式（和通知） - 特殊應用程式存取權 - 媒體管理應用程式，允許本 app 管理媒體。 |
-| 206 | `media_management_note` | If the redirection does not work, please go into your device Settings - Apps - Special app access - Media management apps and allow this app to manage media. | 若重新導向未順利運作，請至裝置的設定 - 應用程式（和通知） - 特殊應用程式存取權 - 媒體管理應用程式，允許本 app 管理媒體。 |
+| 205 | `media_management_manual` | Something went wrong, please go into your device Settings - Apps - Special app access - Media management apps and allow this app to manage media. | 出錯了，請至裝置的設定 - 應用程式（和通知） - 特殊應用程式存取權 - 媒體管理應用程式，允許本應用程式管理媒體。 |
+| 206 | `media_management_note` | If the redirection does not work, please go into your device Settings - Apps - Special app access - Media management apps and allow this app to manage media. | 若重新導向未順利運作，請至裝置的設定 - 應用程式（和通知） - 特殊應用程式存取權 - 媒體管理應用程式，允許本應用程式管理媒體。 |
 | 207 | `media_management_alternative` | If you do not want to do it, you can also go into your device Settings - Apps - Special app access - Media management apps and allow this app to manage media. | 如果您不想這麼做，也可以進入您的裝置設定 - 應用程式 - 特殊應用程式存取 - 媒體管理應用程式，並允許此應用程式管理媒體。 |
 | 208 | `alternative_media_access` | Alternatively, you can allow accessing media files only. In that case you will not be able to work with hidden files though. | 或者，您只能允許存取媒體檔案。但在這種情況下，您將無法處理隱藏檔案。 |
 | 209 | `media_only` | Media only | 僅媒體 |
@@ -311,8 +311,8 @@
 | 224 | `video_no_sound` | This video has no audio | 此影片沒有音訊 |
 | 225 | `faq_1_title` | How can I make Fossify Gallery the default device gallery? | 怎樣將 Fossify Gallery 設為本裝置的預設相簿？ |
 | 226 | `faq_1_text` | First you have to find the currently default gallery in the Apps section of your device settings, look for a button that says something like \"Open by default\", click on it, then select \"Clear defaults\". The next time you will try opening an image or video you should see an app picker, where you can select Fossify Gallery and make it the default app. | 首先，您需要在裝置設定的應用程式部分找到目前預設的相簿，尋找一個寫著「預設開啟」之類的按鈕，點擊它，然後選擇「清除預設」。下次嘗試開啟圖片或影片時，您應該會看到一個應用程式選擇器，您可以在其中選擇 Fossify Gallery 並將其設為預設應用程式。 |
-| 227 | `faq_2_title` | I locked the app with a password, but I forgot it. What can I do? | 用密碼把這個 app 上鎖後忘記密碼該怎麼辦？ |
-| 228 | `faq_2_text` | You can solve it in 2 ways. You can either reinstall the app, or find the app in your device settings and select \"Clear data\". It will reset all your settings, it will not remove any media files. | 有兩種解決方法。一是重新安裝本 app。一是在裝置的設定中找到本 app，然後按「清除資料」（或「清除儲存空間」等類似的字眼），app 的設定將會被重設，但不會移除任何媒體檔案。 |
+| 227 | `faq_2_title` | I locked the app with a password, but I forgot it. What can I do? | 用密碼把這個應用程式上鎖後忘記密碼該怎麼辦？ |
+| 228 | `faq_2_text` | You can solve it in 2 ways. You can either reinstall the app, or find the app in your device settings and select \"Clear data\". It will reset all your settings, it will not remove any media files. | 有兩種解決方法。一是重新安裝本應用程式。一是在裝置的設定中找到本應用程式，然後按「清除資料」（或「清除儲存空間」等類似的字眼），應用程式的設定將會被重設，但不會移除任何媒體檔案。 |
 | 229 | `faq_3_title` | How can I make an album always appear at the top? | 如何使某個相簿顯示在最頂端？ |
 | 230 | `faq_3_text` | You can long press the desired album and select the Pin icon at the actions menu, that will pin it to the top. You can pin multiple folders too, pinned items will be sorted by the default sorting method. | 長按該相簿，接著按圖釘圖示或選單中的「釘選在頂端」。您可以同時釘選數個相簿，它們將會依照預設排序方式排序。 |
 | 231 | `faq_4_title` | How can I fast forward videos? | 如何快轉影片？ |
@@ -322,10 +322,10 @@
 | 235 | `faq_6_title` | Why do folders with music cover art or stickers show up? | 為何出現了音樂的封面圖或是貼圖的資料夾？ |
 | 236 | `faq_6_text` | It can happen that you will see some unusual albums show up. You can easily exclude them by long pressing them and selecting Exclude. In the next dialog you can then select the parent folder, chances are it will prevent the other related albums showing up too. | 有時候會出現一些異常的相簿。長按並點選排除可排除它們，在接下來的對話框選擇它們的上層資料夾的話，有機會避免相關的相簿出現。 |
 | 237 | `faq_7_title` | A folder with images isn\'t showing up, or it doesn\'t show all items.  What can I do? | 有個含有圖片的資料夾沒出現，抑或是沒有顯示所有項目時，該怎麼辦？ |
-| 238 | `faq_7_text` | That can have multiple reasons, but solving it is easy. Just go in Settings -> Manage Included Folders, select Plus and navigate to the required folder. | 可能有很多種原因，但解法很簡單。前往「設定」 -&gt; 「管理包含資料夾」、按加號（+）、選擇該資料夾即可。 |
+| 238 | `faq_7_text` | That can have multiple reasons, but solving it is easy. Just go in Settings -&gt; Manage Included Folders, select Plus and navigate to the required folder. | 可能有很多種原因，但解法很簡單。前往「設定」 -&gt; 「管理包含資料夾」、按加號（+）、選擇該資料夾即可。 |
 | 239 | `faq_8_title` | What if I want just a few particular folders visible? | 如果只想顯示特定資料夾呢？ |
-| 240 | `faq_8_text` | Adding a folder at the Included Folders doesn\'t automatically exclude anything. What you can do is go in Settings -> Manage Excluded Folders, exclude the root folder \"/\", then add the desired folders at Settings -> Manage Included Folders. That will make only the selected folders visible, as both excluding and including are recursive and if a folder is both excluded and included, it will show up. | 如果只將某資料夾加入至「包含資料夾」的話，其他的資料夾並不會被自動排除。請前往「設定」-&gt;「管理排除資料夾」、將根資料夾「/」排除，並在「設定」-&gt;「管理包含資料夾」中加入欲顯示的資料夾。 這樣就只會顯示所選的資料夾，因為排除與包含都是遞迴的，所以若某資料夾同時被包含及排除，其將會顯示。 |
-| 241 | `faq_10_title` | Can I crop images with this app? | 這個 app 可以裁剪圖片嗎？ |
+| 240 | `faq_8_text` | Adding a folder at the Included Folders doesn\'t automatically exclude anything. What you can do is go in Settings -&gt; Manage Excluded Folders, exclude the root folder \"/\", then add the desired folders at Settings -&gt; Manage Included Folders. That will make only the selected folders visible, as both excluding and including are recursive and if a folder is both excluded and included, it will show up. | 如果只將某資料夾加入至「包含資料夾」的話，其他的資料夾並不會被自動排除。請前往「設定」-&gt;「管理排除資料夾」、將根資料夾「/」排除，並在「設定」-&gt;「管理包含資料夾」中加入欲顯示的資料夾。 這樣就只會顯示所選的資料夾，因為排除與包含都是遞迴的，所以若某資料夾同時被包含及排除，其將會顯示。 |
+| 241 | `faq_10_title` | Can I crop images with this app? | 這個應用程式可以裁剪圖片嗎？ |
 | 242 | `faq_10_text` | Yes, you can crop images in the editor, by dragging the image corners. You can get to the editor either by long pressing an image thumbnail and selecting Edit, or selecting Edit from the fullscreen view. | 可以，在編輯工具中拖動圖片的角落即可裁剪圖片。對縮圖長按並選擇編輯，或者在全螢幕檢視時選擇編輯皆可進入編輯工具。 |
 | 243 | `faq_11_title` | Can I somehow group media file thumbnails? | 有辦法分類縮圖嗎？ |
 | 244 | `faq_11_text` | Sure, just use the \"Group by\" menu item while at the thumbnails view. You can group files by multiple criteria, including Date Taken. If you use the \"Show all folders content\" function you can group them by folders too. | 可以，在檢視縮圖時使用選單中的「分組方式」即可，有多種分類方式可供選擇，包含拍攝日期等。若使用了「資料夾內容全部顯示」功能，則也可以依資料夾來分類。 |
@@ -335,13 +335,13 @@
 | 248 | `faq_13_text` | The current solution for displaying images works fine in the vast majority of cases, but if you want even better image quality, you can enable the \"Show images in the highest possible quality\" at the app settings, in the \"Deep zoomable images\" section. | 目前顯示圖片的方式在大多數情況下都能正常運作，但若想要更好的畫質，可以啟用「設定」-&gt;「可強制放大的圖片」段落中的「以最高品質顯示圖片」。 |
 | 249 | `faq_14_title` | I have hidden a file/folder. How can I unhide it? | 如何取消隱藏檔案／資料夾？ |
 | 250 | `faq_14_text` | You can either press the \"Temporarily show hidden items\" menu item at the main screen, or toggle \"Show hidden items\" in the app settings to see the hidden item. If you want to unhide it, just long press it and select \"Unhide\". Folders are hidden by adding a hidden \".nomedia\" file into them, you can delete the file with any file manager too. Note that hiding works recursively though, so if you hide a folder, all subfolders will become hidden too. So for unhiding the subfolders you have to unhide the parent folder. | 按主畫面選單中的「暫時顯示隱藏的檔案」或設定中的「顯示隱藏的項目」就能看到隱藏的項目。若要取消隱藏，長按並選擇「取消隱藏」即可。資料夾隱藏的原理是在其內新增一個「.nomedia」檔案，因此可用任意檔案管理器將其刪除。檔案／資料夾是以遞迴的方式被隱藏的，因此若某資料夾被隱藏，其子資料夾也會被隱藏。若要取消隱藏子資料夾，其上層資料夾需先被取消隱藏。 |
-| 251 | `faq_15_title` | Why does the app take up so much space? | 這個 app 怎麼佔用了這麼多空間？ |
+| 251 | `faq_15_title` | Why does the app take up so much space? | 這個應用程式怎麼佔用了這麼多空間？ |
 | 252 | `faq_15_text` | App cache can take up to 250MB, it ensures quicker image loading. If the app is taking up even more space, it is most likely caused by you having items in the recycle bin. Those files count to the app size. You can clear the recycle bin by opening it and deleting all files, or from the app settings. Every file in the bin is deleted automatically after 30 days. | 應用程式快取可協助圖片載入更快，最高僅佔 250 MB。如果此應用程式佔用超過 250 MB 空間，可能是回收桶中的檔案仍在佔用空間。您可刪除回收桶中的所有檔案，或在設定中快速清除。檔案進入回收桶的 30 天後將自動刪除。 |
 | 253 | `faq_16_title` | What happened to file and folder hiding and why cannot I see hidden items anymore? | 檔案／資料夾隱藏怎麼了？為什麼我看不到隱藏的項目了？ |
-| 254 | `faq_16_text` | Starting with Android 11 you cannot hide or unhide files or folders anymore, you cannot see the hidden ones in gallery apps due to system restrictions either. You will have to use some file manager for that. | 自 Android 11 開始，因系統限制，無法隱藏或解除隱藏檔案或資料夾，也無法在相簿 app 中看到已隱藏的項目。請使用檔案管理程式達成上述操作。 |
+| 254 | `faq_16_text` | Starting with Android 11 you cannot hide or unhide files or folders anymore, you cannot see the hidden ones in gallery apps due to system restrictions either. You will have to use some file manager for that. | 自 Android 11 開始，因系統限制，無法隱藏或解除隱藏檔案或資料夾，也無法在相簿應用程式中看到已隱藏的項目。請使用檔案管理程式達成上述操作。 |
 | 255 | `faq_16_text_extra` | Or you can also grant this gallery access to All Files through your device settings, that will allow us showing hidden items and make file operations more reliable in general. | 或者，您也可以透過您的裝置設定授予此相簿存取所有檔案的權限，這將允許我們顯示隱藏項目並使檔案操作更為可靠。 |
 | 256 | `faq_17_title` | Why cannot I include missing folders anymore? | 為什麼不能再包含缺漏的資料夾了？ |
-| 257 | `faq_17_text` | That stopped working due to the system changes that came with Android 11 too, the app cannot browse real folders anymore, it relies on the so called MediaStore at fetching data. | 因 Android 11 的系統變更，這項功能無法再運作。app 沒辦法瀏覽實際的資料夾，而是透過所謂的 MediaStorage 來擷取資料。 |
+| 257 | `faq_17_text` | That stopped working due to the system changes that came with Android 11 too, the app cannot browse real folders anymore, it relies on the so called MediaStore at fetching data. | 因 Android 11 的系統變更，這項功能無法再運作。應用程式沒辦法瀏覽實際的資料夾，而是透過所謂的 MediaStore 來擷取資料。 |
 | 258 | `faq_18_title` | Why do I see ads during video playback? | 為什麼我在播放影片時看到廣告？ |
 | 259 | `faq_18_text` | Our apps have no ads whatsoever. If you see them during video playback, you must be using some other apps video player. Try finding your default video player in the device settings, then do a \"Clear defaults\" on it. The next time you invoke some video intent you will see an app picker prompt, where you can select what app you want to use. | 我們的應用程式完全沒有廣告。如果您在播放影片時看到它們，那麼您一定是在使用其他應用程式的影片播放器。請試著在裝置設定中找到您的預設影片播放器，並清除其預設值。下次您嘗試播放影片時，系統會提示您選擇應用程式，您可以在此選擇您想要使用的影片播放器。 |
 | 260 | `create_virtual_album` | Create virtual album | 建立虛擬相簿 |

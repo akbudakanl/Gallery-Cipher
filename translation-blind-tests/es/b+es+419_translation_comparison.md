@@ -312,7 +312,7 @@ All 21 previously existing strings in `values-b+es+419/strings.xml` were verifie
 | 282 | `decrypting_folder` | Decrypting folder… | Descifrando carpeta… |
 | 283 | `folder_decrypted_successfully` | Folder decrypted successfully | Carpeta descifrada correctamente |
 | 284 | `decrypting_files` | Decrypting files… | Descifrando archivos… |
-| 285 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | Por favor, apoye su dedo sobre el sensor de huellas |
+| 285 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | Por favor, apoya tu dedo sobre el sensor de huellas |
 | 286 | `connect_at_least_4_dots_prompt` | Connect at least 4 dots | Conecta al menos 4 puntos |
 | 287 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | ¿Deseas acceder a tu carpeta Cipher_Secrets existente? |
 | 288 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | Se eliminará la carpeta Cipher_Secrets existente y se creará una nueva. ¿Estás seguro? |

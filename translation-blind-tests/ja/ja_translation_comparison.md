@@ -133,7 +133,7 @@
 | 54 | `include_folders` | Included folders | 追加フォルダー |
 | 55 | `manage_included_folders` | Manage included folders | 追加フォルダーの管理 |
 | 56 | `add_folder` | Add folder | フォルダーを追加 |
-| 57 | `included_activity_placeholder` | If you have some folders which contain media, but were not recognized by the app, you can add them manually here.\n\nAdding some items here will not exclude any other folder. | メディア入りのフォルダーがアプリで認識されない場合は手動で追加します。 |
+| 57 | `included_activity_placeholder` | If you have some folders which contain media, but were not recognized by the app, you can add them manually here.\n\nAdding some items here will not exclude any other folder. | メディアを含むフォルダーがアプリに認識されない場合は、ここで手動で追加できます。\n\nここに項目を追加しても、他のフォルダーが除外されることはありません。 |
 | 58 | `no_media_add_included` | No media files have been found. You can solve it by adding the folders containing media files manually. | メディアファイルが見つかりません。メディアファイルを手動で追加することにより解決できます。 |
 | 59 | `resize_and_save` | Resize selection and save | 選択領域をリサイズして保存 |
 | 60 | `width` | Width | 幅 |
@@ -333,7 +333,7 @@
 | 254 | `faq_16_text` | Starting with Android 11 you cannot hide or unhide files or folders anymore, you cannot see the hidden ones in gallery apps due to system restrictions either. You will have to use some file manager for that. | Android11以降では、システムの制限により、ファイルやフォルダーの非表示と非表示解除ができなくなりました。また、ギャラリーアプリ内で非表示の項目を確認できなくなりましたので、対処可能な別のファイルマネージャーを使用する必要があります。 |
 | 255 | `faq_16_text_extra` | Or you can also grant this gallery access to All Files through your device settings, that will allow us showing hidden items and make file operations more reliable in general. | あるいは、デバイスの設定でこのギャラリーに [すべてのファイル] へのアクセスを許可すると、非表示項目の表示が可能になり、確実性を高めたファイル操作を行うことができるようになります。 |
 | 256 | `faq_17_title` | Why cannot I include missing folders anymore? | 見つからなくなったフォルダーを含めることができなくなったのはなぜですか？ |
-| 257 | `faq_17_text` | That stopped working due to the system changes that came with Android 11 too, the app cannot browse real folders anymore, it relies on the so called MediaStore at fetching data. | これもAndorid11のシステム変更により機能しなくなりました。アプリは実際のフォルダーを参照できなくなり、システムのMediaStoreに依存するようになりました。 |
+| 257 | `faq_17_text` | That stopped working due to the system changes that came with Android 11 too, the app cannot browse real folders anymore, it relies on the so called MediaStore at fetching data. | これも Android 11 のシステム変更により機能しなくなりました。アプリは実際のフォルダーを参照できなくなり、システムのMediaStoreに依存するようになりました。 |
 | 258 | `faq_18_title` | Why do I see ads during video playback? | 動画の再生中に広告が表示されるのはなぜですか？ |
 | 259 | `faq_18_text` | Our apps have no ads whatsoever. If you see them during video playback, you must be using some other apps video player. Try finding your default video player in the device settings, then do a \"Clear defaults\" on it. The next time you invoke some video intent you will see an app picker prompt, where you can select what app you want to use. | 私たちのアプリには広告は一切表示されません。動画の再生中に広告が表示される場合、他のアプリの動画プレーヤーを使用している可能性があります。端末の設定でデフォルトの動画プレーヤーを見つけて、「デフォルトの設定をクリア」（あるいは「設定を消去」や「デフォルトをクリア」といった表記のもの）を実行してみてください。次回以降、何らかの動画を開こうとすると、使用するアプリを選択するアプリ選択ダイアログが表示されます。 |
 | 260 | `create_virtual_album` | Create virtual album | 仮想アルバムを作成 |

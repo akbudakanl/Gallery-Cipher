@@ -70,14 +70,14 @@
 | 25 | `decrypting_folder` | Decrypting folder… | Descifrando carpeta… | Progress title |
 | 26 | `folder_decrypted_successfully` | Folder decrypted successfully | Carpeta descifrada correctamente | Success toast |
 | 27 | `decrypting_files` | Decrypting files… | Descifrando archivos… | Progress toast |
-| 28 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | Por favor, pon el dedo en el lector de huellas | Matches `fossify-commons` `values-es` `place_finger` |
+| 28 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | Por favor, ponga el dedo en el sensor de huellas | Matches `usted` register and `sensor de huellas` |
 | 29 | `connect_at_least_4_dots_prompt` | Connect at least 4 dots | Conecta al menos 4 puntos | Pattern lock minimum dots validation |
-| 30 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | ¿Deseas acceder a tu carpeta Cipher_Secrets existente? | Keeps `Cipher_Secrets` literal |
-| 31 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | Se eliminará la carpeta Cipher_Secrets existente y se creará una nueva. ¿Estás seguro? | Keeps `Cipher_Secrets` literal |
+| 30 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | ¿Desea acceder a su carpeta Cipher_Secrets existente? | Keeps `Cipher_Secrets` literal (`usted` register) |
+| 31 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | Se eliminará la carpeta Cipher_Secrets existente y se creará una nueva. ¿Está seguro? | Keeps `Cipher_Secrets` literal (`usted` register) |
 | 32 | `confirm_checkbox_label` | I confirm | Confirmo | Checkbox label in `DeleteCipherSecretsDialog` |
 | 33 | `secret_vault` | Secret Vault | Bóveda secreta | Vault section title |
 | 34 | `secret_vault_empty` | Secret Vault is empty | La bóveda secreta está vacía | Empty state message |
-| 35 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | ¿Seguro que quieres descifrar los archivos ocultos? | Decryption confirmation |
+| 35 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | ¿Está seguro de que desea descifrar los archivos ocultos? | Decryption confirmation (`usted` register) |
 | 36 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | Por seguridad, copiar al portapapeles está deshabilitado mientras la bóveda está desbloqueada. | Clipboard security notice |
 | 37 | `on_vault_exit` | On leaving hidden section | Al salir de la sección oculta | Settings title |
 | 38 | `on_vault_exit_keep_showing_all` | Keep showing all hidden albums | Seguir mostrando todos los álbumes ocultos | Radio option |
@@ -382,14 +382,14 @@
 | 282 | `decrypting_folder` | Decrypting folder… | Descifrando carpeta… |
 | 283 | `folder_decrypted_successfully` | Folder decrypted successfully | Carpeta descifrada correctamente |
 | 284 | `decrypting_files` | Decrypting files… | Descifrando archivos… |
-| 285 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | Por favor, pon el dedo en el lector de huellas |
+| 285 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | Por favor, ponga el dedo en el sensor de huellas |
 | 286 | `connect_at_least_4_dots_prompt` | Connect at least 4 dots | Conecta al menos 4 puntos |
-| 287 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | ¿Deseas acceder a tu carpeta Cipher_Secrets existente? |
-| 288 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | Se eliminará la carpeta Cipher_Secrets existente y se creará una nueva. ¿Estás seguro? |
+| 287 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | ¿Desea acceder a su carpeta Cipher_Secrets existente? |
+| 288 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | Se eliminará la carpeta Cipher_Secrets existente y se creará una nueva. ¿Está seguro? |
 | 289 | `confirm_checkbox_label` | I confirm | Confirmo |
 | 290 | `secret_vault` | Secret Vault | Bóveda secreta |
 | 291 | `secret_vault_empty` | Secret Vault is empty | La bóveda secreta está vacía |
-| 292 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | ¿Seguro que quieres descifrar los archivos ocultos? |
+| 292 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | ¿Está seguro de que desea descifrar los archivos ocultos? |
 | 293 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | Por seguridad, copiar al portapapeles está deshabilitado mientras la bóveda está desbloqueada. |
 | 294 | `on_vault_exit` | On leaving hidden section | Al salir de la sección oculta |
 | 295 | `on_vault_exit_keep_showing_all` | Keep showing all hidden albums | Seguir mostrando todos los álbumes ocultos |
