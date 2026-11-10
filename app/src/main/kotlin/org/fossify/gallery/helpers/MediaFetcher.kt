@@ -131,12 +131,12 @@ class MediaFetcher(val context: Context, var isSecretVaultView: Boolean = false)
             }
 
             distinctPaths.filter {
-                if (CryptoManager.isEncryptedFolderPath(context, it) && (!shouldShowHidden || !CryptoManager.isVaultUnlocked)) {
+                if (CryptoManager.isEncryptedFolderPath(context, it) && (!config.temporarilyShowHidden || !CryptoManager.isVaultUnlocked)) {
                     false
                 } else if (isSecretVaultView) {
                     context.isEncryptedVaultAlbum(it)
                 } else {
-                    it.shouldFolderBeVisible(excludedPaths, includedPaths, shouldShowHidden, folderNoMediaStatuses) { path, hasNoMedia ->
+                    it.shouldFolderBeVisible(excludedPaths, includedPaths, config.temporarilyShowExcluded, folderNoMediaStatuses) { path, hasNoMedia ->
                         folderNoMediaStatuses[path] = hasNoMedia
                     }
                 }
@@ -280,7 +280,7 @@ class MediaFetcher(val context: Context, var isSecretVaultView: Boolean = false)
             addFolder(foldersToScan, it)
         }
 
-        if (config.shouldShowHidden && CryptoManager.isVaultUnlocked) {
+        if (CryptoManager.isVaultUnlocked && (config.temporarilyShowHidden || isSecretVaultView)) {
             val vaultRoot = CryptoManager.findVaultRoot(context)
             if (vaultRoot != null && vaultRoot.exists()) {
                 vaultRoot.listFiles()?.forEach { child ->
@@ -294,6 +294,9 @@ class MediaFetcher(val context: Context, var isSecretVaultView: Boolean = false)
                     foldersToScan.add(encFolder)
                 }
             }
+        }
+
+        if (config.temporarilyShowExcluded) {
             val noMediaFolders = context.getNoMediaFoldersSync()
             noMediaFolders.forEach { noMediaFolder ->
                 if (context.getDoesFilePathExist(noMediaFolder, OTGPath)) {

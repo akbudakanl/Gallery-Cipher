@@ -41,7 +41,7 @@ data class Directory(
 
     fun areFavorites() = path == FAVORITES
 
-    fun isRecycleBin() = path == RECYCLE_BIN
+    fun isRecycleBin() = path == RECYCLE_BIN || org.fossify.gallery.helpers.CryptoManager.isVaultRecycleBinPath(path)
 
     fun getKey() = ObjectKey("$path-$modified")
 }

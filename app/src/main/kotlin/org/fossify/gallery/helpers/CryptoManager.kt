@@ -17,11 +17,15 @@ import org.bouncycastle.crypto.params.ParametersWithIV
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.*
+import org.fossify.gallery.R
 import org.fossify.gallery.extensions.config
+import org.fossify.gallery.extensions.deleteVirtualAlbumItemFromAllAlbums
 import org.fossify.gallery.extensions.directoryDB
 import org.fossify.gallery.extensions.mediaDB
 import org.fossify.gallery.extensions.updateVirtualAlbumItemPath
 import org.fossify.gallery.extensions.virtualAlbumsDB
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import java.io.*
 import java.math.BigInteger
 import java.security.KeyFactory
@@ -45,6 +49,8 @@ import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.PSource
 import android.media.MediaScannerConnection
 import android.os.Build
+import androidx.biometric.BiometricManager
+import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import org.fossify.gallery.databases.GalleryDatabase
@@ -128,6 +134,8 @@ object CryptoManager {
     private const val META_MAGIC_V2 = "FGMETA2"
     private const val VAULT_HEADER_MAGIC = "FGVLT2"
     private const val VAULT_STR_PREFIX = "FVSTR1:"
+    const val VAULT_RECYCLE_BIN_NAME = "\$\$VAULT_RECYCLE_BIN\$\$"
+    const val VAULT_RESTORE_INFO_FILE = ".restore_info"
 
     // Cryptographic Key Separation Domains & MAC Specifications
     private const val DOMAIN_HEADER_KEY = "FossifyGallery:Header:AES256GCM"
@@ -172,6 +180,8 @@ object CryptoManager {
     private var cachedVaultRoot: File? = null
     @Volatile
     private var vaultRootSearchDone = false
+    @Volatile
+    var vaultRecycleBinFolder: File? = null
 
     private val activeCryptoOperations = AtomicInteger(0)
     private val pendingLock = AtomicBoolean(false)
@@ -214,6 +224,7 @@ object CryptoManager {
         metadataCache.clear()
         folderNameCache.clear()
         encryptedFolderCache.clear()
+        vaultRecycleBinFolder = null
         try {
             VideoFragment.clearFrameCache()
         } catch (_: Throwable) {}
@@ -222,6 +233,16 @@ object CryptoManager {
     fun isEncryptedFile(path: String): Boolean {
         return path.endsWith(ENCRYPTED_BIN_EXT, ignoreCase = true) ||
             path.endsWith(ENCRYPTED_FILE_EXT, ignoreCase = true)
+    }
+
+    /**
+     * Returns true when the media item belongs to the encrypted vault content
+     * zone, i.e. it is stored as an encrypted file or it is located inside one
+     * of the encrypted (Cipher_Secrets) folders.
+     */
+    fun isVaultMediaPath(context: Context, path: String): Boolean {
+        if (path.isEmpty()) return false
+        return isEncryptedFile(path) || isEncryptedFolderPath(context, path.getParentPath())
     }
 
     fun isEncryptedFolder(folder: File): Boolean {
@@ -302,18 +323,34 @@ object CryptoManager {
     }
 
     fun deleteExistingVault(context: Context) {
-        val vaultDir = getExistingCipherSecretsDir(context) ?: findVaultRoot(context)
-        if (vaultDir != null && vaultDir.exists()) {
-            try {
-                vaultDir.walkBottomUp().forEach { file ->
-                    if (file.isFile) {
-                        secureWipeAndDeleteFile(file, context)
-                    } else if (file.isDirectory) {
-                        file.delete()
+        val targets = mutableListOf<File>()
+        targets.add(getDefaultVaultRoot())
+        targets.add(File(getDocumentsDirectory(), CIPHER_SECRETS_DIR_NAME))
+        val storedPath = context.config.vaultRootPath
+        if (storedPath.isNotEmpty()) {
+            targets.add(File(storedPath))
+        }
+        getExistingCipherSecretsDir(context)?.let { targets.add(it) }
+        findVaultRoot(context)?.let { targets.add(it) }
+
+        for (dir in targets.distinct()) {
+            if (dir.exists()) {
+                try {
+                    dir.walkBottomUp().forEach { file ->
+                        if (file.isFile) {
+                            secureWipeAndDeleteFile(file, context)
+                        } else if (file.isDirectory) {
+                            file.delete()
+                        }
                     }
-                }
-                vaultDir.delete()
-            } catch (_: Exception) {}
+                    dir.delete()
+                } catch (_: Exception) {}
+            }
+        }
+
+        val parentCipher = File(getDocumentsDirectory(), CIPHER_ROOT_DIR_NAME)
+        if (parentCipher.exists() && parentCipher.isDirectory && parentCipher.listFiles().isNullOrEmpty()) {
+            try { parentCipher.delete() } catch (_: Exception) {}
         }
 
         lockVault()
@@ -323,13 +360,24 @@ object CryptoManager {
         vaultRootSearchDone = false
         encryptedFolderCache.clear()
 
+        clearBiometricKey(context)
         context.config.vaultRootPath = ""
-        context.config.vaultWrappedKeyData = ""
-        context.config.vaultPublicKey = ""
         context.config.vaultWrappedKeyData = ""
         context.config.vaultPublicKey = ""
         context.config.hiddenPasswordHash = ""
         context.config.isHiddenPasswordProtectionOn = false
+        context.config.isVaultBiometricEnabled = false
+        context.config.temporarilyShowHidden = false
+        clearAppImageCaches(context)
+    }
+
+    fun hasVaultFolderOrCredentials(context: Context): Boolean {
+        val standard = getDefaultVaultRoot()
+        if (standard.exists() && standard.isDirectory) return true
+        val legacy = File(getDocumentsDirectory(), CIPHER_SECRETS_DIR_NAME)
+        if (legacy.exists() && legacy.isDirectory) return true
+        if (context.config.vaultWrappedKeyData.isNotEmpty()) return true
+        return getExistingCipherSecretsDir(context) != null
     }
 
     fun hasExistingVault(context: Context): Boolean {
@@ -448,72 +496,181 @@ object CryptoManager {
     // ==================== KEY MANAGEMENT (ARGON2id + AES-256-GCM + RSA-2048) ====================
 
     private const val ANDROID_KEYSTORE = "AndroidKeyStore"
-    private const val KEYSTORE_ALIAS = "vault_hw_key"
+    private const val BIOMETRIC_KEYSTORE_ALIAS = "vault_biometric_hw_key"
 
-    private fun getOrCreateHardwareKey(): SecretKey? {
+    fun isBiometricHardwareAvailable(context: Context): Boolean {
+        return try {
+            val biometricManager = BiometricManager.from(context)
+            biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
+    fun canUnlockWithBiometrics(context: Context): Boolean {
+        return context.config.isVaultBiometricEnabled &&
+            context.config.vaultBiometricWrappedBundle.isNotEmpty() &&
+            isBiometricHardwareAvailable(context)
+    }
+
+    fun getOrCreateBiometricKey(): SecretKey? {
         return try {
             val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
             keyStore.load(null)
-            if (!keyStore.containsAlias(KEYSTORE_ALIAS)) {
-                val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
-                val builder = KeyGenParameterSpec.Builder(
-                    KEYSTORE_ALIAS,
-                    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
-                )
-                    .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                    .setKeySize(256)
-                try {
-                    builder.setIsStrongBoxBacked(true)
-                    keyGenerator.init(builder.build())
-                    keyGenerator.generateKey()
-                } catch (_: Throwable) {
-                    val fallbackBuilder = KeyGenParameterSpec.Builder(
-                        KEYSTORE_ALIAS,
-                        KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
-                    )
-                        .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                        .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                        .setKeySize(256)
-                    keyGenerator.init(fallbackBuilder.build())
-                    keyGenerator.generateKey()
-                }
+            if (!keyStore.containsAlias(BIOMETRIC_KEYSTORE_ALIAS)) {
+                generateBiometricKeyInternal(keyStore)
             }
-            keyStore.getKey(KEYSTORE_ALIAS, null) as? SecretKey
+            keyStore.getKey(BIOMETRIC_KEYSTORE_ALIAS, null) as? SecretKey
         } catch (_: Throwable) {
             null
         }
     }
 
-    private fun wrapKeyWithHardwareKey(masterKey: ByteArray): String? {
-        val hwKey = getOrCreateHardwareKey() ?: return null
+    private fun generateBiometricKeyInternal(keyStore: KeyStore) {
+        val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
+        fun buildSpec(strongBox: Boolean): KeyGenParameterSpec {
+            val builder = KeyGenParameterSpec.Builder(
+                BIOMETRIC_KEYSTORE_ALIAS,
+                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+            )
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setKeySize(256)
+                .setUserAuthenticationRequired(true)
+                .setInvalidatedByBiometricEnrollment(true)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                builder.setUserAuthenticationParameters(0, KeyProperties.AUTH_BIOMETRIC_STRONG)
+            } else {
+                @Suppress("DEPRECATION")
+                builder.setUserAuthenticationValidityDurationSeconds(-1)
+            }
+
+            if (strongBox) {
+                builder.setIsStrongBoxBacked(true)
+            }
+            return builder.build()
+        }
+
+        try {
+            keyGenerator.init(buildSpec(strongBox = true))
+            keyGenerator.generateKey()
+        } catch (_: Throwable) {
+            keyGenerator.init(buildSpec(strongBox = false))
+            keyGenerator.generateKey()
+        }
+    }
+
+    fun getBiometricEncryptCipher(): Cipher? {
+        val key = getOrCreateBiometricKey() ?: return null
         return try {
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-            cipher.init(Cipher.ENCRYPT_MODE, hwKey)
+            cipher.init(Cipher.ENCRYPT_MODE, key)
+            cipher
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    fun completeBiometricSetup(context: Context, cipher: Cipher): Boolean {
+        val masterKey = unlockedMasterKey ?: return false
+        val privKey = unlockedPrivateKey ?: return false
+        val privBytes = privKey.encoded ?: return false
+        return try {
+            val bundle = ByteArrayOutputStream().use { baos ->
+                DataOutputStream(baos).use { dos ->
+                    dos.write(masterKey)
+                    dos.writeInt(privBytes.size)
+                    dos.write(privBytes)
+                }
+                baos.toByteArray()
+            }
+            val encrypted = cipher.doFinal(bundle)
+            bundle.fill(0)
             val iv = cipher.iv
-            val encrypted = cipher.doFinal(masterKey)
             val combined = ByteArray(iv.size + encrypted.size)
             System.arraycopy(iv, 0, combined, 0, iv.size)
             System.arraycopy(encrypted, 0, combined, iv.size, encrypted.size)
-            Base64.encodeToString(combined, Base64.NO_WRAP)
+
+            context.config.vaultBiometricWrappedBundle = Base64.encodeToString(combined, Base64.NO_WRAP)
+            context.config.isVaultBiometricEnabled = true
+            true
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
+    fun getBiometricDecryptCipher(context: Context): Cipher? {
+        val wrappedB64 = context.config.vaultBiometricWrappedBundle
+        if (wrappedB64.isEmpty()) return null
+        val combined = try {
+            Base64.decode(wrappedB64, Base64.NO_WRAP)
+        } catch (_: Throwable) {
+            return null
+        }
+        if (combined.size <= GCM_IV_LENGTH) return null
+        val iv = combined.copyOfRange(0, GCM_IV_LENGTH)
+
+        return try {
+            val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
+            keyStore.load(null)
+            val key = keyStore.getKey(BIOMETRIC_KEYSTORE_ALIAS, null) as? SecretKey ?: return null
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(GCM_TAG_BITS, iv))
+            cipher
+        } catch (e: KeyPermanentlyInvalidatedException) {
+            clearBiometricKey(context)
+            null
         } catch (_: Throwable) {
             null
         }
     }
 
-    private fun unwrapKeyWithHardwareKey(wrappedB64: String): ByteArray? {
-        val hwKey = getOrCreateHardwareKey() ?: return null
-        return try {
-            val combined = Base64.decode(wrappedB64, Base64.NO_WRAP)
-            if (combined.size <= GCM_IV_LENGTH) return null
-            val iv = combined.copyOfRange(0, GCM_IV_LENGTH)
-            val encrypted = combined.copyOfRange(GCM_IV_LENGTH, combined.size)
-            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-            cipher.init(Cipher.DECRYPT_MODE, hwKey, GCMParameterSpec(GCM_TAG_BITS, iv))
-            cipher.doFinal(encrypted)
+    fun completeBiometricUnlock(context: Context, cipher: Cipher): Boolean {
+        val wrappedB64 = context.config.vaultBiometricWrappedBundle
+        if (wrappedB64.isEmpty()) return false
+        val combined = try {
+            Base64.decode(wrappedB64, Base64.NO_WRAP)
         } catch (_: Throwable) {
-            null
+            return false
         }
+        if (combined.size <= GCM_IV_LENGTH) return false
+        val encrypted = combined.copyOfRange(GCM_IV_LENGTH, combined.size)
+
+        return try {
+            val bundle = cipher.doFinal(encrypted)
+            DataInputStream(ByteArrayInputStream(bundle)).use { dis ->
+                val masterKey = ByteArray(32)
+                dis.readFully(masterKey)
+                val privLen = dis.readInt()
+                val privBytes = ByteArray(privLen)
+                dis.readFully(privBytes)
+                val privKey = KeyFactory.getInstance("RSA")
+                    .generatePrivate(PKCS8EncodedKeySpec(privBytes))
+                privBytes.fill(0)
+                unlockedMasterKey = masterKey
+                unlockedPrivateKey = privKey
+            }
+            bundle.fill(0)
+            context.config.hiddenPasswordHash = "argon2id_aes256_gcm_v2"
+            context.config.isHiddenPasswordProtectionOn = true
+            findVaultRoot(context)?.let { context.config.vaultRootPath = it.absolutePath }
+            true
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
+    fun clearBiometricKey(context: Context) {
+        context.config.isVaultBiometricEnabled = false
+        context.config.vaultBiometricWrappedBundle = ""
+        try {
+            val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
+            keyStore.load(null)
+            if (keyStore.containsAlias(BIOMETRIC_KEYSTORE_ALIAS)) {
+                keyStore.deleteEntry(BIOMETRIC_KEYSTORE_ALIAS)
+            }
+        } catch (_: Throwable) {}
     }
 
     fun deriveKeyArgon2id(
@@ -667,24 +824,7 @@ object CryptoManager {
                     }
                     bundle.fill(0)
 
-                    val hwWrapped = context.config.vaultWrappedKeyData
-                    if (hwWrapped.isNotEmpty()) {
-                        val hwDecrypted = unwrapKeyWithHardwareKey(hwWrapped)
-                        if (hwDecrypted != null) {
-                            val matches = MessageDigest.isEqual(masterKey, hwDecrypted)
-                            hwDecrypted.fill(0)
-                            if (!matches) {
-                                masterKey.fill(0)
-                                unlockedMasterKey = null
-                                unlockedPrivateKey = null
-                                return false
-                            }
-                        } else {
-                            wrapKeyWithHardwareKey(masterKey)?.let { context.config.vaultWrappedKeyData = it }
-                        }
-                    } else {
-                        wrapKeyWithHardwareKey(masterKey)?.let { context.config.vaultWrappedKeyData = it }
-                    }
+
 
                     context.config.hiddenPasswordHash = "argon2id_aes256_gcm_v2"
                     context.config.isHiddenPasswordProtectionOn = true
@@ -781,7 +921,7 @@ object CryptoManager {
         val wrapped = cipher.doFinal(bundle)
         bundle.fill(0)
 
-        wrapKeyWithHardwareKey(masterKey)?.let { context.config.vaultWrappedKeyData = it }
+        clearBiometricKey(context)
 
         // Write vault root header (.vault) on disk for full multi-device portability
         val vaultRoot = getOrCreateVaultRoot(context)
@@ -807,6 +947,7 @@ object CryptoManager {
         // Ensure any existing hidden virtual albums have their names encrypted in SQLite
         ensureBackgroundThread {
             try {
+                getOrCreateDefaultHiddenAlbum(context)
                 context.virtualAlbumsDB.getAllAlbums().filter { it.isHidden && !isEncryptedVaultString(it.name) }.forEach { album ->
                     val albumId = album.id ?: return@forEach
                     val encName = encryptStringForVault(context, album.name)
@@ -1094,8 +1235,11 @@ object CryptoManager {
             if (folderName.equals("JSON", ignoreCase = true) || folderName.startsWith(".")) {
                 return@forEach
             }
+            if (isVaultRecycleBin(subfolder)) {
+                return@forEach
+            }
 
-            val decryptedName = getDecryptedFolderName(subfolder) ?: folderName
+            val decryptedName = getDecryptedFolderName(subfolder, context) ?: folderName
             val binCount = subfolder.listFiles()?.count { isEncryptedFile(it.name) } ?: 0
             albums.add(
                 VaultPhysicalAlbum(
@@ -1129,7 +1273,7 @@ object CryptoManager {
         return albums
     }
 
-    fun getDecryptedFolderName(folder: File): String? {
+    fun getDecryptedRawFolderName(folder: File): String? {
         folderNameCache[folder.absolutePath]?.let { return it }
         val masterKey = unlockedMasterKey
         val privKey = unlockedPrivateKey
@@ -1191,6 +1335,324 @@ object CryptoManager {
         } catch (e: Exception) {
             null
         }
+    }
+
+    fun getDecryptedFolderName(folder: File, context: Context? = null): String? {
+        val raw = getDecryptedRawFolderName(folder) ?: return null
+        if (raw == VAULT_RECYCLE_BIN_NAME) {
+            return context?.getString(org.fossify.commons.R.string.recycle_bin) ?: "Recycle Bin"
+        }
+        if (raw == VAULT_DEFAULT_ALBUM_NAME || raw == "Varsayılan Gizli Albüm" || raw == "Default Hidden Album") {
+            return context?.getString(R.string.default_hidden_album) ?: "Varsayılan Gizli Albüm"
+        }
+        return raw
+    }
+
+    fun getOrCreateDefaultHiddenAlbum(context: Context): File? {
+        if (unlockedMasterKey == null && context.config.vaultPublicKey.isEmpty()) {
+            return null
+        }
+        val vaultRoot = getOrCreateVaultRoot(context)
+        val defaultName = context.getString(R.string.default_hidden_album)
+
+        val subfolders = vaultRoot.listFiles()?.filter { it.isDirectory && !it.name.startsWith(".") } ?: emptyList()
+        for (sub in subfolders) {
+            val raw = getDecryptedRawFolderName(sub)
+            if (raw == VAULT_DEFAULT_ALBUM_NAME || raw == "Varsayılan Gizli Albüm" || raw == "Default Hidden Album" || raw == defaultName) {
+                return sub
+            }
+        }
+
+        return createHiddenPhysicalAlbum(context, VAULT_DEFAULT_ALBUM_NAME)
+    }
+
+    fun getVaultDestinationAlbums(context: Context): List<VaultPhysicalAlbum> {
+        val albums = ArrayList<VaultPhysicalAlbum>()
+        val defaultAlbum = getOrCreateDefaultHiddenAlbum(context)
+        val defaultAlbumPath = defaultAlbum?.absolutePath
+        val vaultRoot = findVaultRoot(context) ?: return emptyList()
+        val defaultName = context.getString(R.string.default_hidden_album)
+
+        if (defaultAlbum != null && defaultAlbum.exists()) {
+            val count = defaultAlbum.listFiles()?.count { isEncryptedFile(it.name) } ?: 0
+            albums.add(
+                VaultPhysicalAlbum(
+                    name = defaultName,
+                    fullPath = defaultAlbum.absolutePath,
+                    folder = defaultAlbum,
+                    itemCount = count
+                )
+            )
+        }
+
+        val otherAlbums = ArrayList<VaultPhysicalAlbum>()
+        vaultRoot.listFiles()?.filter { it.isDirectory }?.forEach { subfolder ->
+            if (subfolder.name.startsWith(".") || subfolder.name.equals("JSON", ignoreCase = true)) return@forEach
+            if (isVaultRecycleBin(subfolder)) return@forEach
+            if (subfolder.absolutePath == defaultAlbumPath) return@forEach
+
+            val decryptedName = getDecryptedFolderName(subfolder, context) ?: subfolder.name
+            val binCount = subfolder.listFiles()?.count { isEncryptedFile(it.name) } ?: 0
+            otherAlbums.add(
+                VaultPhysicalAlbum(
+                    name = decryptedName,
+                    fullPath = subfolder.absolutePath,
+                    folder = subfolder,
+                    itemCount = binCount
+                )
+            )
+        }
+
+        for (path in context.config.encryptedFolders) {
+            val folder = File(path)
+            if (folder.exists() && folder.isDirectory && folder.absolutePath != vaultRoot.absolutePath && folder.absolutePath != defaultAlbumPath) {
+                if (otherAlbums.none { it.fullPath == folder.absolutePath } && albums.none { it.fullPath == folder.absolutePath }) {
+                    val decryptedName = getDecryptedFolderName(folder, context) ?: folder.name
+                    val binCount = folder.listFiles()?.count { isEncryptedFile(it.name) } ?: 0
+                    otherAlbums.add(
+                        VaultPhysicalAlbum(
+                            name = decryptedName,
+                            fullPath = folder.absolutePath,
+                            folder = folder,
+                            itemCount = binCount
+                        )
+                    )
+                }
+            }
+        }
+
+        otherAlbums.sortBy { it.name.lowercase() }
+        albums.addAll(otherAlbums)
+        return albums
+    }
+
+
+
+    // ==================== VAULT RECYCLE BIN (MODE 2) ====================
+
+    fun isVaultRecycleBin(folder: File): Boolean {
+        if (vaultRecycleBinFolder != null && folder.absolutePath == vaultRecycleBinFolder?.absolutePath) {
+            return true
+        }
+        val raw = getDecryptedRawFolderName(folder)
+        if (raw == VAULT_RECYCLE_BIN_NAME) {
+            vaultRecycleBinFolder = folder
+            return true
+        }
+        return false
+    }
+
+    fun getVaultRecycleBin(context: Context): File? {
+        vaultRecycleBinFolder?.let {
+            if (it.exists() && it.isDirectory) return it
+        }
+        val vaultRoot = findVaultRoot(context) ?: return null
+        val subfolders = vaultRoot.listFiles()?.filter { it.isDirectory && !it.name.startsWith(".") } ?: return null
+        for (folder in subfolders) {
+            if (isVaultRecycleBin(folder)) {
+                vaultRecycleBinFolder = folder
+                return folder
+            }
+        }
+        return null
+    }
+
+    fun getOrCreateVaultRecycleBin(context: Context): File {
+        getVaultRecycleBin(context)?.let { return it }
+        val vaultRoot = getOrCreateVaultRoot(context)
+        var binFolder: File
+        do {
+            binFolder = File(vaultRoot, randomHex(6))
+        } while (binFolder.exists())
+        binFolder.mkdirs()
+        try {
+            File(binFolder, NOMEDIA).createNewFile()
+        } catch (_: Exception) {}
+        writeEncryptedFolderMeta(context, binFolder, VAULT_RECYCLE_BIN_NAME)
+        vaultRecycleBinFolder = binFolder
+        return binFolder
+    }
+
+    fun isVaultRecycleBinPath(context: Context, path: String): Boolean {
+        if (path.isEmpty()) return false
+        val cleanPath = path.trimEnd('/')
+        val binFolder = getVaultRecycleBin(context)
+        if (binFolder != null) {
+            val binPath = binFolder.absolutePath
+            if (cleanPath == binPath || cleanPath.startsWith("$binPath/")) return true
+        }
+        return false
+    }
+
+    fun isVaultRecycleBinPath(path: String): Boolean {
+        if (path.isEmpty()) return false
+        val clean = path.trimEnd('/')
+        vaultRecycleBinFolder?.let { binFolder ->
+            val binPath = binFolder.absolutePath
+            if (clean == binPath || clean.startsWith("$binPath/")) return true
+        }
+        val file = File(clean)
+        val folder = if (file.isDirectory) file else file.parentFile
+        if (folder != null && folder.exists()) {
+            return isVaultRecycleBin(folder)
+        }
+        return false
+    }
+
+    fun getVaultRecycleBinCount(context: Context): Int {
+        val binFolder = getVaultRecycleBin(context) ?: return 0
+        return binFolder.listFiles()?.count { isEncryptedFile(it.name) } ?: 0
+    }
+
+    fun getVaultRecycleBinRestoreMap(context: Context): HashMap<String, String> {
+        val binFolder = getVaultRecycleBin(context) ?: return HashMap()
+        val restoreFile = File(binFolder, VAULT_RESTORE_INFO_FILE)
+        if (!restoreFile.exists()) return HashMap()
+        return try {
+            val encryptedContent = restoreFile.readText(Charsets.UTF_8).trim()
+            if (encryptedContent.isEmpty()) return HashMap()
+            val json = decryptStringFromVault(encryptedContent) ?: return HashMap()
+            val type = object : TypeToken<HashMap<String, String>>() {}.type
+            Gson().fromJson(json, type) ?: HashMap()
+        } catch (_: Exception) {
+            HashMap()
+        }
+    }
+
+    fun saveVaultRecycleBinRestoreMap(context: Context, map: HashMap<String, String>) {
+        val binFolder = getOrCreateVaultRecycleBin(context)
+        val restoreFile = File(binFolder, VAULT_RESTORE_INFO_FILE)
+        if (map.isEmpty()) {
+            if (restoreFile.exists()) {
+                restoreFile.delete()
+            }
+            return
+        }
+        try {
+            val json = Gson().toJson(map)
+            val encryptedContent = encryptStringForVault(context, json)
+            restoreFile.writeText(encryptedContent, Charsets.UTF_8)
+        } catch (_: Exception) {}
+    }
+
+    fun moveEncryptedFilesToVaultRecycleBin(context: Context, paths: List<String>): Boolean {
+        if (paths.isEmpty()) return true
+        val binFolder = getOrCreateVaultRecycleBin(context)
+        val restoreMap = getVaultRecycleBinRestoreMap(context)
+        var success = true
+
+        for (path in paths) {
+            val sourceFile = File(path)
+            if (!sourceFile.exists() || !isEncryptedFile(sourceFile.name)) continue
+            val parentPath = sourceFile.parent ?: continue
+            if (parentPath == binFolder.absolutePath) continue
+
+            var destFile = File(binFolder, sourceFile.name)
+            while (destFile.exists()) {
+                destFile = File(binFolder, "${randomHex(8)}$ENCRYPTED_BIN_EXT")
+            }
+
+            val destPath = destFile.absolutePath
+            if (sourceFile.renameTo(destFile)) {
+                restoreMap[destFile.name] = parentPath
+                context.updateVirtualAlbumItemPath(path, destPath)
+                metadataCache.remove(path)?.let { meta ->
+                    metadataCache[destPath] = meta
+                }
+            } else {
+                success = false
+            }
+        }
+
+        saveVaultRecycleBinRestoreMap(context, restoreMap)
+        return success
+    }
+
+    fun restoreVaultRecycleBinFiles(context: Context, paths: List<String>): Int {
+        if (paths.isEmpty()) return 0
+        val binFolder = getVaultRecycleBin(context) ?: return 0
+        val restoreMap = getVaultRecycleBinRestoreMap(context)
+        val vaultRoot = getOrCreateVaultRoot(context)
+        var restoredCount = 0
+
+        for (path in paths) {
+            val binFile = File(path)
+            if (!binFile.exists() || binFile.parentFile?.absolutePath != binFolder.absolutePath) continue
+
+            val originalParentPath = restoreMap[binFile.name]
+            var targetFolder = if (!originalParentPath.isNullOrEmpty()) File(originalParentPath) else null
+
+            if (targetFolder == null || !targetFolder.exists() || !targetFolder.isDirectory) {
+                val existingFolders = vaultRoot.listFiles()?.filter {
+                    it.isDirectory && !it.name.startsWith(".") && !isVaultRecycleBin(it)
+                }
+                targetFolder = existingFolders?.firstOrNull() ?: run {
+                    var newSub = File(vaultRoot, randomHex(6))
+                    while (newSub.exists()) {
+                        newSub = File(vaultRoot, randomHex(6))
+                    }
+                    newSub.mkdirs()
+                    try { File(newSub, NOMEDIA).createNewFile() } catch (_: Exception) {}
+                    writeEncryptedFolderMeta(context, newSub, "Restored")
+                    newSub
+                }
+            }
+
+            var targetFile = File(targetFolder, binFile.name)
+            while (targetFile.exists()) {
+                targetFile = File(targetFolder, "${randomHex(8)}$ENCRYPTED_BIN_EXT")
+            }
+
+            val targetPath = targetFile.absolutePath
+            if (binFile.renameTo(targetFile)) {
+                restoreMap.remove(binFile.name)
+                context.updateVirtualAlbumItemPath(path, targetPath)
+                metadataCache.remove(path)?.let { meta ->
+                    metadataCache[targetPath] = meta
+                }
+                restoredCount++
+            }
+        }
+
+        saveVaultRecycleBinRestoreMap(context, restoreMap)
+        return restoredCount
+    }
+
+    fun permanentlyDeleteVaultRecycleBinFiles(context: Context, paths: List<String>): Int {
+        if (paths.isEmpty()) return 0
+        val binFolder = getVaultRecycleBin(context) ?: return 0
+        val restoreMap = getVaultRecycleBinRestoreMap(context)
+        var deletedCount = 0
+
+        for (path in paths) {
+            val binFile = File(path)
+            if (!binFile.exists() || binFile.parentFile?.absolutePath != binFolder.absolutePath) continue
+
+            metadataCache.remove(path)
+            context.deleteVirtualAlbumItemFromAllAlbums(path)
+            secureWipeAndDeleteFile(context, binFile)
+            restoreMap.remove(binFile.name)
+            deletedCount++
+        }
+
+        saveVaultRecycleBinRestoreMap(context, restoreMap)
+        return deletedCount
+    }
+
+    fun emptyVaultRecycleBin(context: Context): Boolean {
+        val binFolder = getVaultRecycleBin(context) ?: return true
+        val binFiles = binFolder.listFiles()?.filter { isEncryptedFile(it.name) } ?: emptyList()
+        for (file in binFiles) {
+            val path = file.absolutePath
+            metadataCache.remove(path)
+            context.deleteVirtualAlbumItemFromAllAlbums(path)
+            secureWipeAndDeleteFile(context, file)
+        }
+        val restoreFile = File(binFolder, VAULT_RESTORE_INFO_FILE)
+        if (restoreFile.exists()) {
+            restoreFile.delete()
+        }
+        return true
     }
 
     // ==================== FILE ENCRYPTION & DECRYPTION ====================
@@ -1781,6 +2243,24 @@ object CryptoManager {
         for ((sourceFile, encFile) in encryptedPairs) {
             context.updateVirtualAlbumItemPath(sourceFile.absolutePath, encFile.absolutePath)
             secureWipeAndDeleteFile(context, sourceFile)
+        }
+
+        // Preserve any existing .bin files that were already encrypted in this folder
+        val existingEncryptedFiles = folder.listFiles()?.filter { file ->
+            file.isFile && isEncryptedFile(file.name)
+        } ?: emptyList()
+        for (encFile in existingEncryptedFiles) {
+            var dest = File(subfolder, encFile.name)
+            while (dest.exists()) {
+                dest = File(subfolder, "${randomHex(8)}$ENCRYPTED_BIN_EXT")
+            }
+            val oldEncPath = encFile.absolutePath
+            if (encFile.renameTo(dest)) {
+                context.updateVirtualAlbumItemPath(oldEncPath, dest.absolutePath)
+                metadataCache.remove(oldEncPath)?.let { meta ->
+                    metadataCache[dest.absolutePath] = meta
+                }
+            }
         }
 
         // Move subfolders directly to internal storage (if any)

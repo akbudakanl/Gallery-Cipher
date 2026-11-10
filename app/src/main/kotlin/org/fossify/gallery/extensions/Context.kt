@@ -997,6 +997,32 @@ fun Context.getCachedDirectories(
             filteredDirectories = ArrayList(filteredDirectories.filter {
                 isEncryptedVaultAlbum(it.path)
             })
+            if (config.showRecycleBinAtFolders && CryptoManager.isVaultUnlocked) {
+                val binFolder = CryptoManager.getVaultRecycleBin(this)
+                val binCount = CryptoManager.getVaultRecycleBinCount(this)
+                if (binFolder != null && binCount > 0) {
+                    val binDir = Directory(
+                        id = null,
+                        path = binFolder.absolutePath,
+                        tmb = "",
+                        name = getString(org.fossify.commons.R.string.recycle_bin),
+                        mediaCnt = binCount,
+                        modified = binFolder.lastModified(),
+                        taken = binFolder.lastModified(),
+                        size = 0L,
+                        location = LOCATION_INTERNAL,
+                        types = TYPE_IMAGES or TYPE_VIDEOS,
+                        sortValue = ""
+                    )
+                    if (config.showRecycleBinLast) {
+                        filteredDirectories.add(binDir)
+                    } else {
+                        filteredDirectories.add(0, binDir)
+                    }
+                }
+            }
+        } else {
+            filteredDirectories.removeAll { CryptoManager.isVaultRecycleBinPath(this, it.path) }
         }
 
         val clone = ArrayList(filteredDirectories)

@@ -80,7 +80,7 @@ data class Medium(
         }
     }
 
-    fun getIsInRecycleBin() = deletedTS != 0L
+    fun getIsInRecycleBin() = deletedTS != 0L || (path.isNotEmpty() && CryptoManager.isVaultRecycleBinPath(path))
 
     private fun getDayStartTS(ts: Long, resetDays: Boolean): String {
         val calendar = Calendar.getInstance(Locale.ENGLISH).apply {

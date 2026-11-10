@@ -81,8 +81,19 @@ class Config(context: Context) : BaseConfig(context) {
         set(temporarilyShowHidden) = prefs.edit().putBoolean(TEMPORARILY_SHOW_HIDDEN, temporarilyShowHidden).apply()
 
     var onVaultExit: Int
-        get() = prefs.getInt(ON_VAULT_EXIT, ON_VAULT_EXIT_ASK_EVERY_TIME)
+        get() {
+            val value = prefs.getInt(ON_VAULT_EXIT, ON_VAULT_EXIT_ASK_EVERY_TIME)
+            return when (value) {
+                ON_VAULT_EXIT_KEEP_SHOWING -> ON_VAULT_EXIT_KEEP_SHOWING
+                ON_VAULT_EXIT_HIDE, 3 -> ON_VAULT_EXIT_HIDE
+                else -> ON_VAULT_EXIT_ASK_EVERY_TIME
+            }
+        }
         set(onVaultExit) = prefs.edit().putInt(ON_VAULT_EXIT, onVaultExit).apply()
+
+    var vaultExitAskCheckboxChecked: Boolean
+        get() = prefs.getBoolean(VAULT_EXIT_ASK_CHECKBOX_CHECKED, false)
+        set(vaultExitAskCheckboxChecked) = prefs.edit().putBoolean(VAULT_EXIT_ASK_CHECKBOX_CHECKED, vaultExitAskCheckboxChecked).apply()
 
     var temporarilyShowExcluded: Boolean
         get() = prefs.getBoolean(TEMPORARILY_SHOW_EXCLUDED, false)
@@ -603,9 +614,9 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(AVOID_SHOWING_ALL_FILES_PROMPT, false)
         set(avoidShowingAllFilesPrompt) = prefs.edit().putBoolean(AVOID_SHOWING_ALL_FILES_PROMPT, avoidShowingAllFilesPrompt).apply()
 
-    var searchAllFilesByDefault: Boolean
-        get() = prefs.getBoolean(SEARCH_ALL_FILES_BY_DEFAULT, false)
-        set(searchAllFilesByDefault) = prefs.edit().putBoolean(SEARCH_ALL_FILES_BY_DEFAULT, searchAllFilesByDefault).apply()
+    var homeScreenViewOnLaunch: Int
+        get() = prefs.getInt(HOME_SCREEN_VIEW_ON_LAUNCH, HOME_VIEW_FOLDERS)
+        set(homeScreenViewOnLaunch) = prefs.edit().putInt(HOME_SCREEN_VIEW_ON_LAUNCH, homeScreenViewOnLaunch).apply()
 
     var lastExportedFavoritesFolder: String
         get() = prefs.getString(LAST_EXPORTED_FAVORITES_FOLDER, "")!!
@@ -622,6 +633,14 @@ class Config(context: Context) : BaseConfig(context) {
     var vaultPublicKey: String
         get() = prefs.getString(VAULT_PUBLIC_KEY, "")!!
         set(value) = prefs.edit().putString(VAULT_PUBLIC_KEY, value).apply()
+
+        var isVaultBiometricEnabled: Boolean
+        get() = prefs.getBoolean(IS_VAULT_BIOMETRIC_ENABLED, false)
+        set(value) = prefs.edit().putBoolean(IS_VAULT_BIOMETRIC_ENABLED, value).apply()
+
+    var vaultBiometricWrappedBundle: String
+        get() = prefs.getString(VAULT_BIOMETRIC_WRAPPED_BUNDLE, "")!!
+        set(value) = prefs.edit().putString(VAULT_BIOMETRIC_WRAPPED_BUNDLE, value).apply()
 
     var vaultRootPath: String
         get() = prefs.getString(VAULT_ROOT_PATH, "")!!
