@@ -21,6 +21,9 @@ import org.fossify.gallery.helpers.*
 import org.fossify.gallery.models.AlbumCover
 import org.fossify.gallery.dialogs.ChangeLanguageDialog
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
@@ -64,7 +67,7 @@ class SettingsActivity : SimpleActivity() {
         setupManageExcludedFolders()
         setupManageHiddenFolders()
         setupOnVaultExit()
-        setupSearchAllFiles()
+        setupHomeScreenViewOnLaunch()
         setupShowHiddenItems()
         setupAutoplayVideos()
         setupRememberLastVideo()
@@ -80,10 +83,12 @@ class SettingsActivity : SimpleActivity() {
         setupScrollHorizontally()
         setupScreenRotation()
         setupHideSystemUI()
-        setupHiddenItemPasswordProtection()
+
+
         setupExcludedItemPasswordProtection()
         setupAppPasswordProtection()
         setupFileDeletionPasswordProtection()
+        setupVaultSettings()
         setupDeleteEmptyFolders()
         setupKeepScreenOn()
         setupAllowPhotoGestures()
@@ -175,14 +180,7 @@ class SettingsActivity : SimpleActivity() {
         if (!appLocales.isEmpty) {
             val locale = appLocales.get(0)
             if (locale != null) {
-                if (locale.language.equals("tr", ignoreCase = true)) {
-                    return "Türkçe"
-                }
-                if (locale.language.equals("en", ignoreCase = true) && locale.country.isEmpty()) {
-                    return "English"
-                }
-                return locale.getDisplayName(locale)
-                    .replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
+                return ChangeLanguageDialog.getNativeDisplayName(locale)
             }
         } else if (config.useEnglish) {
             return "English"
@@ -269,10 +267,8 @@ class SettingsActivity : SimpleActivity() {
         binding.settingsOnVaultExit.text = getOnVaultExitText()
         binding.settingsOnVaultExitHolder.setOnClickListener {
             val items = arrayListOf(
-                RadioItem(ON_VAULT_EXIT_KEEP_SHOWING_ALL, getString(R.string.on_vault_exit_keep_showing_all)),
-                RadioItem(ON_VAULT_EXIT_SHOW_ENCRYPTED_ONLY, getString(R.string.on_vault_exit_show_encrypted_only)),
-                RadioItem(ON_VAULT_EXIT_SHOW_OTHER_ONLY, getString(R.string.on_vault_exit_show_other_only)),
-                RadioItem(ON_VAULT_EXIT_HIDE_ALL, getString(R.string.on_vault_exit_hide_all)),
+                RadioItem(ON_VAULT_EXIT_KEEP_SHOWING, getString(R.string.on_vault_exit_keep_showing)),
+                RadioItem(ON_VAULT_EXIT_HIDE, getString(R.string.on_vault_exit_hide)),
                 RadioItem(ON_VAULT_EXIT_ASK_EVERY_TIME, getString(R.string.on_vault_exit_ask_every_time))
             )
 
@@ -281,18 +277,25 @@ class SettingsActivity : SimpleActivity() {
                 items = items,
                 checkedItemId = config.onVaultExit
             ) {
-                config.onVaultExit = it as Int
+                val newChoice = it as Int
+                config.onVaultExit = newChoice
+                if (newChoice != ON_VAULT_EXIT_ASK_EVERY_TIME) {
+                    config.vaultExitAskCheckboxChecked = false
+                }
                 binding.settingsOnVaultExit.text = getOnVaultExitText()
+                if (newChoice == ON_VAULT_EXIT_HIDE) {
+                    config.temporarilyShowHidden = false
+                    CryptoManager.lockVault()
+                    CryptoManager.clearAppImageCaches(this@SettingsActivity)
+                }
             }
         }
     }
 
     private fun getOnVaultExitText() = getString(
         when (config.onVaultExit) {
-            ON_VAULT_EXIT_KEEP_SHOWING_ALL -> R.string.on_vault_exit_keep_showing_all
-            ON_VAULT_EXIT_SHOW_ENCRYPTED_ONLY -> R.string.on_vault_exit_show_encrypted_only
-            ON_VAULT_EXIT_SHOW_OTHER_ONLY -> R.string.on_vault_exit_show_other_only
-            ON_VAULT_EXIT_HIDE_ALL -> R.string.on_vault_exit_hide_all
+            ON_VAULT_EXIT_KEEP_SHOWING -> R.string.on_vault_exit_keep_showing
+            ON_VAULT_EXIT_HIDE -> R.string.on_vault_exit_hide
             else -> R.string.on_vault_exit_ask_every_time
         }
     )
@@ -307,13 +310,31 @@ class SettingsActivity : SimpleActivity() {
         config.showHiddenMedia = binding.settingsShowHiddenItems.isChecked
     }
 
-    private fun setupSearchAllFiles() {
-        binding.settingsSearchAllFiles.isChecked = config.searchAllFilesByDefault
-        binding.settingsSearchAllFilesHolder.setOnClickListener {
-            binding.settingsSearchAllFiles.toggle()
-            config.searchAllFilesByDefault = binding.settingsSearchAllFiles.isChecked
+    private fun setupHomeScreenViewOnLaunch() {
+        binding.settingsHomeScreenViewOnLaunch.text = getHomeScreenViewOnLaunchText()
+        binding.settingsHomeScreenViewOnLaunchHolder.setOnClickListener {
+            val items = arrayListOf(
+                RadioItem(HOME_VIEW_FOLDERS, getString(R.string.show_folders)),
+                RadioItem(HOME_VIEW_FILES, getString(R.string.show_files))
+            )
+
+            RadioGroupDialog(
+                activity = this@SettingsActivity,
+                items = items,
+                checkedItemId = config.homeScreenViewOnLaunch
+            ) {
+                config.homeScreenViewOnLaunch = it as Int
+                binding.settingsHomeScreenViewOnLaunch.text = getHomeScreenViewOnLaunchText()
+            }
         }
     }
+
+    private fun getHomeScreenViewOnLaunchText() = getString(
+        when (config.homeScreenViewOnLaunch) {
+            HOME_VIEW_FILES -> R.string.show_files
+            else -> R.string.show_folders
+        }
+    )
 
     private fun setupAutoplayVideos() {
         binding.settingsAutoplayVideos.isChecked = config.autoplayVideos
@@ -458,85 +479,195 @@ class SettingsActivity : SimpleActivity() {
         }
     }
 
-    private fun setupHiddenItemPasswordProtection() {
-        binding.settingsHiddenItemPasswordProtectionHolder.beGoneIf(isRPlus() && !isExternalStorageManager())
-        binding.settingsHiddenItemPasswordProtection.isChecked = config.isHiddenPasswordProtectionOn
-        binding.settingsHiddenItemPasswordProtectionHolder.setOnClickListener {
-            val wasProtectionOn = config.isHiddenPasswordProtectionOn
-            if (wasProtectionOn) {
-                val tabToShow = CryptoManager.getVaultProtectionType(this) ?: config.hiddenProtectionType
-                VaultSecurityDialog(this, config.hiddenPasswordHash, tabToShow, minimalist = false) { _, _, success ->
-                    if (success) {
-                        binding.settingsHiddenItemPasswordProtection.isChecked = false
-                        config.isHiddenPasswordProtectionOn = false
-                        config.hiddenPasswordHash = ""
-                        config.temporarilyShowHidden = false
-                        CryptoManager.lockVault()
-                    }
-                }
-            } else {
-                val existingVaultDir = CryptoManager.getExistingCipherSecretsDir(this)
-                if (existingVaultDir != null) {
-                    val builder = getAlertDialogBuilder()
-                        .setMessage(getString(R.string.access_existing_cipher_secrets_prompt))
-                        .setPositiveButton(org.fossify.commons.R.string.yes) { _, _ ->
-                            promptUnlockExistingVault()
-                        }
-                        .setNegativeButton(org.fossify.commons.R.string.no) { _, _ ->
-                            DeleteCipherSecretsDialog(this) {
-                                CryptoManager.deleteExistingVault(this)
-                                promptCreateNewVaultPassword()
-                            }
-                        }
-                    builder.show()
-                } else {
-                    promptCreateNewVaultPassword()
-                }
-            }
-        }
+    private fun doesVaultExist(): Boolean {
+        return CryptoManager.hasVaultFolderOrCredentials(this)
     }
 
-    private fun promptUnlockExistingVault() {
-        val tabToShow = CryptoManager.getVaultProtectionType(this) ?: config.hiddenProtectionType
-        VaultSecurityDialog(this, config.hiddenPasswordHash, tabToShow, minimalist = false) { hash, type, success ->
-            if (success) {
-                binding.settingsHiddenItemPasswordProtection.isChecked = true
-                config.isHiddenPasswordProtectionOn = true
-                config.hiddenPasswordHash = if (hash.isNotEmpty()) hash else "argon2id_aes256_gcm_v2"
-                config.hiddenProtectionType = type
+    private fun setupVaultSettings() {
+        val vaultExists = doesVaultExist()
+        val hasStoragePermission = !(isRPlus() && !isExternalStorageManager())
 
-                val confirmationTextId = if (config.hiddenProtectionType == PROTECTION_FINGERPRINT)
-                    org.fossify.commons.R.string.fingerprint_setup_successfully else org.fossify.commons.R.string.protection_setup_successfully
-                ConfirmationDialog(this, "", confirmationTextId, org.fossify.commons.R.string.ok, 0) { }
+        binding.settingsVaultLabel.beGoneIf(!hasStoragePermission)
+        binding.settingsVaultDivider.beGoneIf(!hasStoragePermission)
 
-                ensureBackgroundThread {
-                    VirtualAlbumSyncManager.syncVirtualAlbums(this, force = true)
-                }
-            }
+        // 1) Şifreli kasa oluştur (bu sadece şifreli kasa oluşturulmamış ise gösterilir)
+        binding.settingsCreateVaultHolder.beVisibleIf(hasStoragePermission && !vaultExists)
+
+        // 2) Şifreli kasa şifresini değiştir
+        binding.settingsChangeVaultPasswordHolder.beVisibleIf(hasStoragePermission && vaultExists)
+
+        // 3) Şifreli kasaya biyometrik ile giriş (sadece bu kaydırılabilir)
+        binding.settingsVaultBiometricHolder.beVisibleIf(hasStoragePermission && vaultExists)
+
+        // 4) Şifreli kasayı boşalt
+        binding.settingsEmptyVaultHolder.beVisibleIf(hasStoragePermission && vaultExists)
+
+        setupCreateVault()
+        setupChangeVaultPassword()
+        setupVaultBiometric()
+        setupEmptyVault()
+    }
+
+    private fun setupCreateVault() {
+        binding.settingsCreateVaultHolder.setOnClickListener {
+            if (doesVaultExist()) return@setOnClickListener
+            promptCreateNewVaultPassword()
         }
     }
 
     private fun promptCreateNewVaultPassword() {
         VaultSecurityDialog(this, "", SHOW_ALL_TABS, minimalist = false) { hash, type, success ->
             if (success) {
-                binding.settingsHiddenItemPasswordProtection.isChecked = true
                 config.isHiddenPasswordProtectionOn = true
                 config.hiddenPasswordHash = hash
                 config.hiddenProtectionType = type
 
-                val confirmationTextId = if (config.hiddenProtectionType == PROTECTION_FINGERPRINT)
-                    org.fossify.commons.R.string.fingerprint_setup_successfully else org.fossify.commons.R.string.protection_setup_successfully
+                val confirmationTextId = org.fossify.commons.R.string.protection_setup_successfully
                 ConfirmationDialog(this, "", confirmationTextId, org.fossify.commons.R.string.ok, 0) { }
 
                 ensureBackgroundThread {
+                    CryptoManager.getOrCreateDefaultHiddenAlbum(this)
                     VirtualAlbumSyncManager.syncVirtualAlbums(this, force = true)
+                    runOnUiThread {
+                        setupVaultSettings()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun setupChangeVaultPassword() {
+        binding.settingsChangeVaultPasswordHolder.setOnClickListener {
+            if (!doesVaultExist()) return@setOnClickListener
+
+            val currentType = CryptoManager.getVaultProtectionType(this)
+                ?: if (config.hiddenProtectionType == PROTECTION_PASSWORD) PROTECTION_PASSWORD else PROTECTION_PIN
+            VaultSecurityDialog(this, config.hiddenPasswordHash, currentType, minimalist = false) { _, _, authSuccess ->
+                if (authSuccess) {
+                    promptChangeVaultPassword()
+                }
+            }
+        }
+    }
+
+    private fun promptChangeVaultPassword() {
+        VaultSecurityDialog(this, "", SHOW_ALL_TABS, minimalist = false, isChangePasswordMode = true) { _, _, changeSuccess ->
+            if (changeSuccess) {
+                updateVaultBiometricSwitch()
+                toast(R.string.password_changed_successfully)
+            }
+        }
+    }
+
+    private fun setupVaultBiometric() {
+        binding.settingsVaultBiometricHolder.beGoneIf(isRPlus() && !isExternalStorageManager())
+        updateVaultBiometricSwitch()
+        binding.settingsVaultBiometricHolder.setOnClickListener {
+            if (!doesVaultExist()) {
+                toast(R.string.enable_hidden_protection_first_prompt)
+                return@setOnClickListener
+            }
+
+            if (config.isVaultBiometricEnabled) {
+                CryptoManager.clearBiometricKey(this)
+                config.temporarilyShowHidden = false
+                CryptoManager.lockVault()
+                CryptoManager.clearAppImageCaches(this)
+                applyVaultScreenProtection(false)
+                updateVaultBiometricSwitch()
+            } else {
+                if (!CryptoManager.isBiometricHardwareAvailable(this)) {
+                    toast(R.string.no_biometric_hardware_or_enrolled)
+                    return@setOnClickListener
+                }
+
+                val wasVaultUnlocked = CryptoManager.isVaultUnlocked
+                val tabToShow = CryptoManager.getVaultProtectionType(this) ?: if (config.hiddenProtectionType == PROTECTION_PASSWORD) PROTECTION_PASSWORD else PROTECTION_PIN
+                VaultSecurityDialog(this, config.hiddenPasswordHash, tabToShow, minimalist = false) { _, _, success ->
+                    if (success) {
+                        showBiometricEnrollmentPrompt(lockVaultAfter = !wasVaultUnlocked && !config.temporarilyShowHidden)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun updateVaultBiometricSwitch() {
+        val vaultExists = doesVaultExist()
+        binding.settingsVaultBiometric.isEnabled = vaultExists
+        binding.settingsVaultBiometricHolder.alpha = if (vaultExists) 1.0f else 0.4f
+        binding.settingsVaultBiometric.isChecked = vaultExists && config.isVaultBiometricEnabled
+    }
+
+    private fun showBiometricEnrollmentPrompt(lockVaultAfter: Boolean) {
+        val cipher = CryptoManager.getBiometricEncryptCipher()
+        if (cipher == null) {
+            if (lockVaultAfter) {
+                CryptoManager.lockVault()
+                applyVaultScreenProtection(false)
+            }
+            toast(org.fossify.commons.R.string.an_error_occurred)
+            return
+        }
+
+        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle(getString(R.string.biometric_access_to_encrypted_vault))
+            .setSubtitle(getString(R.string.biometric_setup_prompt))
+            .setNegativeButtonText(getString(org.fossify.commons.R.string.cancel))
+            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+            .build()
+
+        val biometricPrompt = BiometricPrompt(
+            this,
+            ContextCompat.getMainExecutor(this),
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    val authCipher = result.cryptoObject?.cipher
+                    if (authCipher != null && CryptoManager.completeBiometricSetup(this@SettingsActivity, authCipher)) {
+                        updateVaultBiometricSwitch()
+                        toast(org.fossify.commons.R.string.fingerprint_setup_successfully)
+                    } else {
+                        CryptoManager.clearBiometricKey(this@SettingsActivity)
+                        updateVaultBiometricSwitch()
+                        toast(org.fossify.commons.R.string.an_error_occurred)
+                    }
+                    if (lockVaultAfter) {
+                        CryptoManager.lockVault()
+                        applyVaultScreenProtection(false)
+                    }
+                }
+
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    CryptoManager.clearBiometricKey(this@SettingsActivity)
+                    if (lockVaultAfter) {
+                        CryptoManager.lockVault()
+                        applyVaultScreenProtection(false)
+                    }
+                    updateVaultBiometricSwitch()
+                }
+            }
+        )
+        biometricPrompt.authenticate(promptInfo, BiometricPrompt.CryptoObject(cipher))
+    }
+
+    private fun setupEmptyVault() {
+        binding.settingsEmptyVaultHolder.setOnClickListener {
+            if (!doesVaultExist()) return@setOnClickListener
+
+            DeleteCipherSecretsDialog(this, getString(R.string.empty_encrypted_vault_warning)) {
+                ensureBackgroundThread {
+                    CryptoManager.deleteExistingVault(this)
+                    runOnUiThread {
+                        toast(R.string.encrypted_vault_emptied)
+                        setupVaultSettings()
+                    }
                 }
             }
         }
     }
 
     private fun setupExcludedItemPasswordProtection() {
-        binding.settingsExcludedItemPasswordProtectionHolder.beGoneIf(binding.settingsHiddenItemPasswordProtectionHolder.isVisible())
+        binding.settingsExcludedItemPasswordProtectionHolder.beGoneIf(isRPlus() && !isExternalStorageManager())
         binding.settingsExcludedItemPasswordProtection.isChecked = config.isExcludedPasswordProtectionOn
         binding.settingsExcludedItemPasswordProtectionHolder.setOnClickListener {
             val tabToShow = if (config.isExcludedPasswordProtectionOn) config.excludedProtectionType else SHOW_ALL_TABS
@@ -1113,7 +1244,7 @@ class SettingsActivity : SimpleActivity() {
                 put(LIMIT_FOLDER_TITLE, config.limitFolderTitle)
                 put(THUMBNAIL_SPACING, config.thumbnailSpacing)
                 put(FILE_ROUNDED_CORNERS, config.fileRoundedCorners)
-                put(SEARCH_ALL_FILES_BY_DEFAULT, config.searchAllFilesByDefault)
+                put(HOME_SCREEN_VIEW_ON_LAUNCH, config.homeScreenViewOnLaunch)
             }
 
             exportSettings(configItems)
@@ -1260,7 +1391,7 @@ class SettingsActivity : SimpleActivity() {
                 LIMIT_FOLDER_TITLE -> config.limitFolderTitle = value.toBoolean()
                 THUMBNAIL_SPACING -> config.thumbnailSpacing = value.toInt()
                 FILE_ROUNDED_CORNERS -> config.fileRoundedCorners = value.toBoolean()
-                SEARCH_ALL_FILES_BY_DEFAULT -> config.searchAllFilesByDefault = value.toBoolean()
+                HOME_SCREEN_VIEW_ON_LAUNCH -> config.homeScreenViewOnLaunch = value.toInt()
                 ALBUM_COVERS -> {
                     val existingCovers = config.parseAlbumCovers()
                     val existingCoverPaths = existingCovers.map { it.path }.toMutableList() as ArrayList<String>

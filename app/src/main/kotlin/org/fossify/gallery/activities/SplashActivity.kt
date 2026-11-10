@@ -7,6 +7,7 @@ import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.favoritesDB
 import org.fossify.gallery.extensions.getFavoriteFromPath
 import org.fossify.gallery.extensions.mediaDB
+import org.fossify.gallery.helpers.HOME_VIEW_FILES
 import org.fossify.gallery.models.Favorite
 
 class SplashActivity : BaseSplashActivity() {
@@ -37,6 +38,7 @@ class SplashActivity : BaseSplashActivity() {
     }
 
     private fun launchActivity() {
+        config.showAll = config.homeScreenViewOnLaunch == HOME_VIEW_FILES
         startActivity(Intent(this, MainActivity::class.java))
         finish()
     }
