@@ -82,7 +82,7 @@ For full architectural details, cryptography specifications, and user guides, se
 
 ### Notes & Safer Alternatives
 - **Recommended Workflow — Offline Desktop CLI (`tools/fossify-cipher-cli/cipher_vault.py`):**
-  - For maximum security, use the offline Linux/Tails CLI tool (`tools/fossify-cipher-cli/cipher_vault.py`). Running it on **Tails OS (in RAM)** encrypts photos and videos into `.bin` ciphertext offline before they ever reach your phone, keeping both your media and the Android gallery app completely air-gapped.
+  - For maximum security, use the offline Linux CLI tool (`tools/fossify-cipher-cli/cipher_vault.py`). Running it on a **diskless live-boot Linux distribution such as Tails (in RAM)** encrypts photos and videos into `.bin` ciphertext offline before they ever reach your phone, keeping both your media and the Android gallery app completely air-gapped.
 - **Upcoming Standalone Mobile Browser Project:**
   - To enable safe, zero-disk encrypted downloads directly on Android without a PC, **an independent, external WebView browser/downloader project** (a separate minimal APK with its own Linux UID and zero gallery read/decryption access) is currently in development.
 
@@ -127,7 +127,7 @@ For full architectural details, cryptography specifications, and user guides, se
   - Clarified and documented the 3 zero-disk pathways for importing media into the vault without plaintext flash remanence:
     1. **Option 1 (Mobile Direct URL Share):** Share URL strings directly from privacy browsers (Brave, Firefox, Chrome) to `VaultShareActivity`. Transmitted via RAM-only Binder IPC; direct streaming download into `.bin` ciphertext in 64 KB RAM buffers.
     2. **Option 2 (Mobile Ephemeral Vault Browser):** In-app native Chromium browser in Mode 2 for downloading downloadable media from web with zero-disk caching and exit zeroization.
-    3. **Option 3 (Desktop Linux CLI - Tails Recommended):** Offline media encryption tool (`tools/fossify-cipher-cli/cipher_vault.py`) running in system RAM (Tails OS recommended), outputting compatible `.bin` files ready to transfer directly to `Documents/Cipher/Cipher_Secrets/`.
+    3. **Option 3 (Desktop Linux CLI):** Offline media encryption tool (`tools/fossify-cipher-cli/cipher_vault.py`) for Linux (diskless live-boot systems such as Tails running in RAM are ideal), outputting compatible `.bin` files ready to transfer directly to `Documents/Cipher/Cipher_Secrets/`.
 
 ### Removed
 - **Permanent Removal of File-Based Sharing in `VaultShareActivity`:**

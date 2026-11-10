@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Fossify Gallery Cipher - Tails & Linux Quick Launcher
+# Fossify Gallery Cipher - Linux Quick Launcher
 # ==============================================================================
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -39,7 +39,7 @@ if [ $? -ne 0 ]; then
     echo "=========================================================="
     echo "  [WARNING] Required Python libraries are missing!"
     echo "=========================================================="
-    echo "To install on Tails / Debian, run in terminal:"
+    echo "To install on Debian-based Linux (e.g., Debian, Ubuntu, Tails), run in terminal:"
     echo ""
     echo "  sudo apt update && sudo apt install -y python3-cryptography python3-argon2 python3-pil"
     echo ""

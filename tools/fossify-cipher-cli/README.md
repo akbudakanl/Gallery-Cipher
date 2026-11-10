@@ -1,14 +1,16 @@
-# Fossify Gallery Cipher - Linux & Tails Offline Encryption CLI Tool
+# Fossify Gallery Cipher - Linux Offline Encryption CLI Tool
 
-This tool encrypts media files (photos, videos) on Linux distributions (with **Tails OS** recommended for RAM-based workflows) into `.bin` format, **100% compatible with the Android Fossify Gallery Cipher** application (using `AES-256-CTR` + `Poly1305-AES` authenticated streaming encryption).
+This tool encrypts media files (photos, videos) on Linux into `.bin` format, **100% compatible with the Android Fossify Gallery Cipher** application (using `AES-256-CTR` + `Poly1305-AES` authenticated streaming encryption).
+
+> 💡 **Recommended Environment:** Because live-boot Linux operating systems such as **Tails** do not use local storage disks and run entirely in volatile RAM, they are the most suitable choice for this CLI tool's zero-disk security goal.
 
 By encrypting files on your PC prior to transferring them to mobile, raw plaintext media never touches your mobile device's storage, ensuring that Android's media scanner, thumbnail cache, and filesystem journals never encounter unencrypted files.
 
 ---
 
-## 🎯 Desktop (2-Folder) Workflow (Tails OS Recommended)
+## 🎯 Desktop (2-Folder) Workflow
 
-The tool automatically manages 2 folders directly on your Desktop (Tails OS is recommended because it runs in volatile RAM):
+The tool automatically manages 2 folders directly on your Desktop (running on a diskless live-boot system like Tails ensures these folders live strictly in RAM):
 
 1. **`To_Encrypt` (Desktop):** Place media downloaded or copied from local/external sources here.
 2. **`Encrypted_Output` (Desktop):** Running the tool generates randomized `.bin` files here, encrypted with your vault key.
@@ -23,10 +25,10 @@ Desktop
 
 ---
 
-## 🚀 Tails OS Quick Setup & Execution
+## 🚀 Linux Quick Setup & Execution
 
 ### 1. Install Dependencies
-Open a terminal in Tails (Debian-based):
+Open a terminal on your Debian-based Linux distribution (e.g., Debian, Ubuntu, or Tails):
 
 ```bash
 sudo apt update && sudo apt install -y python3-cryptography python3-argon2 python3-pil
@@ -34,7 +36,7 @@ sudo apt update && sudo apt install -y python3-cryptography python3-argon2 pytho
 *(If you use Tails Persistent Storage, you can configure these as Additional Software so they remain installed across reboots).*
 
 ### 2. Preparation (One-Time)
-Copy the `.vault` file from your phone (`Documents > Cipher > Cipher_Secrets > .vault`) to your Tails Desktop or Persistent folder.
+Copy the `.vault` file from your phone (`Documents > Cipher > Cipher_Secrets > .vault`) to your Desktop (or Tails Persistent folder).
 
 > ℹ️ **Security Note:** The `.vault` file is encrypted with your vault password/PIN via **Argon2id + AES-256-GCM**. It is mathematically impossible to crack without your password.
 

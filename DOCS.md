@@ -191,25 +191,25 @@ The application transitions through three distinct operational states to balance
 > **Why:** Android grants `INTERNET` per Linux UID (whole APK), not per Activity. Because a media gallery bundles numerous third-party and native media decoders, keeping `INTERNET` inside the gallery APK leaves a theoretical supply-chain exfiltration vector. By making the gallery **100% offline at the kernel UID boundary**, no library or dependency can transmit gallery media over the network.
 >
 > **Recommended Ingestion & Roadmap:**
-> - **Offline Desktop CLI (Recommended):** Use `tools/fossify-cipher-cli/cipher_vault.py` (ideally on Tails OS in RAM) to encrypt media offline into `.bin` files before transferring to `Documents/Cipher/Cipher_Secrets/`.
+> - **Offline Desktop CLI (Recommended):** Use `tools/fossify-cipher-cli/cipher_vault.py` (ideally on a diskless live-boot Linux OS such as Tails in RAM) to encrypt media offline into `.bin` files before transferring to `Documents/Cipher/Cipher_Secrets/`.
 > - **Standalone External WebView Browser (In Development):** For direct mobile encrypted downloads without a PC, an independent external WebView downloader application (separate APK / separate Linux UID) is currently being developed.
 
 ---
 
-## 8. Offline Zero-Disk Media Ingestion (Desktop Linux CLI - Tails Recommended)
+## 8. Offline Zero-Disk Media Ingestion (Desktop Linux CLI)
 
 Fossify Gallery Cipher prioritizes **air-gapped offline encryption** so unencrypted plaintext files never touch mobile non-volatile storage and the gallery app itself remains 100% network-isolated:
 
 | Option | Environment | Target Use Case | Security Model |
 | :--- | :--- | :--- | :--- |
-| **Desktop Linux CLI (Recommended)** | Desktop Linux / Tails OS (`tools/fossify-cipher-cli/`) | Offline batch imports, media preparation | Offline encryption inside system RAM; writes ready-to-use `.bin` ciphertext for transfer to `Documents/Cipher/Cipher_Secrets/`. Gallery APK has zero network permissions. |
+| **Desktop Linux CLI (Recommended)** | Desktop Linux (`tools/fossify-cipher-cli/`) — live-boot OS (e.g., Tails) ideal | Offline batch imports, media preparation | Offline encryption inside system RAM; writes ready-to-use `.bin` ciphertext for transfer to `Documents/Cipher/Cipher_Secrets/`. Gallery APK has zero network permissions. |
 | **Standalone Mobile Browser APK (In Development)** | Separate Android APK (External WebView) | On-device encrypted downloads without a PC | Isolated Linux UID with `INTERNET` only; zero access to gallery storage or decryption keys. |
 
-### Detailed Breakdown: Desktop Linux CLI Tool (Tails OS Recommended)
+### Detailed Breakdown: Desktop Linux CLI Tool
 
-For users performing batch media imports or preparing encrypted archives on a PC, the **Fossify Gallery Cipher CLI Tool** (`tools/fossify-cipher-cli/cipher_vault.py`) enables offline media encryption on Linux distributions. **Tails OS** is recommended as a live distribution because it operates in computer RAM, ensuring plaintext media never touches local hard drives during processing:
+For users performing batch media imports or preparing encrypted archives on a PC, the **Fossify Gallery Cipher CLI Tool** (`tools/fossify-cipher-cli/cipher_vault.py`) enables offline media encryption on Linux. Live-boot Linux operating systems such as **Tails** do not use local hard disks and operate entirely in RAM, making them the most suitable option for this CLI tool's zero-disk purpose:
 
-1. **RAM-Only Processing (Recommended on Tails OS):** Operating in a live RAM-based system keeps the workspace strictly in memory, preventing temporary file remanence on the computer's internal storage drive.
+1. **RAM-Only Processing (Live-Boot Linux Recommended):** Operating in a diskless live-boot Linux distribution (such as Tails) keeps the workspace strictly in memory, preventing temporary file remanence on the computer's internal storage drive.
 2. **Offline Master Key Decryption:** Copy your `.vault` master header from `Documents/Cipher/Cipher_Secrets/.vault` to the Desktop. The CLI tool decrypts the master key using your password via `Argon2id + AES-256-GCM`.
 3. **V5 Stream Encryption & MAC Generation:** 
    - Media placed into `To_Encrypt` is processed chunk-by-chunk using `AES-256-CTR` and authenticated with `Poly1305-AES`.

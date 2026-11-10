@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
-Fossify Gallery Cipher - Linux & Tails Offline Encryption CLI Tool
--------------------------------------------------------------------
-Encrypts media files (photos, videos) on Linux (Tails OS recommended) into .bin format,
+Fossify Gallery Cipher - Linux Offline Encryption CLI Tool
+----------------------------------------------------------
+Encrypts media files (photos, videos) on Linux into .bin format,
 100% compatible with Android Fossify Gallery Cipher (AES-256 + Poly1305-AES).
+Live-boot Linux distributions such as Tails do not use local disks and run
+in RAM, making them the most suitable option for this tool's zero-disk goal.
 
 Features:
-- Automatic 2-folder desktop management on Linux / Tails (To_Encrypt & Encrypted_Output).
+- Automatic 2-folder desktop management on Linux (To_Encrypt & Encrypted_Output).
 - Automatic .vault discovery across Desktop, persistent storage, and mounted USB drives.
 - Subfolder preservation as encrypted physical albums (.meta) in Fossify Gallery.
 - Secure source sanitation (overwriting with zeros) of plaintext source media.
@@ -43,7 +45,7 @@ except ImportError:
 def check_dependencies():
     if not HAS_CRYPTO:
         print("[ERROR] Required Python packages are missing!", file=sys.stderr)
-        print("To install on Tails / Debian, run in terminal:", file=sys.stderr)
+        print("To install on Debian-based Linux (e.g., Debian, Ubuntu, Tails), run in terminal:", file=sys.stderr)
         print("  sudo apt update && sudo apt install -y python3-cryptography python3-argon2 python3-pil", file=sys.stderr)
         print("Or via pip:", file=sys.stderr)
         print("  pip install cryptography argon2-cffi pillow", file=sys.stderr)
@@ -73,7 +75,7 @@ SVG_EXTS = {".svg"}
 # ==================== DESKTOP & DIRECTORY DISCOVERY ====================
 
 def get_desktop_dir() -> Path:
-    """Detects Desktop directory on Tails OS and Linux environments."""
+    """Detects Desktop directory on Linux environments."""
     # 1. xdg-user-dir DESKTOP check
     try:
         res = subprocess.run(["xdg-user-dir", "DESKTOP"], capture_output=True, text=True, check=False)
@@ -131,7 +133,7 @@ def get_default_output_dir(desktop: Path) -> Path:
     return target
 
 def find_vault_file() -> Path | None:
-    """Searches for .vault header file across common Tails and Linux locations."""
+    """Searches for .vault header file across common Linux and live-boot (e.g., Tails) locations."""
     desktop = get_desktop_dir()
     candidates = [
         # Desktop
@@ -536,10 +538,10 @@ def main():
     desktop = get_desktop_dir()
 
     parser = argparse.ArgumentParser(
-        description="Fossify Gallery Cipher - Tails & Linux Encryption Tool",
+        description="Fossify Gallery Cipher - Linux Offline Encryption Tool",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Tails & Desktop Usage:
+Desktop Usage (live-boot Linux distros like Tails ideal for diskless RAM operation):
   Running without parameters automatically encrypts all media in 'Desktop/To_Encrypt'
   and places the encrypted .bin files into 'Desktop/Encrypted_Output':
      python3 cipher_vault.py
@@ -597,7 +599,7 @@ Custom Directory Usage:
     # If input folder is empty, guide user and exit cleanly
     if not items_to_encrypt:
         print("\n" + "=" * 65)
-        print("\033[1;36m       Fossify Gallery Cipher - Tails / Linux Encryptor\033[0m")
+        print("\033[1;36m       Fossify Gallery Cipher - Linux Offline Encryptor\033[0m")
         print("=" * 65)
         print("\033[1;32m[✓] Desktop folders are ready:\033[0m")
         print(f"    📥 Input Folder:   \033[1;33m{input_path}\033[0m")
