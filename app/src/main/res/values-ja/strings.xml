@@ -347,6 +347,7 @@
     <string name="refresh">更新</string>
     <string name="pull_down_to_open_vault">暗号化された保管庫を開くには引き下げ続けてください</string>
     <string name="release_to_open_vault">指を離して暗号化された保管庫を開く</string>
+    <string name="vault_not_created_prompt">まだ保管庫を作成していません。保管庫を作成しますか？</string>
 
     <!-- Overrides for strings inherited from fossify-commons -->
     <string name="search_folders">フォルダーを検索</string>

@@ -32,12 +32,13 @@ class VaultSecurityDialog(
 
     private var currentType: Int = when (showTabIndex) {
         PROTECTION_PASSWORD -> PROTECTION_PASSWORD
+        PROTECTION_PIN -> PROTECTION_PIN
         else -> {
             val vaultType = CryptoManager.getVaultProtectionType(activity)
-            if (vaultType == PROTECTION_PASSWORD || activity.config.hiddenProtectionType == PROTECTION_PASSWORD) {
-                PROTECTION_PASSWORD
-            } else {
-                PROTECTION_PIN
+            when (vaultType) {
+                PROTECTION_PASSWORD -> PROTECTION_PASSWORD
+                PROTECTION_PIN -> PROTECTION_PIN
+                else -> if (activity.config.hiddenProtectionType == PROTECTION_PASSWORD) PROTECTION_PASSWORD else PROTECTION_PIN
             }
         }
     }
@@ -56,28 +57,32 @@ class VaultSecurityDialog(
 
         binding.vaultPatternHolder.beGone()
 
-        binding.vaultTabs.apply {
-            beVisible()
-            setBackgroundColor(backgroundColor)
-            setTabTextColors(textColor, primaryColor)
-            setSelectedTabIndicatorColor(primaryColor)
+        if (isSetupMode) {
+            binding.vaultTabs.apply {
+                beVisible()
+                setBackgroundColor(backgroundColor)
+                setTabTextColors(textColor, primaryColor)
+                setSelectedTabIndicatorColor(primaryColor)
 
-            removeAllTabs()
-            val pinTab = newTab().setText(org.fossify.commons.R.string.pin).setTag(PROTECTION_PIN)
-            val passwordTab = newTab().setText(R.string.alphanumeric_password).setTag(PROTECTION_PASSWORD)
+                removeAllTabs()
+                val pinTab = newTab().setText(org.fossify.commons.R.string.pin).setTag(PROTECTION_PIN)
+                val passwordTab = newTab().setText(R.string.alphanumeric_password).setTag(PROTECTION_PASSWORD)
 
-            addTab(pinTab, currentType == PROTECTION_PIN)
-            addTab(passwordTab, currentType == PROTECTION_PASSWORD)
+                addTab(pinTab, currentType == PROTECTION_PIN)
+                addTab(passwordTab, currentType == PROTECTION_PASSWORD)
 
-            addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
-                override fun onTabSelected(tab: TabLayout.Tab?) {
-                    val type = tab?.tag as? Int ?: PROTECTION_PIN
-                    switchProtectionType(type)
-                }
+                addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+                    override fun onTabSelected(tab: TabLayout.Tab?) {
+                        val type = tab?.tag as? Int ?: PROTECTION_PIN
+                        switchProtectionType(type)
+                    }
 
-                override fun onTabUnselected(tab: TabLayout.Tab?) {}
-                override fun onTabReselected(tab: TabLayout.Tab?) {}
-            })
+                    override fun onTabUnselected(tab: TabLayout.Tab?) {}
+                    override fun onTabReselected(tab: TabLayout.Tab?) {}
+                })
+            }
+        } else {
+            binding.vaultTabs.beGone()
         }
 
         if (minimalist && !isSetupMode) {

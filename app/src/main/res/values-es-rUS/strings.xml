@@ -370,4 +370,5 @@
     <string name="refresh">Actualizar</string>
     <string name="pull_down_to_open_vault">Siga deslizando hacia abajo para la bóveda</string>
     <string name="release_to_open_vault">Suelte para abrir la bóveda cifrada</string>
+    <string name="vault_not_created_prompt">Aún no has creado una bóveda. ¿Quieres crear una bóveda?</string>
 </resources>

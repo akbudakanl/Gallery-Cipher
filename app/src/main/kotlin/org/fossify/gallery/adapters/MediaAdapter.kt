@@ -59,7 +59,6 @@ import org.fossify.gallery.databinding.VideoItemListBinding
 import org.fossify.gallery.dialogs.DeleteWithRememberDialog
 import android.os.Environment
 import org.fossify.commons.helpers.PROTECTION_PIN
-import org.fossify.commons.helpers.SHOW_ALL_TABS
 import org.fossify.gallery.dialogs.CryptoProgressDialog
 import org.fossify.gallery.dialogs.GrantAllFilesDialog
 import org.fossify.gallery.dialogs.VaultSecurityDialog
@@ -70,11 +69,13 @@ import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.fixDateTaken
 import org.fossify.gallery.extensions.getShortcutImage
 import org.fossify.gallery.extensions.handleMediaManagementPrompt
+import org.fossify.gallery.extensions.hasVaultCreated
 import org.fossify.gallery.extensions.launchResizeImageDialog
 import org.fossify.gallery.extensions.launchResizeMultipleImagesDialog
 import org.fossify.gallery.extensions.loadImage
 import org.fossify.gallery.extensions.openEditor
 import org.fossify.gallery.extensions.openPath
+import org.fossify.gallery.extensions.promptCreateVault
 import org.fossify.gallery.extensions.rescanFolderMedia
 import java.io.File
 import org.fossify.commons.extensions.rescanPaths
@@ -404,12 +405,12 @@ class MediaAdapter(
         }
 
         if (hide) {
-            if (!config.isHiddenPasswordProtectionOn && !CryptoManager.hasExistingVault(activity)) {
-                VaultSecurityDialog(activity, "", SHOW_ALL_TABS, minimalist = false) { _, _, success ->
-                    if (success) {
+            if (!activity.hasVaultCreated()) {
+                activity.promptCreateVault(
+                    onCreated = {
                         toggleFileVisibility(true)
                     }
-                }
+                )
                 return
             }
 

@@ -402,4 +402,5 @@
     <string name="refresh">Oppdater</string>
     <string name="pull_down_to_open_vault">Hald fram med å dra ned for kryptert kvelv</string>
     <string name="release_to_open_vault">Slepp for å opne kryptert kvelv</string>
+    <string name="vault_not_created_prompt">Du har ikkje oppretta eit kvelv enno. Vil du opprette eit kvelv?</string>
 </resources>

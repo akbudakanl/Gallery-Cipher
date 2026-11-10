@@ -89,11 +89,13 @@ import org.fossify.gallery.extensions.favoritesDB
 import org.fossify.gallery.extensions.fixDateTaken
 import org.fossify.gallery.extensions.getShortcutImage
 import org.fossify.gallery.extensions.getVirtualAlbumId
+import org.fossify.gallery.extensions.hasVaultCreated
 import org.fossify.gallery.extensions.isThisOrParentFolderHidden
 import org.fossify.gallery.extensions.isVirtualAlbum
 import org.fossify.gallery.extensions.isVirtualAlbumPath
 import org.fossify.gallery.extensions.loadImage
 import org.fossify.gallery.extensions.mediaDB
+import org.fossify.gallery.extensions.promptCreateVault
 import org.fossify.gallery.extensions.removeNoMedia
 import org.fossify.gallery.extensions.showRecycleBinEmptyingDialog
 import org.fossify.gallery.extensions.tryCopyMoveFilesTo
@@ -399,12 +401,26 @@ class DirectoryAdapter(
         }
 
         if (hide) {
+            val folderPaths = ArrayList(selectedPaths.filter { it != RECYCLE_BIN })
+            if (folderPaths.isEmpty()) {
+                return
+            }
+
+            if (!activity.hasVaultCreated()) {
+                activity.promptCreateVault(
+                    onCreated = {
+                        hideFolders(folderPaths)
+                    }
+                )
+                return
+            }
+
             if (config.wasHideFolderTooltipShown) {
-                hideFolders(selectedPaths)
+                hideFolders(folderPaths)
             } else {
                 config.wasHideFolderTooltipShown = true
                 ConfirmationDialog(activity, activity.getString(R.string.hide_folder_description)) {
-                    hideFolders(selectedPaths)
+                    hideFolders(folderPaths)
                 }
             }
         } else {
@@ -456,12 +472,12 @@ class DirectoryAdapter(
     }
 
     private fun hideFolders(paths: ArrayList<String>) {
-        if (!config.isHiddenPasswordProtectionOn && !CryptoManager.hasExistingVault(activity)) {
-            VaultSecurityDialog(activity, "", SHOW_ALL_TABS, minimalist = false) { _, _, success ->
-                if (success) {
+        if (!activity.hasVaultCreated()) {
+            activity.promptCreateVault(
+                onCreated = {
                     hideFolders(paths)
                 }
-            }
+            )
             return
         }
 
@@ -585,12 +601,12 @@ class DirectoryAdapter(
     }
 
     private fun hideFolder(path: String) {
-        if (!config.isHiddenPasswordProtectionOn && !CryptoManager.hasExistingVault(activity)) {
-            VaultSecurityDialog(activity, "", SHOW_ALL_TABS, minimalist = false) { _, _, success ->
-                if (success) {
+        if (!activity.hasVaultCreated()) {
+            activity.promptCreateVault(
+                onCreated = {
                     hideFolder(path)
                 }
-            }
+            )
             return
         }
 

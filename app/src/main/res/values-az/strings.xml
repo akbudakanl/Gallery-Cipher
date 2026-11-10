@@ -402,4 +402,5 @@
     <string name="refresh">Yenilə</string>
     <string name="pull_down_to_open_vault">Şifrəli seyf üçün aşağı çəkməyə davam edin</string>
     <string name="release_to_open_vault">Şifrəli seyfi açmaq üçün buraxın</string>
+    <string name="vault_not_created_prompt">Hələ seyf yaratmamısınız. Seyf yaratmaq istəyirsiniz?</string>
 </resources>

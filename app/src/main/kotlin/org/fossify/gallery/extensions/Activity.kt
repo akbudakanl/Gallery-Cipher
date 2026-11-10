@@ -18,6 +18,7 @@ import android.provider.MediaStore.Files
 import android.provider.MediaStore.Images
 import android.provider.Settings
 import android.util.DisplayMetrics
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.exifinterface.media.ExifInterface
 import com.bumptech.glide.Glide
@@ -51,6 +52,7 @@ import org.fossify.gallery.helpers.DIRECTORY
 import org.fossify.gallery.helpers.PROTECTION_PASSWORD
 import org.fossify.gallery.helpers.RECYCLE_BIN
 import org.fossify.gallery.helpers.TEMP_FOLDER_NAME
+import org.fossify.gallery.helpers.VirtualAlbumSyncManager
 import org.fossify.gallery.models.DateTaken
 import java.io.*
 import java.text.SimpleDateFormat
@@ -289,6 +291,47 @@ fun BaseSimpleActivity.removeNoMedia(path: String, callback: (() -> Unit)? = nul
     }
 }
 
+fun BaseSimpleActivity.hasVaultCreated(): Boolean {
+    return config.isHiddenPasswordProtectionOn || CryptoManager.hasExistingVault(this)
+}
+
+fun BaseSimpleActivity.promptCreateVault(
+    onCreated: () -> Unit,
+    onCancelled: () -> Unit = {}
+) {
+    val messageView = layoutInflater.inflate(org.fossify.commons.R.layout.dialog_message, null)
+    messageView.findViewById<TextView>(org.fossify.commons.R.id.message).setText(R.string.vault_not_created_prompt)
+    getAlertDialogBuilder()
+        .setPositiveButton(org.fossify.commons.R.string.yes) { _, _ ->
+            VaultSecurityDialog(this, "", SHOW_ALL_TABS, minimalist = false) { hash, type, success ->
+                if (success) {
+                    config.isHiddenPasswordProtectionOn = true
+                    config.hiddenPasswordHash = hash
+                    config.hiddenProtectionType = type
+                    ensureBackgroundThread {
+                        CryptoManager.getOrCreateDefaultHiddenAlbum(this)
+                        VirtualAlbumSyncManager.syncVirtualAlbums(this, force = true)
+                        runOnUiThread {
+                            toast(org.fossify.commons.R.string.protection_setup_successfully)
+                            onCreated()
+                        }
+                    }
+                } else {
+                    onCancelled()
+                }
+            }
+        }
+        .setNegativeButton(org.fossify.commons.R.string.no) { _, _ ->
+            onCancelled()
+        }
+        .setOnCancelListener {
+            onCancelled()
+        }
+        .apply {
+            setupDialogStuff(messageView, this)
+        }
+}
+
 fun BaseSimpleActivity.toggleFileVisibility(oldPath: String, hide: Boolean, callback: ((newPath: String) -> Unit)? = null) {
     val srcFile = File(oldPath)
     if (!srcFile.exists()) {
@@ -302,14 +345,15 @@ fun BaseSimpleActivity.toggleFileVisibility(oldPath: String, hide: Boolean, call
             return
         }
 
-        if (!config.isHiddenPasswordProtectionOn && !CryptoManager.hasExistingVault(this)) {
-            VaultSecurityDialog(this, "", SHOW_ALL_TABS, minimalist = false) { _, _, success ->
-                if (success) {
+        if (!hasVaultCreated()) {
+            promptCreateVault(
+                onCreated = {
                     toggleFileVisibility(oldPath, true, callback)
-                } else {
+                },
+                onCancelled = {
                     callback?.invoke(oldPath)
                 }
-            }
+            )
             return
         }
 

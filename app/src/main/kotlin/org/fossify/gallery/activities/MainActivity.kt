@@ -111,6 +111,7 @@ import org.fossify.gallery.extensions.getOTGFolderChildrenNames
 import org.fossify.gallery.extensions.getSortedDirectories
 import org.fossify.gallery.extensions.handleExcludedFolderPasswordProtection
 import org.fossify.gallery.extensions.handleMediaManagementPrompt
+import org.fossify.gallery.extensions.hasVaultCreated
 import org.fossify.gallery.extensions.isDownloadsFolder
 import org.fossify.gallery.extensions.isFolderOrAlbumHidden
 import org.fossify.gallery.extensions.isEncryptedVaultAlbum
@@ -124,6 +125,7 @@ import org.fossify.gallery.extensions.mediaDB
 import org.fossify.gallery.extensions.movePathsInRecycleBin
 import org.fossify.gallery.extensions.movePinnedDirectoriesToFront
 import org.fossify.gallery.extensions.openRecycleBin
+import org.fossify.gallery.extensions.promptCreateVault
 import org.fossify.gallery.extensions.removeInvalidDBDirectories
 import org.fossify.gallery.extensions.storeDirectoryItems
 import org.fossify.gallery.extensions.tryDeleteFileDirItem
@@ -978,7 +980,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             return
         }
 
-        if (config.isHiddenPasswordProtectionOn || CryptoManager.hasExistingVault(this)) {
+        if (hasVaultCreated()) {
             mIsVaultDialogShowing = true
             val initialType = CryptoManager.getVaultProtectionType(this)
                 ?: if (config.hiddenProtectionType == PROTECTION_PASSWORD) {
@@ -1007,15 +1009,18 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                 }
             }
         } else {
-            mIsSecretVaultView = true
-            mHiddenDisplayMode = DISPLAY_SECRET_VAULT
-            toast(R.string.secret_vault)
-            ensureBackgroundThread {
-                CryptoManager.getOrCreateDefaultHiddenAlbum(this)
-                runOnUiThread {
+            mIsVaultDialogShowing = true
+            promptCreateVault(
+                onCreated = {
+                    mIsVaultDialogShowing = false
+                    mIsSecretVaultView = true
+                    mHiddenDisplayMode = DISPLAY_SECRET_VAULT
                     toggleTemporarilyShowHidden(true)
+                },
+                onCancelled = {
+                    mIsVaultDialogShowing = false
                 }
-            }
+            )
         }
     }
 
