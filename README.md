@@ -12,9 +12,6 @@ Enhance your photos with our basic yet powerful photo editor. Crop, resize, rota
 **🌐 PRIVACY FIRST, ALWAYS:**  
 Your privacy matters. Ditch the data-hungry giants. Fossify Gallery puts you in control. Strip away EXIF metadata like GPS coordinates and camera details, keeping your memories yours, and yours alone.
 
-**🔒 SUPERIOR SECURITY:**  
-Lock down your memories with pin, pattern, or fingerprint protection. Secure specific photos, videos, or the entire app – you decide who gets access. Peace of mind, guaranteed.
-
 **🔐 HARDWARE-HARDENED CRYPTOGRAPHIC VAULT:**  
 Go beyond simple folder hiding with an isolated, zero-network cryptographic vault (`Cipher_Secrets`). Media files are individually encrypted on disk using `AES-256-CTR` with `Poly1305-AES` integrity tags, metadata is protected by `AES-256-GCM`, and your Master Encryption Key is derived via `Argon2id` and wrapped by Android Keystore (`StrongBox` / `TEE`). Pre-wipe SHA-256 verification, CSPRNG overwriting, `FLAG_SECURE` screen protection, and automatic RAM zeroization ensure decrypted keys and frames never leak.
 
