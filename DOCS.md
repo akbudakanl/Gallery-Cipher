@@ -96,11 +96,10 @@ The application transitions through three distinct operational states to balance
                   │  (Isolated View: Encrypted Physical    │
                   │     & Stealth Virtual Albums Only)     │
                   └───────────────┬────────▲───────────────┘
-                                  │        │ 3x Bottom
-                     Back Key ◄───┘        │ Scroll Gesture
-                                           │
-                                           ▼
-                  ┌────────────────────────────────────────┐
+                         Back Key │        │ 3x Bottom
+                                  │        │ Scroll Gesture
+                                  ▼        │
+                  ┌────────────────────────┴───────────────┐
                   │          MODE 3: Extended View         │
                   │  (Unified Grid: Standard Albums +      │
                   │    .nomedia Folders + Vault Folders)   │
