@@ -57,6 +57,12 @@ import org.fossify.gallery.databinding.ThumbnailSectionBinding
 import org.fossify.gallery.databinding.VideoItemGridBinding
 import org.fossify.gallery.databinding.VideoItemListBinding
 import org.fossify.gallery.dialogs.DeleteWithRememberDialog
+import android.os.Environment
+import org.fossify.commons.helpers.PROTECTION_PIN
+import org.fossify.commons.helpers.SHOW_ALL_TABS
+import org.fossify.gallery.dialogs.CryptoProgressDialog
+import org.fossify.gallery.dialogs.GrantAllFilesDialog
+import org.fossify.gallery.dialogs.VaultSecurityDialog
 import org.fossify.gallery.extensions.getVirtualAlbumId
 import org.fossify.gallery.extensions.isVirtualAlbumPath
 import org.fossify.gallery.extensions.removePathsFromVirtualAlbum
@@ -70,6 +76,9 @@ import org.fossify.gallery.extensions.loadImage
 import org.fossify.gallery.extensions.openEditor
 import org.fossify.gallery.extensions.openPath
 import org.fossify.gallery.extensions.rescanFolderMedia
+import java.io.File
+import org.fossify.commons.extensions.rescanPaths
+import org.fossify.gallery.dialogs.PickVaultAlbumDialog
 import org.fossify.gallery.extensions.restoreRecycleBinPaths
 import org.fossify.gallery.extensions.saveRotatedImageToFile
 import org.fossify.gallery.extensions.setAs
@@ -81,7 +90,9 @@ import org.fossify.gallery.extensions.tryCopyMoveFilesTo
 import org.fossify.gallery.extensions.updateDBMediaPath
 import org.fossify.gallery.extensions.updateFavorite
 import org.fossify.gallery.extensions.updateFavoritePaths
+import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.PATH
+import org.fossify.gallery.helpers.PROTECTION_PASSWORD
 import org.fossify.gallery.helpers.RECYCLE_BIN
 import org.fossify.gallery.helpers.ROUNDED_CORNERS_BIG
 import org.fossify.gallery.helpers.ROUNDED_CORNERS_NONE
@@ -188,7 +199,7 @@ class MediaAdapter(
 
         val isOneItemSelected = isOneItemSelected()
         val selectedPaths = selectedItems.map { it.path } as ArrayList<String>
-        val isInRecycleBin = selectedItems.firstOrNull()?.getIsInRecycleBin() == true
+        val isInRecycleBin = selectedItems.firstOrNull()?.getIsInRecycleBin() == true || CryptoManager.isVaultRecycleBinPath(activity, path)
         menu.apply {
             findItem(R.id.cab_rename).isVisible = !isInRecycleBin
             findItem(R.id.cab_add_to_favorites).isVisible = !isInRecycleBin
@@ -200,11 +211,29 @@ class MediaAdapter(
             findItem(R.id.cab_set_as).isVisible = isOneItemSelected
             findItem(R.id.cab_resize).isVisible = canResize(selectedItems)
             findItem(R.id.cab_confirm_selection).isVisible = isAGetIntent && allowMultiplePicks && selectedKeys.isNotEmpty()
-            findItem(R.id.cab_restore_recycle_bin_files).isVisible = selectedPaths.all { it.startsWith(activity.recycleBinPath) }
+            findItem(R.id.cab_restore_recycle_bin_files).isVisible = selectedPaths.all { it.startsWith(activity.recycleBinPath) || CryptoManager.isVaultRecycleBinPath(activity, it) }
             findItem(R.id.cab_create_shortcut).isVisible = isOneItemSelected
 
             checkHideBtnVisibility(this, selectedItems)
             checkFavoriteBtnVisibility(this, selectedItems)
+
+            // Inside the encrypted vault only management actions are allowed.
+            // Exposure-type actions (share, reveal, edit, wallpaper...) are removed.
+            val isVaultSelection = selectedItems.any { CryptoManager.isVaultMediaPath(activity, it.path) }
+            if (isVaultSelection) {
+                findItem(R.id.cab_share).isVisible = false
+                findItem(R.id.cab_rotate).isVisible = false
+                findItem(R.id.cab_hide).isVisible = false
+                findItem(R.id.cab_unhide).isVisible = false
+                findItem(R.id.cab_create_shortcut).isVisible = false
+                findItem(R.id.cab_open_with).isVisible = false
+                findItem(R.id.cab_set_as).isVisible = false
+                findItem(R.id.cab_resize).isVisible = false
+                findItem(R.id.cab_edit).isVisible = false
+                findItem(R.id.cab_add_to_favorites).isVisible = false
+                findItem(R.id.cab_remove_from_favorites).isVisible = false
+                findItem(R.id.cab_fix_date_taken).isVisible = false
+            }
         }
     }
 
@@ -369,13 +398,196 @@ class MediaAdapter(
     }
 
     private fun toggleFileVisibility(hide: Boolean) {
-        ensureBackgroundThread {
-            getSelectedItems().forEach {
-                activity.toggleFileVisibility(it.path, hide)
+        if (isRPlus() && !isExternalStorageManager()) {
+            GrantAllFilesDialog(activity)
+            return
+        }
+
+        if (hide) {
+            if (!config.isHiddenPasswordProtectionOn && !CryptoManager.hasExistingVault(activity)) {
+                VaultSecurityDialog(activity, "", SHOW_ALL_TABS, minimalist = false) { _, _, success ->
+                    if (success) {
+                        toggleFileVisibility(true)
+                    }
+                }
+                return
             }
-            activity.runOnUiThread {
-                listener?.refreshItems()
+
+            if (!CryptoManager.isVaultUnlocked) {
+                val initialType = CryptoManager.getVaultProtectionType(activity)
+                    ?: if (config.hiddenProtectionType == PROTECTION_PASSWORD) {
+                        PROTECTION_PASSWORD
+                    } else {
+                        PROTECTION_PIN
+                    }
+                VaultSecurityDialog(
+                    activity = activity,
+                    requiredHash = config.hiddenPasswordHash,
+                    showTabIndex = initialType,
+                    minimalist = true
+                ) { _, type, success ->
+                    if (success) {
+                        config.hiddenProtectionType = type
+                        toggleFileVisibility(true)
+                    }
+                }
+                return
+            }
+
+            val selectedMedia = getSelectedItems().filter { !it.isHidden() && !CryptoManager.isEncryptedFile(it.path) }
+            if (selectedMedia.isEmpty()) {
                 finishActMode()
+                return
+            }
+
+            PickVaultAlbumDialog(activity) { targetDir, albumName ->
+                val totalFilesCount = selectedMedia.size
+                val progressDialog = CryptoProgressDialog(activity, totalFilesCount, R.string.encrypting_files)
+
+                ensureBackgroundThread {
+                    var processedCount = 0
+                    var allSuccess = true
+                    for (medium in selectedMedia) {
+                        val srcFile = File(medium.path)
+                        if (!srcFile.exists()) continue
+
+                        val encFile = CryptoManager.encryptFileToDirectory(
+                            context = activity,
+                            sourceFile = srcFile,
+                            targetDir = targetDir,
+                            wipeSource = true,
+                            clearCachesNow = false
+                        )
+
+                        if (encFile != null && encFile.exists() && encFile.length() > 0L) {
+                            processedCount++
+                        } else {
+                            allSuccess = false
+                        }
+
+                        activity.runOnUiThread {
+                            progressDialog.updateProgress(processedCount, totalFilesCount)
+                        }
+                    }
+
+                    CryptoManager.clearAppImageCaches(activity)
+
+                    activity.runOnUiThread {
+                        try {
+                            progressDialog.dismiss()
+                        } catch (_: Exception) {}
+
+                        if (allSuccess) {
+                            val msg = if (totalFilesCount == 1) {
+                                activity.getString(R.string.file_hidden_to_album, albumName)
+                            } else {
+                                activity.getString(R.string.files_hidden_to_album, totalFilesCount, albumName)
+                            }
+                            activity.toast(msg)
+                        } else if (processedCount > 0) {
+                            activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
+                        } else {
+                            activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
+                        }
+                        finishActMode()
+                        listener?.refreshItems()
+                    }
+                }
+            }
+        } else {
+            // UNHIDE (DECRYPT) FILES
+            if (!CryptoManager.isVaultUnlocked) {
+                val initialType = CryptoManager.getVaultProtectionType(activity)
+                    ?: if (config.hiddenProtectionType == PROTECTION_PASSWORD) {
+                        PROTECTION_PASSWORD
+                    } else {
+                        PROTECTION_PIN
+                    }
+                VaultSecurityDialog(
+                    activity = activity,
+                    requiredHash = config.hiddenPasswordHash,
+                    showTabIndex = initialType,
+                    minimalist = true
+                ) { _, type, success ->
+                    if (success) {
+                        config.hiddenProtectionType = type
+                        toggleFileVisibility(false)
+                    }
+                }
+                return
+            }
+
+            val selectedMedia = getSelectedItems().filter { it.isHidden() || CryptoManager.isEncryptedFile(it.path) }
+            if (selectedMedia.isEmpty()) {
+                finishActMode()
+                return
+            }
+
+            val totalFilesCount = selectedMedia.size
+            val progressDialog = CryptoProgressDialog(activity, totalFilesCount, R.string.decrypting_files)
+
+            ensureBackgroundThread {
+                var processedCount = 0
+                var allSuccess = true
+                for (medium in selectedMedia) {
+                    val encFile = File(medium.path)
+                    if (!encFile.exists()) continue
+
+                    val targetDir = if (CryptoManager.isEncryptedFolderPath(activity, encFile.parent ?: "")) {
+                        val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                        val originalFolderName = CryptoManager.getDecryptedFolderName(encFile.parentFile ?: File("")) ?: "Restored"
+                        File(picturesDir, originalFolderName).apply { if (!exists()) mkdirs() }
+                    } else {
+                        encFile.parentFile ?: File(medium.parentPath)
+                    }
+
+                    val decFile = if (CryptoManager.isEncryptedFile(encFile.name)) {
+                        CryptoManager.decryptFileToDirectory(
+                            context = activity,
+                            encryptedFile = encFile,
+                            targetDir = targetDir,
+                            deleteEncryptedSource = true
+                        )
+                    } else if (encFile.name.startsWith('.')) {
+                        val newName = encFile.name.substring(1)
+                        val target = File(targetDir, newName)
+                        if (encFile.renameTo(target)) {
+                            activity.updateDBMediaPath(encFile.absolutePath, target.absolutePath)
+                            activity.rescanPaths(arrayListOf(target.absolutePath))
+                            target
+                        } else null
+                    } else {
+                        null
+                    }
+
+                    if (decFile != null && decFile.exists()) {
+                        processedCount++
+                    } else {
+                        allSuccess = false
+                    }
+
+                    activity.runOnUiThread {
+                        progressDialog.updateProgress(processedCount, totalFilesCount)
+                    }
+                }
+
+                CryptoManager.clearAppImageCaches(activity)
+
+                activity.runOnUiThread {
+                    try {
+                        progressDialog.dismiss()
+                    } catch (_: Exception) {}
+
+                    if (allSuccess) {
+                        activity.toast(if (totalFilesCount == 1) R.string.file_decrypted_successfully else R.string.files_decrypted_successfully)
+                    } else if (processedCount > 0) {
+                        activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
+                    } else {
+                        activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
+                    }
+                    finishActMode()
+                    listener?.refreshItems()
+                }
             }
         }
     }
@@ -418,9 +630,19 @@ class MediaAdapter(
     }
 
     private fun doRestoreFiles(paths: ArrayList<String>) {
-        activity.restoreRecycleBinPaths(paths) {
-            listener?.refreshItems()
-            finishActMode()
+        if (paths.all { CryptoManager.isVaultRecycleBinPath(activity, it) }) {
+            ensureBackgroundThread {
+                CryptoManager.restoreVaultRecycleBinFiles(activity, paths)
+                activity.runOnUiThread {
+                    listener?.refreshItems()
+                    finishActMode()
+                }
+            }
+        } else {
+            activity.restoreRecycleBinPaths(paths) {
+                listener?.refreshItems()
+                finishActMode()
+            }
         }
     }
 
@@ -590,7 +812,7 @@ class MediaAdapter(
             "$deleteItemsString ($fileSize)"
         }
 
-        val isRecycleBin = firstPath.startsWith(activity.recycleBinPath)
+        val isRecycleBin = firstPath.startsWith(activity.recycleBinPath) || CryptoManager.isVaultRecycleBinPath(activity, firstPath) || CryptoManager.isVaultRecycleBinPath(activity, path)
         val baseString =
             if (config.useRecycleBin && !config.tempSkipRecycleBin && !isRecycleBin) org.fossify.commons.R.string.move_to_recycle_bin_confirmation else org.fossify.commons.R.string.deletion_confirmation
         val question = String.format(resources.getString(baseString), itemsAndSize)
@@ -614,6 +836,26 @@ class MediaAdapter(
 
         val selectedItems = getSelectedItems()
         val selectedPaths = selectedItems.map { it.path } as ArrayList<String>
+
+        val allEncrypted = selectedPaths.all { CryptoManager.isEncryptedFile(it) || CryptoManager.isVaultRecycleBinPath(activity, it) }
+        if (allEncrypted) {
+            val fileDirItems = ArrayList<FileDirItem>(selectedKeys.size)
+            val removeMedia = ArrayList<Medium>(selectedKeys.size)
+            val positions = getSelectedItemPositions()
+
+            selectedItems.forEach { medium ->
+                fileDirItems.add(medium.toFileDirItem())
+                removeMedia.add(medium)
+            }
+
+            media.removeAll(removeMedia)
+            listener?.tryDeleteFiles(fileDirItems, skipRecycleBin)
+            listener?.updateMediaGridDecoration(media)
+            removeSelectedItems(positions)
+            currentMediaHash = media.hashCode()
+            return
+        }
+
         val SAFPath = selectedPaths.firstOrNull { activity.needsStupidWritePermissions(it) } ?: getFirstSelectedItemPath() ?: return
         activity.handleSAFDialog(SAFPath) {
             if (!it) {

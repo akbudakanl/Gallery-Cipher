@@ -42,10 +42,13 @@ import org.fossify.gallery.activities.SimpleActivity
 import org.fossify.gallery.activities.VideoPlayerActivity
 import org.fossify.gallery.dialogs.AllFilesPermissionDialog
 import org.fossify.gallery.dialogs.PickDirectoryDialog
+import org.fossify.gallery.dialogs.PickVaultAlbumDialog
 import org.fossify.gallery.dialogs.ResizeMultipleImagesDialog
 import org.fossify.gallery.dialogs.ResizeWithPathDialog
+import org.fossify.gallery.dialogs.VaultSecurityDialog
 import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.DIRECTORY
+import org.fossify.gallery.helpers.PROTECTION_PASSWORD
 import org.fossify.gallery.helpers.RECYCLE_BIN
 import org.fossify.gallery.helpers.TEMP_FOLDER_NAME
 import org.fossify.gallery.models.DateTaken
@@ -287,65 +290,137 @@ fun BaseSimpleActivity.removeNoMedia(path: String, callback: (() -> Unit)? = nul
 }
 
 fun BaseSimpleActivity.toggleFileVisibility(oldPath: String, hide: Boolean, callback: ((newPath: String) -> Unit)? = null) {
-    val path = oldPath.getParentPath()
-    var filename = oldPath.getFilenameFromPath()
-
-    if (hide && config.isHiddenPasswordProtectionOn) {
-        if (CryptoManager.isEncryptedFile(oldPath)) {
-            callback?.invoke(oldPath)
-            return
-        }
-        ensureBackgroundThread {
-            val encryptedFile = CryptoManager.encryptFileToDirectory(
-                context = this,
-                sourceFile = File(oldPath),
-                targetDir = File(path),
-                wipeSource = true,
-                clearCachesNow = true
-            )
-            val resultPath = encryptedFile?.absolutePath ?: oldPath
-            runOnUiThread {
-                callback?.invoke(resultPath)
-            }
-        }
-        return
-    }
-
-    if (!hide && CryptoManager.isEncryptedFile(oldPath)) {
-        ensureBackgroundThread {
-            val decryptedFile = CryptoManager.decryptFileToDirectory(
-                context = this,
-                encryptedFile = File(oldPath),
-                targetDir = File(path),
-                deleteEncryptedSource = true
-            )
-            val resultPath = decryptedFile?.absolutePath ?: oldPath
-            runOnUiThread {
-                callback?.invoke(resultPath)
-            }
-        }
-        return
-    }
-
-    if ((hide && filename.startsWith('.')) || (!hide && !filename.startsWith('.'))) {
+    val srcFile = File(oldPath)
+    if (!srcFile.exists()) {
         callback?.invoke(oldPath)
         return
     }
 
-    filename = if (hide) {
-        ".${filename.trimStart('.')}"
-    } else {
-        filename.substring(1, filename.length)
-    }
-
-    val newPath = "$path/$filename"
-    renameFile(oldPath, newPath, false) { success, useAndroid30Way ->
-        runOnUiThread {
-            callback?.invoke(newPath)
+    if (hide) {
+        if (CryptoManager.isEncryptedFile(oldPath)) {
+            callback?.invoke(oldPath)
+            return
         }
 
-        ensureBackgroundThread {
-            updateDBMediaPath(oldPath, newPath)
+        if (!config.isHiddenPasswordProtectionOn && !CryptoManager.hasExistingVault(this)) {
+            VaultSecurityDialog(this, "", SHOW_ALL_TABS, minimalist = false) { _, _, success ->
+                if (success) {
+                    toggleFileVisibility(oldPath, true, callback)
+                } else {
+                    callback?.invoke(oldPath)
+                }
+            }
+            return
+        }
+
+        if (!CryptoManager.isVaultUnlocked) {
+            val initialType = CryptoManager.getVaultProtectionType(this)
+                ?: if (config.hiddenProtectionType == PROTECTION_PASSWORD) {
+                    PROTECTION_PASSWORD
+                } else {
+                    PROTECTION_PIN
+                }
+            VaultSecurityDialog(
+                activity = this,
+                requiredHash = config.hiddenPasswordHash,
+                showTabIndex = initialType,
+                minimalist = true
+            ) { _, type, success ->
+                if (success) {
+                    config.hiddenProtectionType = type
+                    toggleFileVisibility(oldPath, true, callback)
+                } else {
+                    callback?.invoke(oldPath)
+                }
+            }
+            return
+        }
+
+        PickVaultAlbumDialog(this) { targetDir, albumName ->
+            ensureBackgroundThread {
+                val encryptedFile = CryptoManager.encryptFileToDirectory(
+                    context = this,
+                    sourceFile = srcFile,
+                    targetDir = targetDir,
+                    wipeSource = true,
+                    clearCachesNow = true
+                )
+                val resultPath = encryptedFile?.absolutePath ?: oldPath
+                runOnUiThread {
+                    if (encryptedFile != null && encryptedFile.exists()) {
+                        toast(getString(R.string.file_hidden_to_album, albumName))
+                    } else {
+                        toast(org.fossify.commons.R.string.unknown_error_occurred)
+                    }
+                    callback?.invoke(resultPath)
+                }
+            }
+        }
+    } else {
+        if (CryptoManager.isEncryptedFile(oldPath)) {
+            if (!CryptoManager.isVaultUnlocked) {
+                val initialType = CryptoManager.getVaultProtectionType(this)
+                    ?: if (config.hiddenProtectionType == PROTECTION_PASSWORD) {
+                        PROTECTION_PASSWORD
+                    } else {
+                        PROTECTION_PIN
+                    }
+                VaultSecurityDialog(
+                    activity = this,
+                    requiredHash = config.hiddenPasswordHash,
+                    showTabIndex = initialType,
+                    minimalist = true
+                ) { _, type, success ->
+                    if (success) {
+                        config.hiddenProtectionType = type
+                        toggleFileVisibility(oldPath, false, callback)
+                    } else {
+                        callback?.invoke(oldPath)
+                    }
+                }
+                return
+            }
+
+            val targetDir = if (CryptoManager.isEncryptedFolderPath(this, srcFile.parent ?: "")) {
+                val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                val originalFolderName = CryptoManager.getDecryptedFolderName(srcFile.parentFile ?: File("")) ?: "Restored"
+                File(picturesDir, originalFolderName).apply { if (!exists()) mkdirs() }
+            } else {
+                srcFile.parentFile ?: File(oldPath.getParentPath())
+            }
+
+            ensureBackgroundThread {
+                val decryptedFile = CryptoManager.decryptFileToDirectory(
+                    context = this,
+                    encryptedFile = srcFile,
+                    targetDir = targetDir,
+                    deleteEncryptedSource = true
+                )
+                val resultPath = decryptedFile?.absolutePath ?: oldPath
+                CryptoManager.clearAppImageCaches(this)
+                runOnUiThread {
+                    if (decryptedFile != null && decryptedFile.exists()) {
+                        toast(R.string.file_decrypted_successfully)
+                    } else {
+                        toast(org.fossify.commons.R.string.unknown_error_occurred)
+                    }
+                    callback?.invoke(resultPath)
+                }
+            }
+        } else if (srcFile.name.startsWith('.')) {
+            val path = oldPath.getParentPath()
+            val newFilename = srcFile.name.substring(1)
+            val newPath = "$path/$newFilename"
+            renameFile(oldPath, newPath, false) { success, useAndroid30Way ->
+                runOnUiThread {
+                    callback?.invoke(newPath)
+                }
+                ensureBackgroundThread {
+                    updateDBMediaPath(oldPath, newPath)
+                }
+            }
+        } else {
+            callback?.invoke(oldPath)
         }
     }
 }

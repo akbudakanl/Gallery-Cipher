@@ -15,12 +15,14 @@ import org.fossify.commons.extensions.beInvisible
 import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.getAlertDialogBuilder
 import org.fossify.commons.extensions.getDefaultCopyDestinationPath
+import org.fossify.commons.extensions.getFilenameFromPath
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.handleHiddenFolderPasswordProtection
 import org.fossify.commons.extensions.handleLockedFolderOpening
 import org.fossify.commons.extensions.hideKeyboard
 import org.fossify.commons.extensions.isGone
 import org.fossify.commons.extensions.isInDownloadDir
+import org.fossify.commons.extensions.isMediaFile
 import org.fossify.commons.extensions.isRestrictedWithSAFSdk30
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.extensions.setupDialogStuff
@@ -32,7 +34,12 @@ import org.fossify.gallery.R
 import org.fossify.gallery.adapters.DirectoryAdapter
 import org.fossify.gallery.databinding.DialogDirectoryPickerBinding
 import org.fossify.gallery.extensions.*
+import org.fossify.gallery.helpers.CryptoManager
+import org.fossify.gallery.helpers.LOCATION_INTERNAL
+import org.fossify.gallery.helpers.TYPE_IMAGES
+import org.fossify.gallery.helpers.TYPE_VIDEOS
 import org.fossify.gallery.models.Directory
+import java.io.File
 
 class PickDirectoryDialog(
     val activity: BaseSimpleActivity,
@@ -181,16 +188,69 @@ class PickDirectoryDialog(
             forceShowExcluded = forceShowHiddenAndExcluded,
             includeVirtualAlbums = includeVirtual
         ) {
-            if (it.isNotEmpty()) {
-                it.forEach {
-                    it.subfoldersMediaCount = it.mediaCnt
+            val allDirs = ArrayList(it)
+            val canShowHidden = activity.config.shouldShowHidden && (!activity.config.isHiddenPasswordProtectionOn || CryptoManager.isVaultUnlocked)
+            if (canShowHidden) {
+                // Add physical encrypted albums
+                val encryptedAlbums = CryptoManager.getHiddenPhysicalAlbums(activity)
+                encryptedAlbums.forEach { album ->
+                    if (!CryptoManager.isVaultRecycleBin(album.folder) && !allDirs.any { d -> d.path.equals(album.fullPath, true) }) {
+                        val dir = Directory(
+                            id = null,
+                            path = album.fullPath,
+                            tmb = "",
+                            name = album.name,
+                            mediaCnt = album.itemCount,
+                            modified = album.folder.lastModified(),
+                            taken = album.folder.lastModified(),
+                            size = 0L,
+                            location = LOCATION_INTERNAL,
+                            types = TYPE_IMAGES or TYPE_VIDEOS,
+                            sortValue = ""
+                        )
+                        allDirs.add(dir)
+                    }
+                }
+
+                // Add unencrypted hidden folders (e.g. .nomedia folders)
+                val noMediaFolders = activity.getNoMediaFoldersSync()
+                noMediaFolders.forEach { folderPath ->
+                    if (!allDirs.any { d -> d.path.equals(folderPath, true) } && !CryptoManager.isEncryptedFolderPath(activity, folderPath)) {
+                        val folder = File(folderPath)
+                        if (folder.exists() && folder.isDirectory) {
+                            val count = folder.listFiles()?.count { f -> f.isFile && f.path.isMediaFile() } ?: 0
+                            val dir = Directory(
+                                id = null,
+                                path = folderPath,
+                                tmb = "",
+                                name = folderPath.getFilenameFromPath(),
+                                mediaCnt = count,
+                                modified = folder.lastModified(),
+                                taken = folder.lastModified(),
+                                size = 0L,
+                                location = LOCATION_INTERNAL,
+                                types = TYPE_IMAGES or TYPE_VIDEOS,
+                                sortValue = ""
+                            )
+                            allDirs.add(dir)
+                        }
+                    }
+                }
+            }
+
+            // Exclude recycle bins from destination picker
+            allDirs.removeAll { d -> d.isRecycleBin() || CryptoManager.isVaultRecycleBinPath(activity, d.path) }
+
+            if (allDirs.isNotEmpty()) {
+                allDirs.forEach { d ->
+                    d.subfoldersMediaCount = d.mediaCnt
                 }
 
                 allDirectories.clear()
                 val dirs = if (isPickingCopyMoveDestination && isCopyOperation) {
-                    it
+                    allDirs
                 } else {
-                    activity.addTempFolderIfNeeded(it)
+                    activity.addTempFolderIfNeeded(allDirs)
                 }
                 gotDirectories(dirs)
             }
@@ -314,7 +374,7 @@ class PickDirectoryDialog(
                         if (isPickingCopyMoveDestination && path.trimEnd('/') == sourcePath) {
                             activity.toast(org.fossify.commons.R.string.source_and_destination_same)
                             return@DirectoryAdapter
-                        } else if (isPickingCopyMoveDestination && activity.isRestrictedWithSAFSdk30(path) && !activity.isInDownloadDir(path)) {
+                        } else if (isPickingCopyMoveDestination && !CryptoManager.isEncryptedFolderPath(activity, path) && activity.isRestrictedWithSAFSdk30(path) && !activity.isInDownloadDir(path)) {
                             activity.toast(org.fossify.commons.R.string.system_folder_copy_restriction, Toast.LENGTH_LONG)
                             return@DirectoryAdapter
                         } else {
