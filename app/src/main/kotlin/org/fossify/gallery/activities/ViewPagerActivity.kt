@@ -98,6 +98,8 @@ import org.fossify.gallery.adapters.MyPagerAdapter
 import org.fossify.gallery.asynctasks.GetMediaAsynctask
 import org.fossify.gallery.databinding.ActivityMediumBinding
 import org.fossify.gallery.dialogs.DeleteWithRememberDialog
+import org.fossify.gallery.dialogs.EncryptedPropertiesDialog
+import org.fossify.gallery.dialogs.RenameEncryptedItemDialog
 import org.fossify.gallery.dialogs.SaveAsDialog
 import org.fossify.gallery.dialogs.SlideshowDialog
 import org.fossify.gallery.extensions.canAccessHiddenVirtualAlbums
@@ -281,7 +283,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         setupOrientation()
         refreshMenuItems()
 
-        val filename = getCurrentMedium()?.name ?: mPath.getFilenameFromPath()
+        val filename = getCurrentMedium()?.name?.ifEmpty { null } ?: CryptoManager.getDisplayName(mPath)
         binding.mediumViewerToolbar.title = filename
     }
 
@@ -554,7 +556,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
             isShowingRecycleBin -> RECYCLE_BIN
             else -> mPath.getParentPath()
         }
-        binding.mediumViewerToolbar.title = mPath.getFilenameFromPath()
+        binding.mediumViewerToolbar.title = CryptoManager.getDisplayName(mPath)
 
         binding.viewPager.onGlobalLayout {
             if (!isDestroyed) {
@@ -567,10 +569,24 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
 
         // show the selected image asap, while loading the rest in the background to allow swiping between them. Might be needed at third party intents
         if (mMediaFiles.isEmpty() && mPath.isNotEmpty() && mDirectory != FAVORITES && !mDirectory.isVirtualAlbumPath()) {
-            val filename = mPath.getFilenameFromPath()
+            val encMeta = if (CryptoManager.isEncryptedFile(mPath)) CryptoManager.readMetadata(File(mPath)) else null
+            val filename = encMeta?.originalName ?: mPath.getFilenameFromPath()
             val folder = mPath.getParentPath()
-            val type = getTypeFromPath(mPath)
-            val medium = Medium(null, filename, mPath, folder, 0, 0, 0, type, 0, false, 0L, 0L)
+            val type = encMeta?.mediaType ?: getTypeFromPath(mPath)
+            val medium = Medium(
+                null,
+                filename,
+                mPath,
+                folder,
+                encMeta?.lastModified ?: 0,
+                encMeta?.dateTaken ?: 0,
+                encMeta?.originalSize ?: 0,
+                type,
+                encMeta?.videoDuration ?: 0,
+                false,
+                0L,
+                0L
+            )
             mMediaFiles.add(medium)
             gotMedia(mMediaFiles as ArrayList<ThumbnailItem>, refetchViewPagerPosition = true)
         }
@@ -1024,7 +1040,12 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
 
     private fun showProperties() {
         if (getCurrentMedium() != null) {
-            PropertiesDialog(this, getCurrentPath(), false)
+            val currentPath = getCurrentPath()
+            if (CryptoManager.isEncryptedFile(currentPath)) {
+                EncryptedPropertiesDialog(this, currentPath)
+            } else {
+                PropertiesDialog(this, currentPath, false)
+            }
         }
     }
 
@@ -1245,7 +1266,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
                         dataSource: DataSource,
                         isFirstResource: Boolean,
                     ): Boolean {
-                        printHelper.printBitmap(path.getFilenameFromPath(), bitmap)
+                        printHelper.printBitmap(getCurrentMedium()?.name?.ifEmpty { null } ?: CryptoManager.getDisplayName(path), bitmap)
                         return false
                     }
                 }).submit(requestedWidth, requestedHeight)
@@ -1307,7 +1328,8 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     private fun askConfirmDelete() {
         val fileDirItem = getCurrentMedium()?.toFileDirItem() ?: return
         val size = fileDirItem.getProperSize(this, countHidden = true).formatSize()
-        val filename = "\"${getCurrentPath().getFilenameFromPath()}\""
+        val displayName = getCurrentMedium()?.name?.ifEmpty { null } ?: CryptoManager.getDisplayName(getCurrentPath())
+        val filename = "\"$displayName\""
         val filenameAndSize = "$filename ($size)"
         val isInRecycleBin = getCurrentMedium()!!.getIsInRecycleBin() || CryptoManager.isVaultRecycleBinPath(this, getCurrentPath()) || CryptoManager.isVaultRecycleBinPath(this, mDirectory)
 
@@ -1563,6 +1585,16 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     private fun renameFile() {
         val oldPath = getCurrentPath()
 
+        if (CryptoManager.isEncryptedFile(oldPath)) {
+            RenameEncryptedItemDialog(this, oldPath) { newName ->
+                getCurrentMedium()?.name = newName
+                getCurrentMedia().getOrNull(mPos)?.name = newName
+                mMediaFiles.getOrNull(mPos)?.name = newName
+                updateActionbarTitle()
+            }
+            return
+        }
+
         val isSDOrOtgRootFolder = isAStorageRootFolder(oldPath.getParentPath()) && !oldPath.startsWith(internalStoragePath)
         if (isRPlus() && isSDOrOtgRootFolder && !isExternalStorageManager()) {
             toast(org.fossify.commons.R.string.rename_in_sd_card_system_restriction, Toast.LENGTH_LONG)
@@ -1775,7 +1807,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         runOnUiThread {
             val medium = getCurrentMedium()
             if (medium != null) {
-                binding.mediumViewerToolbar.title = medium.path.getFilenameFromPath()
+                binding.mediumViewerToolbar.title = medium.name.ifEmpty { CryptoManager.getDisplayName(medium.path) }
             }
         }
     }

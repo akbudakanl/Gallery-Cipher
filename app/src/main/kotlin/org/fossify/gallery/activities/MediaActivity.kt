@@ -85,6 +85,7 @@ import org.fossify.gallery.extensions.isHiddenVirtualAlbumPath
 import org.fossify.gallery.extensions.isPathHiddenOrEncrypted
 import org.fossify.gallery.extensions.isVirtualAlbumPath
 import org.fossify.gallery.extensions.getCachedMedia
+import org.fossify.gallery.extensions.getFolderNameFromPath
 import org.fossify.gallery.extensions.getHumanizedFilename
 import org.fossify.gallery.extensions.isDownloadsFolder
 import org.fossify.gallery.extensions.launchAbout
@@ -520,6 +521,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
                     mPath == FAVORITES -> getString(org.fossify.commons.R.string.favorites)
                     mPath == RECYCLE_BIN || CryptoManager.isVaultRecycleBinPath(this, mPath) -> getString(org.fossify.commons.R.string.recycle_bin)
                     mPath == config.OTGPath -> getString(org.fossify.commons.R.string.usb)
+                    CryptoManager.isEncryptedFolderPath(this, mPath) -> getFolderNameFromPath(mPath)
                     else -> getHumanizedFilename(mPath)
                 }
 

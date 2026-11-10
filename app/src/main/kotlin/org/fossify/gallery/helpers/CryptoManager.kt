@@ -1337,13 +1337,43 @@ object CryptoManager {
         }
     }
 
+    private fun isDefaultAlbumRawName(raw: String?): Boolean {
+        return raw == VAULT_DEFAULT_ALBUM_NAME ||
+            raw == "Varsayılan Gizli Albüm" ||
+            raw == "Default Hidden Album" ||
+            raw == DEFAULT_SECRET_ALBUM_NAME
+    }
+
+    fun isDefaultHiddenAlbum(folder: File): Boolean {
+        return isDefaultAlbumRawName(getDecryptedRawFolderName(folder))
+    }
+
+    fun isDefaultHiddenAlbumPath(path: String): Boolean {
+        if (path.isEmpty()) return false
+        val folder = File(path.trimEnd('/'))
+        return folder.exists() && folder.isDirectory && isDefaultHiddenAlbum(folder)
+    }
+
+    fun renameEncryptedFolder(context: Context, folder: File, newName: String): Boolean {
+        val trimmed = newName.trim()
+        if (trimmed.isEmpty() || !folder.exists() || !folder.isDirectory) return false
+        if (!isEncryptedFolder(folder) || isVaultRecycleBin(folder) || isDefaultHiddenAlbum(folder)) return false
+        if (unlockedMasterKey == null && context.config.vaultPublicKey.isEmpty()) return false
+        return try {
+            writeEncryptedFolderMeta(context, folder, trimmed)
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     fun getDecryptedFolderName(folder: File, context: Context? = null): String? {
         val raw = getDecryptedRawFolderName(folder) ?: return null
         if (raw == VAULT_RECYCLE_BIN_NAME) {
             return context?.getString(org.fossify.commons.R.string.recycle_bin) ?: "Recycle Bin"
         }
-        if (raw == VAULT_DEFAULT_ALBUM_NAME || raw == "Varsayılan Gizli Albüm" || raw == "Default Hidden Album") {
-            return context?.getString(R.string.default_hidden_album) ?: "Varsayılan Gizli Albüm"
+        if (isDefaultAlbumRawName(raw)) {
+            return DEFAULT_SECRET_ALBUM_NAME
         }
         return raw
     }
@@ -1353,12 +1383,10 @@ object CryptoManager {
             return null
         }
         val vaultRoot = getOrCreateVaultRoot(context)
-        val defaultName = context.getString(R.string.default_hidden_album)
 
         val subfolders = vaultRoot.listFiles()?.filter { it.isDirectory && !it.name.startsWith(".") } ?: emptyList()
         for (sub in subfolders) {
-            val raw = getDecryptedRawFolderName(sub)
-            if (raw == VAULT_DEFAULT_ALBUM_NAME || raw == "Varsayılan Gizli Albüm" || raw == "Default Hidden Album" || raw == defaultName) {
+            if (isDefaultHiddenAlbum(sub)) {
                 return sub
             }
         }
@@ -1371,13 +1399,12 @@ object CryptoManager {
         val defaultAlbum = getOrCreateDefaultHiddenAlbum(context)
         val defaultAlbumPath = defaultAlbum?.absolutePath
         val vaultRoot = findVaultRoot(context) ?: return emptyList()
-        val defaultName = context.getString(R.string.default_hidden_album)
 
         if (defaultAlbum != null && defaultAlbum.exists()) {
             val count = defaultAlbum.listFiles()?.count { isEncryptedFile(it.name) } ?: 0
             albums.add(
                 VaultPhysicalAlbum(
-                    name = defaultName,
+                    name = DEFAULT_SECRET_ALBUM_NAME,
                     fullPath = defaultAlbum.absolutePath,
                     folder = defaultAlbum,
                     itemCount = count
@@ -2162,6 +2189,189 @@ object CryptoManager {
         } catch (e: Exception) {
             outFile.delete()
             null
+        }
+    }
+
+    fun getDisplayName(path: String): String {
+        if (isEncryptedFile(path)) {
+            readMetadata(File(path))?.originalName?.takeIf { it.isNotEmpty() }?.let { return it }
+        }
+        return path.getFilenameFromPath()
+    }
+
+    fun moveMetadataCacheEntry(oldPath: String, newPath: String) {
+        metadataCache.remove(oldPath)?.let { meta ->
+            metadataCache[newPath] = meta
+        }
+    }
+
+    /**
+     * Renames the encrypted display name stored inside a .bin file's AES-GCM header.
+     * The .bin filename on disk remains completely unrelated (random hex).
+     * Re-encrypts only the header and shifts the authenticated payload without re-encrypting media bytes.
+     */
+    fun renameEncryptedFile(encryptedFile: File, newOriginalName: String): Boolean {
+        if (!encryptedFile.exists() || !encryptedFile.isFile || !isEncryptedFile(encryptedFile.name)) return false
+        val trimmedName = newOriginalName.trim()
+        if (trimmedName.isEmpty()) return false
+        if (unlockedMasterKey == null) return false
+
+        val meta = readMetadata(encryptedFile) ?: return false
+        if (meta.originalName == trimmedName) return true
+
+        if (meta.isMacAuthenticated && !verifyFileIntegrity(encryptedFile)) {
+            return false
+        }
+
+        val parentDir = encryptedFile.parentFile ?: return false
+        val tempFile = File(parentDir, ".tmp_${randomHex(8)}$ENCRYPTED_BIN_EXT")
+        val backupFile = File(parentDir, ".bak_${randomHex(8)}$ENCRYPTED_BIN_EXT")
+
+        return try {
+            val magicBytes = ByteArray(8)
+            val version: Byte
+            var rsaWrappedKey: ByteArray? = null
+
+            RandomAccessFile(encryptedFile, "r").use { raf ->
+                raf.readFully(magicBytes)
+                version = raf.readByte()
+                if (version == VERSION_ASYMMETRIC || version == VERSION_ASYMMETRIC_AUTH) {
+                    val wrappedLen = raf.readInt()
+                    if (wrappedLen <= 0 || wrappedLen > 2048) return false
+                    rsaWrappedKey = ByteArray(wrappedLen).also { raf.readFully(it) }
+                }
+            }
+
+            val newExt = trimmedName.substringAfterLast('.', "")
+            val updatedMediaType = if (newExt.isNotEmpty() && (
+                    trimmedName.isImageFast() || trimmedName.isVideoFast() ||
+                        trimmedName.isGif() || trimmedName.isRawFast() || trimmedName.isSvg()
+                )
+            ) {
+                getMediaTypeForName(trimmedName)
+            } else {
+                meta.mediaType
+            }
+
+            val thumbBytes = readEmbeddedThumbnailBytes(encryptedFile) ?: meta.thumbnailBytes ?: ByteArray(0)
+            val headerPlainBytes = ByteArrayOutputStream().use { baos ->
+                DataOutputStream(baos).use { dos ->
+                    dos.writeUTF(trimmedName)
+                    dos.writeLong(meta.lastModified)
+                    dos.writeLong(meta.dateTaken)
+                    dos.writeLong(meta.originalSize)
+                    dos.writeInt(updatedMediaType)
+                    dos.writeInt(meta.videoDuration)
+                    dos.writeInt(thumbBytes.size)
+                    if (thumbBytes.isNotEmpty()) {
+                        dos.write(thumbBytes)
+                    }
+                }
+                baos.toByteArray()
+            }
+
+            val headerKey = if (meta.isMacAuthenticated) {
+                deriveSubkey(meta.fileKey, DOMAIN_HEADER_KEY)
+            } else {
+                meta.fileKey
+            }
+            val headerIv = ByteArray(GCM_IV_LENGTH).also { secureRandom.nextBytes(it) }
+            val headerCipher = Cipher.getInstance("AES/GCM/NoPadding")
+            headerCipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(headerKey, "AES"), GCMParameterSpec(GCM_TAG_BITS, headerIv))
+            val encryptedHeader = headerCipher.doFinal(headerPlainBytes)
+            if (meta.isMacAuthenticated) {
+                headerKey.fill(0)
+            }
+
+            val extraHeaderBytes = rsaWrappedKey?.let { 4 + it.size } ?: 0
+            val newPayloadOffset = (8 + 1 + extraHeaderBytes + GCM_IV_LENGTH + 4 + encryptedHeader.size + CTR_IV_LENGTH).toLong()
+
+            FileOutputStream(tempFile).use { fos ->
+                BufferedOutputStream(fos, 64 * 1024).use { bos ->
+                    DataOutputStream(bos).use { dos ->
+                        dos.write(magicBytes)
+                        dos.writeByte(version.toInt())
+                        val wrapped = rsaWrappedKey
+                        if (wrapped != null) {
+                            dos.writeInt(wrapped.size)
+                            dos.write(wrapped)
+                        }
+                        dos.write(headerIv)
+                        dos.writeInt(encryptedHeader.size)
+                        dos.write(encryptedHeader)
+                        dos.write(meta.contentIv)
+
+                        RandomAccessFile(encryptedFile, "r").use { raf ->
+                            raf.seek(meta.payloadOffset)
+                            val buffer = ByteArray(64 * 1024)
+                            if (version == VERSION_V5_AUTH) {
+                                val macKey = deriveSubkey(meta.fileKey, DOMAIN_CONTENT_MAC_KEY)
+                                val poly = Poly1305(AESEngine.newInstance())
+                                poly.init(ParametersWithIV(KeyParameter(macKey), meta.contentIv))
+                                macKey.fill(0)
+                                poly.update(headerIv, 0, headerIv.size)
+                                poly.update(encryptedHeader, 0, encryptedHeader.size)
+
+                                var remaining = meta.originalSize
+                                while (remaining > 0) {
+                                    val toRead = minOf(buffer.size.toLong(), remaining).toInt()
+                                    val read = raf.read(buffer, 0, toRead)
+                                    if (read == -1) throw EOFException("Unexpected EOF copying encrypted payload")
+                                    dos.write(buffer, 0, read)
+                                    poly.update(buffer, 0, read)
+                                    remaining -= read
+                                }
+                                val newTag = ByteArray(MAC_TAG_LENGTH)
+                                poly.doFinal(newTag, 0)
+                                dos.write(newTag)
+                            } else {
+                                var remaining = encryptedFile.length() - meta.payloadOffset
+                                while (remaining > 0) {
+                                    val toRead = minOf(buffer.size.toLong(), remaining).toInt()
+                                    val read = raf.read(buffer, 0, toRead)
+                                    if (read == -1) break
+                                    dos.write(buffer, 0, read)
+                                    remaining -= read
+                                }
+                            }
+                        }
+
+                        dos.flush()
+                        bos.flush()
+                        fos.fd.sync()
+                    }
+                }
+            }
+
+            if (!tempFile.renameTo(encryptedFile)) {
+                if (!encryptedFile.renameTo(backupFile)) {
+                    tempFile.delete()
+                    return false
+                }
+                if (!tempFile.renameTo(encryptedFile)) {
+                    backupFile.renameTo(encryptedFile)
+                    tempFile.delete()
+                    return false
+                }
+                backupFile.delete()
+            }
+
+            encryptedFile.setLastModified(meta.lastModified)
+            syncDir(parentDir)
+
+            metadataCache[encryptedFile.absolutePath] = meta.copy(
+                originalName = trimmedName,
+                mediaType = updatedMediaType,
+                payloadOffset = newPayloadOffset,
+                thumbnailBytes = if (thumbBytes.isNotEmpty()) thumbBytes else null
+            )
+            true
+        } catch (e: Exception) {
+            tempFile.delete()
+            if (!encryptedFile.exists() && backupFile.exists()) {
+                backupFile.renameTo(encryptedFile)
+            }
+            false
         }
     }
 

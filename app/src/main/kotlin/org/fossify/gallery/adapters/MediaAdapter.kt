@@ -60,7 +60,10 @@ import org.fossify.gallery.dialogs.DeleteWithRememberDialog
 import android.os.Environment
 import org.fossify.commons.helpers.PROTECTION_PIN
 import org.fossify.gallery.dialogs.CryptoProgressDialog
+import org.fossify.gallery.dialogs.EncryptedPropertiesDialog
 import org.fossify.gallery.dialogs.GrantAllFilesDialog
+import org.fossify.gallery.dialogs.RenameEncryptedItemDialog
+import org.fossify.gallery.dialogs.RenameEncryptedItemsDialog
 import org.fossify.gallery.dialogs.VaultSecurityDialog
 import org.fossify.gallery.extensions.getVirtualAlbumId
 import org.fossify.gallery.extensions.isVirtualAlbumPath
@@ -313,10 +316,18 @@ class MediaAdapter(
     private fun showProperties() {
         if (selectedKeys.size <= 1) {
             val path = getFirstSelectedItemPath() ?: return
-            PropertiesDialog(activity, path, config.shouldShowHidden)
+            if (CryptoManager.isEncryptedFile(path)) {
+                EncryptedPropertiesDialog(activity, path)
+            } else {
+                PropertiesDialog(activity, path, config.shouldShowHidden)
+            }
         } else {
             val paths = getSelectedPaths()
-            PropertiesDialog(activity, paths, config.shouldShowHidden)
+            if (paths.all { CryptoManager.isEncryptedFile(it) }) {
+                EncryptedPropertiesDialog(activity, paths)
+            } else {
+                PropertiesDialog(activity, paths, config.shouldShowHidden)
+            }
         }
     }
 
@@ -328,6 +339,15 @@ class MediaAdapter(
 
     private fun renameFile() {
         val firstPath = getFirstSelectedItemPath() ?: return
+
+        if (selectedKeys.size == 1 && CryptoManager.isEncryptedFile(firstPath)) {
+            RenameEncryptedItemDialog(activity, firstPath) { newName ->
+                getItemWithKey(selectedKeys.first())?.name = newName
+                listener?.refreshItems()
+                finishActMode()
+            }
+            return
+        }
 
         val isSDOrOtgRootFolder = activity.isAStorageRootFolder(firstPath.getParentPath()) && !firstPath.startsWith(activity.internalStoragePath)
         if (isRPlus() && isSDOrOtgRootFolder && !isExternalStorageManager()) {
@@ -348,9 +368,23 @@ class MediaAdapter(
                 }
             }
         } else {
-            RenameDialog(activity, getSelectedPaths(), true) {
-                listener?.refreshItems()
-                finishActMode()
+            val paths = getSelectedPaths()
+            val encPaths = ArrayList(paths.filter { CryptoManager.isEncryptedFile(it) })
+            if (encPaths.isNotEmpty() && encPaths.size == paths.size) {
+                RenameEncryptedItemsDialog(activity, encPaths) {
+                    listener?.refreshItems()
+                    finishActMode()
+                }
+            } else {
+                val plainPaths = ArrayList(paths.filter { !CryptoManager.isEncryptedFile(it) })
+                if (plainPaths.isEmpty()) {
+                    finishActMode()
+                    return
+                }
+                RenameDialog(activity, plainPaths, true) {
+                    listener?.refreshItems()
+                    finishActMode()
+                }
             }
         }
     }
@@ -796,12 +830,14 @@ class MediaAdapter(
     private fun askConfirmDelete() {
         val itemsCnt = selectedKeys.size
         val selectedMedia = getSelectedItems()
-        val firstPath = selectedMedia.first().path
-        val fileDirItem = selectedMedia.first().toFileDirItem()
+        val firstMedium = selectedMedia.first()
+        val firstPath = firstMedium.path
+        val fileDirItem = firstMedium.toFileDirItem()
         val size = fileDirItem.getProperSize(activity, countHidden = true).formatSize()
         val itemsAndSize = if (itemsCnt == 1) {
-            fileDirItem.mediaStoreId = selectedMedia.first().mediaStoreId
-            "\"${firstPath.getFilenameFromPath()}\" ($size)"
+            fileDirItem.mediaStoreId = firstMedium.mediaStoreId
+            val displayName = firstMedium.name.ifEmpty { CryptoManager.getDisplayName(firstPath) }
+            "\"$displayName\" ($size)"
         } else {
             val fileDirItems = ArrayList<FileDirItem>(selectedMedia.size)
             selectedMedia.forEach { medium ->

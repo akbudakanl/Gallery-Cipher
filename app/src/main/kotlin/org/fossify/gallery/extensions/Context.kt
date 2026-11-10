@@ -605,7 +605,7 @@ fun Context.getFolderNameFromPath(path: String): String {
         } else {
             val folderFile = File(path)
             if (CryptoManager.isEncryptedFolder(folderFile)) {
-                CryptoManager.getDecryptedFolderName(folderFile) ?: path.getFilenameFromPath()
+                CryptoManager.getDecryptedFolderName(folderFile, this) ?: path.getFilenameFromPath()
             } else {
                 path.getFilenameFromPath()
             }

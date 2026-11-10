@@ -76,6 +76,7 @@ import org.fossify.gallery.dialogs.ConfirmDeleteFolderDialog
 import org.fossify.gallery.dialogs.CryptoProgressDialog
 import org.fossify.gallery.dialogs.ExcludeFolderDialog
 import org.fossify.gallery.dialogs.PickMediumDialog
+import org.fossify.gallery.dialogs.RenameEncryptedFolderDialog
 import org.fossify.gallery.dialogs.RenameVirtualAlbumDialog
 import org.fossify.gallery.dialogs.VaultSecurityDialog
 import org.fossify.gallery.extensions.addNoMedia
@@ -192,7 +193,12 @@ class DirectoryAdapter(
             findItem(R.id.cab_move_to_top).isVisible = isDragAndDropping
             findItem(R.id.cab_move_to_bottom).isVisible = isDragAndDropping
 
-            findItem(R.id.cab_rename).isVisible = !selectedPaths.contains(FAVORITES) && !selectedPaths.contains(RECYCLE_BIN)
+            val hasNonRenamableEncrypted = selectedPaths.any {
+                CryptoManager.isVaultRecycleBinPath(activity, it) || CryptoManager.isDefaultHiddenAlbumPath(it)
+            }
+            val hasMultipleWithEncrypted = !isOneItemSelected && selectedPaths.any { CryptoManager.isEncryptedFolderPath(activity, it) }
+            findItem(R.id.cab_rename).isVisible =
+                !selectedPaths.contains(FAVORITES) && !selectedPaths.contains(RECYCLE_BIN) && !hasNonRenamableEncrypted && !hasMultipleWithEncrypted
             findItem(R.id.cab_change_cover_image).isVisible = isOneItemSelected
 
             findItem(R.id.cab_lock).isVisible = selectedPaths.any { !config.isFolderProtected(it) }
@@ -355,6 +361,19 @@ class DirectoryAdapter(
 
             val sourcePath = firstDir.path
             val dir = File(sourcePath)
+            if (CryptoManager.isEncryptedFolder(dir)) {
+                if (CryptoManager.isVaultRecycleBin(dir) || CryptoManager.isDefaultHiddenAlbum(dir)) {
+                    return
+                }
+                RenameEncryptedFolderDialog(activity, dir, firstDir.name) { newName ->
+                    firstDir.name = newName
+                    updateDirs(dirs)
+                    listener?.refreshItems()
+                    finishActMode()
+                }
+                return
+            }
+
             if (activity.isAStorageRootFolder(dir.absolutePath)) {
                 activity.toast(org.fossify.commons.R.string.rename_folder_root)
                 return
@@ -867,7 +886,7 @@ class DirectoryAdapter(
                 }
 
                 val items = if (itemsCnt == 1) {
-                    val folder = getSelectedPaths().first().getFilenameFromPath()
+                    val folder = getSelectedItems().firstOrNull()?.name ?: getSelectedPaths().first().getFilenameFromPath()
                     "\"$folder\""
                 } else {
                     resources.getQuantityString(org.fossify.commons.R.plurals.delete_items, itemsCnt, itemsCnt)

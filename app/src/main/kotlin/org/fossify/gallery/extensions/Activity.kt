@@ -49,6 +49,7 @@ import org.fossify.gallery.dialogs.ResizeWithPathDialog
 import org.fossify.gallery.dialogs.VaultSecurityDialog
 import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.DIRECTORY
+import org.fossify.gallery.helpers.ENCRYPTED_BIN_EXT
 import org.fossify.gallery.helpers.PROTECTION_PASSWORD
 import org.fossify.gallery.helpers.RECYCLE_BIN
 import org.fossify.gallery.helpers.TEMP_FOLDER_NAME
@@ -561,14 +562,21 @@ fun BaseSimpleActivity.tryCopyMoveFilesTo(
                             )
                         } else {
                             // Encrypted-to-encrypted or normal-to-normal within a mixed batch
-                            val targetFile = File(destDir, srcFile.name)
+                            val isEnc = CryptoManager.isEncryptedFile(srcFile.name)
+                            var targetFile = File(destDir, srcFile.name)
+                            if (isEnc) {
+                                while (targetFile.exists() && srcFile.absolutePath != targetFile.absolutePath) {
+                                    targetFile = File(destDir, "${CryptoManager.randomHex(8)}$ENCRYPTED_BIN_EXT")
+                                }
+                            }
                             if (srcFile.absolutePath != targetFile.absolutePath) {
                                 val oldSrcPath = srcFile.absolutePath
                                 srcFile.copyTo(targetFile, overwrite = true)
                                 targetFile.setLastModified(srcFile.lastModified())
                                 if (!isCopyOperation) {
                                     updateVirtualAlbumItemPath(oldSrcPath, targetFile.absolutePath)
-                                    if (CryptoManager.isEncryptedFile(srcFile.name)) {
+                                    if (isEnc) {
+                                        CryptoManager.moveMetadataCacheEntry(oldSrcPath, targetFile.absolutePath)
                                         srcFile.delete()
                                     } else {
                                         CryptoManager.secureWipeAndDeleteFile(this, srcFile)
