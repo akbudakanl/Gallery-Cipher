@@ -542,7 +542,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         binding.bottomVideoTimeHolder.videoDuration.text = mDuration.getFormattedDuration()
     }
 
-    private fun initExoPlayer() {
+    private fun initExoPlayer(playOnPrepared: Boolean = mConfig.autoplayVideos && mIsFragmentVisible) {
         val shouldSkipInit = activity == null || mConfig.gestureVideoPlayer || mIsPanorama || mExoPlayer != null
         if (shouldSkipInit) return
 
@@ -571,8 +571,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
             else -> 0L
         }
 
-        val shouldAutoplay = mConfig.autoplayVideos && mIsFragmentVisible
-        mPlayOnPrepared = true
+        mPlayOnPrepared = playOnPrepared
 
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
@@ -610,7 +609,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
                 }
                 prepare()
 
-                if (shouldAutoplay) {
+                if (playOnPrepared) {
                     playWhenReady = true
                     mWasVideoStarted = true
                     mPlayPauseButton.setImageResource(org.fossify.commons.R.drawable.ic_pause_outline_vector)
@@ -870,7 +869,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
             return
         }
 
-        if (mIsPlaying) {
+        if (mIsPlaying || (!mIsPlayerPrepared && mPlayOnPrepared)) {
             pauseVideo()
         } else {
             playVideo()
@@ -896,7 +895,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
 
     fun playVideo() {
         if (mExoPlayer == null) {
-            initExoPlayer()
+            initExoPlayer(playOnPrepared = true)
             return
         }
 
@@ -921,6 +920,8 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         mWasVideoStarted = true
         if (mIsPlayerPrepared) {
             mIsPlaying = true
+        } else {
+            mPlayOnPrepared = true
         }
         mExoPlayer?.playWhenReady = true
         startTimer()
@@ -932,6 +933,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
             return
         }
 
+        mPlayOnPrepared = false
         mIsPlaying = false
         stopTimer()
         val ended = videoEnded()
@@ -1036,7 +1038,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         }
 
         mIsPlayerPrepared = true
-        if (mPlayOnPrepared && !mIsPlaying && mIsFragmentVisible && mConfig.autoplayVideos) {
+        if (mPlayOnPrepared && !mIsPlaying) {
             updatePlaybackSpeed(mConfig.playbackSpeed)
             playVideo()
         }
@@ -1073,6 +1075,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
 
     private fun releaseExoPlayer() {
         mIsPlayerPrepared = false
+        mPlayOnPrepared = false
         mExoPlayer?.apply {
             stop()
             release()
