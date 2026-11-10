@@ -327,7 +327,6 @@
     <string name="use_password_or_pin">PIN / Passwort verwenden</string>
     <string name="biometric_key_invalidated">Biometrische Anmeldedaten wurden geändert. Bitte gib deine PIN oder dein Passwort ein.</string>
     <string name="no_biometric_hardware_or_enrolled">Keine biometrische Hardware oder hinterlegte Anmeldedaten auf diesem Gerät gefunden</string>
-    <string name="default_hidden_album">Standardmäßiges verstecktes Album</string>
     <string name="select_hidden_album">Verstecktes Album auswählen</string>
     <string name="create_new_hidden_album">Neues verstecktes Album erstellen</string>
     <string name="new_hidden_album">Neues verstecktes Album</string>

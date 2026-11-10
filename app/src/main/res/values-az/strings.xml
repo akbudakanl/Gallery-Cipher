@@ -380,7 +380,6 @@
     <string name="use_password_or_pin">PIN / Paroldan istifadə et</string>
     <string name="biometric_key_invalidated">Biometrik məlumatlar dəyişdirilib. Zəhmət olmasa, PIN və ya parolunuzu daxil edin.</string>
     <string name="no_biometric_hardware_or_enrolled">Bu cihazda biometrik avadanlıq və ya qeydiyyatdan keçmiş məlumat tapılmadı</string>
-    <string name="default_hidden_album">Defolt Gizli Albom</string>
     <string name="select_hidden_album">Gizli Albom Seçin</string>
     <string name="create_new_hidden_album">Yeni Gizli Albom Yarat</string>
     <string name="new_hidden_album">Yeni gizli albom</string>

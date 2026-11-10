@@ -325,7 +325,6 @@
     <string name="use_password_or_pin">使用 PIN 碼 / 密碼</string>
     <string name="biometric_key_invalidated">生物辨識憑證已變更，請輸入您的 PIN 碼或密碼。</string>
     <string name="no_biometric_hardware_or_enrolled">此裝置上找不到生物辨識硬體或已註冊的憑證</string>
-    <string name="default_hidden_album">預設隱藏相簿</string>
     <string name="select_hidden_album">選擇隱藏相簿</string>
     <string name="create_new_hidden_album">建立新隱藏相簿</string>
     <string name="new_hidden_album">新隱藏相簿</string>

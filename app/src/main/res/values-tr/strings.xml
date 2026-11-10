@@ -332,7 +332,6 @@
     <string name="use_password_or_pin">PIN / Parola kullan</string>
     <string name="biometric_key_invalidated">Biyometrik güvenlik kimliği değişti. Lütfen PIN veya parolanızı girin.</string>
     <string name="no_biometric_hardware_or_enrolled">Bu cihazda biyometrik donanım veya kayıtlı biyometri bulunamadı</string>
-    <string name="default_hidden_album">Varsayılan Gizli Albüm</string>
     <string name="select_hidden_album">Gizli Albüm Seçin</string>
     <string name="create_new_hidden_album">Yeni Gizli Albüm Oluştur</string>
     <string name="new_hidden_album">Yeni gizli albüm</string>

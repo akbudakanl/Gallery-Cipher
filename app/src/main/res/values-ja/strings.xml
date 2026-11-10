@@ -325,7 +325,6 @@
     <string name="use_password_or_pin">PIN / パスワードを使用</string>
     <string name="biometric_key_invalidated">生体認証情報が変更されました。PIN またはパスワードを入力してください。</string>
     <string name="no_biometric_hardware_or_enrolled">このデバイスに生体認証ハードウェアまたは登録済みの認証情報が見つかりません</string>
-    <string name="default_hidden_album">デフォルトの非表示アルバム</string>
     <string name="select_hidden_album">非表示アルバムを選択</string>
     <string name="create_new_hidden_album">新しい非表示アルバムを作成</string>
     <string name="new_hidden_album">新しい非表示アルバム</string>

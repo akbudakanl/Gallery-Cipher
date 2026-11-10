@@ -366,7 +366,7 @@
     <string name="use_password_or_pin">Use PIN / Password</string>
     <string name="biometric_key_invalidated">Biometric credentials have changed. Please enter your PIN or password.</string>
     <string name="no_biometric_hardware_or_enrolled">No biometric hardware or enrolled credentials found on this device</string>
-    <string name="default_hidden_album">Default Hidden Album</string>
+    <string name="default_hidden_album" translatable="false">Default Secret Album</string>
     <string name="select_hidden_album">Select Hidden Album</string>
     <string name="create_new_hidden_album">Create New Hidden Album</string>
     <string name="new_hidden_album">New hidden album</string>

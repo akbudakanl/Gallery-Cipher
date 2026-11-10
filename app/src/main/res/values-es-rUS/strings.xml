@@ -348,7 +348,6 @@
     <string name="use_password_or_pin">Usar PIN / Contraseña</string>
     <string name="biometric_key_invalidated">Las credenciales biométricas han cambiado. Por favor, ingresa tu PIN o contraseña.</string>
     <string name="no_biometric_hardware_or_enrolled">No se encontró hardware biométrico ni credenciales registradas en este dispositivo</string>
-    <string name="default_hidden_album">Álbum oculto predeterminado</string>
     <string name="select_hidden_album">Seleccionar álbum oculto</string>
     <string name="create_new_hidden_album">Crear nuevo álbum oculto</string>
     <string name="new_hidden_album">Nuevo álbum oculto</string>

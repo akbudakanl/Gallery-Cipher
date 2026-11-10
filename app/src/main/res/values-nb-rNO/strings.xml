@@ -336,7 +336,6 @@
     <string name="use_password_or_pin">Bruk PIN / Passord</string>
     <string name="biometric_key_invalidated">Biometriske data er endret. Vennligst skriv inn PIN eller passord.</string>
     <string name="no_biometric_hardware_or_enrolled">Ingen biometrisk maskinvare eller registrerte biometriske data funnet på denne enheten</string>
-    <string name="default_hidden_album">Standard skjult album</string>
     <string name="select_hidden_album">Velg skjult album</string>
     <string name="create_new_hidden_album">Opprett nytt skjult album</string>
     <string name="new_hidden_album">Nytt skjult album</string>
