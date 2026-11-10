@@ -294,7 +294,7 @@
     <string name="decrypting_folder">Descifrando carpeta…</string>
     <string name="folder_decrypted_successfully">Carpeta descifrada correctamente</string>
     <string name="decrypting_files">Descifrando archivos…</string>
-    <string name="place_finger_prompt">Por favor, apoye su dedo sobre el sensor de huellas</string>
+    <string name="place_finger_prompt">Por favor, apoya tu dedo sobre el sensor de huellas</string>
     <string name="connect_at_least_4_dots_prompt">Conecta al menos 4 puntos</string>
     <string name="access_existing_cipher_secrets_prompt">¿Deseas acceder a tu carpeta Cipher_Secrets existente?</string>
     <string name="delete_and_recreate_cipher_secrets_prompt">Se eliminará la carpeta Cipher_Secrets existente y se creará una nueva. ¿Estás seguro?</string>

@@ -233,7 +233,7 @@
     <string name="import_favorite_paths">Importer favorittar</string>
     <string name="paths_imported_successfully">Filstiar vart importerte</string>
     <string name="media_management_prompt">For å vera sikker på at alle filoperasjonar fungerer påliteleg, gjer denne appen til ein mediaadministrasjonsapp i einingsinnstillingane.</string>
-    <string name="password_protect_excluded">Passordverna synlegheit for ekskludert mappe</string>
+    <string name="password_protect_excluded">Passordvern for synlegheita til ekskluderte mapper</string>
     <string name="media_management_manual">Noko gjekk gale. Gå til eininga sine Innstillingar – Appar – Spesiell apptilgang – Appar for mediaadministrasjon, og lat denne appen administrera media.</string>
     <string name="media_management_note">Viss omdirigeringa ikkje fungerer, gå til eininga sine Innstillingar – Appar – Spesiell apptilgang – Appar for mediaadministrasjon, og lat denne appen administrera media.</string>
     <string name="media_management_alternative">Viss du ikkje vil gjera det, kan du òg gå til eininga sine Innstillingar – Appar – Spesiell apptilgang – Appar for mediaadministrasjon, og lat denne appen administrera media.</string>

@@ -334,7 +334,7 @@
     <string name="secret_vault">Gizli Seyf</string>
     <string name="secret_vault_empty">Gizli Seyf boşdur</string>
     <string name="confirm_decrypt_hidden_file">Gizli faylın(ların) şifrəsini açmaq istədiyinizə əminsiniz?</string>
-    <string name="copy_to_clipboard_disabled_in_vault">Təhlükəsizlik məqsədilə seyf açıq olarkən mübadilə buferinə köçürmə deaktiv edilib.</string>
+    <string name="copy_to_clipboard_disabled_in_vault">Təhlükəsizlik məqsədilə seyf açıq olarkən mübadilə buferinə kopyalama deaktiv edilib.</string>
     <string name="on_vault_exit">Gizli bölmədən çıxarkən</string>
     <string name="on_vault_exit_keep_showing_all">Bütün gizli albomları göstərməyə davam et</string>
     <string name="on_vault_exit_show_encrypted_only">Yalnız şifrələnmiş albomları göstər</string>

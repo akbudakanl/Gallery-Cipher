@@ -190,7 +190,7 @@
     <string name="import_favorite_paths">Importer favoritter</string>
     <string name="paths_imported_successfully">Filbaner importert</string>
     <string name="media_management_prompt">For å være sikker på at alle filoperasjoner fungerer pålitelig, gjør denne appen til en mediaadministrasjonsapp i enhetsinnstillingene.</string>
-    <string name="password_protect_excluded">Passordbeskytt synlighet for ekskludert mappe</string>
+    <string name="password_protect_excluded">Passordbeskytt synligheten til ekskluderte mapper</string>
     <string name="alternative_media_access">Alternativt kan du kun tillate tilgang til mediafiler. I dette tilfellet vil du riktignok ikke kunne arbeide med skjulte filer.</string>
     <string name="media_only">Kun media</string>
     <string name="all_files">Alle filer</string>
