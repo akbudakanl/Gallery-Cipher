@@ -229,15 +229,15 @@ class EncryptedPropertiesDialog(
                 val albumName = file.parentFile?.let { CryptoManager.getDecryptedFolderName(it, activity) }
                     ?: activity.getString(R.string.secret_vault)
                 val sb = StringBuilder()
-                sb.appendLine("${activity.getString(R.string.filename)}: $displayName")
+                sb.appendLine("${activity.getString(org.fossify.commons.R.string.filename)}: $displayName")
                 sb.appendLine("${activity.getString(R.string.album_name)}: $albumName")
                 if (meta != null) {
-                    sb.appendLine("${activity.getString(R.string.size)}: ${meta.originalSize.formatSize()}")
+                    sb.appendLine("${activity.getString(org.fossify.commons.R.string.size)}: ${meta.originalSize.formatSize()}")
                     if (meta.lastModified > 0L) {
-                        sb.appendLine("${activity.getString(R.string.last_modified)}: ${meta.lastModified.formatDate(activity)}")
+                        sb.appendLine("${activity.getString(org.fossify.commons.R.string.last_modified)}: ${meta.lastModified.formatDate(activity)}")
                     }
                     if (meta.dateTaken > 0L) {
-                        sb.appendLine("${activity.getString(R.string.date_taken)}: ${meta.dateTaken.formatDate(activity)}")
+                        sb.appendLine("${activity.getString(org.fossify.commons.R.string.date_taken)}: ${meta.dateTaken.formatDate(activity)}")
                     }
                     if (meta.mediaType == TYPE_VIDEOS && meta.videoDuration > 0) {
                         sb.appendLine(meta.videoDuration.getFormattedDuration())
@@ -250,7 +250,7 @@ class EncryptedPropertiesDialog(
                     val meta = CryptoManager.readMetadata(File(p))
                     totalSize += meta?.originalSize ?: File(p).length()
                 }
-                "${activity.getString(R.string.size)}: ${totalSize.formatSize()}"
+                "${activity.getString(org.fossify.commons.R.string.size)}: ${totalSize.formatSize()}"
             }
 
             activity.runOnUiThread {
