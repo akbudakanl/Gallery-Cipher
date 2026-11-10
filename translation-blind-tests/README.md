@@ -2,6 +2,10 @@
 
 This directory stores translation audit and blind-review comparison reports for **Fossify Gallery Cipher**. Each target language has its own dedicated subfolder so that string audits, terminology notes, and 1-to-1 English comparison tables remain cleanly organized and easy to maintain.
 
+> [!NOTE]
+> **Notes — Translation Requests & Feedback:**  
+> If you notice any inaccurate, unnatural, or missing translations—or would like to request full audit/support for a new language—please submit a report, complaint, or Pull Request on the project's [GitHub Issues](https://github.com/akbudakanl/Fossify-Gallery-Cipher/issues) page.
+
 ## Directory Structure
 
 ```text
