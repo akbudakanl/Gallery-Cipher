@@ -23,7 +23,7 @@
     <string name="force_landscape">Behartu horizontala</string>
     <string name="use_default_orientation">Erabili lehenetsitako orientazioa</string>
     <string name="fix_date_taken">Konpondu ateratze-dataren balioa</string>
-    <string name="fixing">Konpontzen…</string>
+    <string name="fixing">Konpontzenâ€¦</string>
     <string name="dates_fixed_successfully">Datak ongi konpondu dira</string>
     <string name="no_date_takens_found">Ateratze-dataren baliorik ez da aurkitu</string>
     <string name="share_resized">Partekatu tamaina aldatutako bertsioa</string>
@@ -91,7 +91,7 @@
     <string name="error_saving_file">Ezin izan da jatorrizko fitxategia gainidatzi</string>
     <string name="rotate_left">Biratu ezkerrera</string>
     <string name="rotate_right">Biratu eskuinera</string>
-    <string name="rotate_one_eighty">Biratu 180º</string>
+    <string name="rotate_one_eighty">Biratu 180Âº</string>
     <string name="transform">Eraldatu</string>
     <string name="crop">Moztu</string>
     <string name="draw">Marraztu</string>
@@ -103,7 +103,7 @@
     <string name="set_as_wallpaper">Ezarri horma-paper gisa</string>
     <string name="set_as_wallpaper_failed">Horma-paper gisa ezartzeak huts egin du</string>
     <string name="set_as_wallpaper_with">Ezarri horma-paper gis honekin:</string>
-    <string name="setting_wallpaper">Horma-papera ezartzen…</string>
+    <string name="setting_wallpaper">Horma-papera ezartzenâ€¦</string>
     <string name="wallpaper_set_successfully">Horma-papera ongi ezarri da</string>
     <string name="portrait_aspect_ratio">Aspektu-erlazio bertikala</string>
     <string name="landscape_aspect_ratio">Aspektu-erlazio horizontala</string>
@@ -202,7 +202,6 @@
     <string name="alternative_media_access">Bestela, multimedia fitxategiak soilik atzitzea baimendu dezakezu. Kasu horretan, ezin izango duzu ezkutuko fitxategiekin lan egin.</string>
     <string name="media_only">Multimediak bakarrik</string>
     <string name="all_files">Fitxategi guztiak</string>
-    <string name="search_all_files">Bilatu fitxategi guztiak karpetak ordez hasierako pantailan</string>
     <string name="show_all_folders">Erakutsi menu-botoia Erakutsi karpeta guztien edukira azkar aldatzeko</string>
     <string name="thumbnails">Miniaturak</string>
     <string name="fullscreen_media">Pantaila osoko multimedia</string>

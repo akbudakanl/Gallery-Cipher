@@ -22,7 +22,7 @@
     <string name="force_landscape">Paksa lanskap</string>
     <string name="use_default_orientation">Gunakan orientasi bawaan</string>
     <string name="fix_date_taken">Perbaiki Tanggal Diambil</string>
-    <string name="fixing">Memperbaiki…</string>
+    <string name="fixing">Memperbaikiâ€¦</string>
     <string name="dates_fixed_successfully">Tanggal berhasil diperbaiki</string>
     <string name="no_date_takens_found">Tidak ada nilai Tanggal Diambil yang ditemukan</string>
     <string name="share_resized">Bagikan versi yang diubah ukurannya</string>
@@ -79,7 +79,7 @@
     <string name="error_saving_file">Tidak bisa mengganti file sumber</string>
     <string name="rotate_left">Putar ke kiri</string>
     <string name="rotate_right">Putar ke kanan</string>
-    <string name="rotate_one_eighty">Putar 180º</string>
+    <string name="rotate_one_eighty">Putar 180Âº</string>
     <string name="flip">Balik</string>
     <string name="flip_horizontally">Balik horizontal</string>
     <string name="flip_vertically">Balik vertikal</string>
@@ -88,7 +88,7 @@
     <string name="set_as_wallpaper">Setel sebagai Wallpaper</string>
     <string name="set_as_wallpaper_failed">Gagal menyetel sebagai Wallpaper</string>
     <string name="set_as_wallpaper_with">Setel sebagai Wallpaper dengan:</string>
-    <string name="setting_wallpaper">Menyetel wallpaper…</string>
+    <string name="setting_wallpaper">Menyetel wallpaperâ€¦</string>
     <string name="wallpaper_set_successfully">Wallpaper berhasil disetel</string>
     <string name="portrait_aspect_ratio">Aspek rasio potret</string>
     <string name="landscape_aspect_ratio">Aspek rasio lanskap</string>
@@ -183,7 +183,6 @@
     <string name="alternative_media_access">Sebagai alternatif, Anda dapat memperbolehkan mengakses file media saja. Jika demikian, Anda tidak akan dapat melakukan apa pun dengan file tersembunyi.</string>
     <string name="media_only">Hanya media</string>
     <string name="all_files">Semua file</string>
-    <string name="search_all_files">Cari semua file daripada folder di layar utama</string>
     <string name="show_all_folders">Tampilkan tombol menu untuk menampilkan konten Tampilkan Semua Folder secara cepat</string>
     <string name="thumbnails">Thumbnail</string>
     <string name="fullscreen_media">Media layar penuh</string>
