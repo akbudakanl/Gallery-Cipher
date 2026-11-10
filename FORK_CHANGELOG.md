@@ -9,6 +9,20 @@ For full architectural details, cryptography specifications, and user guides, se
 
 ---
 
+## [1.18.3-cipher] - 2026-11-10
+### Fixed
+- **Localization Register, Terminology & Completeness Refinements:**
+  - **Spanish (`es`):** Aligned the Cipher/Vault prompt block (`place_finger_prompt`, `access_existing_cipher_secrets_prompt`, `delete_and_recreate_cipher_secrets_prompt`, `confirm_decrypt_hidden_file`) with formal `usted` register and unified `sensor de huellas`.
+  - **Spanish (Latin America, `b+es+419`):** Updated `place_finger_prompt` to `tú` register (`Por favor, apoya tu dedo sobre el sensor de huellas`) for consistency with the rest of `values-b+es+419`.
+  - **Japanese (`ja`):** Completed the missing second paragraph of `included_activity_placeholder` and fixed the `Andorid11` typo to `Android 11` in `faq_17_text`.
+  - **Traditional Chinese (Taiwan, `zh-rTW`):** Fixed `MediaStorage` → `MediaStore` in `faq_17_text` and standardized mixed `app` occurrences to `應用程式`.
+  - **Norwegian (`nn`, `nb-rNO`):** Improved plural grammar in `password_protect_excluded` (`Passordvern for synlegheita til ekskluderte mapper` / `Passordbeskytt synligheten til ekskluderte mapper`).
+  - **Azerbaijani (`az`):** Clarified clipboard copy phrasing in `copy_to_clipboard_disabled_in_vault` (`köçürmə` → `kopyalama`).
+
+### Documentation
+- **Canonicalized Translation Blind-Test Reports (`translation-blind-tests/`):**
+  - Updated 8 comparison reports (`az`, `de`, `es`, `b+es+419`, `ja`, `nb-rNO`, `nn`, `zh-rTW`) to reflect the revised translations and normalized English source-column formatting (`\n\n`, `…`, `-&gt;`, `&gt;`) to achieve 100% column parity across all 9 audited reports.
+
 ## [1.18.2-cipher] - 2026-11-10
 ### Changed
 - **Refined In-App Language Selector (`ChangeLanguageDialog`, `SettingsActivity`):**
