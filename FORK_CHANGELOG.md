@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 For upstream Fossify Gallery release history, see [CHANGELOG.md](CHANGELOG.md).  
 For full architectural details, cryptography specifications, and user guides, see [DOCS.md](DOCS.md).
 
+> **Versioning & Upstream Policy:** This fork uses an independent Semantic Versioning scheme (`X.Y.Z-cipher`) originally forked from upstream Fossify Gallery `1.14.1`. Version numbers do not map 1:1 to upstream releases; relevant upstream bug fixes and improvements are selectively backported and documented below.
+
 ---
 
 ## [1.18.3-cipher] - 2026-11-10
