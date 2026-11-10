@@ -3,10 +3,12 @@ package org.fossify.gallery.dialogs
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import androidx.appcompat.app.AlertDialog
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
 import com.google.android.material.tabs.TabLayout
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.extensions.*
-import org.fossify.commons.helpers.PROTECTION_PATTERN
 import org.fossify.commons.helpers.PROTECTION_PIN
 import org.fossify.commons.helpers.SHOW_ALL_TABS
 import org.fossify.gallery.R
@@ -21,20 +23,22 @@ class VaultSecurityDialog(
     private val requiredHash: String,
     private val showTabIndex: Int,
     private val minimalist: Boolean = false,
+    private val isChangePasswordMode: Boolean = false,
     private val callback: (hash: String, type: Int, success: Boolean) -> Unit
 ) {
     private var dialog: AlertDialog? = null
     private val binding = DialogVaultSecurityBinding.inflate(activity.layoutInflater)
-    private val isSetupMode = !CryptoManager.hasExistingVault(activity) && (requiredHash.isEmpty() || showTabIndex == SHOW_ALL_TABS)
+    private val isSetupMode = isChangePasswordMode || (!CryptoManager.hasExistingVault(activity) && (requiredHash.isEmpty() || showTabIndex == SHOW_ALL_TABS))
 
     private var currentType: Int = when (showTabIndex) {
-        PROTECTION_PIN -> PROTECTION_PIN
         PROTECTION_PASSWORD -> PROTECTION_PASSWORD
-        PROTECTION_PATTERN -> PROTECTION_PATTERN
         else -> {
-            CryptoManager.getVaultProtectionType(activity)
-                ?: if (activity.config.hiddenProtectionType in listOf(PROTECTION_PIN, PROTECTION_PASSWORD)) activity.config.hiddenProtectionType
-                else PROTECTION_PATTERN
+            val vaultType = CryptoManager.getVaultProtectionType(activity)
+            if (vaultType == PROTECTION_PASSWORD || activity.config.hiddenProtectionType == PROTECTION_PASSWORD) {
+                PROTECTION_PASSWORD
+            } else {
+                PROTECTION_PIN
+            }
         }
     }
 
@@ -50,7 +54,7 @@ class VaultSecurityDialog(
         val primaryColor = activity.getProperPrimaryColor()
         val backgroundColor = activity.getProperBackgroundColor()
 
-        binding.vaultPatternView.updateColors(textColor, primaryColor)
+        binding.vaultPatternHolder.beGone()
 
         binding.vaultTabs.apply {
             beVisible()
@@ -59,17 +63,15 @@ class VaultSecurityDialog(
             setSelectedTabIndicatorColor(primaryColor)
 
             removeAllTabs()
-            val patternTab = newTab().setText(org.fossify.commons.R.string.pattern).setTag(PROTECTION_PATTERN)
             val pinTab = newTab().setText(org.fossify.commons.R.string.pin).setTag(PROTECTION_PIN)
             val passwordTab = newTab().setText(R.string.alphanumeric_password).setTag(PROTECTION_PASSWORD)
 
-            addTab(patternTab, currentType == PROTECTION_PATTERN)
             addTab(pinTab, currentType == PROTECTION_PIN)
             addTab(passwordTab, currentType == PROTECTION_PASSWORD)
 
             addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
                 override fun onTabSelected(tab: TabLayout.Tab?) {
-                    val type = tab?.tag as? Int ?: PROTECTION_PATTERN
+                    val type = tab?.tag as? Int ?: PROTECTION_PIN
                     switchProtectionType(type)
                 }
 
@@ -83,11 +85,19 @@ class VaultSecurityDialog(
         }
         binding.vaultPasswordInputLayout.hint = activity.getString(R.string.enter_password)
 
-        setupPatternInput()
         setupPinInput()
         setupPasswordInput()
 
         switchProtectionType(currentType)
+
+        if (!isSetupMode && CryptoManager.canUnlockWithBiometrics(activity)) {
+            binding.vaultBiometricBtn.beVisible()
+            binding.vaultBiometricBtn.setOnClickListener {
+                promptBiometricUnlock()
+            }
+        } else {
+            binding.vaultBiometricBtn.beGone()
+        }
 
         val builder = activity.getAlertDialogBuilder()
         if (!minimalist) {
@@ -104,7 +114,6 @@ class VaultSecurityDialog(
                 dialog = alertDialog
                 alertDialog.window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
                 binding.root.filterTouchesWhenObscured = true
-                binding.vaultPatternView.filterTouchesWhenObscured = true
                 binding.vaultPinHolder.filterTouchesWhenObscured = true
                 binding.vaultPasswordHolder.filterTouchesWhenObscured = true
                 if (currentType == PROTECTION_PASSWORD) {
@@ -115,25 +124,76 @@ class VaultSecurityDialog(
                         activity.showKeyboard(binding.vaultPasswordInput)
                     }, 100)
                 }
+
+                if (!isSetupMode && CryptoManager.canUnlockWithBiometrics(activity)) {
+                    binding.root.post {
+                        promptBiometricUnlock()
+                    }
+                }
             }
         }
     }
 
+    private fun promptBiometricUnlock() {
+        if (isSetupMode || !CryptoManager.canUnlockWithBiometrics(activity)) return
+        val cipher = CryptoManager.getBiometricDecryptCipher(activity)
+        if (cipher == null) {
+            if (activity.config.isVaultBiometricEnabled) {
+                activity.toast(R.string.biometric_key_invalidated)
+            }
+            binding.vaultBiometricBtn.beGone()
+            return
+        }
+
+        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle(activity.getString(R.string.biometric_unlock_vault))
+            .setSubtitle(activity.getString(R.string.biometric_unlock_prompt))
+            .setNegativeButtonText(activity.getString(R.string.use_password_or_pin))
+            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+            .build()
+
+        val biometricPrompt = BiometricPrompt(
+            activity,
+            ContextCompat.getMainExecutor(activity),
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    val authCipher = result.cryptoObject?.cipher
+                    if (authCipher != null && CryptoManager.completeBiometricUnlock(activity, authCipher)) {
+                        activity.applyVaultScreenProtection(true)
+                        activity.hideKeyboard()
+                        dialog?.dismiss()
+                        callback(requiredHash, currentType, true)
+                    } else {
+                        activity.toast(org.fossify.commons.R.string.an_error_occurred)
+                    }
+                }
+
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    // Stays in dialog for PIN/password entry
+                }
+
+                override fun onAuthenticationFailed() {
+                    // Fingerprint unrecognized, biometric UI lets user retry
+                }
+            }
+        )
+        biometricPrompt.authenticate(promptInfo, BiometricPrompt.CryptoObject(cipher))
+    }
+
     private fun switchProtectionType(type: Int) {
-        currentType = type
+        currentType = if (type == PROTECTION_PASSWORD) PROTECTION_PASSWORD else PROTECTION_PIN
         firstStepSecret = ""
         currentPin.clear()
         binding.vaultPinDots.text = ""
         binding.vaultPasswordInput.setText("")
-        binding.vaultPatternView.clearPattern()
+        binding.vaultPatternHolder.beGone()
 
-        binding.vaultPatternHolder.beVisibleIf(type == PROTECTION_PATTERN)
-        binding.vaultPinHolder.beVisibleIf(type == PROTECTION_PIN)
-        binding.vaultPasswordHolder.beVisibleIf(type == PROTECTION_PASSWORD)
+        binding.vaultPinHolder.beVisibleIf(currentType == PROTECTION_PIN)
+        binding.vaultPasswordHolder.beVisibleIf(currentType == PROTECTION_PASSWORD)
 
         updateStatusLabel()
 
-        if (type == PROTECTION_PASSWORD) {
+        if (currentType == PROTECTION_PASSWORD) {
             dialog?.window?.clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
             dialog?.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
             binding.vaultPasswordInput.postDelayed({
@@ -151,36 +211,28 @@ class VaultSecurityDialog(
             return
         }
         binding.vaultStatusLabel.beVisible()
-        when (currentType) {
-            PROTECTION_PATTERN -> {
+        if (isChangePasswordMode) {
+            if (currentType == PROTECTION_PASSWORD) {
                 binding.vaultStatusLabel.setText(
-                    if (isSetupMode && firstStepSecret.isNotEmpty()) org.fossify.commons.R.string.repeat_pattern
-                    else org.fossify.commons.R.string.insert_pattern
+                    if (firstStepSecret.isNotEmpty()) R.string.repeat_new_password
+                    else R.string.enter_new_password
                 )
-            }
-            PROTECTION_PIN -> {
-                binding.vaultStatusLabel.setText(
-                    if (isSetupMode && firstStepSecret.isNotEmpty()) org.fossify.commons.R.string.repeat_pin
-                    else org.fossify.commons.R.string.enter_pin
-                )
-            }
-            PROTECTION_PASSWORD -> {
-                binding.vaultStatusLabel.setText(
-                    if (isSetupMode && firstStepSecret.isNotEmpty()) R.string.repeat_password
-                    else R.string.enter_password
-                )
-            }
-        }
-    }
-
-    private fun setupPatternInput() {
-        binding.vaultPatternView.onPatternDetectedListener = { pattern ->
-            if (pattern.length < 4) {
-                activity.toast(R.string.connect_at_least_4_dots_prompt)
-                binding.vaultPatternView.clearPattern()
             } else {
-                handleSecretSubmission(pattern)
+                binding.vaultStatusLabel.setText(
+                    if (firstStepSecret.isNotEmpty()) R.string.repeat_new_pin
+                    else R.string.enter_new_pin
+                )
             }
+        } else if (currentType == PROTECTION_PASSWORD) {
+            binding.vaultStatusLabel.setText(
+                if (isSetupMode && firstStepSecret.isNotEmpty()) R.string.repeat_password
+                else R.string.enter_password
+            )
+        } else {
+            binding.vaultStatusLabel.setText(
+                if (isSetupMode && firstStepSecret.isNotEmpty()) org.fossify.commons.R.string.repeat_pin
+                else org.fossify.commons.R.string.enter_pin
+            )
         }
     }
 
@@ -263,7 +315,6 @@ class VaultSecurityDialog(
                 currentPin.clear()
                 updatePinDots()
                 binding.vaultPasswordInput.setText("")
-                binding.vaultPatternView.clearPattern()
                 updateStatusLabel()
             } else if (firstStepSecret == secret) {
                 val hash = CryptoManager.setupOrUpdateCredentials(activity, secret, currentType)
@@ -277,13 +328,8 @@ class VaultSecurityDialog(
                 currentPin.clear()
                 updatePinDots()
                 binding.vaultPasswordInput.setText("")
-                binding.vaultPatternView.clearPattern()
                 updateStatusLabel()
-                val errId = when (currentType) {
-                    PROTECTION_PIN -> org.fossify.commons.R.string.wrong_pin
-                    PROTECTION_PATTERN -> org.fossify.commons.R.string.wrong_pattern
-                    else -> R.string.wrong_password
-                }
+                val errId = if (currentType == PROTECTION_PASSWORD) R.string.wrong_password else org.fossify.commons.R.string.wrong_pin
                 activity.toast(errId)
             }
         } else {
@@ -298,12 +344,7 @@ class VaultSecurityDialog(
                 currentPin.clear()
                 updatePinDots()
                 binding.vaultPasswordInput.setText("")
-                binding.vaultPatternView.clearPattern()
-                val errId = when (currentType) {
-                    PROTECTION_PIN -> org.fossify.commons.R.string.wrong_pin
-                    PROTECTION_PATTERN -> org.fossify.commons.R.string.wrong_pattern
-                    else -> R.string.wrong_password
-                }
+                val errId = if (currentType == PROTECTION_PASSWORD) R.string.wrong_password else org.fossify.commons.R.string.wrong_pin
                 activity.toast(errId)
             }
         }

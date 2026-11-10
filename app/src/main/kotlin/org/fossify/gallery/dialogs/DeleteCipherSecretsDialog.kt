@@ -10,6 +10,7 @@ import org.fossify.gallery.databinding.DialogDeleteCipherSecretsBinding
 
 class DeleteCipherSecretsDialog(
     private val activity: BaseSimpleActivity,
+    private val messageText: String? = null,
     private val onConfirmed: () -> Unit
 ) {
     private var dialog: AlertDialog? = null
@@ -17,6 +18,9 @@ class DeleteCipherSecretsDialog(
 
     init {
         val binding = DialogDeleteCipherSecretsBinding.inflate(activity.layoutInflater)
+        if (messageText != null) {
+            binding.cipherSecretsWarningMessage.text = messageText
+        }
         binding.cipherSecretsConfirmCheckbox.isEnabled = false
         binding.cipherSecretsConfirmCheckbox.isChecked = false
         binding.cipherSecretsBtnYes.isEnabled = false

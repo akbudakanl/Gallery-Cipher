@@ -197,4 +197,15 @@
             android:textSize="22sp" />
     </LinearLayout>
 
+    <org.fossify.commons.views.MyTextView
+        android:id="@+id/vault_biometric_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="@dimen/normal_margin"
+        android:background="?selectableItemBackground"
+        android:padding="@dimen/small_margin"
+        android:text="@string/access_hidden_items_with_biometrics"
+        android:textSize="@dimen/normal_text_size"
+        android:visibility="gone" />
 </LinearLayout>
