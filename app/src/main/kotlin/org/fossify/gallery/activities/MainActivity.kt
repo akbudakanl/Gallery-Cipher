@@ -922,7 +922,15 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     }
 
     private fun triggerSecretVaultMenu() {
-        if (config.temporarilyShowHidden && CryptoManager.isVaultUnlocked) {
+        // Verify the vault folder on disk on EVERY attempt, before the "already unlocked" shortcut
+        // and before any password prompt. If it is gone this also locks the vault and clears state.
+        val vaultExists = hasVaultCreated()
+        if (!vaultExists && (mIsSecretVaultView || mHiddenDisplayMode != DISPLAY_NONE)) {
+            mIsSecretVaultView = false
+            mHiddenDisplayMode = DISPLAY_NONE
+        }
+
+        if (vaultExists && config.temporarilyShowHidden && CryptoManager.isVaultUnlocked) {
             if (!mIsSecretVaultView) {
                 mIsSecretVaultView = true
                 mHiddenDisplayMode = DISPLAY_SECRET_VAULT
@@ -944,7 +952,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             return
         }
 
-        if (hasVaultCreated()) {
+        if (vaultExists) {
             mIsVaultDialogShowing = true
             val initialType = CryptoManager.getVaultProtectionType(this)
                 ?: if (config.hiddenProtectionType == PROTECTION_PASSWORD) {

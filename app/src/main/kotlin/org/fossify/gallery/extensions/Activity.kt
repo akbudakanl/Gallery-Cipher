@@ -293,19 +293,11 @@ fun BaseSimpleActivity.removeNoMedia(path: String, callback: (() -> Unit)? = nul
 }
 
 fun BaseSimpleActivity.hasVaultCreated(): Boolean {
-    // Use the same real check as the Settings screen: the vault folder (or key material)
-    // must actually exist on disk. The isHiddenPasswordProtectionOn flag alone is stale
-    // when the vault folder was deleted externally (e.g. via a file manager), which used
-    // to make the app ask for a password that no longer corresponds to anything.
-    val vaultExists = CryptoManager.hasVaultFolderOrCredentials(this)
-    if (!vaultExists && config.isHiddenPasswordProtectionOn) {
-        // Self-heal: clear leftover credentials so the vault can be recreated.
-        config.isHiddenPasswordProtectionOn = false
-        config.hiddenPasswordHash = ""
-        config.isVaultBiometricEnabled = false
-        config.temporarilyShowHidden = false
-    }
-    return vaultExists
+    // The vault exists only while its .vault header is physically on disk. This is re-checked on
+    // every call (no cached "true"). If the vault folder was removed externally, all leftover
+    // credentials, the biometric key and the in-memory keys are wiped, so the user is offered
+    // "create vault" instead of a password prompt for a vault that does not exist.
+    return CryptoManager.verifyVaultOnDisk(this)
 }
 
 fun BaseSimpleActivity.promptCreateVault(

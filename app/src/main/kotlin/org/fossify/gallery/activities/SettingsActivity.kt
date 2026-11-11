@@ -55,6 +55,12 @@ class SettingsActivity : SimpleActivity() {
         super.onResume()
         setupTopAppBar(binding.settingsAppbar, NavigationIcon.Arrow)
         setupSettingItems()
+        registerVaultSectionScrollRecheck()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        unregisterVaultSectionScrollRecheck()
     }
 
     private fun setupSettingItems() {
@@ -480,7 +486,51 @@ class SettingsActivity : SimpleActivity() {
     }
 
     private fun doesVaultExist(): Boolean {
-        return CryptoManager.hasVaultFolderOrCredentials(this)
+        return CryptoManager.verifyVaultOnDisk(this)
+    }
+
+    private var isVaultSectionNearViewport = false
+
+    // Not setOnScrollChangeListener(): setupMaterialScrollListener() already owns that slot.
+    private val vaultSectionScrollListener = android.view.ViewTreeObserver.OnScrollChangedListener {
+        val label = binding.settingsVaultLabel
+        val scroll = binding.settingsNestedScrollview
+        if (!label.isShown) {
+            isVaultSectionNearViewport = false
+            return@OnScrollChangedListener
+        }
+
+        val labelLoc = IntArray(2)
+        val scrollLoc = IntArray(2)
+        label.getLocationOnScreen(labelLoc)
+        scroll.getLocationOnScreen(scrollLoc)
+
+        val lookAhead = scroll.height / 2
+        val labelTop = labelLoc[1]
+        val labelBottom = labelLoc[1] + label.height
+        val near = labelTop < scrollLoc[1] + scroll.height + lookAhead && labelBottom > scrollLoc[1] - lookAhead
+
+        if (near && !isVaultSectionNearViewport) {
+            // The "Encrypted vault" section is about to appear: check the disk before it is drawn.
+            scroll.post { setupVaultSettings() }
+        }
+        isVaultSectionNearViewport = near
+    }
+
+    private fun registerVaultSectionScrollRecheck() {
+        isVaultSectionNearViewport = false
+        val observer = binding.settingsNestedScrollview.viewTreeObserver
+        if (observer.isAlive) {
+            observer.removeOnScrollChangedListener(vaultSectionScrollListener)
+            observer.addOnScrollChangedListener(vaultSectionScrollListener)
+        }
+    }
+
+    private fun unregisterVaultSectionScrollRecheck() {
+        val observer = binding.settingsNestedScrollview.viewTreeObserver
+        if (observer.isAlive) {
+            observer.removeOnScrollChangedListener(vaultSectionScrollListener)
+        }
     }
 
     private fun setupVaultSettings() {

@@ -52,7 +52,9 @@ object VirtualAlbumSyncManager {
 
     fun getVaultStorageDir(context: Context): File {
         customVaultDirForTest?.let { return it }
-        val vaultRoot = CryptoManager.getOrCreateVaultRoot(context)
+        // If the vault is gone, return the would-be path WITHOUT creating anything on disk.
+        val vaultRoot = CryptoManager.findVaultRoot(context)
+            ?: return File(CryptoManager.getDefaultVaultRoot(), VAULT_JSON_SUBFOLDER)
         val jsonDir = File(vaultRoot, VAULT_JSON_SUBFOLDER)
         if (!jsonDir.exists()) {
             jsonDir.mkdirs()

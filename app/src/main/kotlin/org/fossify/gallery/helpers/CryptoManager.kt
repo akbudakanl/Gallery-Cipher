@@ -179,8 +179,6 @@ object CryptoManager {
     @Volatile
     private var cachedVaultRoot: File? = null
     @Volatile
-    private var vaultRootSearchDone = false
-    @Volatile
     var vaultRecycleBinFolder: File? = null
 
     private val activeCryptoOperations = AtomicInteger(0)
@@ -295,31 +293,189 @@ object CryptoManager {
         return File(cipherDir, CIPHER_SECRETS_DIR_NAME)
     }
 
-    fun getExistingCipherSecretsDir(context: Context): File? {
-        val standardDir = getDefaultVaultRoot()
-        if (standardDir.exists() && standardDir.isDirectory && (File(standardDir, VAULT_HEADER_FILE).exists() || standardDir.listFiles()?.isNotEmpty() == true)) {
-            return standardDir
-        }
+    // ==================== VAULT EXISTENCE: THE .vault HEADER ON DISK IS THE SINGLE SOURCE OF TRUTH ====================
 
-        val docDir = File(getDocumentsDirectory(), CIPHER_SECRETS_DIR_NAME)
-        if (docDir.exists() && docDir.isDirectory && (File(docDir, VAULT_HEADER_FILE).exists() || docDir.listFiles()?.isNotEmpty() == true)) {
-            return docDir
-        }
+    private const val DEEP_SCAN_INTERVAL_MS = 5_000L
 
+    @Volatile
+    private var lastDeepScanMs = 0L
+
+    /** True while setupOrUpdateCredentials() runs, so a concurrent check never wipes half-written state. */
+    @Volatile
+    private var vaultSetupInProgress = false
+
+    /**
+     * The file system can only be inspected when the app may read shared storage. Without that
+     * permission "not found" would be meaningless, so nothing may be concluded (or wiped) from it.
+     */
+    private fun canAccessSharedStorage(context: Context): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Environment.isExternalStorageManager()
+        } else {
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.READ_EXTERNAL_STORAGE
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    private fun isValidVaultHeader(headerFile: File): Boolean {
+        if (!headerFile.isFile || headerFile.length() <= VAULT_HEADER_MAGIC.length) return false
+        return try {
+            FileInputStream(headerFile).use { fis ->
+                val magic = ByteArray(VAULT_HEADER_MAGIC.length)
+                DataInputStream(fis).readFully(magic)
+                String(magic, Charsets.US_ASCII) == VAULT_HEADER_MAGIC
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun hasValidVaultHeader(dir: File?): Boolean {
+        return dir != null && dir.isDirectory && isValidVaultHeader(File(dir, VAULT_HEADER_FILE))
+    }
+
+    /**
+     * Vaults created by older versions have no .vault file: their wrapped key only lives in
+     * SharedPreferences. Such a vault is recognised ONLY when that key material is still stored AND
+     * the folder physically holds encrypted content. An empty folder, or one that only contains
+     * .nomedia / JSON stubs, is never a vault.
+     */
+    private fun isLegacyVaultRoot(context: Context, dir: File?): Boolean {
+        if (dir == null || !dir.isDirectory) return false
+        if (context.config.vaultWrappedKeyData.isEmpty()) return false
+        val children = dir.listFiles() ?: return false
+        return children.any { child ->
+            (child.isFile && isEncryptedFile(child.name)) || (child.isDirectory && isEncryptedFolder(child))
+        }
+    }
+
+    private fun knownVaultRootCandidates(context: Context): List<File> {
+        val candidates = ArrayList<File>(4)
+        cachedVaultRoot?.let { candidates.add(it) }
+        candidates.add(getDefaultVaultRoot())
+        candidates.add(File(getDocumentsDirectory(), CIPHER_SECRETS_DIR_NAME))
         val storedPath = context.config.vaultRootPath
         if (storedPath.isNotEmpty()) {
-            val dir = File(storedPath)
-            if (dir.exists() && dir.isDirectory && (File(dir, VAULT_HEADER_FILE).exists() || dir.listFiles()?.isNotEmpty() == true)) {
-                return dir
+            candidates.add(File(storedPath))
+        }
+        return candidates.distinctBy { it.absolutePath }
+    }
+
+    private fun rememberVaultRoot(context: Context, root: File) {
+        cachedVaultRoot = root
+        if (context.config.vaultRootPath != root.absolutePath) {
+            context.config.vaultRootPath = root.absolutePath
+        }
+    }
+
+    private fun scanForVaultRoot(context: Context): File? {
+        val documentsDir = getDocumentsDirectory()
+        val roots = listOfNotNull(
+            documentsDir,
+            File(documentsDir, CIPHER_ROOT_DIR_NAME),
+            try { Environment.getExternalStorageDirectory() } catch (_: Throwable) { null },
+            File("/storage/emulated/0"),
+            context.sdCardPath.takeIf { it.isNotEmpty() }?.let { File(it) }
+        ).distinctBy { it.absolutePath }
+
+        for (root in roots) {
+            if (!root.isDirectory) continue
+            val children = root.listFiles() ?: continue
+            for (child in children) {
+                if (hasValidVaultHeader(child)) return child
+            }
+        }
+        return null
+    }
+
+    /**
+     * Looks for the vault root ON DISK. The well-known locations (default, legacy, stored path) are
+     * checked live on every call; nothing is cached as "exists". Only the expensive scan of the
+     * storage root for a vault placed at a non-standard location is rate limited.
+     */
+    fun locateVaultRootOnDisk(context: Context, allowDeepScan: Boolean = true): File? {
+        val known = knownVaultRootCandidates(context)
+
+        known.firstOrNull { hasValidVaultHeader(it) }?.let {
+            rememberVaultRoot(context, it)
+            return it
+        }
+        known.firstOrNull { isLegacyVaultRoot(context, it) }?.let {
+            rememberVaultRoot(context, it)
+            return it
+        }
+
+        if (allowDeepScan) {
+            val now = System.currentTimeMillis()
+            if (now - lastDeepScanMs >= DEEP_SCAN_INTERVAL_MS) {
+                lastDeepScanMs = now
+                scanForVaultRoot(context)?.let {
+                    rememberVaultRoot(context, it)
+                    return it
+                }
             }
         }
 
-        val found = findVaultRoot(context)
-        if (found != null && found.exists() && (File(found, VAULT_HEADER_FILE).exists() || found.listFiles()?.isNotEmpty() == true)) {
-            return found
-        }
-
+        cachedVaultRoot = null
         return null
+    }
+
+    fun vaultExistsOnDisk(context: Context): Boolean = locateVaultRootOnDisk(context) != null
+
+    fun getExistingCipherSecretsDir(context: Context): File? = locateVaultRootOnDisk(context)
+
+    /** Anything that still claims a vault exists (keys in memory, prefs, biometric bundle). */
+    fun hasStaleVaultState(context: Context): Boolean {
+        val c = context.config
+        return isVaultUnlocked ||
+            unlockedPrivateKey != null ||
+            c.vaultWrappedKeyData.isNotEmpty() ||
+            c.vaultPublicKey.isNotEmpty() ||
+            c.vaultRootPath.isNotEmpty() ||
+            c.hiddenPasswordHash.isNotEmpty() ||
+            c.isHiddenPasswordProtectionOn ||
+            c.isVaultBiometricEnabled ||
+            c.vaultBiometricWrappedBundle.isNotEmpty()
+    }
+
+    /**
+     * Forgets a vault whose folder/header no longer exists: locks it (wipes keys from memory),
+     * clears every cache and removes all credentials and the biometric key.
+     */
+    fun resetStaleVaultState(context: Context) {
+        lockVault()
+        cachedVaultRoot = null
+        encryptedFolderCache.clear()
+        folderNameCache.clear()
+        vaultRecycleBinFolder = null
+        clearBiometricKey(context)
+        val cfg = context.config
+        cfg.vaultRootPath = ""
+        cfg.vaultWrappedKeyData = ""
+        cfg.vaultPublicKey = ""
+        cfg.hiddenPasswordHash = ""
+        cfg.isHiddenPasswordProtectionOn = false
+        cfg.isVaultBiometricEnabled = false
+        cfg.temporarilyShowHidden = false
+    }
+
+    /**
+     * The check every user-facing entry point must call (open vault, hide item/album, settings):
+     * actively verifies the vault on disk and, if it is gone, wipes all leftover state so that
+     * neither a password prompt nor an "empty vault" option can appear for a vault that does not exist.
+     */
+    fun verifyVaultOnDisk(context: Context): Boolean {
+        if (!canAccessSharedStorage(context)) {
+            // The disk cannot be inspected: neither wipe anything nor trust it blindly.
+            return context.config.vaultWrappedKeyData.isNotEmpty() || context.config.vaultPublicKey.isNotEmpty()
+        }
+        val exists = vaultExistsOnDisk(context)
+        if (!exists && !vaultSetupInProgress && hasStaleVaultState(context)) {
+            resetStaleVaultState(context)
+        }
+        return exists
     }
 
     fun deleteExistingVault(context: Context) {
@@ -357,7 +513,6 @@ object CryptoManager {
         unlockedMasterKey = null
         unlockedPrivateKey = null
         cachedVaultRoot = null
-        vaultRootSearchDone = false
         encryptedFolderCache.clear()
 
         clearBiometricKey(context)
@@ -371,40 +526,18 @@ object CryptoManager {
         clearAppImageCaches(context)
     }
 
-    fun hasVaultFolderOrCredentials(context: Context): Boolean {
-        val standard = getDefaultVaultRoot()
-        if (standard.exists() && standard.isDirectory) return true
-        val legacy = File(getDocumentsDirectory(), CIPHER_SECRETS_DIR_NAME)
-        if (legacy.exists() && legacy.isDirectory) return true
-        if (context.config.vaultWrappedKeyData.isNotEmpty()) return true
-        return getExistingCipherSecretsDir(context) != null
-    }
-
-    fun hasExistingVault(context: Context): Boolean {
-        if (context.config.vaultWrappedKeyData.isNotEmpty()) return true
-        return getExistingCipherSecretsDir(context) != null
-    }
+    /** The vault exists if and only if its .vault header (or a legacy vault's content) is on disk. */
+    fun hasExistingVault(context: Context): Boolean = vaultExistsOnDisk(context)
 
     // ==================== MASTER VAULT ROOT (STEALTH CONSOLIDATED CONTAINER) ====================
 
-    fun getOrCreateVaultRoot(context: Context): File {
-        cachedVaultRoot?.let { if (it.exists() && it.isDirectory) return it }
-
-        val storedPath = context.config.vaultRootPath
-        if (storedPath.isNotEmpty()) {
-            val dir = File(storedPath)
-            if (dir.exists() && dir.isDirectory) {
-                cachedVaultRoot = dir
-                return dir
-            }
-        }
-
-        val existing = findVaultRoot(context)
-        if (existing != null) {
-            context.config.vaultRootPath = existing.absolutePath
-            cachedVaultRoot = existing
-            return existing
-        }
+    /**
+     * Creates the vault root folder. ONLY the vault setup flow (setupOrUpdateCredentials) may call
+     * this. Every other code path must use findVaultRoot() and handle "no vault" - otherwise a
+     * deleted vault folder would silently come back as an empty folder.
+     */
+    private fun createVaultRoot(context: Context): File {
+        findVaultRoot(context)?.let { return it }
 
         val newDir = getDefaultVaultRoot()
         if (!newDir.exists()) {
@@ -418,79 +551,34 @@ object CryptoManager {
 
         context.config.vaultRootPath = newDir.absolutePath
         cachedVaultRoot = newDir
-        vaultRootSearchDone = false
         return newDir
     }
 
+    /** Returns the vault root only if a vault really exists on disk; never creates anything. */
     fun findVaultRoot(context: Context): File? {
-        cachedVaultRoot?.let { if (it.exists() && it.isDirectory) return it }
-
-        val storedPath = context.config.vaultRootPath
-        if (storedPath.isNotEmpty()) {
-            val dir = File(storedPath)
-            if (dir.exists() && dir.isDirectory) {
-                cachedVaultRoot = dir
-                return dir
-            }
+        // Fast path: a cached root is trusted only while its .vault header is still there.
+        cachedVaultRoot?.let { cached ->
+            if (cached.isDirectory && File(cached, VAULT_HEADER_FILE).isFile) return cached
         }
 
+        val root = locateVaultRootOnDisk(context) ?: return null
+
+        // Migrate the old location Documents/Cipher_Secrets -> Documents/Cipher/Cipher_Secrets
         val standardDir = getDefaultVaultRoot()
-        if (standardDir.exists() && standardDir.isDirectory) {
-            if (File(standardDir, VAULT_HEADER_FILE).exists() || File(standardDir, NOMEDIA).exists() || standardDir.listFiles()?.isNotEmpty() == true) {
-                context.config.vaultRootPath = standardDir.absolutePath
-                cachedVaultRoot = standardDir
-                vaultRootSearchDone = false
+        val legacyDocDir = File(getDocumentsDirectory(), CIPHER_SECRETS_DIR_NAME)
+        if (root.absolutePath == legacyDocDir.absolutePath && !standardDir.exists()) {
+            val moved = try {
+                standardDir.parentFile?.mkdirs()
+                legacyDocDir.renameTo(standardDir)
+            } catch (_: Exception) {
+                false
+            }
+            if (moved) {
+                rememberVaultRoot(context, standardDir)
                 return standardDir
             }
         }
-
-        val docDir = File(getDocumentsDirectory(), CIPHER_SECRETS_DIR_NAME)
-        if (docDir.exists() && docDir.isDirectory) {
-            if (File(docDir, VAULT_HEADER_FILE).exists() || File(docDir, NOMEDIA).exists() || docDir.listFiles()?.isNotEmpty() == true) {
-                val targetDir = if (!standardDir.exists()) {
-                    try {
-                        standardDir.parentFile?.mkdirs()
-                        if (docDir.renameTo(standardDir)) standardDir else docDir
-                    } catch (_: Exception) {
-                        docDir
-                    }
-                } else {
-                    docDir
-                }
-                context.config.vaultRootPath = targetDir.absolutePath
-                cachedVaultRoot = targetDir
-                vaultRootSearchDone = false
-                return targetDir
-            }
-        }
-
-        if (vaultRootSearchDone) {
-            return null
-        }
-
-        val documentsDir = getDocumentsDirectory()
-        val candidates = listOfNotNull(
-            documentsDir,
-            File(documentsDir, CIPHER_ROOT_DIR_NAME),
-            Environment.getExternalStorageDirectory(),
-            File("/storage/emulated/0"),
-            context.sdCardPath.takeIf { it.isNotEmpty() }?.let { File(it) }
-        )
-        for (root in candidates) {
-            if (root.exists() && root.isDirectory) {
-                val children = root.listFiles() ?: continue
-                for (child in children) {
-                    if (child.isDirectory && (File(child, VAULT_HEADER_FILE).exists() || (File(child, NOMEDIA).exists() && child.listFiles()?.any { isEncryptedFolder(it) } == true))) {
-                        context.config.vaultRootPath = child.absolutePath
-                        cachedVaultRoot = child
-                        vaultRootSearchDone = false
-                        return child
-                    }
-                }
-            }
-        }
-        vaultRootSearchDone = true
-        return null
+        return root
     }
 
     // ==================== KEY MANAGEMENT (ARGON2id + AES-256-GCM + RSA-2048) ====================
@@ -627,6 +715,7 @@ object CryptoManager {
     }
 
     fun completeBiometricUnlock(context: Context, cipher: Cipher): Boolean {
+        if (!verifyVaultOnDisk(context)) return false
         val wrappedB64 = context.config.vaultBiometricWrappedBundle
         if (wrappedB64.isEmpty()) return false
         val combined = try {
@@ -882,6 +971,19 @@ object CryptoManager {
      * The master bundle (MasterKey + PrivateKey) is written directly to .vault in the root folder.
      */
     fun setupOrUpdateCredentials(context: Context, secret: String, protectionType: Int): String {
+        vaultSetupInProgress = true
+        try {
+            // A vault that no longer exists on disk must never leak its old keys into a new one.
+            if (canAccessSharedStorage(context) && !vaultExistsOnDisk(context)) {
+                resetStaleVaultState(context)
+            }
+            return setupOrUpdateCredentialsInternal(context, secret, protectionType)
+        } finally {
+            vaultSetupInProgress = false
+        }
+    }
+
+    private fun setupOrUpdateCredentialsInternal(context: Context, secret: String, protectionType: Int): String {
         if (hasExistingVault(context) && !isVaultUnlocked) {
             throw IllegalStateException("Vault is locked! Cannot update credentials without unlocking first.")
         }
@@ -924,7 +1026,7 @@ object CryptoManager {
         clearBiometricKey(context)
 
         // Write vault root header (.vault) on disk for full multi-device portability
-        val vaultRoot = getOrCreateVaultRoot(context)
+        val vaultRoot = createVaultRoot(context)
         val vaultHeader = File(vaultRoot, VAULT_HEADER_FILE)
         writeVaultHeader(vaultHeader, salt, ARGON2_MEMORY_KB, ARGON2_ITERATIONS, ARGON2_PARALLELISM, iv, wrapped, protectionType)
 
@@ -934,7 +1036,6 @@ object CryptoManager {
         context.config.vaultWrappedKeyData = data
         context.config.vaultRootPath = vaultRoot.absolutePath
         cachedVaultRoot = vaultRoot
-        vaultRootSearchDone = false
         encryptedFolderCache.clear()
 
         unlockedMasterKey = masterKey.copyOf()
@@ -1055,89 +1156,72 @@ object CryptoManager {
     }
 
     fun unlockWithSecret(context: Context, secret: String): Boolean {
-        // 1. Try to find vault root from disk (enables unlocking a transferred vault on a new device!)
-        val vaultRoot = findVaultRoot(context)
-        if (vaultRoot != null) {
-            val headerFile = File(vaultRoot, VAULT_HEADER_FILE)
-            if (headerFile.exists()) {
-                val unlocked = unlockFromHeaderFile(context, headerFile, secret)
-                if (unlocked) {
-                    context.config.vaultRootPath = vaultRoot.absolutePath
-                    return true
-                }
+        val vaultRoot = locateVaultRootOnDisk(context)
+        if (vaultRoot == null) {
+            // The vault is gone: there is nothing to unlock. Drop every leftover credential instead
+            // of re-creating the vault from SharedPreferences.
+            verifyVaultOnDisk(context)
+            return false
+        }
+
+        val headerFile = File(vaultRoot, VAULT_HEADER_FILE)
+        if (isValidVaultHeader(headerFile)) {
+            val unlocked = unlockFromHeaderFile(context, headerFile, secret)
+            if (unlocked) {
+                context.config.vaultRootPath = vaultRoot.absolutePath
+                cachedVaultRoot = vaultRoot
             }
+            return unlocked
         }
 
-        // 2. Fallback to SharedPreferences wrappedData (PBKDF2 or cached Argon2id)
-        val wrappedData = context.config.vaultWrappedKeyData
-        if (wrappedData.isNotEmpty()) {
-            try {
-                val parts = wrappedData.split(":")
-                if (parts.size == 3) {
-                    val salt = Base64.decode(parts[0], Base64.NO_WRAP)
-                    val iv = Base64.decode(parts[1], Base64.NO_WRAP)
-                    val ciphertext = Base64.decode(parts[2], Base64.NO_WRAP)
-
-                    // Try Argon2id first
-                    var bundle: ByteArray? = try {
-                        val wrappingKey = deriveKeyArgon2id(secret, salt)
-                        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-                        cipher.init(Cipher.DECRYPT_MODE, wrappingKey, GCMParameterSpec(GCM_TAG_BITS, iv))
-                        cipher.doFinal(ciphertext)
-                    } catch (_: Exception) {
-                        null
-                    }
-
-                    // Fallback to PBKDF2
-                    if (bundle == null) {
-                        bundle = try {
-                            val wrappingKey = deriveWrappingKey(secret, salt)
-                            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-                            cipher.init(Cipher.DECRYPT_MODE, wrappingKey, GCMParameterSpec(GCM_TAG_BITS, iv))
-                            cipher.doFinal(ciphertext)
-                        } catch (_: Exception) {
-                            null
-                        }
-                    }
-
-                    if (bundle != null) {
-                        DataInputStream(ByteArrayInputStream(bundle)).use { dis ->
-                            val masterKey = ByteArray(32)
-                            dis.readFully(masterKey)
-                            val privLen = dis.readInt()
-                            val privBytes = ByteArray(privLen)
-                            dis.readFully(privBytes)
-                            val privKey = KeyFactory.getInstance("RSA")
-                                .generatePrivate(PKCS8EncodedKeySpec(privBytes))
-                            privBytes.fill(0)
-                            unlockedMasterKey = masterKey
-                            unlockedPrivateKey = privKey
-                        }
-                        bundle.fill(0)
-
-                        // Upgrade to Argon2id + write .vault in vault root if needed
-                        setupOrUpdateCredentials(context, secret, context.config.hiddenProtectionType)
-                        return true
-                    }
-                }
-            } catch (_: Exception) {
-            }
-        }
-
-        // Legacy fallback if user had a SHA-1 hash before vault initialization
-        val expectedHash = context.config.hiddenPasswordHash
-        val legacySha1 = secret.getHash()
-        if (expectedHash.isNotEmpty() && expectedHash == legacySha1) {
-            setupOrUpdateCredentials(context, secret, context.config.hiddenProtectionType)
-            return true
-        }
-        return false
+        // Legacy vault (older app versions): the root holds encrypted content but has no .vault yet.
+        return unlockLegacyVaultFromPrefs(context, secret)
     }
 
-    private fun String.getHash(): String {
-        val digest = MessageDigest.getInstance("SHA-1")
-        val bytes = digest.digest(this.toByteArray(Charsets.UTF_8))
-        return bytes.joinToString("") { "%02x".format(it) }
+    /**
+     * Only reachable for a legacy vault whose folder physically exists (see isLegacyVaultRoot).
+     * On success the missing .vault header is written into that existing folder.
+     */
+    private fun unlockLegacyVaultFromPrefs(context: Context, secret: String): Boolean {
+        val parts = context.config.vaultWrappedKeyData.split(":")
+        if (parts.size != 3) return false
+        return try {
+            val salt = Base64.decode(parts[0], Base64.NO_WRAP)
+            val iv = Base64.decode(parts[1], Base64.NO_WRAP)
+            val ciphertext = Base64.decode(parts[2], Base64.NO_WRAP)
+
+            fun tryDecrypt(wrappingKey: SecretKeySpec): ByteArray? = try {
+                val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+                cipher.init(Cipher.DECRYPT_MODE, wrappingKey, GCMParameterSpec(GCM_TAG_BITS, iv))
+                cipher.doFinal(ciphertext)
+            } catch (_: Exception) {
+                null
+            }
+
+            val bundle = tryDecrypt(deriveKeyArgon2id(secret, salt))
+                ?: tryDecrypt(deriveWrappingKey(secret, salt))
+                ?: return false
+
+            DataInputStream(ByteArrayInputStream(bundle)).use { dis ->
+                val masterKey = ByteArray(32)
+                dis.readFully(masterKey)
+                val privLen = dis.readInt()
+                val privBytes = ByteArray(privLen)
+                dis.readFully(privBytes)
+                val privKey = KeyFactory.getInstance("RSA")
+                    .generatePrivate(PKCS8EncodedKeySpec(privBytes))
+                privBytes.fill(0)
+                unlockedMasterKey = masterKey
+                unlockedPrivateKey = privKey
+            }
+            bundle.fill(0)
+
+            // Upgrade to Argon2id and write the .vault header into the existing root
+            setupOrUpdateCredentials(context, secret, context.config.hiddenProtectionType)
+            true
+        } catch (_: Exception) {
+            false
+        }
     }
 
     // ==================== FOLDER METADATA ENCRYPTION (.meta & .fmeta) ====================
@@ -1195,7 +1279,7 @@ object CryptoManager {
         if (unlockedMasterKey == null && context.config.vaultPublicKey.isEmpty()) {
             return null
         }
-        val vaultRoot = getOrCreateVaultRoot(context)
+        val vaultRoot = findVaultRoot(context) ?: return null
         var subfolder = File(vaultRoot, randomHex(6))
         while (subfolder.exists()) {
             subfolder = File(vaultRoot, randomHex(6))
@@ -1215,7 +1299,7 @@ object CryptoManager {
 
     fun getHiddenPhysicalAlbums(context: Context): List<VaultPhysicalAlbum> {
         val albums = ArrayList<VaultPhysicalAlbum>()
-        val vaultRoot = getOrCreateVaultRoot(context)
+        val vaultRoot = findVaultRoot(context) ?: return emptyList()
 
         // 1. Vault Root (Main Vault album)
         val rootFiles = vaultRoot.listFiles() ?: emptyArray()
@@ -1382,7 +1466,7 @@ object CryptoManager {
         if (unlockedMasterKey == null && context.config.vaultPublicKey.isEmpty()) {
             return null
         }
-        val vaultRoot = getOrCreateVaultRoot(context)
+        val vaultRoot = findVaultRoot(context) ?: return null
 
         val subfolders = vaultRoot.listFiles()?.filter { it.isDirectory && !it.name.startsWith(".") } ?: emptyList()
         for (sub in subfolders) {
@@ -1484,9 +1568,9 @@ object CryptoManager {
         return null
     }
 
-    fun getOrCreateVaultRecycleBin(context: Context): File {
+    fun getOrCreateVaultRecycleBin(context: Context): File? {
         getVaultRecycleBin(context)?.let { return it }
-        val vaultRoot = getOrCreateVaultRoot(context)
+        val vaultRoot = findVaultRoot(context) ?: return null
         var binFolder: File
         do {
             binFolder = File(vaultRoot, randomHex(6))
@@ -1547,7 +1631,7 @@ object CryptoManager {
     }
 
     fun saveVaultRecycleBinRestoreMap(context: Context, map: HashMap<String, String>) {
-        val binFolder = getOrCreateVaultRecycleBin(context)
+        val binFolder = getOrCreateVaultRecycleBin(context) ?: return
         val restoreFile = File(binFolder, VAULT_RESTORE_INFO_FILE)
         if (map.isEmpty()) {
             if (restoreFile.exists()) {
@@ -1564,7 +1648,7 @@ object CryptoManager {
 
     fun moveEncryptedFilesToVaultRecycleBin(context: Context, paths: List<String>): Boolean {
         if (paths.isEmpty()) return true
-        val binFolder = getOrCreateVaultRecycleBin(context)
+        val binFolder = getOrCreateVaultRecycleBin(context) ?: return false
         val restoreMap = getVaultRecycleBinRestoreMap(context)
         var success = true
 
@@ -1599,7 +1683,7 @@ object CryptoManager {
         if (paths.isEmpty()) return 0
         val binFolder = getVaultRecycleBin(context) ?: return 0
         val restoreMap = getVaultRecycleBinRestoreMap(context)
-        val vaultRoot = getOrCreateVaultRoot(context)
+        val vaultRoot = findVaultRoot(context) ?: return 0
         var restoredCount = 0
 
         for (path in paths) {
@@ -2385,7 +2469,7 @@ object CryptoManager {
         }
 
         val originalFolderName = getDecryptedFolderName(folder) ?: folder.name
-        val vaultRoot = getOrCreateVaultRoot(context)
+        val vaultRoot = findVaultRoot(context) ?: return null
 
         val filesToEncrypt = folder.listFiles()?.filter { file ->
             file.isFile &&
