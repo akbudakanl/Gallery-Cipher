@@ -807,15 +807,24 @@ class DirectoryAdapter(
         val fileDirItems = paths.map { FileDirItem(it, it.getFilenameFromPath()) } as ArrayList<FileDirItem>
         activity.tryCopyMoveFilesTo(fileDirItems, isCopyOperation) {
             val destinationPath = it
+            val affectedFolders = LinkedHashSet<String>(selectedPaths.size + 1).apply {
+                addAll(selectedPaths)
+                if (!destinationPath.isVirtualAlbumPath()) {
+                    add(destinationPath)
+                }
+            }
             if (!destinationPath.isVirtualAlbumPath()) {
                 val newPaths = fileDirItems.map { "$destinationPath/${it.name}" }.toMutableList() as ArrayList<String>
                 activity.rescanPaths(newPaths) {
                     activity.fixDateTaken(newPaths, false)
+                    activity.runOnUiThread {
+                        listener?.refreshPaths(affectedFolders)
+                    }
                 }
             }
 
             config.tempFolderPath = ""
-            listener?.refreshItems()
+            listener?.refreshPaths(affectedFolders)
             finishActMode()
         }
     }

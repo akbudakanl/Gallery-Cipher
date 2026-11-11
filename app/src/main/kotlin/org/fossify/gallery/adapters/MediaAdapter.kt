@@ -768,11 +768,18 @@ class MediaAdapter(
             val newPaths = fileDirItems.map { "$destinationPath/${it.name}" }.toMutableList() as ArrayList<String>
             activity.rescanPaths(newPaths) {
                 activity.fixDateTaken(newPaths, false)
+                if (!isCopyOperation || destinationPath == path) {
+                    activity.runOnUiThread {
+                        listener?.refreshItems()
+                    }
+                }
             }
 
-            if (!isCopyOperation) {
+            if (!isCopyOperation || destinationPath == path) {
                 listener?.refreshItems()
-                activity.updateFavoritePaths(fileDirItems, destinationPath)
+                if (!isCopyOperation) {
+                    activity.updateFavoritePaths(fileDirItems, destinationPath)
+                }
             }
             finishActMode()
         }

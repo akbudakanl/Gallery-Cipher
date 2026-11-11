@@ -6,6 +6,10 @@ import java.io.File
 interface DirectoryOperationsListener {
     fun refreshItems()
 
+    fun refreshPaths(paths: Collection<String>) {
+        refreshItems()
+    }
+
     fun deleteFolders(folders: ArrayList<File>)
 
     fun recheckPinnedFolders()

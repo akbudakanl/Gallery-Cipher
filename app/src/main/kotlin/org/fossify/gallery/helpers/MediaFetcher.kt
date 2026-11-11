@@ -146,7 +146,7 @@ class MediaFetcher(val context: Context, var isSecretVaultView: Boolean = false)
         }
     }
 
-    private fun getLatestFileFolders(): LinkedHashSet<String> {
+    fun getLatestFileFolders(): LinkedHashSet<String> {
         val uri = Files.getContentUri("external")
         val projection = arrayOf(Images.ImageColumns.DATA)
         val parents = LinkedHashSet<String>()
