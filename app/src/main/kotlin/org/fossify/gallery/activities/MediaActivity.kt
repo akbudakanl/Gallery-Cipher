@@ -205,9 +205,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             padBottomImeAndSystem = listOf(binding.mediaGrid)
         )
 
-        if (mShowAll) {
-            registerFileUpdateListener()
-        }
+        registerFileUpdateListener()
 
         binding.mediaEmptyTextPlaceholder2.setOnClickListener {
             showFilterMediaDialog()
@@ -283,18 +281,15 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
         binding.mediaEmptyTextPlaceholder2.setTextColor(getProperPrimaryColor())
         binding.mediaEmptyTextPlaceholder2.bringToFront()
 
-        // do not refresh Random sorted files after opening a fullscreen image and going Back
-        val isRandomSorting = config.getFolderSorting(mPath) and SORT_BY_RANDOM != 0
-        if (mMedia.isEmpty() || !isRandomSorting || (isRandomSorting && !mWasFullscreenViewOpen)) {
-            if (shouldSkipAuthentication()) {
-                tryLoadGallery()
-            } else {
-                handleLockedFolderOpening(mPath) { success ->
-                    if (success) {
-                        tryLoadGallery()
-                    } else {
-                        finish()
-                    }
+        mWasFullscreenViewOpen = false
+        if (shouldSkipAuthentication()) {
+            tryLoadGallery()
+        } else {
+            handleLockedFolderOpening(mPath) { success ->
+                if (success) {
+                    tryLoadGallery()
+                } else {
+                    finish()
                 }
             }
         }
@@ -326,17 +321,32 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
+        unregisterFileUpdateListener()
         if (config.showAll && !isChangingConfigurations) {
             config.temporarilyShowHidden = false
             config.tempSkipDeleteConfirmation = false
             config.tempSkipRecycleBin = false
             CryptoManager.lockVault()
-            unregisterFileUpdateListener()
             GalleryDatabase.destroyInstance()
         }
 
         mTempShowHiddenHandler.removeCallbacksAndMessages(null)
+        super.onDestroy()
+    }
+
+    override fun onMediaStoreContentChanged(changedFolderPaths: Set<String>, isWildcardChange: Boolean) {
+        if (isDestroyed || isFinishing) {
+            return
+        }
+        val affectsCurrentView = isWildcardChange ||
+            mShowAll ||
+            mPath == FAVORITES ||
+            mPath.isVirtualAlbumPath() ||
+            changedFolderPaths.any { it.equals(mPath, ignoreCase = true) }
+
+        if (affectsCurrentView && !binding.mediaMenu.isSearchOpen) {
+            getMedia()
+        }
     }
 
     override fun onBackPressedCompat(): Boolean {
@@ -602,7 +612,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     }
 
     private fun checkLastMediaChanged() {
-        if (isDestroyed || config.getFolderSorting(mPath) and SORT_BY_RANDOM != 0) {
+        if (isDestroyed) {
             return
         }
 

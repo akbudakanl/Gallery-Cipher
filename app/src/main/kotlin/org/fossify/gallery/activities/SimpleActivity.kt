@@ -2,6 +2,8 @@ package org.fossify.gallery.activities
 
 import android.database.ContentObserver
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore.Images
 import android.provider.MediaStore.Video
 import android.view.WindowManager
@@ -16,6 +18,7 @@ import org.fossify.gallery.dialogs.StoragePermissionRequiredDialog
 import org.fossify.gallery.extensions.addPathToDB
 import org.fossify.gallery.extensions.applyVaultScreenProtection
 import org.fossify.gallery.extensions.config
+import org.fossify.gallery.extensions.isPathHiddenOrEncrypted
 import org.fossify.gallery.extensions.updateDirectoryPath
 import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.getPermissionsToRequest
@@ -23,6 +26,23 @@ import org.fossify.gallery.helpers.getPermissionsToRequest
 open class SimpleActivity : BaseSimpleActivity() {
 
     private var dialog: AlertDialog? = null
+    private val mediaObserverHandler = Handler(Looper.getMainLooper())
+    private val pendingObserverFolders = LinkedHashSet<String>()
+    private var hasPendingWildcardObserverChange = false
+
+    private val dispatchObserverChangeRunnable = Runnable {
+        val folders: Set<String>
+        val isWildcard: Boolean
+        synchronized(pendingObserverFolders) {
+            folders = LinkedHashSet(pendingObserverFolders)
+            pendingObserverFolders.clear()
+            isWildcard = hasPendingWildcardObserverChange
+            hasPendingWildcardObserverChange = false
+        }
+        if (!isDestroyed && !isFinishing && (folders.isNotEmpty() || isWildcard)) {
+            onMediaStoreContentChanged(folders, isWildcard)
+        }
+    }
 
     override fun onResume() {
         super.onResume()
@@ -34,15 +54,41 @@ open class SimpleActivity : BaseSimpleActivity() {
         }
     }
 
+    override fun onDestroy() {
+        mediaObserverHandler.removeCallbacks(dispatchObserverChangeRunnable)
+        super.onDestroy()
+    }
+
+    protected open fun onMediaStoreContentChanged(changedFolderPaths: Set<String>, isWildcardChange: Boolean) {}
+
     private val observer = object : ContentObserver(null) {
         override fun onChange(selfChange: Boolean, uri: Uri?) {
             super.onChange(selfChange, uri)
-            if (uri != null) {
-                val path = getRealPathFromURI(uri)
-                if (path != null) {
-                    updateDirectoryPath(path.getParentPath())
-                    addPathToDB(path)
+            ensureBackgroundThread {
+                if (uri != null) {
+                    val path = getRealPathFromURI(uri)
+                    if (path != null) {
+                        if (!isPathHiddenOrEncrypted(path)) {
+                            val parentPath = path.getParentPath()
+                            updateDirectoryPath(parentPath)
+                            addPathToDB(path)
+                            synchronized(pendingObserverFolders) {
+                                pendingObserverFolders.add(parentPath)
+                            }
+                        }
+                    } else {
+                        synchronized(pendingObserverFolders) {
+                            hasPendingWildcardObserverChange = true
+                        }
+                    }
+                } else {
+                    synchronized(pendingObserverFolders) {
+                        hasPendingWildcardObserverChange = true
+                    }
                 }
+
+                mediaObserverHandler.removeCallbacks(dispatchObserverChangeRunnable)
+                mediaObserverHandler.postDelayed(dispatchObserverChangeRunnable, 300L)
             }
         }
     }
