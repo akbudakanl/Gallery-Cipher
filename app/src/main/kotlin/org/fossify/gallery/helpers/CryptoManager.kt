@@ -1768,6 +1768,26 @@ object CryptoManager {
 
     // ==================== FILE ENCRYPTION & DECRYPTION ====================
 
+    /**
+     * True only for file formats the gallery can actually display (images, GIFs, videos, RAWs, SVGs).
+     * Anything else (.pdf, .md, .txt ...) must never be encrypted, otherwise it would end up in the vault
+     * as an unreadable, seemingly corrupted .bin file.
+     */
+    fun isSupportedMediaName(name: String): Boolean {
+        return name.isImageFast() || name.isVideoFast() || name.isGif() || name.isRawFast() || name.isSvg()
+    }
+
+    /** True if [file] is a regular, not yet encrypted file of a media format supported by the gallery. */
+    fun isEncryptableMediaFile(file: File): Boolean {
+        return file.isFile &&
+            file.name != NOMEDIA &&
+            file.name != ENCRYPTED_FOLDER_META_FILE &&
+            file.name != VAULT_SUBFOLDER_META_FILE &&
+            file.name != VAULT_HEADER_FILE &&
+            !isEncryptedFile(file.name) &&
+            isSupportedMediaName(file.name)
+    }
+
     private fun getMediaTypeForName(name: String): Int {
         return when {
             name.isGif() -> TYPE_GIFS
@@ -2471,14 +2491,8 @@ object CryptoManager {
         val originalFolderName = getDecryptedFolderName(folder) ?: folder.name
         val vaultRoot = findVaultRoot(context) ?: return null
 
-        val filesToEncrypt = folder.listFiles()?.filter { file ->
-            file.isFile &&
-                file.name != NOMEDIA &&
-                file.name != ENCRYPTED_FOLDER_META_FILE &&
-                file.name != VAULT_SUBFOLDER_META_FILE &&
-                file.name != VAULT_HEADER_FILE &&
-                !isEncryptedFile(file.name)
-        } ?: emptyList()
+        // Only formats supported by the gallery are encrypted; other files (pdf, md, ...) are left untouched.
+        val filesToEncrypt = folder.listFiles()?.filter { isEncryptableMediaFile(it) } ?: emptyList()
 
         var subfolder = File(vaultRoot, randomHex(6))
         while (subfolder.exists()) {
@@ -2598,31 +2612,38 @@ object CryptoManager {
             context.rescanPaths(pathsToRescan)
         }
 
-        // Delete original plaintext folder
+        // Delete original plaintext folder - but only if nothing besides leftovers of ours remains in it.
+        // Files the gallery can't display (pdf, md, ...) were intentionally NOT encrypted and must survive.
         try {
-            val oldNoMedia = File(folder, NOMEDIA)
-            if (!oldNoMedia.exists()) {
-                try { oldNoMedia.createNewFile() } catch (_: Exception) {}
-            }
+            val leftoverUnsupportedFiles = folder.listFiles()?.any { child ->
+                child.name != NOMEDIA && (child.isFile || child.isDirectory)
+            } == true
 
-            val contentResolver = context.contentResolver
-            val filesUri = MediaStore.Files.getContentUri("external")
-            contentResolver.delete(
-                filesUri,
-                "${MediaStore.MediaColumns.DATA} LIKE ?",
-                arrayOf("${folder.absolutePath}%")
-            )
+            if (!leftoverUnsupportedFiles) {
+                val oldNoMedia = File(folder, NOMEDIA)
+                if (!oldNoMedia.exists()) {
+                    try { oldNoMedia.createNewFile() } catch (_: Exception) {}
+                }
 
-            folder.listFiles()?.forEach { child ->
-                try { child.delete() } catch (_: Exception) {}
-            }
+                val contentResolver = context.contentResolver
+                val filesUri = MediaStore.Files.getContentUri("external")
+                contentResolver.delete(
+                    filesUri,
+                    "${MediaStore.MediaColumns.DATA} LIKE ?",
+                    arrayOf("${folder.absolutePath}%")
+                )
 
-            var deletedDir = folder.delete()
-            if (!deletedDir) {
-                deletedDir = folder.deleteRecursively()
-            }
-            if (!deletedDir) {
-                deletedDir = context.tryFastDocumentDelete(folder.absolutePath, true)
+                folder.listFiles()?.forEach { child ->
+                    try { child.delete() } catch (_: Exception) {}
+                }
+
+                var deletedDir = folder.delete()
+                if (!deletedDir) {
+                    deletedDir = folder.deleteRecursively()
+                }
+                if (!deletedDir) {
+                    deletedDir = context.tryFastDocumentDelete(folder.absolutePath, true)
+                }
             }
         } catch (_: Exception) {}
 
