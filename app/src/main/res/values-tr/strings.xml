@@ -352,6 +352,7 @@
     <string name="empty_encrypted_vault_warning">Şifreli kasa (Cipher_Secrets) ve içindeki tüm dosyalar kalıcı olarak silinecektir. Emin misiniz?</string>
     <string name="refresh">Yenile</string>
     <string name="pull_down_to_open_vault">Şifreli kasa için çekmeye devam edin</string>
+    <string name="keep_holding_to_open_vault">Şifreli kasayı açmak için basılı tutun</string>
     <string name="release_to_open_vault">Şifreli kasayı açmak için bırakın</string>
     <string name="vault_not_created_prompt">Henüz bir kasa oluşturmadınız. Kasa oluşturmak istiyor musunuz?</string>
 </resources>

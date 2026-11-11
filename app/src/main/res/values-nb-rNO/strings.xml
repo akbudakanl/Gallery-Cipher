@@ -357,6 +357,7 @@
     <string name="empty_encrypted_vault_warning">Det krypterte hvelvet (Cipher_Secrets) og alle filene i det vil bli slettet permanent. Er du sikker?</string>
     <string name="refresh">Oppdater</string>
     <string name="pull_down_to_open_vault">Fortsett å dra ned for kryptert hvelv</string>
+    <string name="keep_holding_to_open_vault">Fortsett å holde for å åpne kryptert hvelv</string>
     <string name="release_to_open_vault">Slipp for å åpne kryptert hvelv</string>
     <string name="vault_not_created_prompt">Du har ikke opprettet et hvelv ennå. Vil du opprette et hvelv?</string>
 </resources>

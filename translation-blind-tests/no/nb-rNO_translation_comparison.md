@@ -1,6 +1,6 @@
 # Norwegian Bokmål (values-nb-rNO) Translation Completion & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-nb-rNO/strings.xml` was audited against `app/src/main/res/values/strings.xml`. Three existing errors/typos were corrected, two multiline placeholders were normalized, and all 91 missing strings were translated into Norwegian Bokmål and added, bringing `values-nb-rNO` to full parity (326 `<string>` + 2 `<plurals>` = 328 app resource entries; `search` and 16 shared UI keys from `fossify-commons` plus the newly added `skip_the_recycle_bin` override; 348 total comparison rows with plural forms expanded).
+> **Scope:** `app/src/main/res/values-nb-rNO/strings.xml` was audited against `app/src/main/res/values/strings.xml`. Three existing errors/typos were corrected, two multiline placeholders were normalized, and all 91 missing strings were translated into Norwegian Bokmål and added, bringing `values-nb-rNO` to full parity (343 `<string>` + 2 `<plurals>` = 345 app resource entries; `search` and 16 shared UI keys from `fossify-commons` plus the newly added `skip_the_recycle_bin` override; 351 total comparison rows with plural forms expanded).
 > **Key Terminology:** `Settings` → `Innstillinger` · `Default` → `Standard` / `Systemstandard` · `Folder` → `Mappe` · `Album` → `Album` · `Encrypted Vault` → `Kryptert hvelv` · `Hidden` → `Skjult` · `Excluded` → `Ekskludert` · `Password` → `Passord` · `Encrypt / Decrypt` → `Krypter / Dekrypter` · `Thumbnails` → `Minibilder` · `Recycle bin` → `Papirkurv` · `Clipboard` → `Utklippstavlen`
 
 ## 1. Summary of Revisions & Newly Added Norwegian Bokmål Strings & Translations
@@ -15,9 +15,9 @@
 | `included_activity_placeholder` | *(literal newlines around `\n`)* | `...\n\n...` | **Normalized** (Removed stray spaces caused by literal XML newlines) |
 | `excluded_activity_placeholder` | *(literal newlines around `\n`)* | `...\n\n...` | **Normalized** (Removed stray spaces caused by literal XML newlines) |
 
-### 1.2 Newly Added Fork-Only Strings (63 Keys)
+### 1.2 Newly Added Fork-Only Strings (66 Keys)
 
-These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
+These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
 
 | 1 | 1 | `video_double_tap_duration` | Double-tap seek duration | Video settings: double-tap forward/rewind seek interval |
 | 2 | 2 | `video_seek_duration_seconds` | %d seconds | Used with durations 3, 5, 10, 15 via String.format |
@@ -82,6 +82,10 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 61 | 60 | `hidden_album_name_empty` | Album name cannot be empty | Validation error when hidden album name is blank |
 | 62 | 61 | `file_hidden_to_album` | File hidden to \"%s\" | Success toast after hiding a single file into album `%s` |
 | 63 | 62 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | Success toast after hiding `%1$d` files into album `%2$s` |
+| 64 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Fortsett å dra ned for kryptert hvelv | Vault pull gesture hint shown while the pull is below the open threshold |
+| 65 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Fortsett å holde for å åpne kryptert hvelv | Vault pull gesture hint shown once the pull passes the threshold, before the 2.5 s hold completes |
+| 66 | `release_to_open_vault` | Release to open Encrypted Vault | Slipp for å åpne kryptert hvelv | Vault pull gesture hint shown after holding the pull for 2.5 s; releasing opens the vault |
+
 ### 1.3 Newly Added Translations for Strings Already Present in the Original Fossify Gallery (45 Keys)
 
 These 45 strings already exist in the original Fossify Gallery (upstream); only the translations below were newly added in this fork:
@@ -510,3 +514,6 @@ These 45 strings already exist in the original Fossify Gallery (upstream); only 
 | 346 | `search_files` *(fossify-commons)* | Search files | Søk i filer |
 | 347 | `search_folders` *(fossify-commons)* | Search folders | Søk i mapper |
 | 348 | `skip_the_recycle_bin` *(fossify-commons)* | Skip the recycle bin, delete files directly | Hopp over papirkurven og slett filene direkte |
+| 349 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Fortsett å dra ned for kryptert hvelv |
+| 350 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Fortsett å holde for å åpne kryptert hvelv |
+| 351 | `release_to_open_vault` | Release to open Encrypted Vault | Slipp for å åpne kryptert hvelv |

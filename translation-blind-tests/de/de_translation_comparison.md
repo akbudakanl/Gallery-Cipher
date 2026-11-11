@@ -1,13 +1,13 @@
 # German (values-de) Translation Completion & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-de/strings.xml` was audited against `app/src/main/res/values/strings.xml`. All 50 missing strings were translated into German and added, bringing `values-de` to full parity (326 `<string>` + 2 `<plurals>` = 328 resource entries; 345 total comparison rows including plural forms and 15 `fossify-commons` UI keys).
+> **Scope:** `app/src/main/res/values-de/strings.xml` was audited against `app/src/main/res/values/strings.xml`. All 50 missing strings were translated into German and added, bringing `values-de` to full parity (343 `<string>` + 2 `<plurals>` = 345 resource entries; 350 total comparison rows including plural forms and 15 `fossify-commons` UI keys).
 > **Key Terminology:** `Settings` → `Einstellungen` · `Default` → `Standard` / `Systemvorgabe` · `Folder` → `Ordner` · `Album` → `Album` · `Encrypted Vault` → `Verschlüsselter Tresor` · `Hidden` → `Versteckt` · `Password` → `Passwort` · `Encrypt / Decrypt` → `Verschlüsseln / Entschlüsseln` · `Copy to` → `Kopieren nach` · `Clipboard` → `Zwischenablage`
 
 ## 1. Summary of Newly Added German Strings & Translations
 
-### Newly Added Fork-Only Strings (63 Keys)
+### Newly Added Fork-Only Strings (66 Keys)
 
-These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
+These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
 
 | # | Key (`name`) | English (`values/strings.xml`) | German (`values-de/strings.xml`) | Notes |
 |---:|---|---|---|---|
@@ -74,6 +74,9 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 61 | `hidden_album_name_empty` | Album name cannot be empty | Albumname darf nicht leer sein | Validation error when hidden album name is blank |
 | 62 | `file_hidden_to_album` | File hidden to \"%s\" | Datei im Album „%s“ versteckt | Success toast after hiding a single file into album `%s` |
 | 63 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | %1$d Dateien im Album „%2$s“ versteckt | Success toast after hiding `%1$d` files into album `%2$s` |
+| 64 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Weiter nach unten ziehen für den Tresor | Vault pull gesture hint shown while the pull is below the open threshold |
+| 65 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Zum Öffnen des verschlüsselten Tresors gedrückt halten | Vault pull gesture hint shown once the pull passes the threshold, before the 2.5 s hold completes |
+| 66 | `release_to_open_vault` | Release to open Encrypted Vault | Loslassen, um den Tresor zu öffnen | Vault pull gesture hint shown after holding the pull for 2.5 s; releasing opens the vault |
 
 ### Newly Added Translations for Strings Already Present in the Original Fossify Gallery (3 Keys)
 
@@ -459,3 +462,6 @@ All 14 shared UI keys below are already localized in `org.fossify:commons:7.1.3`
 | 345 | `print` *(fossify-commons)* | Print | Drucken |
 | 346 | `search_files` *(fossify-commons)* | Search files | Dateien durchsuchen |
 | 347 | `search_folders` *(fossify-commons)* | Search folders | Ordner durchsuchen |
+| 348 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Weiter nach unten ziehen für den Tresor |
+| 349 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Zum Öffnen des verschlüsselten Tresors gedrückt halten |
+| 350 | `release_to_open_vault` | Release to open Encrypted Vault | Loslassen, um den Tresor zu öffnen |

@@ -1,6 +1,6 @@
 # Spanish (Standard, values-es) Translation Audit, Revision & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-es/strings.xml` was audited against `app/src/main/res/values/strings.xml` and `fossify-commons` (`values-es`). Previously, `values-es` contained 257 `<string>` and 2 `<plurals>` entries (missing all 50 fork/new strings). 29 existing entries with mistranslations, typos, missing clauses, formatting bugs, or terminology inconsistencies were fixed, and all 50 missing strings were translated into Standard Spanish (`es`), bringing `values-es` to full parity (326 `<string>` + 2 `<plurals>` = 328 resource entries; `search` and 14 shared UI keys from `fossify-commons`; 347 total comparison rows with Spanish CLDR `one`/`many`/`other` plural forms expanded).
+> **Scope:** `app/src/main/res/values-es/strings.xml` was audited against `app/src/main/res/values/strings.xml` and `fossify-commons` (`values-es`). Previously, `values-es` contained 257 `<string>` and 2 `<plurals>` entries (missing all 50 fork/new strings). 29 existing entries with mistranslations, typos, missing clauses, formatting bugs, or terminology inconsistencies were fixed, and all 50 missing strings were translated into Standard Spanish (`es`), bringing `values-es` to full parity (343 `<string>` + 2 `<plurals>` = 345 resource entries; `search` and 14 shared UI keys from `fossify-commons`; 352 total comparison rows with Spanish CLDR `one`/`many`/`other` plural forms expanded).
 > **Key Terminology:** `Settings` → `Ajustes` · `Default` → `Predeterminado` / `Sistema por defecto` · `Folder` → `Carpeta` · `Album` → `Álbum` · `Encrypted Vault` → `Bóveda cifrada` · `Hidden` → `Oculto` · `Excluded` → `Excluido` · `Password` → `Contraseña` · `Encrypt / Decrypt` → `Cifrar / Descifrar` · `Copy to` → `Copiar a` (matches `fossify-commons`) · `Clipboard` → `Portapapeles` · `Search` → `Buscar` (inherited from `fossify-commons`)
 
 ## 1. Audit of Existing Translations & Newly Added Entries
@@ -41,9 +41,9 @@
 
 
 
-### 1.2 Newly Added Fork-Only Strings (63 Keys)
+### 1.2 Newly Added Fork-Only Strings (66 Keys)
 
-These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
+These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
 
 | # | Key (`name`) | English (`values/strings.xml`) | Spanish (`values-es/strings.xml`) | Notes |
 |--:|---|---|---|---|
@@ -110,6 +110,9 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 61 | `hidden_album_name_empty` | Album name cannot be empty | El nombre del álbum no puede estar vacío | Validation error when hidden album name is blank |
 | 62 | `file_hidden_to_album` | File hidden to \"%s\" | Archivo ocultado en \"%s\" | Success toast after hiding a single file into album `%s` |
 | 63 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | %1$d archivos ocultados en \"%2$s\" | Success toast after hiding `%1$d` files into album `%2$s` |
+| 64 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Siga deslizando hacia abajo para la bóveda | Vault pull gesture hint shown while the pull is below the open threshold |
+| 65 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Siga manteniendo pulsado para abrir la bóveda cifrada | Vault pull gesture hint shown once the pull passes the threshold, before the 2.5 s hold completes |
+| 66 | `release_to_open_vault` | Release to open Encrypted Vault | Suelte para abrir la bóveda cifrada | Vault pull gesture hint shown after holding the pull for 2.5 s; releasing opens the vault |
 
 ### 1.3 Newly Added Translations for Strings Already Present in the Original Fossify Gallery (3 Keys)
 
@@ -497,3 +500,6 @@ All 14 shared UI keys below are already localized in `org.fossify:commons:7.1.3`
 | 347 | `print` *(fossify-commons)* | Print | Imprimir |
 | 348 | `search_files` *(fossify-commons)* | Search files | Buscar archivos |
 | 349 | `search_folders` *(fossify-commons)* | Search folders | Buscar carpetas |
+| 350 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Siga deslizando hacia abajo para la bóveda |
+| 351 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Siga manteniendo pulsado para abrir la bóveda cifrada |
+| 352 | `release_to_open_vault` | Release to open Encrypted Vault | Suelte para abrir la bóveda cifrada |

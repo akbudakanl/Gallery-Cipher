@@ -8,11 +8,8 @@ import android.os.Handler
 import android.provider.MediaStore
 import android.provider.MediaStore.Images
 import android.provider.MediaStore.Video
-import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
-import android.view.ViewConfiguration
 import android.view.ViewGroup
-import android.view.animation.DecelerateInterpolator
 import android.widget.RelativeLayout
 import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
@@ -21,7 +18,6 @@ import org.fossify.commons.dialogs.FilePickerDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
 import org.fossify.commons.extensions.appLaunched
 import org.fossify.commons.extensions.appLockManager
-import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.areSystemAnimationsEnabled
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beVisible
@@ -162,6 +158,7 @@ import org.fossify.gallery.helpers.TYPE_IMAGES
 import org.fossify.gallery.helpers.TYPE_RAWS
 import org.fossify.gallery.helpers.TYPE_SVGS
 import org.fossify.gallery.helpers.TYPE_VIDEOS
+import org.fossify.gallery.helpers.VaultPullGestureHandler
 import org.fossify.gallery.helpers.getDefaultFileFilter
 import org.fossify.gallery.helpers.getPermissionToRequest
 import org.fossify.gallery.helpers.getPermissionsToRequest
@@ -231,18 +228,34 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     private var mStoredTextColor = 0
     private var mStoredPrimaryColor = 0
     private var mStoredStyleString = ""
-    private var mVaultGestureStartY = 0f
-    private var mVaultGestureStartX = 0f
-    private var mVaultGestureStartTime = 0L
-    private var mVaultGestureStartedAtTop = false
-    private var mVaultCancelDispatched = false
-    private var mVaultGestureThresholdMet = false
     private var mIsVaultDialogShowing = false
     private var mIsSecretVaultView = false
     private var mHiddenDisplayMode = DISPLAY_NONE
     private val mFetchGeneration = AtomicLong(0L)
     private var mLastOpenedDirectoryPath: String? = null
     private val mPendingPrioritizedPaths = LinkedHashSet<String>()
+
+    private val vaultPullGesture by lazy {
+        VaultPullGestureHandler(
+            containerView = binding.directoriesRefreshLayout,
+            indicatorView = binding.vaultPullIndicator,
+            iconView = binding.vaultPullIcon,
+            textView = binding.vaultPullText,
+            isListAtTop = { !binding.directoriesGrid.canScrollVertically(-1) },
+            primaryColor = { getProperPrimaryColor() },
+            textColor = { getProperTextColor() },
+            dispatchToChildren = { event -> super.dispatchTouchEvent(event) },
+            onVaultOpen = {
+                triggerSecretVaultMenu()
+            },
+            onListRefresh = {
+                if (config.enablePullToRefresh) {
+                    binding.directoriesRefreshLayout.isRefreshing = true
+                    getDirectories()
+                }
+            }
+        )
+    }
 
     private val binding by viewBinding(ActivityMainBinding::inflate)
 
@@ -888,113 +901,8 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
         if (!mIsVaultDialogShowing && !mIsSecretVaultView && !config.scrollHorizontally) {
-            val rv = binding.directoriesGrid
-            val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
-            when (ev.actionMasked) {
-                MotionEvent.ACTION_DOWN -> {
-                    val atTop = !rv.canScrollVertically(-1)
-                    if (atTop) {
-                        mVaultGestureStartY = ev.rawY
-                        mVaultGestureStartX = ev.rawX
-                        mVaultGestureStartedAtTop = true
-                        mVaultGestureThresholdMet = false
-                        mVaultCancelDispatched = false
-                    } else {
-                        mVaultGestureStartedAtTop = false
-                        mVaultGestureThresholdMet = false
-                    }
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    if (mVaultGestureStartedAtTop) {
-                        val deltaX = Math.abs(ev.rawX - mVaultGestureStartX)
-                        val deltaY = ev.rawY - mVaultGestureStartY
-                        if (deltaY > 0 && deltaY > deltaX) {
-                            val maxTranslation = 160f * resources.displayMetrics.density
-                            val threshold = 95f * resources.displayMetrics.density
-                            val translation = (deltaY * 0.45f).coerceIn(0f, maxTranslation)
-
-                            if (translation > touchSlop) {
-                                if (!mVaultCancelDispatched) {
-                                    mVaultCancelDispatched = true
-                                    val cancelEvent = MotionEvent.obtain(ev).apply { action = MotionEvent.ACTION_CANCEL }
-                                    super.dispatchTouchEvent(cancelEvent)
-                                    cancelEvent.recycle()
-                                }
-
-                                binding.directoriesRefreshLayout.translationY = translation
-
-                                binding.vaultPullIndicator.beVisible()
-                                binding.vaultPullIndicator.bringToFront()
-                                binding.vaultPullIcon.applyColorFilter(getProperPrimaryColor())
-                                binding.vaultPullText.setTextColor(getProperTextColor())
-
-                                val progress = (translation / threshold).coerceIn(0f, 1f)
-                                binding.vaultPullIndicator.alpha = (progress * 1.4f).coerceIn(0.1f, 1f)
-                                binding.vaultPullIcon.rotation = progress * 180f
-
-                                if (translation >= threshold) {
-                                    if (!mVaultGestureThresholdMet) {
-                                        mVaultGestureThresholdMet = true
-                                        window.decorView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                                    }
-                                    binding.vaultPullText.text = getString(R.string.release_to_open_vault)
-                                } else {
-                                    mVaultGestureThresholdMet = false
-                                    binding.vaultPullText.text = getString(R.string.pull_down_to_open_vault)
-                                }
-                                return true
-                            }
-                        } else if (deltaY < 0) {
-                            if (binding.directoriesRefreshLayout.translationY > 0f) {
-                                binding.directoriesRefreshLayout.translationY = 0f
-                                binding.vaultPullIndicator.beGone()
-                            }
-                            if (rv.canScrollVertically(-1)) {
-                                mVaultGestureStartedAtTop = false
-                            }
-                        }
-                    }
-                }
-                MotionEvent.ACTION_UP -> {
-                    if (mVaultGestureStartedAtTop) {
-                        val wasThresholdMet = mVaultGestureThresholdMet
-                        binding.directoriesRefreshLayout.animate()
-                            .translationY(0f)
-                            .setDuration(220)
-                            .setInterpolator(DecelerateInterpolator())
-                            .start()
-
-                        binding.vaultPullIndicator.animate()
-                            .alpha(0f)
-                            .setDuration(220)
-                            .withEndAction {
-                                binding.vaultPullIndicator.beGone()
-                                binding.vaultPullIndicator.alpha = 1f
-                            }
-                            .start()
-
-                        mVaultGestureThresholdMet = false
-                        mVaultGestureStartedAtTop = false
-
-                        if (wasThresholdMet) {
-                            triggerSecretVaultMenu()
-                            return true
-                        }
-                    }
-                    mVaultGestureThresholdMet = false
-                    mVaultGestureStartedAtTop = false
-                }
-                MotionEvent.ACTION_CANCEL -> {
-                    if (mVaultGestureStartedAtTop) {
-                        binding.directoriesRefreshLayout.animate()
-                            .translationY(0f)
-                            .setDuration(220)
-                            .start()
-                        binding.vaultPullIndicator.beGone()
-                    }
-                    mVaultGestureThresholdMet = false
-                    mVaultGestureStartedAtTop = false
-                }
+            if (vaultPullGesture.handleTouchEvent(ev)) {
+                return true
             }
         }
         return super.dispatchTouchEvent(ev)

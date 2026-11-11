@@ -387,6 +387,7 @@
     <string name="empty_encrypted_vault_warning">The encrypted vault (Cipher_Secrets) and all its files will be permanently deleted. Are you sure?</string>
     <string name="refresh">Refresh</string>
     <string name="pull_down_to_open_vault">Keep pulling down for Encrypted Vault</string>
+    <string name="keep_holding_to_open_vault">Keep holding to open Encrypted Vault</string>
     <string name="release_to_open_vault">Release to open Encrypted Vault</string>
     <string name="vault_not_created_prompt">You haven\'t created a vault yet. Do you want to create a vault?</string>
 </resources>

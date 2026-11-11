@@ -1,6 +1,6 @@
 # Spanish (Latin America, values-b+es+419) Translation Completion & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-b+es+419/strings.xml` was updated to full parity using Standard Spanish (`values-es/strings.xml`) as reference and adapting all entries to Latin American Spanish (`es-419`) and `fossify-commons` (`values-b+es+419`). Previously, `values-b+es+419` contained only 21 `<string>` entries (and 0 `<plurals>`). All 21 existing valid regional entries were preserved, and all 286 missing `<string>` entries plus 2 `<plurals>` blocks were added (326 `<string>` + 2 `<plurals>` = 328 resource entries; `search` and 14 shared UI keys from `fossify-commons`; 347 total comparison rows).
+> **Scope:** `app/src/main/res/values-b+es+419/strings.xml` was updated to full parity using Standard Spanish (`values-es/strings.xml`) as reference and adapting all entries to Latin American Spanish (`es-419`) and `fossify-commons` (`values-b+es+419`). Previously, `values-b+es+419` contained only 21 `<string>` entries (and 0 `<plurals>`). All 21 existing valid regional entries were preserved, and all 286 missing `<string>` entries plus 2 `<plurals>` blocks were added (343 `<string>` + 2 `<plurals>` = 345 resource entries; `search` and 14 shared UI keys from `fossify-commons`; 352 total comparison rows).
 > **Key Terminology & Regional Adaptations vs. `values-es`:** `Ajustes` → `Configuración` · `vídeo/vídeos` → `video/videos` · `ficheros` → `archivos` · `añadir` → `agregar` · `Gestionar` → `Administrar` (matches `fossify-commons` `values-b+es+419`) · `Sistema por defecto` → `Predeterminado del sistema` · `Introduzca la contraseña` → `Ingresar contraseña` · `pegatinas` → `stickers` · `pulsado` → `presionado` · `Por favor, pon el dedo…` → `Por favor, apoye su dedo sobre el sensor de huellas`
 
 ## 1. Existing Regional Entries & Key Adaptations from Standard Spanish
@@ -47,9 +47,9 @@ All 21 previously existing strings in `values-b+es+419/strings.xml` were verifie
 | 15 | `search_files` | Search files | Buscar archivos | Inherited from `fossify-commons` (Search bar hint) |
 | 16 | `search_folders` | Search folders | Buscar carpetas | Inherited from `fossify-commons` (Search bar hint) |
 
-### 1.4 Newly Added Fork-Only Strings (63 Keys)
+### 1.4 Newly Added Fork-Only Strings (66 Keys)
 
-These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
+These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
 
 |   # | Key (`name`) | English (`values/strings.xml`)              | Spanish (Latin America) (`values-b+es+419/strings.xml`)                                     | Notes                                                                       |
 | --: | ------------ | ------------------------------------------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
@@ -116,6 +116,9 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 |  61 | 61           | `hidden_album_name_empty`                   | Album name cannot be empty                                                                  | Validation error when hidden album name is blank                            |
 |  62 | 62           | `file_hidden_to_album`                      | File hidden to \"%s\"                                                                       | Success toast after hiding a single file into album `%s`                    |
 |  63 | 63           | `files_hidden_to_album`                     | %1$d files hidden to \"%2$s\"                                                               | Success toast after hiding `%1$d` files into album `%2$s`                   |
+| 64 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Sigue deslizando hacia abajo para la bóveda | Vault pull gesture hint shown while the pull is below the open threshold |
+| 65 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Sigue manteniendo pulsado para abrir la bóveda cifrada | Vault pull gesture hint shown once the pull passes the threshold, before the 2.5 s hold completes |
+| 66 | `release_to_open_vault` | Release to open Encrypted Vault | Suelta para abrir la bóveda cifrada | Vault pull gesture hint shown after holding the pull for 2.5 s; releasing opens the vault |
 
 
 ## 2. Full 1-to-1 Comparison: English vs. Spanish (Latin America)
@@ -471,3 +474,6 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 347 | `print` *(fossify-commons)* | Print | Imprimir |
 | 348 | `search_files` *(fossify-commons)* | Search files | Buscar archivos |
 | 349 | `search_folders` *(fossify-commons)* | Search folders | Buscar carpetas |
+| 350 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Sigue deslizando hacia abajo para la bóveda |
+| 351 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Sigue manteniendo pulsado para abrir la bóveda cifrada |
+| 352 | `release_to_open_vault` | Release to open Encrypted Vault | Suelta para abrir la bóveda cifrada |

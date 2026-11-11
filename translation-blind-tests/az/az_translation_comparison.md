@@ -1,6 +1,6 @@
 # Azerbaijani (values-az) Translation Revision & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-az/strings.xml` was reviewed from scratch: existing inaccurate translations were corrected, and all missing keys from `values/strings.xml` (326 `<string>` + 2 `<plurals>` = 328 app resource entries; `search` and 16 shared UI keys from `fossify-commons` plus the newly added `skip_the_recycle_bin` override; 348 total comparison rows) were completed.
+> **Scope:** `app/src/main/res/values-az/strings.xml` was reviewed from scratch: existing inaccurate translations were corrected, and all missing keys from `values/strings.xml` (343 `<string>` + 2 `<plurals>` = 345 app resource entries; `search` and 16 shared UI keys from `fossify-commons` plus the newly added `skip_the_recycle_bin` override; 351 total comparison rows) were completed.
 > **Key Terminology:** `Settings` → `Parametrlər` · `Default` → `Susmaya görə` · `Folder` → `Qovluq` · `Encrypted Vault` → `Şifrəli Seyf` · `Password` → `Parol` · `Encrypt/Decrypt` → `Şifrələ / Şifrəsini aç` · `Thumbnails` → `Miniatürlər` · `Recycle bin` → `Zibil qutusu` · `Clipboard` → `Mübadilə buferi`
 
 ## 1. Review of 11 Previously Existing Translations and Changes Made
@@ -43,9 +43,9 @@
 | 16 | `search_folders` | Search folders | Qovluqları axtar | Local override in `values-az/strings.xml` (Search bar hint) |
 | 17 | `skip_the_recycle_bin` | Skip the recycle bin, delete files directly | Zibil qutusunu keçin, faylları birbaşa silin | Local override in `values-az/strings.xml` (Delete confirmation dialog); key missing in `fossify-commons` `values-az` |
 
-### Newly Added Fork-Only Strings (63 Keys)
+### Newly Added Fork-Only Strings (66 Keys)
 
-These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
+These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
 
 | # | Key (`name`) | English (`values/strings.xml`) | Azerbaijani (`values-az/strings.xml`) | Notes |
 |---:|---|---|---|---|
@@ -112,6 +112,9 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 61 | 61 | `hidden_album_name_empty` | Album name cannot be empty | Validation error when hidden album name is blank |
 | 62 | 62 | `file_hidden_to_album` | File hidden to \"%s\" | Success toast after hiding a single file into album `%s` |
 | 63 | 63 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | Success toast after hiding `%1$d` files into album `%2$s` |
+| 64 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Şifrəli seyf üçün aşağı çəkməyə davam edin | Vault pull gesture hint shown while the pull is below the open threshold |
+| 65 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Şifrəli seyfi açmaq üçün basılı saxlayın | Vault pull gesture hint shown once the pull passes the threshold, before the 2.5 s hold completes |
+| 66 | `release_to_open_vault` | Release to open Encrypted Vault | Şifrəli seyfi açmaq üçün buraxın | Vault pull gesture hint shown after holding the pull for 2.5 s; releasing opens the vault |
 
 
 ## 2. Full 1-to-1 Comparison: English vs. Azerbaijani
@@ -466,3 +469,6 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 346 | `search_files` *(fossify-commons)* | Search files | Faylları axtar |
 | 347 | `search_folders` *(fossify-commons)* | Search folders | Qovluqları axtar |
 | 348 | `skip_the_recycle_bin` *(fossify-commons)* | Skip the recycle bin, delete files directly | Zibil qutusunu keçin, faylları birbaşa silin |
+| 349 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Şifrəli seyf üçün aşağı çəkməyə davam edin |
+| 350 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Şifrəli seyfi açmaq üçün basılı saxlayın |
+| 351 | `release_to_open_vault` | Release to open Encrypted Vault | Şifrəli seyfi açmaq üçün buraxın |

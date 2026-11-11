@@ -1,6 +1,6 @@
 # Traditional Chinese (Taiwan, values-zh-rTW) Translation Audit, Revision & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-zh-rTW/strings.xml` was audited against `app/src/main/res/values/strings.xml` and `fossify-commons` (`values-zh-rTW`). 14 existing entries with mistranslations, Mainland Chinese phrasing, terminology mismatches, or formatting bugs were revised, and all 50 missing strings were translated into Taiwanese Traditional Chinese (`zh-rTW`) and added, bringing `values-zh-rTW` to full parity (326 `<string>` + 2 `<plurals>` = 328 resource entries; 345 total comparison rows including English `one`/`other` plural forms and 15 `fossify-commons` UI keys).
+> **Scope:** `app/src/main/res/values-zh-rTW/strings.xml` was audited against `app/src/main/res/values/strings.xml` and `fossify-commons` (`values-zh-rTW`). 14 existing entries with mistranslations, Mainland Chinese phrasing, terminology mismatches, or formatting bugs were revised, and all 50 missing strings were translated into Taiwanese Traditional Chinese (`zh-rTW`) and added, bringing `values-zh-rTW` to full parity (343 `<string>` + 2 `<plurals>` = 345 resource entries; 350 total comparison rows including English `one`/`other` plural forms and 15 `fossify-commons` UI keys).
 > **Key Terminology:** `Settings` → `設定` · `Default` → `預設` / `系統預設` · `Folder` → `資料夾` · `Album` → `相簿` · `Encrypted Vault` → `加密保險箱` · `Hidden` → `隱藏` · `Excluded` → `已排除` · `Password` → `密碼` · `Encrypt / Decrypt` → `加密 / 解密` · `Copy to` → `複製` (matches `fossify-commons`) · `Clipboard` → `剪貼簿` · `Search` → `搜尋` (inherited from `fossify-commons`)
 
 ## 1. Audit of Existing Translations & Newly Added Entries
@@ -28,9 +28,9 @@
 
 
 
-### 1.2 Newly Added Fork-Only Strings (63 Keys)
+### 1.2 Newly Added Fork-Only Strings (66 Keys)
 
-These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
+These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
 
 | # | Key (`name`) | English (`values/strings.xml`) | Taiwanese (`values-zh-rTW/strings.xml`) | Notes |
 |---:|---|---|---|---|
@@ -97,6 +97,9 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 61 | `hidden_album_name_empty` | Album name cannot be empty | 相簿名稱不能為空 | Validation error when hidden album name is blank |
 | 62 | `file_hidden_to_album` | File hidden to \"%s\" | 檔案已隱藏至「%s」 | Success toast after hiding a single file into album `%s` |
 | 63 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | %1$d 個檔案已隱藏至「%2$s」 | Success toast after hiding `%1$d` files into album `%2$s` |
+| 64 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | 繼續向下拉以開啟加密保險箱 | Vault pull gesture hint shown while the pull is below the open threshold |
+| 65 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | 按住不放以開啟加密保險箱 | Vault pull gesture hint shown once the pull passes the threshold, before the 2.5 s hold completes |
+| 66 | `release_to_open_vault` | Release to open Encrypted Vault | 放開以開啟加密保險箱 | Vault pull gesture hint shown after holding the pull for 2.5 s; releasing opens the vault |
 
 ### 1.3 Newly Added Translations for Strings Already Present in the Original Fossify Gallery (3 Keys)
 
@@ -482,3 +485,6 @@ All 14 shared UI keys below are already localized in `org.fossify:commons:7.1.3`
 | 345 | `print` *(fossify-commons)* | Print | 列印 |
 | 346 | `search_files` *(fossify-commons)* | Search files | 搜尋檔案 |
 | 347 | `search_folders` *(fossify-commons)* | Search folders | 搜尋資料夾 |
+| 348 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | 繼續向下拉以開啟加密保險箱 |
+| 349 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | 按住不放以開啟加密保險箱 |
+| 350 | `release_to_open_vault` | Release to open Encrypted Vault | 放開以開啟加密保險箱 |

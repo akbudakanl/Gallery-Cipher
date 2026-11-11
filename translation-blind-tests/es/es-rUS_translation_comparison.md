@@ -1,6 +1,6 @@
 # Spanish (United States, values-es-rUS) Translation Completion & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-es-rUS/strings.xml` was updated to full parity using Standard Spanish (`values-es/strings.xml`) as reference and adapting all entries to United States Spanish (`es-rUS`). Previously, `values-es-rUS` contained only 9 `<string>` entries (and 0 `<plurals>`). All 9 existing entries (including the local `search` override, which is absent in `fossify-commons` `values-es-rUS`) were preserved, and all 298 missing `<string>` entries plus 2 `<plurals>` blocks were added (329 `<string>` + 2 `<plurals>` = 331 resource entries; 351 total comparison rows including 18 `fossify-commons` keys — 16 UI overrides plus the newly added `skip_the_recycle_bin` and `skip_delete_confirmation`).
+> **Scope:** `app/src/main/res/values-es-rUS/strings.xml` was updated to full parity using Standard Spanish (`values-es/strings.xml`) as reference and adapting all entries to United States Spanish (`es-rUS`). Previously, `values-es-rUS` contained only 9 `<string>` entries (and 0 `<plurals>`). All 9 existing entries (including the local `search` override, which is absent in `fossify-commons` `values-es-rUS`) were preserved, and all 298 missing `<string>` entries plus 2 `<plurals>` blocks were added (360 `<string>` + 2 `<plurals>` = 362 resource entries; 354 total comparison rows including 18 `fossify-commons` keys — 16 UI overrides plus the newly added `skip_the_recycle_bin` and `skip_delete_confirmation`).
 > **Key Terminology & Regional Adaptations vs. `values-es`:** `Ajustes` → `Configuración` · `vídeo/vídeos` → `video/videos` · `ficheros` → `archivos` · `añadir` → `agregar` · `Gestionar` → `Administrar` · `Sistema por defecto` → `Predeterminado del sistema` · `Introduzca la contraseña` → `Ingresar contraseña` · `pegatinas` → `stickers` · `pulsado` → `presionado` · `Search` → `Buscar` (local override kept for `dialog_select_language.xml`)
 
 ## 1. Existing Regional Entries & Key Adaptations from Standard Spanish
@@ -46,9 +46,9 @@ All 9 previously existing strings in `values-es-rUS/strings.xml` were verified a
 | 17 | `skip_the_recycle_bin` | Skip the recycle bin, delete files directly | Omitir la papelera de reciclaje y borrar los archivos directamente | Local override in `values-es-rUS/strings.xml` (Delete confirmation dialog); key missing in `fossify-commons` `values-es-rUS` |
 | 18 | `skip_delete_confirmation` | Always skip delete confirmation dialog | Omitir siempre el diálogo de confirmación de eliminación | Local override in `values-es-rUS/strings.xml` (Settings); key missing in `fossify-commons` `values-es-rUS` |
 
-### 1.4 Newly Added Fork-Only Strings (63 Keys)
+### 1.4 Newly Added Fork-Only Strings (66 Keys)
 
-These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
+These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
 
 | # | Key (`name`) | English (`values/strings.xml`) | Spanish (United States) (`values-es-rUS/strings.xml`) | Notes |
 |---:|---|---|---|---|
@@ -115,6 +115,9 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 61 | 61 | `hidden_album_name_empty` | Album name cannot be empty | Validation error when hidden album name is blank |
 | 62 | 62 | `file_hidden_to_album` | File hidden to \"%s\" | Success toast after hiding a single file into album `%s` |
 | 63 | 63 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | Success toast after hiding `%1$d` files into album `%2$s` |
+| 64 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Siga deslizando hacia abajo para la bóveda | Vault pull gesture hint shown while the pull is below the open threshold |
+| 65 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Siga manteniendo pulsado para abrir la bóveda cifrada | Vault pull gesture hint shown once the pull passes the threshold, before the 2.5 s hold completes |
+| 66 | `release_to_open_vault` | Release to open Encrypted Vault | Suelte para abrir la bóveda cifrada | Vault pull gesture hint shown after holding the pull for 2.5 s; releasing opens the vault |
 
 
 ## 2. Full 1-to-1 Comparison: English vs. Spanish (United States)
@@ -472,3 +475,6 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 349 | `search_folders` *(fossify-commons)* | Search folders | Buscar carpetas |
 | 350 | `skip_the_recycle_bin` *(fossify-commons)* | Skip the recycle bin, delete files directly | Omitir la papelera de reciclaje y borrar los archivos directamente |
 | 351 | `skip_delete_confirmation` *(fossify-commons)* | Always skip delete confirmation dialog | Omitir siempre el diálogo de confirmación de eliminación |
+| 352 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Siga deslizando hacia abajo para la bóveda |
+| 353 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Siga manteniendo pulsado para abrir la bóveda cifrada |
+| 354 | `release_to_open_vault` | Release to open Encrypted Vault | Suelte para abrir la bóveda cifrada |

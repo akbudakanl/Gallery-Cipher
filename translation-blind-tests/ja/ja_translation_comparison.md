@@ -1,13 +1,13 @@
 # Japanese (values-ja) Translation Completion & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-ja/strings.xml` was audited against `app/src/main/res/values/strings.xml`. All 65 missing strings were translated into Japanese and added, bringing `values-ja` to full parity (326 `<string>` + 2 `<plurals>` = 328 resource entries; 345 total comparison rows including English `one`/`other` plural forms and 15 `fossify-commons` UI keys).
+> **Scope:** `app/src/main/res/values-ja/strings.xml` was audited against `app/src/main/res/values/strings.xml`. All 65 missing strings were translated into Japanese and added, bringing `values-ja` to full parity (343 `<string>` + 2 `<plurals>` = 345 resource entries; 350 total comparison rows including English `one`/`other` plural forms and 15 `fossify-commons` UI keys).
 > **Key Terminology:** `Settings` → `設定` · `Default` → `既定` / `デフォルト` · `Folder` → `フォルダー` · `Album` → `アルバム` · `Encrypted Vault` → `暗号化された保管庫` · `Hidden` → `非表示` · `Excluded` → `除外` · `Password` → `パスワード` · `Encrypt / Decrypt` → `暗号化 / 復号` · `Clipboard` → `クリップボード`
 
 ## 1. Summary of Newly Added Japanese Strings & Translations
 
-### Newly Added Fork-Only Strings (63 Keys)
+### Newly Added Fork-Only Strings (66 Keys)
 
-These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
+These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
 
 |   # | Key (`name`)                                | English (`values/strings.xml`)                                                                                                                                                                                                                                                                                                                                      | Japanese (`values-ja/strings.xml`)                                                                                                                                                                                       | Notes                                                                              |
 | --: | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
@@ -74,6 +74,9 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 61 | `hidden_album_name_empty`                   | Album name cannot be empty                                                                                                                                                                                                                                                                                                                                          | アルバム名を空にすることはできません                                                                                                                                                                                                       | Validation error when hidden album name is blank                                   |
 | 62 | `file_hidden_to_album`                      | File hidden to \"%s\"                                                                                                                                                                                                                                                                                                                                               | ファイルを「%s」に非表示にしました                                                                                                                                                                                                       | Success toast after hiding a single file into album `%s`                           |
 | 63 | `files_hidden_to_album`                     | %1$d files hidden to \"%2$s\"                                                                                                                                                                                                                                                                                                                                       | %1$d 個のファイルを「%2$s」に非表示にしました                                                                                                                                                                                              | Success toast after hiding `%1$d` files into album `%2$s`                          |
+| 64 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | 暗号化された保管庫を開くには引き下げ続けてください | Vault pull gesture hint shown while the pull is below the open threshold |
+| 65 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | 暗号化された保管庫を開くには押し続けてください | Vault pull gesture hint shown once the pull passes the threshold, before the 2.5 s hold completes |
+| 66 | `release_to_open_vault` | Release to open Encrypted Vault | 指を離して暗号化された保管庫を開く | Vault pull gesture hint shown after holding the pull for 2.5 s; releasing opens the vault |
 
 ### Newly Added Translations for Strings Already Present in the Original Fossify Gallery (18 Keys)
 
@@ -474,3 +477,6 @@ All 14 shared UI keys below are already localized in `org.fossify:commons:7.1.3`
 | 345 | `print` *(fossify-commons)* | Print | 印刷 |
 | 346 | `search_files` *(fossify-commons)* | Search files | ファイルを検索 |
 | 347 | `search_folders` *(fossify-commons)* | Search folders | フォルダーを検索 |
+| 348 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | 暗号化された保管庫を開くには引き下げ続けてください |
+| 349 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | 暗号化された保管庫を開くには押し続けてください |
+| 350 | `release_to_open_vault` | Release to open Encrypted Vault | 指を離して暗号化された保管庫を開く |

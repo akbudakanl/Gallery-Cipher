@@ -347,6 +347,7 @@
     <string name="empty_encrypted_vault_warning">Der verschlüsselte Tresor (Cipher_Secrets) und alle darin enthaltenen Dateien werden dauerhaft gelöscht. Sind Sie sicher?</string>
     <string name="refresh">Aktualisieren</string>
     <string name="pull_down_to_open_vault">Weiter nach unten ziehen für den Tresor</string>
+    <string name="keep_holding_to_open_vault">Zum Öffnen des verschlüsselten Tresors gedrückt halten</string>
     <string name="release_to_open_vault">Loslassen, um den Tresor zu öffnen</string>
     <string name="vault_not_created_prompt">Sie haben noch keinen Tresor erstellt. Möchten Sie einen Tresor erstellen?</string>
 </resources>

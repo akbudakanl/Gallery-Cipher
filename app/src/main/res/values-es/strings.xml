@@ -349,6 +349,7 @@
     <string name="empty_encrypted_vault_warning">Se eliminarán de forma permanente la bóveda cifrada (Cipher_Secrets) y todos sus archivos. ¿Está seguro?</string>
     <string name="refresh">Actualizar</string>
     <string name="pull_down_to_open_vault">Siga deslizando hacia abajo para la bóveda</string>
+    <string name="keep_holding_to_open_vault">Siga manteniendo pulsado para abrir la bóveda cifrada</string>
     <string name="release_to_open_vault">Suelte para abrir la bóveda cifrada</string>
     <string name="vault_not_created_prompt">Aún no ha creado una bóveda. ¿Desea crear una bóveda?</string>
 </resources>

@@ -1,6 +1,6 @@
 # Norwegian Nynorsk (values-nn) Translation Completion & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-nn/strings.xml` was audited from scratch against `app/src/main/res/values/strings.xml`. Previously, `values-nn` contained only 23 `<string>` entries (and 0 `<plurals>`). Three inaccurate/typoed existing entries were fixed, and all 285 missing `<string>` entries plus 2 `<plurals>` entries (`restore_confirmation` and `failed_to_resize_images`) were translated into Norwegian Nynorsk, bringing `values-nn` to full parity (326 `<string>` + 2 `<plurals>` = 328 app resource entries; `search` and 16 shared UI keys from `fossify-commons` plus the newly added `skip_the_recycle_bin` and `skip_delete_confirmation` overrides; 349 total comparison rows with plural forms expanded).
+> **Scope:** `app/src/main/res/values-nn/strings.xml` was audited from scratch against `app/src/main/res/values/strings.xml`. Previously, `values-nn` contained only 23 `<string>` entries (and 0 `<plurals>`). Three inaccurate/typoed existing entries were fixed, and all 285 missing `<string>` entries plus 2 `<plurals>` entries (`restore_confirmation` and `failed_to_resize_images`) were translated into Norwegian Nynorsk, bringing `values-nn` to full parity (343 `<string>` + 2 `<plurals>` = 345 app resource entries; `search` and 16 shared UI keys from `fossify-commons` plus the newly added `skip_the_recycle_bin` and `skip_delete_confirmation` overrides; 352 total comparison rows with plural forms expanded).
 > **Key Terminology:** `Settings` → `Innstillingar` · `Default` → `Standard` / `Systemstandard` · `Folder` → `Mappe` · `Album` → `Album` · `Encrypted Vault` → `Kryptert kvelv` · `Hidden` → `Skjult` · `Excluded` → `Ekskludert` · `Password` → `Passord` · `Encrypt / Decrypt` → `Kryptera / Dekryptera` · `Thumbnails` → `Minibilete` · `Recycle bin` → `Papirkorg` · `Clipboard` → `Utklippstavla`
 
 ## 1. Review of 23 Previously Existing Translations and Changes Made
@@ -58,9 +58,9 @@
 | 17 | `skip_the_recycle_bin` | Skip the recycle bin, delete files directly | Hopp over papirkorga og slett filene direkte | Local override in `values-nn/strings.xml` (Delete confirmation dialog); key missing in `fossify-commons` `values-nn` |
 | 18 | `skip_delete_confirmation` | Always skip delete confirmation dialog | Hopp alltid over dialogen for stadfesting av sletting | Local override in `values-nn/strings.xml` (Settings); key missing in `fossify-commons` `values-nn` |
 
-### Newly Added Fork-Only Strings (63 Keys)
+### Newly Added Fork-Only Strings (66 Keys)
 
-These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
+These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist in the original Fossify Gallery:
 
 | # | Key (`name`) | English (`values/strings.xml`) | Norwegian Nynorsk (`values-nn/strings.xml`) | Notes |
 |---:|---|---|---|---|
@@ -127,6 +127,9 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 61 | 61 | `hidden_album_name_empty` | Album name cannot be empty | Validation error when hidden album name is blank |
 | 62 | 62 | `file_hidden_to_album` | File hidden to \"%s\" | Success toast after hiding a single file into album `%s` |
 | 63 | 63 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | Success toast after hiding `%1$d` files into album `%2$s` |
+| 64 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Hald fram med å dra ned for kryptert kvelv | Vault pull gesture hint shown while the pull is below the open threshold |
+| 65 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Hald fram med å halde for å opne kryptert kvelv | Vault pull gesture hint shown once the pull passes the threshold, before the 2.5 s hold completes |
+| 66 | `release_to_open_vault` | Release to open Encrypted Vault | Slepp for å opne kryptert kvelv | Vault pull gesture hint shown after holding the pull for 2.5 s; releasing opens the vault |
 
 
 ## 2. Full 1-to-1 Comparison: English vs. Norwegian Nynorsk
@@ -482,3 +485,6 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 347 | `search_folders` *(fossify-commons)* | Search folders | Søk i mapper |
 | 348 | `skip_the_recycle_bin` *(fossify-commons)* | Skip the recycle bin, delete files directly | Hopp over papirkorga og slett filene direkte |
 | 349 | `skip_delete_confirmation` *(fossify-commons)* | Always skip delete confirmation dialog | Hopp alltid over dialogen for stadfesting av sletting |
+| 350 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Hald fram med å dra ned for kryptert kvelv |
+| 351 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Hald fram med å halde for å opne kryptert kvelv |
+| 352 | `release_to_open_vault` | Release to open Encrypted Vault | Slepp for å opne kryptert kvelv |

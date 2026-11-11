@@ -345,6 +345,7 @@
     <string name="empty_encrypted_vault_warning">暗号化された保管庫（Cipher_Secrets）とすべてのファイルが完全に削除されます。よろしいですか？</string>
     <string name="refresh">更新</string>
     <string name="pull_down_to_open_vault">暗号化された保管庫を開くには引き下げ続けてください</string>
+    <string name="keep_holding_to_open_vault">暗号化された保管庫を開くには押し続けてください</string>
     <string name="release_to_open_vault">指を離して暗号化された保管庫を開く</string>
     <string name="vault_not_created_prompt">まだ保管庫を作成していません。保管庫を作成しますか？</string>
 
