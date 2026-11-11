@@ -330,6 +330,13 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
             binding.videoPreview.beGone()
         }
 
+        // With autoplay the center play icon must never linger on screen: playback starts or
+        // resumes on menu visibility, so a briefly visible icon looks like a glitch. Hide it
+        // right away, before the player has even been prepared.
+        if (mConfig.autoplayVideos && !mConfig.gestureVideoPlayer && !mIsPanorama) {
+            binding.videoPlayOutline.beGone()
+        }
+
         mIsFullscreen = listener?.isFullScreen() == true
         initTimeHolder()
         // checkIfPanorama() TODO: Implement panorama using a FOSS library
@@ -625,8 +632,13 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         addListener(object : Player.Listener {
             override fun onRenderedFirstFrame() {
                 binding.videoPreview.beGone()
-                if (mWasVideoStarted) {
+                if (mIsPlaying || mPlayOnPrepared || mExoPlayer?.isPlaying == true) {
                     binding.videoPlayOutline.beGone()
+                } else {
+                    // The first frame was rendered while the player is paused, e.g. when
+                    // returning to a previously played video with autoplay disabled.
+                    // The video is waiting for the user, so keep the tap-to-play icon visible.
+                    binding.videoPlayOutline.beVisible()
                 }
             }
 
@@ -899,6 +911,10 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
             return
         }
 
+        // Playback is starting (or resuming), so the center play icon must go immediately,
+        // not only once the first frame is rendered.
+        binding.videoPlayOutline.beGone()
+
         val wasEnded = videoEnded()
         if (wasEnded) {
             setPosition(0)
@@ -942,6 +958,9 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         }
 
         mPlayPauseButton.setImageResource(org.fossify.commons.R.drawable.ic_play_outline_vector)
+        // A paused video waits for the user, so show the tap-to-play icon, exactly like
+        // before the first start or after the video ended.
+        binding.videoPlayOutline.beVisible()
         activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         mPositionAtPause = if (ended) 0L else (mExoPlayer?.currentPosition ?: 0L)
         listener?.saveVideoPlaybackPosition(mMedium.path, mPositionAtPause)
