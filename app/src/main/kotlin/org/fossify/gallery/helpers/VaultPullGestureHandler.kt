@@ -243,7 +243,7 @@ class VaultPullGestureHandler(
         private const val TRANSLATION_FACTOR = 0.45f
 
         /** How long the pull must be sustained before the vault can be opened. */
-        private const val VAULT_HOLD_OPEN_MS = 2500L
+        private const val VAULT_HOLD_OPEN_MS = 1250L
 
         private const val RESET_ANIM_MS = 220L
         private const val ARM_PULSE_MS = 120L
