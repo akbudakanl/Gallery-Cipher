@@ -97,6 +97,7 @@ import org.fossify.gallery.helpers.RECYCLE_BIN
 import org.fossify.gallery.helpers.ROUNDED_CORNERS_NONE
 import org.fossify.gallery.helpers.ROUNDED_CORNERS_SMALL
 import org.fossify.gallery.helpers.SHOW_ALL
+import org.fossify.gallery.helpers.SessionRandomOrder
 import org.fossify.gallery.helpers.THUMBNAIL_FADE_DURATION_MS
 import org.fossify.gallery.helpers.TYPE_GIFS
 import org.fossify.gallery.helpers.TYPE_IMAGES
@@ -184,7 +185,7 @@ fun Context.getSortedDirectories(source: ArrayList<Directory>): ArrayList<Direct
     val dirs = source.clone() as ArrayList<Directory>
 
     if (sorting and SORT_BY_RANDOM != 0) {
-        dirs.shuffle()
+        SessionRandomOrder.sortDirectories(this, dirs)
         return movePinnedDirectoriesToFront(dirs)
     } else if (sorting and SORT_BY_CUSTOM != 0) {
         val newDirsOrdered = ArrayList<Directory>()
