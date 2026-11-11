@@ -170,6 +170,7 @@ import org.fossify.gallery.helpers.RECYCLE_BIN
 import org.fossify.gallery.helpers.ROTATE_BY_ASPECT_RATIO
 import org.fossify.gallery.helpers.ROTATE_BY_DEVICE_ROTATION
 import org.fossify.gallery.helpers.ROTATE_BY_SYSTEM_SETTING
+import org.fossify.gallery.helpers.EXTRA_SECRET_VAULT_FILES
 import org.fossify.gallery.helpers.SHOW_ALL
 import org.fossify.gallery.helpers.SHOW_FAVORITES
 import org.fossify.gallery.helpers.SHOW_VIRTUAL_ALBUM
@@ -208,6 +209,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     private var mIsFullScreen = false
     private var mPos = -1
     private var mShowAll = false
+    private var mIsVaultFilesView = false
     private var mIsSlideshowActive = false
     private var mPrevHashcode = 0
 
@@ -489,7 +491,8 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
                 mPath = savedPath.ifEmpty { intent.getStringExtra(PATH).orEmpty() }
 
                 // make sure "Open Recycle Bin" works well with "Show all folders content"
-                mShowAll = config.showAll && (mPath.isNotEmpty() && !mPath.startsWith(recycleBinPath))
+                mIsVaultFilesView = intent.getBooleanExtra(EXTRA_SECRET_VAULT_FILES, false)
+                mShowAll = (config.showAll || mIsVaultFilesView) && (mPath.isNotEmpty() && !mPath.startsWith(recycleBinPath))
             } catch (e: Exception) {
                 showErrorToast(e)
                 finish()
@@ -1649,7 +1652,10 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     private fun refreshViewPager(refetchPosition: Boolean = false) {
         val isRandomSorting = config.getFolderSorting(mDirectory) and SORT_BY_RANDOM != 0
         if (!isRandomSorting || isExternalIntent() || !mHasCachedAlbumMedia) {
-            GetMediaAsynctask(applicationContext, mDirectory, isPickImage = false, isPickVideo = false, showAll = mShowAll) {
+            GetMediaAsynctask(
+                applicationContext, mDirectory, isPickImage = false, isPickVideo = false,
+                showAll = mShowAll, isSecretVaultView = mIsVaultFilesView
+            ) {
                 gotMedia(it, refetchViewPagerPosition = refetchPosition)
             }.execute()
         }
