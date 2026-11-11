@@ -93,7 +93,7 @@ class EncryptedRenameAndDefaultAlbumTest {
             clearCaches()
             assertEquals(renamedLong, CryptoManager.getDisplayName(binFile.absolutePath))
             assertTrue(CryptoManager.verifyFileIntegrity(binFile))
-            assertArrayEquals(originalPayload, CryptoManager.openDecryptedContentStream(binFile)!!.readBytes())
+            assertArrayEquals(originalPayload, CryptoManager.openDecryptedContentStream(binFile)!!.use { it.readBytes() })
 
             // Rename to a shorter name
             val renamedShort = "a.png"
@@ -103,7 +103,7 @@ class EncryptedRenameAndDefaultAlbumTest {
             clearCaches()
             assertEquals(renamedShort, CryptoManager.getDisplayName(binFile.absolutePath))
             assertTrue(CryptoManager.verifyFileIntegrity(binFile))
-            assertArrayEquals(originalPayload, CryptoManager.openDecryptedContentStream(binFile)!!.readBytes())
+            assertArrayEquals(originalPayload, CryptoManager.openDecryptedContentStream(binFile)!!.use { it.readBytes() })
         } finally {
             setMasterKey(null)
             clearCaches()
