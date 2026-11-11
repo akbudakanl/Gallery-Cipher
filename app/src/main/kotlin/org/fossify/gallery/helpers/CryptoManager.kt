@@ -225,7 +225,6 @@ object CryptoManager {
         folderNameCache.clear()
         encryptedFolderCache.clear()
         vaultRecycleBinFolder = null
-        SessionRandomOrder.clearVaultKey()
         try {
             VideoFragment.clearFrameCache()
         } catch (_: Throwable) {}

@@ -833,7 +833,7 @@ class MediaFetcher(val context: Context, var isSecretVaultView: Boolean = false)
 
     fun sortMedia(media: ArrayList<Medium>, sorting: Int, enableRandom: Boolean = true) {
         if (enableRandom && sorting and SORT_BY_RANDOM != 0) {
-            SessionRandomOrder.sortMedia(context, media)
+            media.shuffle()
             return
         }
 
