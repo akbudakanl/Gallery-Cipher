@@ -42,6 +42,11 @@
         android:title="@string/delete"
         app:showAsAction="always" />
     <item
+        android:id="@+id/menu_shuffle"
+        android:title="@string/shuffle"
+        android:visible="false"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/menu_rename"
         android:title="@string/rename"
         app:showAsAction="never" />

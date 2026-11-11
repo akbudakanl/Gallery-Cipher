@@ -324,6 +324,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
                 findItem(R.id.menu_delete).isVisible = visibleBottomActions and BOTTOM_ACTION_DELETE == 0
                 findItem(R.id.menu_share).isVisible = visibleBottomActions and BOTTOM_ACTION_SHARE == 0
                 findItem(R.id.menu_edit).isVisible = visibleBottomActions and BOTTOM_ACTION_EDIT == 0 && !currentMedium.isSVG()
+                findItem(R.id.menu_shuffle).isVisible = isRandomSortingEnabled() && !isExternalIntent() && !mAreSlideShowMediaVisible && !mRandomSlideshowStopped && mMediaFiles.size > 1
                 findItem(R.id.menu_rename).isVisible = visibleBottomActions and BOTTOM_ACTION_RENAME == 0 && !currentMedium.getIsInRecycleBin()
                 findItem(R.id.menu_rotate).isVisible = currentMedium.isImage() && visibleBottomActions and BOTTOM_ACTION_ROTATE == 0
                 findItem(R.id.menu_set_as).isVisible = visibleBottomActions and BOTTOM_ACTION_SET_AS == 0
@@ -420,6 +421,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
                 R.id.menu_unhide -> toggleFileVisibility(false)
                 R.id.menu_share -> shareMediumPath(getCurrentPath())
                 R.id.menu_delete -> checkDeleteConfirmation()
+                R.id.menu_shuffle -> shuffleMedia()
                 R.id.menu_rename -> checkMediaManagementAndRename()
                 R.id.menu_print -> printFile()
                 R.id.menu_edit -> openEditor(getCurrentPath())
@@ -1612,6 +1614,36 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
             }
             updateActionbarTitle()
         }
+    }
+
+    private fun isRandomSortingEnabled() = config.getFolderSorting(mDirectory) and SORT_BY_RANDOM != 0
+
+    /**
+     * Re-randomizes the order of the album's items while keeping the currently displayed item on screen,
+     * so that swiping left/right afterwards reveals different neighbours.
+     */
+    private fun shuffleMedia() {
+        if (mAreSlideShowMediaVisible || mRandomSlideshowStopped || mMediaFiles.size < 2) {
+            return
+        }
+
+        val currentPath = mMediaFiles.getOrNull(mPos)?.path
+        val previousOrder = mMediaFiles.map { it.path }
+        val shuffled = ArrayList(mMediaFiles)
+        // make sure the order really changes (relevant for tiny albums)
+        var attempts = 0
+        do {
+            shuffled.shuffle()
+            attempts++
+        } while (shuffled.map { it.path } == previousOrder && attempts < 5)
+
+        mMediaFiles = shuffled
+        mPrevHashcode = mMediaFiles.hashCode()
+        mPos = shuffled.indexOfFirst { it.path == currentPath }.takeIf { it != -1 } ?: 0
+
+        updatePagerItems(mMediaFiles.toMutableList())
+        updateActionbarTitle()
+        refreshMenuItems()
     }
 
     private fun refreshViewPager(refetchPosition: Boolean = false) {
