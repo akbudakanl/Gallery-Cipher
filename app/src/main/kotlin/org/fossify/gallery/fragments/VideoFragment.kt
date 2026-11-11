@@ -335,6 +335,11 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         // right away, before the player has even been prepared.
         if (mConfig.autoplayVideos && !mConfig.gestureVideoPlayer && !mIsPanorama) {
             binding.videoPlayOutline.beGone()
+        } else if (mWasVideoStarted && !mIsPlaying && !mIsPanorama) {
+            // Without autoplay a video that was already started once comes back paused,
+            // waiting for the user: keep the tap-to-play icon visible, just like before
+            // the first start or after the video ended.
+            binding.videoPlayOutline.beVisible()
         }
 
         mIsFullscreen = listener?.isFullScreen() == true
@@ -444,7 +449,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
     override fun onPause() {
         super.onPause()
         storeStateVariables()
-        pauseVideo()
+        pauseVideo(showPlayIcon = false)
         if (mStoredRememberLastVideoPosition && mIsFragmentVisible && mWasVideoStarted) {
             saveVideoProgress()
         }
@@ -460,7 +465,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
     override fun setMenuVisibility(menuVisible: Boolean) {
         super.setMenuVisibility(menuVisible)
         if (mIsFragmentVisible && !menuVisible) {
-            pauseVideo()
+            pauseVideo(showPlayIcon = false)
         }
 
         mIsFragmentVisible = menuVisible
@@ -633,6 +638,10 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
             override fun onRenderedFirstFrame() {
                 binding.videoPreview.beGone()
                 if (mIsPlaying || mPlayOnPrepared || mExoPlayer?.isPlaying == true) {
+                    binding.videoPlayOutline.beGone()
+                } else if (mConfig.autoplayVideos && !mConfig.gestureVideoPlayer) {
+                    // With autoplay the video always resumes when the page becomes visible,
+                    // so a paused frame here is just a transient state before that.
                     binding.videoPlayOutline.beGone()
                 } else {
                     // The first frame was rendered while the player is paused, e.g. when
@@ -944,7 +953,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
-    private fun pauseVideo() {
+    private fun pauseVideo(showPlayIcon: Boolean = true) {
         if (mExoPlayer == null) {
             return
         }
@@ -958,9 +967,12 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         }
 
         mPlayPauseButton.setImageResource(org.fossify.commons.R.drawable.ic_play_outline_vector)
-        // A paused video waits for the user, so show the tap-to-play icon, exactly like
-        // before the first start or after the video ended.
-        binding.videoPlayOutline.beVisible()
+        // Only pauses the user initiated (or the video finishing) may surface the
+        // tap-to-play icon. System pauses, like swiping to another item while autoplay is
+        // on, must keep the screen as-is, otherwise the resumed playback looks stuttering.
+        if (showPlayIcon) {
+            binding.videoPlayOutline.beVisible()
+        }
         activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         mPositionAtPause = if (ended) 0L else (mExoPlayer?.currentPosition ?: 0L)
         listener?.saveVideoPlaybackPosition(mMedium.path, mPositionAtPause)
@@ -1081,7 +1093,7 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
     }
 
     private fun cleanup() {
-        pauseVideo()
+        pauseVideo(showPlayIcon = false)
         releaseExoPlayer()
 
         if (mWasFragmentInit) {
