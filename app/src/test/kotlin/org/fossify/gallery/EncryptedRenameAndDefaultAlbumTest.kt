@@ -81,6 +81,7 @@ class EncryptedRenameAndDefaultAlbumTest {
             assertTrue(diskNameBefore.endsWith(".bin"))
             assertFalse(diskNameBefore.contains("initial_secret_photo"))
             assertEquals(originalName, CryptoManager.getDisplayName(binFile.absolutePath))
+            assertTrue("Integrity before rename must pass", CryptoManager.verifyFileIntegrity(binFile))
 
             // Rename to a longer name
             val renamedLong = "very_long_renamed_holiday_picture_2026.jpg"

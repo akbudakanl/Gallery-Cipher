@@ -2226,7 +2226,6 @@ object CryptoManager {
 
         val parentDir = encryptedFile.parentFile ?: return false
         val tempFile = File(parentDir, ".tmp_${randomHex(8)}$ENCRYPTED_BIN_EXT")
-        val backupFile = File(parentDir, ".bak_${randomHex(8)}$ENCRYPTED_BIN_EXT")
 
         return try {
             val magicBytes = ByteArray(8)
@@ -2344,18 +2343,11 @@ object CryptoManager {
                 }
             }
 
-            if (!tempFile.renameTo(encryptedFile)) {
-                if (!encryptedFile.renameTo(backupFile)) {
-                    tempFile.delete()
-                    return false
-                }
-                if (!tempFile.renameTo(encryptedFile)) {
-                    backupFile.renameTo(encryptedFile)
-                    tempFile.delete()
-                    return false
-                }
-                backupFile.delete()
-            }
+            java.nio.file.Files.move(
+                tempFile.toPath(),
+                encryptedFile.toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING
+            )
 
             encryptedFile.setLastModified(meta.lastModified)
             syncDir(parentDir)
@@ -2369,9 +2361,6 @@ object CryptoManager {
             true
         } catch (e: Exception) {
             tempFile.delete()
-            if (!encryptedFile.exists() && backupFile.exists()) {
-                backupFile.renameTo(encryptedFile)
-            }
             false
         }
     }
