@@ -448,7 +448,7 @@ class PhotoFragment : ViewPagerFragment() {
         try {
             val pathToLoad = getPathToLoad(mMedium)
             if (CryptoManager.isEncryptedFile(pathToLoad)) {
-                loadWithGlide(pathToLoad, false)
+                loadEncryptedGif(pathToLoad)
                 return
             }
             val source = if (pathToLoad.startsWith("content://") || pathToLoad.startsWith("file://")) {
@@ -470,6 +470,47 @@ class PhotoFragment : ViewPagerFragment() {
         } catch (e: OutOfMemoryError) {
             mHasGifSource = false
             loadBitmap()
+        }
+    }
+
+    /**
+     * Plays a GIF stored in the vault. The bytes are decrypted straight into memory (never to disk) and handed to
+     * the same animated GIF view that is used for regular GIFs, so the animation actually plays.
+     */
+    private fun loadEncryptedGif(encryptedPath: String) {
+        ensureBackgroundThread {
+            val gifBytes = try {
+                CryptoManager.openDecryptedContentStream(File(encryptedPath))?.use { it.readBytes() }
+            } catch (e: Exception) {
+                null
+            } catch (e: OutOfMemoryError) {
+                null
+            }
+
+            activity?.runOnUiThread {
+                if (!isAdded || context == null) {
+                    mHasGifSource = false
+                    return@runOnUiThread
+                }
+
+                if (gifBytes == null || gifBytes.isEmpty()) {
+                    // fall back to a still image rather than showing nothing
+                    mHasGifSource = false
+                    loadWithGlide(encryptedPath, false)
+                    return@runOnUiThread
+                }
+
+                try {
+                    binding.apply {
+                        gesturesView.beGone()
+                        gifViewFrame.beVisible()
+                        gifView.setInputSource(InputSource.ByteArraySource(gifBytes))
+                    }
+                } catch (e: Exception) {
+                    mHasGifSource = false
+                    loadWithGlide(encryptedPath, false)
+                }
+            }
         }
     }
 
