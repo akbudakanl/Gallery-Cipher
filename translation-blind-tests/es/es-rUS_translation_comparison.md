@@ -1,6 +1,6 @@
 # Spanish (United States, values-es-rUS) Translation Completion & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-es-rUS/strings.xml` was updated to full parity using Standard Spanish (`values-es/strings.xml`) as reference and adapting all entries to United States Spanish (`es-rUS`). Previously, `values-es-rUS` contained only 9 `<string>` entries (and 0 `<plurals>`). All 9 existing entries (including the local `search` override, which is absent in `fossify-commons` `values-es-rUS`) were preserved, and all 298 missing `<string>` entries plus 2 `<plurals>` blocks were added (327 `<string>` + 2 `<plurals>` = 329 resource entries; 347 total comparison rows including 14 `fossify-commons` UI overrides).
+> **Scope:** `app/src/main/res/values-es-rUS/strings.xml` was updated to full parity using Standard Spanish (`values-es/strings.xml`) as reference and adapting all entries to United States Spanish (`es-rUS`). Previously, `values-es-rUS` contained only 9 `<string>` entries (and 0 `<plurals>`). All 9 existing entries (including the local `search` override, which is absent in `fossify-commons` `values-es-rUS`) were preserved, and all 298 missing `<string>` entries plus 2 `<plurals>` blocks were added (329 `<string>` + 2 `<plurals>` = 331 resource entries; 351 total comparison rows including 18 `fossify-commons` keys — 16 UI overrides plus the newly added `skip_the_recycle_bin` and `skip_delete_confirmation`).
 > **Key Terminology & Regional Adaptations vs. `values-es`:** `Ajustes` → `Configuración` · `vídeo/vídeos` → `video/videos` · `ficheros` → `archivos` · `añadir` → `agregar` · `Gestionar` → `Administrar` · `Sistema por defecto` → `Predeterminado del sistema` · `Introduzca la contraseña` → `Ingresar contraseña` · `pegatinas` → `stickers` · `pulsado` → `presionado` · `Search` → `Buscar` (local override kept for `dialog_select_language.xml`)
 
 ## 1. Existing Regional Entries & Key Adaptations from Standard Spanish
@@ -21,9 +21,9 @@ All 9 previously existing strings in `values-es-rUS/strings.xml` were verified a
 | Password & system | `Introduzca la contraseña` / `Sistema por defecto` | `Ingresar contraseña` / `Predeterminado del sistema` | Matches existing `Predeterminado del sistema` in `values-es-rUS` |
 | Search override | *(inherited from commons)* | `Buscar` *(explicit in `values-es-rUS`)* | `fossify-commons` `values-es-rUS` omits `search` |
 
-### 1.3 `fossify-commons` Inherited UI Overrides (14 Keys)
+### 1.3 `fossify-commons` Inherited UI Overrides (18 Keys)
 
-`org.fossify:commons:7.1.3` (`res/values-es-rUS/values-es-rUS.xml`) contains only 6 base strings and omits all 14 keys below, so local overrides were added to `app/src/main/res/values-es-rUS/strings.xml`:
+`org.fossify:commons:7.1.3` (`res/values-es-rUS/values-es-rUS.xml`) contains only 6 base strings and omits all 18 keys below, so local overrides were added to `app/src/main/res/values-es-rUS/strings.xml`:
 
 | # | Key (`name`) | English (`fossify-commons`) | US Spanish (`values-es-rUS/strings.xml`) | Source / Notes |
 |---:|---|---|---|---|
@@ -43,6 +43,8 @@ All 9 previously existing strings in `values-es-rUS/strings.xml` were verified a
 | 14 | `print` | Print | Imprimir | Local override in `values-es-rUS/strings.xml` (ViewPager menu) |
 | 15 | `search_files` | Search files | Buscar archivos | Local override in `values-es-rUS/strings.xml` (Search bar hint) |
 | 16 | `search_folders` | Search folders | Buscar carpetas | Local override in `values-es-rUS/strings.xml` (Search bar hint) |
+| 17 | `skip_the_recycle_bin` | Skip the recycle bin, delete files directly | Omitir la papelera de reciclaje y borrar los archivos directamente | Local override in `values-es-rUS/strings.xml` (Delete confirmation dialog); key missing in `fossify-commons` `values-es-rUS` |
+| 18 | `skip_delete_confirmation` | Always skip delete confirmation dialog | Omitir siempre el diálogo de confirmación de eliminación | Local override in `values-es-rUS/strings.xml` (Settings); key missing in `fossify-commons` `values-es-rUS` |
 
 ### 1.4 Newly Added Fork-Only Strings (63 Keys)
 
@@ -81,8 +83,8 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 29 | 29 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? |  |
 | 30 | 30 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? |  |
 | 31 | 31 | `confirm_checkbox_label` | I confirm |  |
-| 32 | 32 | `secret_vault` | Secret Vault |  |
-| 33 | 33 | `secret_vault_empty` | Secret Vault is empty |  |
+| 32 | 32 | `secret_vault` | Encrypted Vault |  |
+| 33 | 33 | `secret_vault_empty` | Encrypted Vault is empty |  |
 | 34 | 34 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? |  |
 | 35 | 35 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. |  |
 | 36 | 36 | `on_vault_exit` | On leaving encrypted section |  |
@@ -100,7 +102,7 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 48 | 48 | `files_decrypted_successfully` | Files unhidden successfully | Success toast after decrypting/unhiding multiple files |
 | 49 | 49 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | Settings switch, setup prompt title, and vault security dialog button |
 | 50 | 50 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | Toast shown when enabling biometrics before hidden-item password protection |
-| 51 | 51 | `biometric_unlock_vault` | Unlock hidden vault | BiometricPrompt title when unlocking the hidden vault |
+| 51 | 51 | `biometric_unlock_vault` | Unlock encrypted vault | BiometricPrompt title when unlocking the encrypted vault |
 | 52 | 52 | `biometric_unlock_prompt` | Verify your biometric identity to access hidden items | BiometricPrompt subtitle when unlocking hidden items |
 | 53 | 53 | `biometric_setup_prompt` | Confirm your biometric identity to enable biometric vault access | BiometricPrompt subtitle when enabling biometric vault access |
 | 54 | 54 | `use_password_or_pin` | Use PIN / Password | BiometricPrompt negative button to fall back to PIN/password |
@@ -414,8 +416,8 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 293 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | ¿Deseas acceder a tu carpeta Cipher_Secrets existente? |
 | 294 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | Se eliminará la carpeta Cipher_Secrets existente y se creará una nueva. ¿Estás seguro? |
 | 295 | `confirm_checkbox_label` | I confirm | Confirmo |
-| 296 | `secret_vault` | Secret Vault | Bóveda secreta |
-| 297 | `secret_vault_empty` | Secret Vault is empty | La bóveda secreta está vacía |
+| 296 | `secret_vault` | Encrypted Vault | Bóveda cifrada |
+| 297 | `secret_vault_empty` | Encrypted Vault is empty | La bóveda cifrada está vacía |
 | 298 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | ¿Seguro que quieres descifrar los archivos ocultos? |
 | 299 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | Por seguridad, copiar al portapapeles está deshabilitado mientras la bóveda está desbloqueada. |
 | 300 | `on_vault_exit` | On leaving encrypted section | Al salir de la sección cifrada |
@@ -432,7 +434,7 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 311 | `open_system_language_settings` | Open system language settings | Abrir configuración de idioma del sistema |
 | 312 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | Acceder a elementos ocultos con biometría |
 | 313 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | Por favor, activa primero la protección con contraseña para elementos ocultos |
-| 314 | `biometric_unlock_vault` | Unlock hidden vault | Desbloquear bóveda oculta |
+| 314 | `biometric_unlock_vault` | Unlock encrypted vault | Desbloquear bóveda cifrada |
 | 315 | `biometric_unlock_prompt` | Verify your biometric identity to access hidden items | Verifica tu identidad biométrica para acceder a los elementos ocultos |
 | 316 | `biometric_setup_prompt` | Confirm your biometric identity to enable biometric vault access | Confirma tu identidad biométrica para activar el acceso biométrico a la bóveda |
 | 317 | `use_password_or_pin` | Use PIN / Password | Usar PIN / Contraseña |
@@ -468,3 +470,5 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 347 | `print` *(fossify-commons)* | Print | Imprimir |
 | 348 | `search_files` *(fossify-commons)* | Search files | Buscar archivos |
 | 349 | `search_folders` *(fossify-commons)* | Search folders | Buscar carpetas |
+| 350 | `skip_the_recycle_bin` *(fossify-commons)* | Skip the recycle bin, delete files directly | Omitir la papelera de reciclaje y borrar los archivos directamente |
+| 351 | `skip_delete_confirmation` *(fossify-commons)* | Always skip delete confirmation dialog | Omitir siempre el diálogo de confirmación de eliminación |

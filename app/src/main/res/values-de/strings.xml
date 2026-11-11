@@ -303,8 +303,8 @@
     <string name="access_existing_cipher_secrets_prompt">Möchtest du auf deinen vorhandenen Cipher_Secrets-Ordner zugreifen?</string>
     <string name="delete_and_recreate_cipher_secrets_prompt">Der vorhandene Cipher_Secrets-Ordner wird gelöscht und ein neuer erstellt. Bist du sicher?</string>
     <string name="confirm_checkbox_label">Ich bestätige</string>
-    <string name="secret_vault">Geheimer Tresor</string>
-    <string name="secret_vault_empty">Geheimer Tresor ist leer</string>
+    <string name="secret_vault">Verschlüsselter Tresor</string>
+    <string name="secret_vault_empty">Verschlüsselter Tresor ist leer</string>
     <string name="confirm_decrypt_hidden_file">Möchtest du die versteckte(n) Datei(en) wirklich entschlüsseln?</string>
     <string name="copy_to_clipboard_disabled_in_vault">Das Kopieren in die Zwischenablage ist aus Sicherheitsgründen deaktiviert, solange der Tresor entsperrt ist.</string>
     <string name="on_vault_exit">Beim Verlassen des verschlüsselten Bereichs</string>
@@ -321,7 +321,7 @@
     <string name="open_system_language_settings">System-Spracheinstellungen öffnen</string>
     <string name="access_hidden_items_with_biometrics">Mit Biometrie auf versteckte Elemente zugreifen</string>
     <string name="enable_hidden_protection_first_prompt">Bitte aktiviere zuerst den Passwortschutz für versteckte Elemente</string>
-    <string name="biometric_unlock_vault">Geheimen Tresor entsperren</string>
+    <string name="biometric_unlock_vault">Verschlüsselten Tresor entsperren</string>
     <string name="biometric_unlock_prompt">Bestätige deine biometrische Identität, um auf versteckte Elemente zuzugreifen</string>
     <string name="biometric_setup_prompt">Bestätige deine biometrische Identität, um den biometrischen Tresorzugriff zu aktivieren</string>
     <string name="use_password_or_pin">PIN / Passwort verwenden</string>

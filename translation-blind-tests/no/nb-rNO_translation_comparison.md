@@ -1,7 +1,7 @@
 # Norwegian Bokmål (values-nb-rNO) Translation Completion & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-nb-rNO/strings.xml` was audited against `app/src/main/res/values/strings.xml`. Three existing errors/typos were corrected, two multiline placeholders were normalized, and all 91 missing strings were translated into Norwegian Bokmål and added, bringing `values-nb-rNO` to full parity (326 `<string>` + 2 `<plurals>` = 328 app resource entries; `search` and 14 shared UI keys from `fossify-commons`; 345 total comparison rows with plural forms expanded).
-> **Key Terminology:** `Settings` → `Innstillinger` · `Default` → `Standard` / `Systemstandard` · `Folder` → `Mappe` · `Album` → `Album` · `Secret Vault` → `Hemmelig hvelv` · `Hidden` → `Skjult` · `Excluded` → `Ekskludert` · `Password` → `Passord` · `Encrypt / Decrypt` → `Krypter / Dekrypter` · `Thumbnails` → `Minibilder` · `Recycle bin` → `Papirkurv` · `Clipboard` → `Utklippstavlen`
+> **Scope:** `app/src/main/res/values-nb-rNO/strings.xml` was audited against `app/src/main/res/values/strings.xml`. Three existing errors/typos were corrected, two multiline placeholders were normalized, and all 91 missing strings were translated into Norwegian Bokmål and added, bringing `values-nb-rNO` to full parity (326 `<string>` + 2 `<plurals>` = 328 app resource entries; `search` and 16 shared UI keys from `fossify-commons` plus the newly added `skip_the_recycle_bin` override; 348 total comparison rows with plural forms expanded).
+> **Key Terminology:** `Settings` → `Innstillinger` · `Default` → `Standard` / `Systemstandard` · `Folder` → `Mappe` · `Album` → `Album` · `Encrypted Vault` → `Kryptert hvelv` · `Hidden` → `Skjult` · `Excluded` → `Ekskludert` · `Password` → `Passord` · `Encrypt / Decrypt` → `Krypter / Dekrypter` · `Thumbnails` → `Minibilder` · `Recycle bin` → `Papirkurv` · `Clipboard` → `Utklippstavlen`
 
 ## 1. Summary of Revisions & Newly Added Norwegian Bokmål Strings & Translations
 
@@ -50,8 +50,8 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 29 | 29 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | Keeps literal folder name Cipher_Secrets |
 | 30 | 30 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | Keeps literal folder name Cipher_Secrets |
 | 31 | 31 | `confirm_checkbox_label` | I confirm | Checkbox label, suffixed with countdown (10) in dialog |
-| 32 | 32 | `secret_vault` | Secret Vault | Vault feature title ("Hemmelig hvelv") |
-| 33 | 33 | `secret_vault_empty` | Secret Vault is empty | Empty state placeholder for Secret Vault |
+| 32 | 32 | `secret_vault` | Encrypted Vault | Vault feature title ("Kryptert hvelv") |
+| 33 | 33 | `secret_vault_empty` | Encrypted Vault is empty | Empty state placeholder for Encrypted Vault |
 | 34 | 34 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | Confirmation prompt for singular/plural file(s) |
 | 35 | 35 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | Security notice while vault is unlocked |
 | 36 | 36 | `on_vault_exit` | On leaving encrypted section | Settings label for behavior when leaving encrypted section |
@@ -69,7 +69,7 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 48 | 47 | `files_decrypted_successfully` | Files unhidden successfully | Success toast after decrypting/unhiding multiple files |
 | 49 | 48 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | Settings switch, setup prompt title, and vault security dialog button |
 | 50 | 49 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | Toast shown when enabling biometrics before hidden-item password protection |
-| 51 | 50 | `biometric_unlock_vault` | Unlock hidden vault | BiometricPrompt title when unlocking the hidden vault |
+| 51 | 50 | `biometric_unlock_vault` | Unlock encrypted vault | BiometricPrompt title when unlocking the encrypted vault |
 | 52 | 51 | `biometric_unlock_prompt` | Verify your biometric identity to access hidden items | BiometricPrompt subtitle when unlocking hidden items |
 | 53 | 52 | `biometric_setup_prompt` | Confirm your biometric identity to enable biometric vault access | BiometricPrompt subtitle when enabling biometric vault access |
 | 54 | 53 | `use_password_or_pin` | Use PIN / Password | BiometricPrompt negative button to fall back to PIN/password |
@@ -134,9 +134,9 @@ These 45 strings already exist in the original Fossify Gallery (upstream); only 
 | 44 | `faq_18_text` | Our apps have no ads whatsoever. If you see them during video playback, you must be using some other apps video player. Try finding your default video player in the device settings, then do a \"Clear defaults\" on it. The next time you invoke some video intent you will see an app picker prompt, where you can select what app you want to use. | Appene våre har ingen reklame overhodet. Hvis du ser reklame under videoavspilling, bruker du sannsynligvis videospilleren til en annen app. Prøv å finne standard videospiller i enhetsinnstillingene, og velg \"Fjern standardvalg\" på den. Neste gang du åpner en video, vil du se en appvelger der du kan velge hvilken app du vil bruke. | FAQ 18 answer |
 | 45 | `enter_password` | Enter password | Skriv inn passord | Password prompt |
 
-### 1.4 `fossify-commons` Inherited UI Strings & Local Overrides (14 Keys)
+### 1.4 `fossify-commons` Inherited UI Strings & Local Overrides (17 Keys)
 
-10 of these 14 shared UI keys are inherited from `org.fossify:commons:7.1.3` (`res/values-nb-rNO/values-nb-rNO.xml`), while `contributors`, `known_issues`, `donate_to_fossify`, and `privacy_policy` were missing and added as local overrides in `app/src/main/res/values-nb-rNO/strings.xml`:
+10 of these 17 shared UI keys are inherited from `org.fossify:commons:7.1.3` (`res/values-nb-rNO/values-nb-rNO.xml`), while `contributors`, `known_issues`, `donate_to_fossify`, `privacy_policy`, and `skip_the_recycle_bin` were missing and added as local overrides in `app/src/main/res/values-nb-rNO/strings.xml`:
 
 | # | Key (`name`) | English (`fossify-commons`) | Norwegian Bokmål | Source / Notes |
 |---:|---|---|---|---|
@@ -156,6 +156,7 @@ These 45 strings already exist in the original Fossify Gallery (upstream); only 
 | 14 | `print` | Print | Skriv ut | Inherited from `fossify-commons` (ViewPager menu) |
 | 15 | `search_files` | Search files | Søk i filer | Local override in `values-nb-rNO/strings.xml` (Search bar hint) |
 | 16 | `search_folders` | Search folders | Søk i mapper | Local override in `values-nb-rNO/strings.xml` (Search bar hint) |
+| 17 | `skip_the_recycle_bin` | Skip the recycle bin, delete files directly | Hopp over papirkurven og slett filene direkte | Local override in `values-nb-rNO/strings.xml` (Delete confirmation dialog); key missing in `fossify-commons` `values-nb-rNO` |
 
 ## 2. Full 1-to-1 Comparison: English vs. Norwegian Bokmål
 
@@ -456,8 +457,8 @@ These 45 strings already exist in the original Fossify Gallery (upstream); only 
 | 293 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | Vil du få tilgang til din eksisterende Cipher_Secrets-mappe? |
 | 294 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | Eksisterende Cipher_Secrets-mappe vil bli slettet og en ny vil bli opprettet. Er du sikker? |
 | 295 | `confirm_checkbox_label` | I confirm | Jeg bekrefter |
-| 296 | `secret_vault` | Secret Vault | Hemmelig hvelv |
-| 297 | `secret_vault_empty` | Secret Vault is empty | Det hemmelige hvelvet er tomt |
+| 296 | `secret_vault` | Encrypted Vault | Kryptert hvelv |
+| 297 | `secret_vault_empty` | Encrypted Vault is empty | Det krypterte hvelvet er tomt |
 | 298 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | Er du sikker på at du vil dekryptere de(n) skjulte filen(e)? |
 | 299 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | Kopiering til utklippstavlen er deaktivert av sikkerhetshensyn mens hvelvet er låst opp. |
 | 300 | `on_vault_exit` | On leaving encrypted section | Når du forlater kryptert seksjon |
@@ -474,7 +475,7 @@ These 45 strings already exist in the original Fossify Gallery (upstream); only 
 | 311 | `open_system_language_settings` | Open system language settings | Åpne systemets språkinnstillinger |
 | 312 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | Få tilgang til skjulte elementer med biometri |
 | 313 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | Aktiver passordbeskyttelse for skjulte elementer først |
-| 314 | `biometric_unlock_vault` | Unlock hidden vault | Lås opp skjult hvelv |
+| 314 | `biometric_unlock_vault` | Unlock encrypted vault | Lås opp kryptert hvelv |
 | 315 | `biometric_unlock_prompt` | Verify your biometric identity to access hidden items | Bekreft din biometriske identitet for å få tilgang til skjulte elementer |
 | 316 | `biometric_setup_prompt` | Confirm your biometric identity to enable biometric vault access | Bekreft din biometriske identitet for å aktivere biometrisk tilgang til hvelvet |
 | 317 | `use_password_or_pin` | Use PIN / Password | Bruk PIN / Passord |
@@ -508,3 +509,4 @@ These 45 strings already exist in the original Fossify Gallery (upstream); only 
 | 345 | `print` *(fossify-commons)* | Print | Skriv ut |
 | 346 | `search_files` *(fossify-commons)* | Search files | Søk i filer |
 | 347 | `search_folders` *(fossify-commons)* | Search folders | Søk i mapper |
+| 348 | `skip_the_recycle_bin` *(fossify-commons)* | Skip the recycle bin, delete files directly | Hopp over papirkurven og slett filene direkte |

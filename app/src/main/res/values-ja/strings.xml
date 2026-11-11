@@ -301,8 +301,8 @@
     <string name="access_existing_cipher_secrets_prompt">既存の Cipher_Secrets フォルダーにアクセスしますか？</string>
     <string name="delete_and_recreate_cipher_secrets_prompt">既存の Cipher_Secrets フォルダーは削除され、新しく作成されます。よろしいですか？</string>
     <string name="confirm_checkbox_label">確認しました</string>
-    <string name="secret_vault">シークレット保管庫</string>
-    <string name="secret_vault_empty">シークレット保管庫は空です</string>
+    <string name="secret_vault">暗号化された保管庫</string>
+    <string name="secret_vault_empty">暗号化された保管庫は空です</string>
     <string name="confirm_decrypt_hidden_file">非表示ファイルを復号してもよろしいですか？</string>
     <string name="copy_to_clipboard_disabled_in_vault">セキュリティのため、保管庫のロック解除中はクリップボードへのコピーが無効になっています。</string>
     <string name="on_vault_exit">暗号化セクションを離れるとき</string>
@@ -319,7 +319,7 @@
     <string name="open_system_language_settings">システムの言語設定を開く</string>
     <string name="access_hidden_items_with_biometrics">生体認証で非表示項目にアクセス</string>
     <string name="enable_hidden_protection_first_prompt">先に非表示項目のパスワード保護を有効にしてください</string>
-    <string name="biometric_unlock_vault">非表示の保管庫をロック解除</string>
+    <string name="biometric_unlock_vault">暗号化された保管庫をロック解除</string>
     <string name="biometric_unlock_prompt">非表示項目にアクセスするには生体認証で本人確認を行ってください</string>
     <string name="biometric_setup_prompt">保管庫への生体認証アクセスを有効にするには生体認証で本人確認を行ってください</string>
     <string name="use_password_or_pin">PIN / パスワードを使用</string>

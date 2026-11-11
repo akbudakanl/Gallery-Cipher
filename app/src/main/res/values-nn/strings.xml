@@ -337,8 +337,8 @@
     <string name="access_existing_cipher_secrets_prompt">Vil du få tilgang til den eksisterande Cipher_Secrets-mappa di?</string>
     <string name="delete_and_recreate_cipher_secrets_prompt">Eksisterande Cipher_Secrets-mappe vert sletta og ei ny vert laga. Er du sikker?</string>
     <string name="confirm_checkbox_label">Eg stadfestar</string>
-    <string name="secret_vault">Hemmeleg kvelv</string>
-    <string name="secret_vault_empty">Det hemmelege kvelvet er tomt</string>
+    <string name="secret_vault">Kryptert kvelv</string>
+    <string name="secret_vault_empty">Det krypterte kvelvet er tomt</string>
     <string name="confirm_decrypt_hidden_file">Er du sikker på at du vil dekryptera den/dei skjulte fila/filene?</string>
     <string name="copy_to_clipboard_disabled_in_vault">Kopiering til utklippstavla er deaktivert av tryggleiksomsyn medan kvelvet er låst opp.</string>
     <string name="on_vault_exit">Når du forlèt kryptert seksjon</string>
@@ -372,9 +372,11 @@
     <string name="privacy_policy">Personvernerklæring</string>
     <string name="create_shortcut">Lag snarveg</string>
     <string name="print">Skriv ut</string>
+    <string name="skip_the_recycle_bin">Hopp over papirkorga og slett filene direkte</string>
+    <string name="skip_delete_confirmation">Hopp alltid over dialogen for stadfesting av sletting</string>
     <string name="access_hidden_items_with_biometrics">Få tilgang til skjulte element med biometri</string>
     <string name="enable_hidden_protection_first_prompt">Ver venleg og aktiver passordvern for skjulte element fyrst</string>
-    <string name="biometric_unlock_vault">Lås opp skjult kvelv</string>
+    <string name="biometric_unlock_vault">Lås opp kryptert kvelv</string>
     <string name="biometric_unlock_prompt">Stadfest den biometriske identiteten din for å få tilgang til skjulte element</string>
     <string name="biometric_setup_prompt">Stadfest den biometriske identiteten din for å aktivera biometrisk tilgang til kvelvet</string>
     <string name="use_password_or_pin">Bruk PIN / Passord</string>

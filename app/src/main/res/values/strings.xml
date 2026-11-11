@@ -342,8 +342,8 @@
     <string name="access_existing_cipher_secrets_prompt">Do you want to access your existing Cipher_Secrets folder?</string>
     <string name="delete_and_recreate_cipher_secrets_prompt">Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure?</string>
     <string name="confirm_checkbox_label">I confirm</string>
-    <string name="secret_vault">Secret Vault</string>
-    <string name="secret_vault_empty">Secret Vault is empty</string>
+    <string name="secret_vault">Encrypted Vault</string>
+    <string name="secret_vault_empty">Encrypted Vault is empty</string>
     <string name="confirm_decrypt_hidden_file">Are you sure you want to decrypt the hidden file(s)?</string>
     <string name="copy_to_clipboard_disabled_in_vault">Copying to clipboard is disabled while vault is unlocked for security.</string>
     <string name="on_vault_exit">On leaving encrypted section</string>
@@ -360,7 +360,7 @@
     <string name="open_system_language_settings">Open system language settings</string>
     <string name="access_hidden_items_with_biometrics">Access hidden items with biometrics</string>
     <string name="enable_hidden_protection_first_prompt">Please enable hidden item password protection first</string>
-    <string name="biometric_unlock_vault">Unlock hidden vault</string>
+    <string name="biometric_unlock_vault">Unlock encrypted vault</string>
     <string name="biometric_unlock_prompt">Verify your biometric identity to access hidden items</string>
     <string name="biometric_setup_prompt">Confirm your biometric identity to enable biometric vault access</string>
     <string name="use_password_or_pin">Use PIN / Password</string>

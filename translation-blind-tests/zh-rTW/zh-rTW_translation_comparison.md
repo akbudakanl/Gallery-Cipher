@@ -1,7 +1,7 @@
 # Traditional Chinese (Taiwan, values-zh-rTW) Translation Audit, Revision & English 1-to-1 Comparison
 
 > **Scope:** `app/src/main/res/values-zh-rTW/strings.xml` was audited against `app/src/main/res/values/strings.xml` and `fossify-commons` (`values-zh-rTW`). 14 existing entries with mistranslations, Mainland Chinese phrasing, terminology mismatches, or formatting bugs were revised, and all 50 missing strings were translated into Taiwanese Traditional Chinese (`zh-rTW`) and added, bringing `values-zh-rTW` to full parity (326 `<string>` + 2 `<plurals>` = 328 resource entries; 345 total comparison rows including English `one`/`other` plural forms and 15 `fossify-commons` UI keys).
-> **Key Terminology:** `Settings` → `設定` · `Default` → `預設` / `系統預設` · `Folder` → `資料夾` · `Album` → `相簿` · `Secret Vault` → `秘密保險箱` · `Hidden` → `隱藏` · `Excluded` → `已排除` · `Password` → `密碼` · `Encrypt / Decrypt` → `加密 / 解密` · `Copy to` → `複製` (matches `fossify-commons`) · `Clipboard` → `剪貼簿` · `Search` → `搜尋` (inherited from `fossify-commons`)
+> **Key Terminology:** `Settings` → `設定` · `Default` → `預設` / `系統預設` · `Folder` → `資料夾` · `Album` → `相簿` · `Encrypted Vault` → `加密保險箱` · `Hidden` → `隱藏` · `Excluded` → `已排除` · `Password` → `密碼` · `Encrypt / Decrypt` → `加密 / 解密` · `Copy to` → `複製` (matches `fossify-commons`) · `Clipboard` → `剪貼簿` · `Search` → `搜尋` (inherited from `fossify-commons`)
 
 ## 1. Audit of Existing Translations & Newly Added Entries
 
@@ -65,8 +65,8 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 29 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | 您要存取現有的 Cipher_Secrets 資料夾嗎？ | Keeps literal folder name `Cipher_Secrets` |
 | 30 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | 現有的 Cipher_Secrets 資料夾將會被刪除並建立新的資料夾。確定要繼續嗎？ | Keeps literal folder name `Cipher_Secrets` |
 | 31 | `confirm_checkbox_label` | I confirm | 我確認 | Checkbox label, suffixed with countdown `(10)` in dialog |
-| 32 | `secret_vault` | Secret Vault | 秘密保險箱 | Vault feature title |
-| 33 | `secret_vault_empty` | Secret Vault is empty | 秘密保險箱為空 | Empty state placeholder for Secret Vault |
+| 32 | `secret_vault` | Encrypted Vault | 加密保險箱 | Vault feature title |
+| 33 | `secret_vault_empty` | Encrypted Vault is empty | 加密保險箱為空 | Empty state placeholder for Encrypted Vault |
 | 34 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | 確定要解密隱藏的檔案嗎？ | Confirmation prompt for decrypting hidden file(s) |
 | 35 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | 基於安全考量，保險箱解鎖期間已停用複製到剪貼簿功能。 | Security notice using `剪貼簿` matching `fossify-commons` |
 | 36 | `on_vault_exit` | On leaving encrypted section | 離開加密區域時 | Settings label for behavior when leaving encrypted section |
@@ -84,7 +84,7 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 48 | `files_decrypted_successfully` | Files unhidden successfully | 已成功解除隱藏檔案 | Success toast after decrypting/unhiding multiple files |
 | 49 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | 使用生物辨識存取隱藏項目 | Settings switch, setup prompt title, and vault security dialog button |
 | 50 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | 請先啟用隱藏項目的密碼保護 | Toast shown when enabling biometrics before hidden-item password protection |
-| 51 | `biometric_unlock_vault` | Unlock hidden vault | 解鎖隱藏保險箱 | BiometricPrompt title when unlocking the hidden vault |
+| 51 | `biometric_unlock_vault` | Unlock encrypted vault | 解鎖加密保險箱 | BiometricPrompt title when unlocking the encrypted vault |
 | 52 | `biometric_unlock_prompt` | Verify your biometric identity to access hidden items | 驗證您的生物辨識身分以存取隱藏項目 | BiometricPrompt subtitle when unlocking hidden items |
 | 53 | `biometric_setup_prompt` | Confirm your biometric identity to enable biometric vault access | 確認您的生物辨識身分以啟用保險箱的生物辨識存取 | BiometricPrompt subtitle when enabling biometric vault access |
 | 54 | `use_password_or_pin` | Use PIN / Password | 使用 PIN 碼 / 密碼 | BiometricPrompt negative button to fall back to PIN/password |
@@ -430,8 +430,8 @@ All 14 shared UI keys below are already localized in `org.fossify:commons:7.1.3`
 | 293 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | 您要存取現有的 Cipher_Secrets 資料夾嗎？ |
 | 294 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | 現有的 Cipher_Secrets 資料夾將會被刪除並建立新的資料夾。確定要繼續嗎？ |
 | 295 | `confirm_checkbox_label` | I confirm | 我確認 |
-| 296 | `secret_vault` | Secret Vault | 秘密保險箱 |
-| 297 | `secret_vault_empty` | Secret Vault is empty | 秘密保險箱為空 |
+| 296 | `secret_vault` | Encrypted Vault | 加密保險箱 |
+| 297 | `secret_vault_empty` | Encrypted Vault is empty | 加密保險箱為空 |
 | 298 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | 確定要解密隱藏的檔案嗎？ |
 | 299 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | 基於安全考量，保險箱解鎖期間已停用複製到剪貼簿功能。 |
 | 300 | `on_vault_exit` | On leaving encrypted section | 離開加密區域時 |
@@ -448,7 +448,7 @@ All 14 shared UI keys below are already localized in `org.fossify:commons:7.1.3`
 | 311 | `open_system_language_settings` | Open system language settings | 開啟系統語言設定 |
 | 312 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | 使用生物辨識存取隱藏項目 |
 | 313 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | 請先啟用隱藏項目的密碼保護 |
-| 314 | `biometric_unlock_vault` | Unlock hidden vault | 解鎖隱藏保險箱 |
+| 314 | `biometric_unlock_vault` | Unlock encrypted vault | 解鎖加密保險箱 |
 | 315 | `biometric_unlock_prompt` | Verify your biometric identity to access hidden items | 驗證您的生物辨識身分以存取隱藏項目 |
 | 316 | `biometric_setup_prompt` | Confirm your biometric identity to enable biometric vault access | 確認您的生物辨識身分以啟用保險箱的生物辨識存取 |
 | 317 | `use_password_or_pin` | Use PIN / Password | 使用 PIN 碼 / 密碼 |

@@ -307,8 +307,8 @@
     <string name="access_existing_cipher_secrets_prompt">Vil du få tilgang til din eksisterende Cipher_Secrets-mappe?</string>
     <string name="delete_and_recreate_cipher_secrets_prompt">Eksisterende Cipher_Secrets-mappe vil bli slettet og en ny vil bli opprettet. Er du sikker?</string>
     <string name="confirm_checkbox_label">Jeg bekrefter</string>
-    <string name="secret_vault">Hemmelig hvelv</string>
-    <string name="secret_vault_empty">Det hemmelige hvelvet er tomt</string>
+    <string name="secret_vault">Kryptert hvelv</string>
+    <string name="secret_vault_empty">Det krypterte hvelvet er tomt</string>
     <string name="confirm_decrypt_hidden_file">Er du sikker på at du vil dekryptere de(n) skjulte filen(e)?</string>
     <string name="copy_to_clipboard_disabled_in_vault">Kopiering til utklippstavlen er deaktivert av sikkerhetshensyn mens hvelvet er låst opp.</string>
     <string name="on_vault_exit">Når du forlater kryptert seksjon</string>
@@ -328,9 +328,10 @@
     <string name="known_issues">Kjente problemer</string>
     <string name="donate_to_fossify">Doner til Fossify</string>
     <string name="privacy_policy">Personvernerklæring</string>
+    <string name="skip_the_recycle_bin">Hopp over papirkurven og slett filene direkte</string>
     <string name="access_hidden_items_with_biometrics">Få tilgang til skjulte elementer med biometri</string>
     <string name="enable_hidden_protection_first_prompt">Aktiver passordbeskyttelse for skjulte elementer først</string>
-    <string name="biometric_unlock_vault">Lås opp skjult hvelv</string>
+    <string name="biometric_unlock_vault">Lås opp kryptert hvelv</string>
     <string name="biometric_unlock_prompt">Bekreft din biometriske identitet for å få tilgang til skjulte elementer</string>
     <string name="biometric_setup_prompt">Bekreft din biometriske identitet for å aktivere biometrisk tilgang til hvelvet</string>
     <string name="use_password_or_pin">Bruk PIN / Passord</string>

@@ -1,7 +1,7 @@
 # Spanish (Standard, values-es) Translation Audit, Revision & English 1-to-1 Comparison
 
 > **Scope:** `app/src/main/res/values-es/strings.xml` was audited against `app/src/main/res/values/strings.xml` and `fossify-commons` (`values-es`). Previously, `values-es` contained 257 `<string>` and 2 `<plurals>` entries (missing all 50 fork/new strings). 29 existing entries with mistranslations, typos, missing clauses, formatting bugs, or terminology inconsistencies were fixed, and all 50 missing strings were translated into Standard Spanish (`es`), bringing `values-es` to full parity (326 `<string>` + 2 `<plurals>` = 328 resource entries; `search` and 14 shared UI keys from `fossify-commons`; 347 total comparison rows with Spanish CLDR `one`/`many`/`other` plural forms expanded).
-> **Key Terminology:** `Settings` → `Ajustes` · `Default` → `Predeterminado` / `Sistema por defecto` · `Folder` → `Carpeta` · `Album` → `Álbum` · `Secret Vault` → `Bóveda secreta` · `Hidden` → `Oculto` · `Excluded` → `Excluido` · `Password` → `Contraseña` · `Encrypt / Decrypt` → `Cifrar / Descifrar` · `Copy to` → `Copiar a` (matches `fossify-commons`) · `Clipboard` → `Portapapeles` · `Search` → `Buscar` (inherited from `fossify-commons`)
+> **Key Terminology:** `Settings` → `Ajustes` · `Default` → `Predeterminado` / `Sistema por defecto` · `Folder` → `Carpeta` · `Album` → `Álbum` · `Encrypted Vault` → `Bóveda cifrada` · `Hidden` → `Oculto` · `Excluded` → `Excluido` · `Password` → `Contraseña` · `Encrypt / Decrypt` → `Cifrar / Descifrar` · `Copy to` → `Copiar a` (matches `fossify-commons`) · `Clipboard` → `Portapapeles` · `Search` → `Buscar` (inherited from `fossify-commons`)
 
 ## 1. Audit of Existing Translations & Newly Added Entries
 
@@ -78,8 +78,8 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 29 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | ¿Desea acceder a su carpeta Cipher_Secrets existente? | Keeps `Cipher_Secrets` literal (`usted` register) |
 | 30 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | Se eliminará la carpeta Cipher_Secrets existente y se creará una nueva. ¿Está seguro? | Keeps `Cipher_Secrets` literal (`usted` register) |
 | 31 | `confirm_checkbox_label` | I confirm | Confirmo | Checkbox label in `DeleteCipherSecretsDialog` |
-| 32 | `secret_vault` | Secret Vault | Bóveda secreta | Vault section title |
-| 33 | `secret_vault_empty` | Secret Vault is empty | La bóveda secreta está vacía | Empty state message |
+| 32 | `secret_vault` | Encrypted Vault | Bóveda cifrada | Vault section title |
+| 33 | `secret_vault_empty` | Encrypted Vault is empty | La bóveda cifrada está vacía | Empty state message |
 | 34 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | ¿Está seguro de que desea descifrar los archivos ocultos? | Decryption confirmation (`usted` register) |
 | 35 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | Por seguridad, copiar al portapapeles está deshabilitado mientras la bóveda está desbloqueada. | Clipboard security notice |
 | 36 | `on_vault_exit` | On leaving encrypted section | Al salir de la sección cifrada | Settings title |
@@ -97,7 +97,7 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 48 | `files_decrypted_successfully` | Files unhidden successfully | Archivos mostrados correctamente | Success toast after decrypting/unhiding multiple files |
 | 49 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | Acceder a elementos ocultos con biometría | Settings switch, setup prompt title, and vault security dialog button |
 | 50 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | Por favor, active primero la protección con contraseña para elementos ocultos | Toast shown when enabling biometrics before hidden-item password protection |
-| 51 | `biometric_unlock_vault` | Unlock hidden vault | Desbloquear bóveda oculta | BiometricPrompt title when unlocking the hidden vault |
+| 51 | `biometric_unlock_vault` | Unlock encrypted vault | Desbloquear bóveda cifrada | BiometricPrompt title when unlocking the encrypted vault |
 | 52 | `biometric_unlock_prompt` | Verify your biometric identity to access hidden items | Verifique su identidad biométrica para acceder a los elementos ocultos | BiometricPrompt subtitle when unlocking hidden items |
 | 53 | `biometric_setup_prompt` | Confirm your biometric identity to enable biometric vault access | Confirme su identidad biométrica para activar el acceso biométrico a la bóveda | BiometricPrompt subtitle when enabling biometric vault access |
 | 54 | `use_password_or_pin` | Use PIN / Password | Usar PIN / Contraseña | BiometricPrompt negative button to fall back to PIN/password |
@@ -443,8 +443,8 @@ All 14 shared UI keys below are already localized in `org.fossify:commons:7.1.3`
 | 293 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | ¿Desea acceder a su carpeta Cipher_Secrets existente? |
 | 294 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | Se eliminará la carpeta Cipher_Secrets existente y se creará una nueva. ¿Está seguro? |
 | 295 | `confirm_checkbox_label` | I confirm | Confirmo |
-| 296 | `secret_vault` | Secret Vault | Bóveda secreta |
-| 297 | `secret_vault_empty` | Secret Vault is empty | La bóveda secreta está vacía |
+| 296 | `secret_vault` | Encrypted Vault | Bóveda cifrada |
+| 297 | `secret_vault_empty` | Encrypted Vault is empty | La bóveda cifrada está vacía |
 | 298 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | ¿Está seguro de que desea descifrar los archivos ocultos? |
 | 299 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | Por seguridad, copiar al portapapeles está deshabilitado mientras la bóveda está desbloqueada. |
 | 300 | `on_vault_exit` | On leaving encrypted section | Al salir de la sección cifrada |
@@ -461,7 +461,7 @@ All 14 shared UI keys below are already localized in `org.fossify:commons:7.1.3`
 | 311 | `open_system_language_settings` | Open system language settings | Abrir ajustes de idioma del sistema |
 | 312 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | Acceder a elementos ocultos con biometría |
 | 313 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | Por favor, active primero la protección con contraseña para elementos ocultos |
-| 314 | `biometric_unlock_vault` | Unlock hidden vault | Desbloquear bóveda oculta |
+| 314 | `biometric_unlock_vault` | Unlock encrypted vault | Desbloquear bóveda cifrada |
 | 315 | `biometric_unlock_prompt` | Verify your biometric identity to access hidden items | Verifique su identidad biométrica para acceder a los elementos ocultos |
 | 316 | `biometric_setup_prompt` | Confirm your biometric identity to enable biometric vault access | Confirme su identidad biométrica para activar el acceso biométrico a la bóveda |
 | 317 | `use_password_or_pin` | Use PIN / Password | Usar PIN / Contraseña |

@@ -305,8 +305,8 @@
     <string name="access_existing_cipher_secrets_prompt">¿Deseas acceder a tu carpeta Cipher_Secrets existente?</string>
     <string name="delete_and_recreate_cipher_secrets_prompt">Se eliminará la carpeta Cipher_Secrets existente y se creará una nueva. ¿Estás seguro?</string>
     <string name="confirm_checkbox_label">Confirmo</string>
-    <string name="secret_vault">Bóveda secreta</string>
-    <string name="secret_vault_empty">La bóveda secreta está vacía</string>
+    <string name="secret_vault">Bóveda cifrada</string>
+    <string name="secret_vault_empty">La bóveda cifrada está vacía</string>
     <string name="confirm_decrypt_hidden_file">¿Seguro que quieres descifrar los archivos ocultos?</string>
     <string name="copy_to_clipboard_disabled_in_vault">Por seguridad, copiar al portapapeles está deshabilitado mientras la bóveda está desbloqueada.</string>
     <string name="on_vault_exit">Al salir de la sección cifrada</string>
@@ -327,7 +327,7 @@
     <string name="donate_to_fossify">Donar a Fossify</string>
     <string name="access_hidden_items_with_biometrics">Acceder a elementos ocultos con biometría</string>
     <string name="enable_hidden_protection_first_prompt">Por favor, activa primero la protección con contraseña para elementos ocultos</string>
-    <string name="biometric_unlock_vault">Desbloquear bóveda oculta</string>
+    <string name="biometric_unlock_vault">Desbloquear bóveda cifrada</string>
     <string name="biometric_unlock_prompt">Verifica tu identidad biométrica para acceder a los elementos ocultos</string>
     <string name="biometric_setup_prompt">Confirma tu identidad biométrica para activar el acceso biométrico a la bóveda</string>
     <string name="use_password_or_pin">Usar PIN / Contraseña</string>

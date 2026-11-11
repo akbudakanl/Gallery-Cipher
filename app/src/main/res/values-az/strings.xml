@@ -337,8 +337,8 @@
     <string name="access_existing_cipher_secrets_prompt">Mövcud Cipher_Secrets qovluğunuza daxil olmaq istəyirsiniz?</string>
     <string name="delete_and_recreate_cipher_secrets_prompt">Mövcud Cipher_Secrets qovluğu silinəcək və yenisi yaradılacaq. Əminsiniz?</string>
     <string name="confirm_checkbox_label">Təsdiqləyirəm</string>
-    <string name="secret_vault">Gizli Seyf</string>
-    <string name="secret_vault_empty">Gizli Seyf boşdur</string>
+    <string name="secret_vault">Şifrəli Seyf</string>
+    <string name="secret_vault_empty">Şifrəli Seyf boşdur</string>
     <string name="confirm_decrypt_hidden_file">Gizli faylın(ların) şifrəsini açmaq istədiyinizə əminsiniz?</string>
     <string name="copy_to_clipboard_disabled_in_vault">Təhlükəsizlik məqsədilə seyf açıq olarkən mübadilə buferinə kopyalama deaktiv edilib.</string>
     <string name="on_vault_exit">Şifrələnmiş bölmədən çıxarkən</string>
@@ -372,9 +372,10 @@
     <string name="privacy_policy">Məxfilik siyasəti</string>
     <string name="create_shortcut">Qısayol yarat</string>
     <string name="print">Çap et</string>
+    <string name="skip_the_recycle_bin">Zibil qutusunu keçin, faylları birbaşa silin</string>
     <string name="access_hidden_items_with_biometrics">Gizli elementlərə biometrika ilə daxil ol</string>
     <string name="enable_hidden_protection_first_prompt">Zəhmət olmasa, əvvəlcə gizli elementlərin parolla qorunmasını aktivləşdirin</string>
-    <string name="biometric_unlock_vault">Gizli seyfin kilidini aç</string>
+    <string name="biometric_unlock_vault">Şifrəli seyfin kilidini aç</string>
     <string name="biometric_unlock_prompt">Gizli elementlərə daxil olmaq üçün biometrik kimliyinizi təsdiqləyin</string>
     <string name="biometric_setup_prompt">Seyfə biometrik girişi aktivləşdirmək üçün biometrik kimliyinizi təsdiqləyin</string>
     <string name="use_password_or_pin">PIN / Paroldan istifadə et</string>

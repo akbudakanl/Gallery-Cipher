@@ -84,8 +84,8 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 |  29 | 29           | `access_existing_cipher_secrets_prompt`     | Do you want to access your existing Cipher_Secrets folder?                                  |                                                                             |
 |  30 | 30           | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? |                                                                             |
 |  31 | 31           | `confirm_checkbox_label`                    | I confirm                                                                                   |                                                                             |
-|  32 | 32           | `secret_vault`                              | Secret Vault                                                                                |                                                                             |
-|  33 | 33           | `secret_vault_empty`                        | Secret Vault is empty                                                                       |                                                                             |
+|  32 | 32           | `secret_vault`                              | Encrypted Vault                                                                             |                                                                             |
+|  33 | 33           | `secret_vault_empty`                        | Encrypted Vault is empty                                                                    |                                                                             |
 |  34 | 34           | `confirm_decrypt_hidden_file`               | Are you sure you want to decrypt the hidden file(s)?                                        |                                                                             |
 |  35 | 35           | `copy_to_clipboard_disabled_in_vault`       | Copying to clipboard is disabled while vault is unlocked for security.                      |                                                                             |
 |  36 | 36           | `on_vault_exit`                             | On leaving encrypted section                                                                |                                                                             |
@@ -103,7 +103,7 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 |  48 | 48           | `files_decrypted_successfully`              | Files unhidden successfully                                                                 | Success toast after decrypting/unhiding multiple files                      |
 |  49 | 49           | `access_hidden_items_with_biometrics`       | Access hidden items with biometrics                                                         | Settings switch, setup prompt title, and vault security dialog button       |
 |  50 | 50           | `enable_hidden_protection_first_prompt`     | Please enable hidden item password protection first                                         | Toast shown when enabling biometrics before hidden-item password protection |
-|  51 | 51           | `biometric_unlock_vault`                    | Unlock hidden vault                                                                         | BiometricPrompt title when unlocking the hidden vault                       |
+|  51 | 51           | `biometric_unlock_vault`                    | Unlock encrypted vault                                                                         | BiometricPrompt title when unlocking the encrypted vault                       |
 |  52 | 52           | `biometric_unlock_prompt`                   | Verify your biometric identity to access hidden items                                       | BiometricPrompt subtitle when unlocking hidden items                        |
 |  53 | 53           | `biometric_setup_prompt`                    | Confirm your biometric identity to enable biometric vault access                            | BiometricPrompt subtitle when enabling biometric vault access               |
 |  54 | 54           | `use_password_or_pin`                       | Use PIN / Password                                                                          | BiometricPrompt negative button to fall back to PIN/password                |
@@ -417,8 +417,8 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 293 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | ¿Deseas acceder a tu carpeta Cipher_Secrets existente? |
 | 294 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | Se eliminará la carpeta Cipher_Secrets existente y se creará una nueva. ¿Estás seguro? |
 | 295 | `confirm_checkbox_label` | I confirm | Confirmo |
-| 296 | `secret_vault` | Secret Vault | Bóveda secreta |
-| 297 | `secret_vault_empty` | Secret Vault is empty | La bóveda secreta está vacía |
+| 296 | `secret_vault` | Encrypted Vault | Bóveda cifrada |
+| 297 | `secret_vault_empty` | Encrypted Vault is empty | La bóveda cifrada está vacía |
 | 298 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | ¿Seguro que quieres descifrar los archivos ocultos? |
 | 299 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | Por seguridad, copiar al portapapeles está deshabilitado mientras la bóveda está desbloqueada. |
 | 300 | `on_vault_exit` | On leaving encrypted section | Al salir de la sección cifrada |
@@ -435,7 +435,7 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 311 | `open_system_language_settings` | Open system language settings | Abrir configuración de idioma del sistema |
 | 312 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | Acceder a elementos ocultos con biometría |
 | 313 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | Por favor, activa primero la protección con contraseña para elementos ocultos |
-| 314 | `biometric_unlock_vault` | Unlock hidden vault | Desbloquear bóveda oculta |
+| 314 | `biometric_unlock_vault` | Unlock encrypted vault | Desbloquear bóveda cifrada |
 | 315 | `biometric_unlock_prompt` | Verify your biometric identity to access hidden items | Verifica tu identidad biométrica para acceder a los elementos ocultos |
 | 316 | `biometric_setup_prompt` | Confirm your biometric identity to enable biometric vault access | Confirma tu identidad biométrica para activar el acceso biométrico a la bóveda |
 | 317 | `use_password_or_pin` | Use PIN / Password | Usar PIN / Contraseña |

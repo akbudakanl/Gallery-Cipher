@@ -1,7 +1,7 @@
 # Azerbaijani (values-az) Translation Revision & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-az/strings.xml` was reviewed from scratch: existing inaccurate translations were corrected, and all missing keys from `values/strings.xml` (326 `<string>` + 2 `<plurals>` = 328 app resource entries; `search` and 14 shared UI keys from `fossify-commons`; 345 total comparison rows) were completed.
-> **Key Terminology:** `Settings` → `Parametrlər` · `Default` → `Susmaya görə` · `Folder` → `Qovluq` · `Secret Vault` → `Gizli Seyf` · `Password` → `Parol` · `Encrypt/Decrypt` → `Şifrələ / Şifrəsini aç` · `Thumbnails` → `Miniatürlər` · `Recycle bin` → `Zibil qutusu` · `Clipboard` → `Mübadilə buferi`
+> **Scope:** `app/src/main/res/values-az/strings.xml` was reviewed from scratch: existing inaccurate translations were corrected, and all missing keys from `values/strings.xml` (326 `<string>` + 2 `<plurals>` = 328 app resource entries; `search` and 16 shared UI keys from `fossify-commons` plus the newly added `skip_the_recycle_bin` override; 348 total comparison rows) were completed.
+> **Key Terminology:** `Settings` → `Parametrlər` · `Default` → `Susmaya görə` · `Folder` → `Qovluq` · `Encrypted Vault` → `Şifrəli Seyf` · `Password` → `Parol` · `Encrypt/Decrypt` → `Şifrələ / Şifrəsini aç` · `Thumbnails` → `Miniatürlər` · `Recycle bin` → `Zibil qutusu` · `Clipboard` → `Mübadilə buferi`
 
 ## 1. Review of 11 Previously Existing Translations and Changes Made
 
@@ -21,7 +21,7 @@
 
 ### `fossify-commons` Inherited UI Overrides (14 Keys)
 
-`org.fossify:commons:7.1.3` (`res/values-az/values-az.xml`) omitted these 14 UI strings, so local overrides were added to `app/src/main/res/values-az/strings.xml`:
+`org.fossify:commons:7.1.3` (`res/values-az/values-az.xml`) omitted these 16 UI strings, so local overrides were added to `app/src/main/res/values-az/strings.xml`:
 
 | # | Key (`name`) | English (`fossify-commons`) | Azerbaijani (`values-az/strings.xml`) | Source / Notes |
 |---:|---|---|---|---|
@@ -41,6 +41,7 @@
 | 14 | `print` | Print | Çap et | Local override in `values-az/strings.xml` (ViewPager menu) |
 | 15 | `search_files` | Search files | Faylları axtar | Local override in `values-az/strings.xml` (Search bar hint) |
 | 16 | `search_folders` | Search folders | Qovluqları axtar | Local override in `values-az/strings.xml` (Search bar hint) |
+| 17 | `skip_the_recycle_bin` | Skip the recycle bin, delete files directly | Zibil qutusunu keçin, faylları birbaşa silin | Local override in `values-az/strings.xml` (Delete confirmation dialog); key missing in `fossify-commons` `values-az` |
 
 ### Newly Added Fork-Only Strings (63 Keys)
 
@@ -79,8 +80,8 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 29 | 29 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? |  |
 | 30 | 30 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? |  |
 | 31 | 31 | `confirm_checkbox_label` | I confirm |  |
-| 32 | 32 | `secret_vault` | Secret Vault |  |
-| 33 | 33 | `secret_vault_empty` | Secret Vault is empty |  |
+| 32 | 32 | `secret_vault` | Encrypted Vault |  |
+| 33 | 33 | `secret_vault_empty` | Encrypted Vault is empty |  |
 | 34 | 34 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? |  |
 | 35 | 35 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. |  |
 | 36 | 36 | `on_vault_exit` | On leaving encrypted section |  |
@@ -98,7 +99,7 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 48 | 48 | `files_decrypted_successfully` | Files unhidden successfully | Success toast after decrypting/unhiding multiple files |
 | 49 | 49 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | Settings switch, setup prompt title, and vault security dialog button |
 | 50 | 50 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | Toast shown when enabling biometrics before hidden-item password protection |
-| 51 | 51 | `biometric_unlock_vault` | Unlock hidden vault | BiometricPrompt title when unlocking the hidden vault |
+| 51 | 51 | `biometric_unlock_vault` | Unlock encrypted vault | BiometricPrompt title when unlocking the encrypted vault |
 | 52 | 52 | `biometric_unlock_prompt` | Verify your biometric identity to access hidden items | BiometricPrompt subtitle when unlocking hidden items |
 | 53 | 53 | `biometric_setup_prompt` | Confirm your biometric identity to enable biometric vault access | BiometricPrompt subtitle when enabling biometric vault access |
 | 54 | 54 | `use_password_or_pin` | Use PIN / Password | BiometricPrompt negative button to fall back to PIN/password |
@@ -412,8 +413,8 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 293 | `access_existing_cipher_secrets_prompt` | Do you want to access your existing Cipher_Secrets folder? | Mövcud Cipher_Secrets qovluğunuza daxil olmaq istəyirsiniz? |
 | 294 | `delete_and_recreate_cipher_secrets_prompt` | Existing Cipher_Secrets folder will be deleted and a new one will be created. Are you sure? | Mövcud Cipher_Secrets qovluğu silinəcək və yenisi yaradılacaq. Əminsiniz? |
 | 295 | `confirm_checkbox_label` | I confirm | Təsdiqləyirəm |
-| 296 | `secret_vault` | Secret Vault | Gizli Seyf |
-| 297 | `secret_vault_empty` | Secret Vault is empty | Gizli Seyf boşdur |
+| 296 | `secret_vault` | Encrypted Vault | Şifrəli Seyf |
+| 297 | `secret_vault_empty` | Encrypted Vault is empty | Şifrəli Seyf boşdur |
 | 298 | `confirm_decrypt_hidden_file` | Are you sure you want to decrypt the hidden file(s)? | Gizli faylın(ların) şifrəsini açmaq istədiyinizə əminsiniz? |
 | 299 | `copy_to_clipboard_disabled_in_vault` | Copying to clipboard is disabled while vault is unlocked for security. | Təhlükəsizlik məqsədilə seyf açıq olarkən mübadilə buferinə kopyalama deaktiv edilib. |
 | 300 | `on_vault_exit` | On leaving encrypted section | Şifrələnmiş bölmədən çıxarkən |
@@ -430,7 +431,7 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 311 | `open_system_language_settings` | Open system language settings | Sistem dil parametrlərini aç |
 | 312 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | Gizli elementlərə biometrika ilə daxil ol |
 | 313 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | Zəhmət olmasa, əvvəlcə gizli elementlərin parolla qorunmasını aktivləşdirin |
-| 314 | `biometric_unlock_vault` | Unlock hidden vault | Gizli seyfin kilidini aç |
+| 314 | `biometric_unlock_vault` | Unlock encrypted vault | Şifrəli seyfin kilidini aç |
 | 315 | `biometric_unlock_prompt` | Verify your biometric identity to access hidden items | Gizli elementlərə daxil olmaq üçün biometrik kimliyinizi təsdiqləyin |
 | 316 | `biometric_setup_prompt` | Confirm your biometric identity to enable biometric vault access | Seyfə biometrik girişi aktivləşdirmək üçün biometrik kimliyinizi təsdiqləyin |
 | 317 | `use_password_or_pin` | Use PIN / Password | PIN / Paroldan istifadə et |
@@ -464,3 +465,4 @@ These 63 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 345 | `print` *(fossify-commons)* | Print | Çap et |
 | 346 | `search_files` *(fossify-commons)* | Search files | Faylları axtar |
 | 347 | `search_folders` *(fossify-commons)* | Search folders | Qovluqları axtar |
+| 348 | `skip_the_recycle_bin` *(fossify-commons)* | Skip the recycle bin, delete files directly | Zibil qutusunu keçin, faylları birbaşa silin |

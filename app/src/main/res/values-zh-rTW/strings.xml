@@ -301,8 +301,8 @@
     <string name="access_existing_cipher_secrets_prompt">您要存取現有的 Cipher_Secrets 資料夾嗎？</string>
     <string name="delete_and_recreate_cipher_secrets_prompt">現有的 Cipher_Secrets 資料夾將會被刪除並建立新的資料夾。確定要繼續嗎？</string>
     <string name="confirm_checkbox_label">我確認</string>
-    <string name="secret_vault">秘密保險箱</string>
-    <string name="secret_vault_empty">秘密保險箱為空</string>
+    <string name="secret_vault">加密保險箱</string>
+    <string name="secret_vault_empty">加密保險箱為空</string>
     <string name="confirm_decrypt_hidden_file">確定要解密隱藏的檔案嗎？</string>
     <string name="copy_to_clipboard_disabled_in_vault">基於安全考量，保險箱解鎖期間已停用複製到剪貼簿功能。</string>
     <string name="on_vault_exit">離開加密區域時</string>
@@ -319,7 +319,7 @@
     <string name="open_system_language_settings">開啟系統語言設定</string>
     <string name="access_hidden_items_with_biometrics">使用生物辨識存取隱藏項目</string>
     <string name="enable_hidden_protection_first_prompt">請先啟用隱藏項目的密碼保護</string>
-    <string name="biometric_unlock_vault">解鎖隱藏保險箱</string>
+    <string name="biometric_unlock_vault">解鎖加密保險箱</string>
     <string name="biometric_unlock_prompt">驗證您的生物辨識身分以存取隱藏項目</string>
     <string name="biometric_setup_prompt">確認您的生物辨識身分以啟用保險箱的生物辨識存取</string>
     <string name="use_password_or_pin">使用 PIN 碼 / 密碼</string>

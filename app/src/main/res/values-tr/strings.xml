@@ -308,8 +308,8 @@
     <string name="access_existing_cipher_secrets_prompt">Mevcut Cipher_Secrets klasörünüze erişmek istiyor musunuz?</string>
     <string name="delete_and_recreate_cipher_secrets_prompt">Mevcut Cipher_Secrets klasörü silinecek ve yenisi oluşturulacak, emin misiniz?</string>
     <string name="confirm_checkbox_label">Onaylıyorum</string>
-    <string name="secret_vault">Gizli Kasa</string>
-    <string name="secret_vault_empty">Gizli Kasa boş</string>
+    <string name="secret_vault">Şifreli Kasa</string>
+    <string name="secret_vault_empty">Şifreli Kasa boş</string>
     <string name="confirm_decrypt_hidden_file">Gizli dosyanın şifresini çözmek istediğinizden emin misiniz?</string>
     <string name="copy_to_clipboard_disabled_in_vault">Kasa açıkken güvenlik nedeniyle panoya kopyalama devre dışıdır.</string>
     <string name="on_vault_exit">Şifreli bölümden çıkıldığında</string>
@@ -326,7 +326,7 @@
     <string name="open_system_language_settings">Sistem dil ayarlarını aç</string>
     <string name="access_hidden_items_with_biometrics">Gizli ögelere biyometrik ile eriş</string>
     <string name="enable_hidden_protection_first_prompt">Lütfen önce gizli öğeler için parola korumasını etkinleştirin</string>
-    <string name="biometric_unlock_vault">Gizli kasayı aç</string>
+    <string name="biometric_unlock_vault">Şifreli kasayı aç</string>
     <string name="biometric_unlock_prompt">Gizli ögelere erişmek için biyometrik kimliğinizi doğrulayın</string>
     <string name="biometric_setup_prompt">Biyometrik kasa erişimini etkinleştirmek için biyometrik kimliğinizi doğrulayın</string>
     <string name="use_password_or_pin">PIN / Parola kullan</string>
