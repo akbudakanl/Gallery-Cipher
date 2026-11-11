@@ -460,14 +460,22 @@ class DirectoryAdapter(
 
                             val progressDialog = CryptoProgressDialog(activity, filesToDecrypt.size, R.string.decrypting_folder)
                             ensureBackgroundThread {
-                                CryptoManager.decryptFolder(activity, path) { current, total ->
-                                    activity.runOnUiThread {
-                                        progressDialog.updateProgress(current, total)
+                                val result = try {
+                                    CryptoManager.decryptFolder(activity, path) { current, total ->
+                                        activity.runOnUiThread {
+                                            progressDialog.updateProgress(current, total)
+                                        }
                                     }
+                                } catch (e: Exception) {
+                                    null
                                 }
                                 activity.runOnUiThread {
                                     progressDialog.dismiss()
-                                    activity.toast(R.string.folder_decrypted_successfully)
+                                    if (result != null) {
+                                        activity.toast(R.string.folder_decrypted_successfully)
+                                    } else {
+                                        activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
+                                    }
                                     listener?.refreshItems()
                                     finishActMode()
                                 }
@@ -522,9 +530,7 @@ class DirectoryAdapter(
         }
 
         val totalFilesCount = paths.sumOf { path ->
-            File(path).listFiles()?.count {
-                it.isFile && it.name != NOMEDIA && !CryptoManager.isEncryptedFile(it.name)
-            } ?: 0
+            File(path).listFiles()?.count { CryptoManager.isEncryptableMediaFile(it) } ?: 0
         }
 
         val progressDialog = CryptoProgressDialog(activity, totalFilesCount, R.string.encrypting_folder)
@@ -651,9 +657,7 @@ class DirectoryAdapter(
         }
 
         val folder = File(path)
-        val filesToEncrypt = folder.listFiles()?.filter {
-            it.isFile && it.name != NOMEDIA && !CryptoManager.isEncryptedFile(it.name)
-        } ?: emptyList()
+        val filesToEncrypt = folder.listFiles()?.filter { CryptoManager.isEncryptableMediaFile(it) } ?: emptyList()
 
         val progressDialog = CryptoProgressDialog(activity, filesToEncrypt.size, R.string.encrypting_folder)
 

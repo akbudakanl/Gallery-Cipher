@@ -42,14 +42,19 @@ import org.fossify.gallery.activities.SettingsActivity
 import org.fossify.gallery.activities.SimpleActivity
 import org.fossify.gallery.activities.VideoPlayerActivity
 import org.fossify.gallery.dialogs.AllFilesPermissionDialog
+import org.fossify.gallery.dialogs.CryptoProgressDialog
 import org.fossify.gallery.dialogs.PickDirectoryDialog
 import org.fossify.gallery.dialogs.PickVaultAlbumDialog
 import org.fossify.gallery.dialogs.ResizeMultipleImagesDialog
 import org.fossify.gallery.dialogs.ResizeWithPathDialog
+import org.fossify.gallery.dialogs.VaultExitDialog
 import org.fossify.gallery.dialogs.VaultSecurityDialog
 import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.DIRECTORY
 import org.fossify.gallery.helpers.ENCRYPTED_BIN_EXT
+import org.fossify.gallery.helpers.ON_VAULT_EXIT_ASK_EVERY_TIME
+import org.fossify.gallery.helpers.ON_VAULT_EXIT_HIDE
+import org.fossify.gallery.helpers.ON_VAULT_EXIT_KEEP_SHOWING
 import org.fossify.gallery.helpers.PROTECTION_PASSWORD
 import org.fossify.gallery.helpers.RECYCLE_BIN
 import org.fossify.gallery.helpers.TEMP_FOLDER_NAME
@@ -438,16 +443,24 @@ fun BaseSimpleActivity.toggleFileVisibility(oldPath: String, hide: Boolean, call
                 srcFile.parentFile ?: File(oldPath.getParentPath())
             }
 
+            // Block the UI with a progress bar until decryption finishes, same as during encryption.
+            val progressDialog = CryptoProgressDialog(this, 1, R.string.decrypting_files)
             ensureBackgroundThread {
-                val decryptedFile = CryptoManager.decryptFileToDirectory(
-                    context = this,
-                    encryptedFile = srcFile,
-                    targetDir = targetDir,
-                    deleteEncryptedSource = true
-                )
+                val decryptedFile = try {
+                    CryptoManager.decryptFileToDirectory(
+                        context = this,
+                        encryptedFile = srcFile,
+                        targetDir = targetDir,
+                        deleteEncryptedSource = true
+                    )
+                } catch (e: Exception) {
+                    null
+                }
                 val resultPath = decryptedFile?.absolutePath ?: oldPath
                 CryptoManager.clearAppImageCaches(this)
                 runOnUiThread {
+                    progressDialog.updateProgress(if (decryptedFile != null) 1 else 0, 1)
+                    progressDialog.dismiss()
                     if (decryptedFile != null && decryptedFile.exists()) {
                         toast(R.string.file_decrypted_successfully)
                     } else {
@@ -538,12 +551,21 @@ fun BaseSimpleActivity.tryCopyMoveFilesTo(
 
         val proceedWithCopyMove = {
             if (isDestEncrypted || hasEncryptedSources) {
-                toast(if (isDestEncrypted) R.string.encrypting_files else R.string.decrypting_files)
+                val cryptoItems = fileDirItems.filter {
+                    // only formats supported by the gallery may ever be encrypted
+                    !isDestEncrypted || CryptoManager.isEncryptedFile(it.name) || CryptoManager.isSupportedMediaName(it.name)
+                }
+                val progressDialog = CryptoProgressDialog(
+                    this,
+                    cryptoItems.size,
+                    if (isDestEncrypted) R.string.encrypting_files else R.string.decrypting_files
+                )
                 ensureBackgroundThread {
                     val destDir = File(destination)
                     var anyPlaintextWiped = false
-                    for (item in fileDirItems) {
+                    for ((itemIndex, item) in cryptoItems.withIndex()) {
                         val srcFile = File(item.path)
+                        runOnUiThread { progressDialog.updateProgress(itemIndex, cryptoItems.size) }
                         if (!srcFile.exists()) continue
 
                         if (isDestEncrypted && !CryptoManager.isEncryptedFile(srcFile.name)) {
@@ -594,6 +616,8 @@ fun BaseSimpleActivity.tryCopyMoveFilesTo(
                         CryptoManager.clearAppImageCaches(this)
                     }
                     runOnUiThread {
+                        progressDialog.updateProgress(cryptoItems.size, cryptoItems.size)
+                        progressDialog.dismiss()
                         callback(destination)
                     }
                 }
@@ -1372,6 +1396,23 @@ fun Activity.proposeNewFilePath(uri: Uri): Pair<String, Boolean> {
     }
 
     return Pair(newPath, shouldAppendFilename)
+}
+
+/**
+ * Resolves what should happen with the encrypted albums when the person leaves the vault, honoring the
+ * "upon exiting the encrypted section" setting. Asks with [VaultExitDialog] when the setting is "always ask".
+ * The callback receives either ON_VAULT_EXIT_KEEP_SHOWING or ON_VAULT_EXIT_HIDE.
+ */
+fun Activity.askVaultExitOption(encryptedAlbumCount: () -> Int, callback: (option: Int) -> Unit) {
+    when (config.onVaultExit) {
+        ON_VAULT_EXIT_KEEP_SHOWING -> callback(ON_VAULT_EXIT_KEEP_SHOWING)
+        ON_VAULT_EXIT_HIDE -> callback(ON_VAULT_EXIT_HIDE)
+        else -> VaultExitDialog(this, encryptedAlbumCount()) { keepShowing, alwaysAsk ->
+            val chosenOption = if (keepShowing) ON_VAULT_EXIT_KEEP_SHOWING else ON_VAULT_EXIT_HIDE
+            config.onVaultExit = if (alwaysAsk) ON_VAULT_EXIT_ASK_EVERY_TIME else chosenOption
+            callback(chosenOption)
+        }
+    }
 }
 
 fun Activity.applyVaultScreenProtection(enable: Boolean) {
