@@ -1,6 +1,6 @@
 # Spanish (United States, values-es-rUS) Translation Completion & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-es-rUS/strings.xml` was updated to full parity using Standard Spanish (`values-es/strings.xml`) as reference and adapting all entries to United States Spanish (`es-rUS`). Previously, `values-es-rUS` contained only 9 `<string>` entries (and 0 `<plurals>`). All 9 existing entries (including the local `search` override, which is absent in `fossify-commons` `values-es-rUS`) were preserved, and all 298 missing `<string>` entries plus 2 `<plurals>` blocks were added (360 `<string>` + 2 `<plurals>` = 362 resource entries; 354 total comparison rows including 18 `fossify-commons` keys — 16 UI overrides plus the newly added `skip_the_recycle_bin` and `skip_delete_confirmation`).
+> **Scope:** `app/src/main/res/values-es-rUS/strings.xml` was updated to full parity using Standard Spanish (`values-es/strings.xml`) as reference and adapting all entries to United States Spanish (`es-rUS`). Previously, `values-es-rUS` contained only 9 `<string>` entries (and 0 `<plurals>`). All 9 existing entries (including the local `search` override, which is absent in `fossify-commons` `values-es-rUS`) were preserved, and all 298 missing `<string>` entries plus 2 `<plurals>` blocks were added (374 `<string>` + 2 `<plurals>` = 376 resource entries; 367 total comparison rows including 31 `fossify-commons` keys — 18 previously overridden UI keys plus 13 newly overridden keys (`manage_excluded_folders`, `exclude`, `exclude_folder`, `lock_folder`, `change_cover_image`, `select_photo`, `use_default`, `column_count`, `open_the_recycle_bin`, `grid`, `list`, `resize`, `version_placeholder`), all missing in `fossify-commons` `values-es-rUS`).
 > **Key Terminology & Regional Adaptations vs. `values-es`:** `Ajustes` → `Configuración` · `vídeo/vídeos` → `video/videos` · `ficheros` → `archivos` · `añadir` → `agregar` · `Gestionar` → `Administrar` · `Sistema por defecto` → `Predeterminado del sistema` · `Introduzca la contraseña` → `Ingresar contraseña` · `pegatinas` → `stickers` · `pulsado` → `presionado` · `Search` → `Buscar` (local override kept for `dialog_select_language.xml`)
 
 ## 1. Existing Regional Entries & Key Adaptations from Standard Spanish
@@ -21,9 +21,9 @@ All 9 previously existing strings in `values-es-rUS/strings.xml` were verified a
 | Password & system | `Introduzca la contraseña` / `Sistema por defecto` | `Ingresar contraseña` / `Predeterminado del sistema` | Matches existing `Predeterminado del sistema` in `values-es-rUS` |
 | Search override | *(inherited from commons)* | `Buscar` *(explicit in `values-es-rUS`)* | `fossify-commons` `values-es-rUS` omits `search` |
 
-### 1.3 `fossify-commons` Inherited UI Overrides (18 Keys)
+### 1.3 `fossify-commons` Inherited UI Overrides (31 Keys)
 
-`org.fossify:commons:7.1.3` (`res/values-es-rUS/values-es-rUS.xml`) contains only 6 base strings and omits all 18 keys below, so local overrides were added to `app/src/main/res/values-es-rUS/strings.xml`:
+`org.fossify:commons:7.1.3` (`res/values-es-rUS/values-es-rUS.xml`) contains only 6 base strings and omits all 31 keys below (18 overridden in the previous audit and 13 added in this revision), so local overrides were added to `app/src/main/res/values-es-rUS/strings.xml`:
 
 | # | Key (`name`) | English (`fossify-commons`) | US Spanish (`values-es-rUS/strings.xml`) | Source / Notes |
 |---:|---|---|---|---|
@@ -45,6 +45,19 @@ All 9 previously existing strings in `values-es-rUS/strings.xml` were verified a
 | 16 | `search_folders` | Search folders | Buscar carpetas | Local override in `values-es-rUS/strings.xml` (Search bar hint) |
 | 17 | `skip_the_recycle_bin` | Skip the recycle bin, delete files directly | Omitir la papelera de reciclaje y borrar los archivos directamente | Local override in `values-es-rUS/strings.xml` (Delete confirmation dialog); key missing in `fossify-commons` `values-es-rUS` |
 | 18 | `skip_delete_confirmation` | Always skip delete confirmation dialog | Omitir siempre el diálogo de confirmación de eliminación | Local override in `values-es-rUS/strings.xml` (Settings); key missing in `fossify-commons` `values-es-rUS` |
+| 19 | `manage_excluded_folders` | Manage excluded folders | Administrar carpetas excluidas | Local override in `values-es-rUS/strings.xml` (Settings); key missing in `fossify-commons` `values-es-rUS` |
+| 20 | `exclude` | Exclude | Excluir | Local override in `values-es-rUS/strings.xml` (Album selection / long-press menu); key missing in `fossify-commons` `values-es-rUS` |
+| 21 | `exclude_folder` | Exclude folder | Excluir carpeta | Local override in `values-es-rUS/strings.xml` (Options menu); key missing in `fossify-commons` `values-es-rUS` |
+| 22 | `lock_folder` | Lock folder | Bloquear carpeta | Local override in `values-es-rUS/strings.xml` (Album selection / long-press menu); key missing in `fossify-commons` `values-es-rUS` |
+| 23 | `change_cover_image` | Change cover image | Cambiar imagen de portada | Local override in `values-es-rUS/strings.xml` (Album selection / long-press menu); key missing in `fossify-commons` `values-es-rUS` |
+| 24 | `select_photo` | Select photo | Seleccionar foto | Local override in `values-es-rUS/strings.xml` (Album selection, "Change cover image" dialog); key missing in `fossify-commons` `values-es-rUS` |
+| 25 | `use_default` | Use default | Usar predeterminado | Local override in `values-es-rUS/strings.xml` (Album selection, "Change cover image" dialog); key missing in `fossify-commons` `values-es-rUS` |
+| 26 | `column_count` | Column count | Cantidad de columnas | Local override in `values-es-rUS/strings.xml` (Main screen and in-album Options menu); key missing in `fossify-commons` `values-es-rUS` |
+| 27 | `open_the_recycle_bin` | Open the recycle bin | Abrir la papelera de reciclaje | Local override in `values-es-rUS/strings.xml` (In-album Options menu); key missing in `fossify-commons` `values-es-rUS` |
+| 28 | `grid` | Grid | Cuadrícula | Local override in `values-es-rUS/strings.xml` (In-album Options menu, view type); key missing in `fossify-commons` `values-es-rUS` |
+| 29 | `list` | List | Lista | Local override in `values-es-rUS/strings.xml` (In-album Options menu, view type); key missing in `fossify-commons` `values-es-rUS` |
+| 30 | `resize` | Resize | Cambiar tamaño | Local override in `values-es-rUS/strings.xml` (Selection CAB menu); key missing in `fossify-commons` `values-es-rUS` |
+| 31 | `version_placeholder` | Version %s | Versión %s | Local override in `values-es-rUS/strings.xml` (About screen version text); key missing in `fossify-commons` `values-es-rUS` |
 
 ### 1.4 Newly Added Fork-Only Strings (66 Keys)
 
@@ -478,3 +491,16 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 352 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Siga deslizando hacia abajo para la bóveda |
 | 353 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Siga manteniendo pulsado para abrir la bóveda cifrada |
 | 354 | `release_to_open_vault` | Release to open Encrypted Vault | Suelte para abrir la bóveda cifrada |
+| 355 | `manage_excluded_folders` *(fossify-commons)* | Manage excluded folders | Administrar carpetas excluidas |
+| 356 | `exclude` *(fossify-commons)* | Exclude | Excluir |
+| 357 | `exclude_folder` *(fossify-commons)* | Exclude folder | Excluir carpeta |
+| 358 | `lock_folder` *(fossify-commons)* | Lock folder | Bloquear carpeta |
+| 359 | `change_cover_image` *(fossify-commons)* | Change cover image | Cambiar imagen de portada |
+| 360 | `select_photo` *(fossify-commons)* | Select photo | Seleccionar foto |
+| 361 | `use_default` *(fossify-commons)* | Use default | Usar predeterminado |
+| 362 | `column_count` *(fossify-commons)* | Column count | Cantidad de columnas |
+| 363 | `open_the_recycle_bin` *(fossify-commons)* | Open the recycle bin | Abrir la papelera de reciclaje |
+| 364 | `grid` *(fossify-commons)* | Grid | Cuadrícula |
+| 365 | `list` *(fossify-commons)* | List | Lista |
+| 366 | `resize` *(fossify-commons)* | Resize | Cambiar tamaño |
+| 367 | `version_placeholder` *(fossify-commons)* | Version %s | Versión %s |

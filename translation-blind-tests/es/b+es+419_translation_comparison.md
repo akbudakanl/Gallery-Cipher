@@ -1,6 +1,6 @@
 # Spanish (Latin America, values-b+es+419) Translation Completion & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-b+es+419/strings.xml` was updated to full parity using Standard Spanish (`values-es/strings.xml`) as reference and adapting all entries to Latin American Spanish (`es-419`) and `fossify-commons` (`values-b+es+419`). Previously, `values-b+es+419` contained only 21 `<string>` entries (and 0 `<plurals>`). All 21 existing valid regional entries were preserved, and all 286 missing `<string>` entries plus 2 `<plurals>` blocks were added (343 `<string>` + 2 `<plurals>` = 345 resource entries; `search` and 14 shared UI keys from `fossify-commons`; 352 total comparison rows).
+> **Scope:** `app/src/main/res/values-b+es+419/strings.xml` was updated to full parity using Standard Spanish (`values-es/strings.xml`) as reference and adapting all entries to Latin American Spanish (`es-419`) and `fossify-commons` (`values-b+es+419`). Previously, `values-b+es+419` contained only 21 `<string>` entries (and 0 `<plurals>`). All 21 existing valid regional entries were preserved, and all 286 missing `<string>` entries plus 2 `<plurals>` blocks were added (343 `<string>` + 2 `<plurals>` = 345 resource entries; `search` and 29 shared UI keys from `fossify-commons`; 365 total comparison rows).
 > **Key Terminology & Regional Adaptations vs. `values-es`:** `Ajustes` → `Configuración` · `vídeo/vídeos` → `video/videos` · `ficheros` → `archivos` · `añadir` → `agregar` · `Gestionar` → `Administrar` (matches `fossify-commons` `values-b+es+419`) · `Sistema por defecto` → `Predeterminado del sistema` · `Introduzca la contraseña` → `Ingresar contraseña` · `pegatinas` → `stickers` · `pulsado` → `presionado` · `Por favor, pon el dedo…` → `Por favor, apoye su dedo sobre el sensor de huellas`
 
 ## 1. Existing Regional Entries & Key Adaptations from Standard Spanish
@@ -24,9 +24,9 @@ All 21 previously existing strings in `values-b+es+419/strings.xml` were verifie
 | Hidden items menu | `Mostrar elementos ocultos` / `Mostrar ocultos temporalmente` | `Mostrar ítems ocultados` / `Temporalmente mostrar ocultados` | Matches `fossify-commons` `values-b+es+419` UI labels |
 | UI & FAQ terms | `pegatinas`, `mantener pulsado`, `icono`, `compromiso` | `stickers`, `mantener presionado`, `ícono`, `equilibrio` | Natural Latin American Spanish usage |
 
-### 1.3 `fossify-commons` Inherited UI Strings & Local Overrides (14 Keys)
+### 1.3 `fossify-commons` Inherited UI Strings & Local Overrides (29 Keys)
 
-12 of these 14 shared UI keys are inherited from `org.fossify:commons:7.1.3` (`res/values-b+es+419/values-b+es+419.xml`), while `contributors` and `donate_to_fossify` were missing and added as local overrides in `app/src/main/res/values-b+es+419/strings.xml`:
+12 of the first 17 shared UI keys below are inherited from `org.fossify:commons:7.1.3` (`res/values-b+es+419/values-b+es+419.xml`), while `contributors` and `donate_to_fossify` were missing and added as local overrides in `app/src/main/res/values-b+es+419/strings.xml`. The last 13 keys (`manage_excluded_folders`, `exclude`, `exclude_folder`, `lock_folder`, `change_cover_image`, `select_photo`, `use_default`, `column_count`, `open_the_recycle_bin`, `grid`, `list`, `resize`, `version_placeholder`) were verified as fully translated in `fossify-commons` `values-b+es+419` in this revision; no local override is required for them:
 
 | # | Key (`name`) | English (`fossify-commons`) | Spanish (Latin America) | Source / Notes |
 |---:|---|---|---|---|
@@ -46,6 +46,19 @@ All 21 previously existing strings in `values-b+es+419/strings.xml` were verifie
 | 14 | `print` | Print | Imprimir | Inherited from `fossify-commons` (ViewPager menu) |
 | 15 | `search_files` | Search files | Buscar archivos | Inherited from `fossify-commons` (Search bar hint) |
 | 16 | `search_folders` | Search folders | Buscar carpetas | Inherited from `fossify-commons` (Search bar hint) |
+| 17 | `manage_excluded_folders` | Manage excluded folders | Administrar carpetas excluidas | Inherited from `fossify-commons` (Settings); verified translated in this revision |
+| 18 | `exclude` | Exclude | Excluir | Inherited from `fossify-commons` (Album selection / long-press menu); verified translated in this revision |
+| 19 | `exclude_folder` | Exclude folder | Excluir carpeta | Inherited from `fossify-commons` (Options menu); verified translated in this revision |
+| 20 | `lock_folder` | Lock folder | Bloquear carpeta | Inherited from `fossify-commons` (Album selection / long-press menu); verified translated in this revision |
+| 21 | `change_cover_image` | Change cover image | Cambiar imagen de portada | Inherited from `fossify-commons` (Album selection / long-press menu); verified translated in this revision |
+| 22 | `select_photo` | Select photo | Seleccionar foto | Inherited from `fossify-commons` (Album selection, "Change cover image" dialog); verified translated in this revision |
+| 23 | `use_default` | Use default | Usar predeterminado | Inherited from `fossify-commons` (Album selection, "Change cover image" dialog); verified translated in this revision |
+| 24 | `column_count` | Column count | Cantidad de columnas | Inherited from `fossify-commons` (Main screen and in-album Options menu); verified translated in this revision |
+| 25 | `open_the_recycle_bin` | Open the recycle bin | Abrir la papelera | Inherited from `fossify-commons` (In-album Options menu); verified translated in this revision |
+| 26 | `grid` | Grid | Cuadrículas | Inherited from `fossify-commons` (In-album Options menu, view type); verified translated in this revision |
+| 27 | `list` | List | Lista | Inherited from `fossify-commons` (In-album Options menu, view type); verified translated in this revision |
+| 28 | `resize` | Resize | Cambiar tamaño | Inherited from `fossify-commons` (Selection CAB menu); verified translated in this revision |
+| 29 | `version_placeholder` | Version %s | Versión %s | Inherited from `fossify-commons` (About screen version text); verified translated in this revision |
 
 ### 1.4 Newly Added Fork-Only Strings (66 Keys)
 
@@ -477,3 +490,16 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 350 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Sigue deslizando hacia abajo para la bóveda |
 | 351 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Sigue manteniendo pulsado para abrir la bóveda cifrada |
 | 352 | `release_to_open_vault` | Release to open Encrypted Vault | Suelta para abrir la bóveda cifrada |
+| 353 | `manage_excluded_folders` *(fossify-commons)* | Manage excluded folders | Administrar carpetas excluidas |
+| 354 | `exclude` *(fossify-commons)* | Exclude | Excluir |
+| 355 | `exclude_folder` *(fossify-commons)* | Exclude folder | Excluir carpeta |
+| 356 | `lock_folder` *(fossify-commons)* | Lock folder | Bloquear carpeta |
+| 357 | `change_cover_image` *(fossify-commons)* | Change cover image | Cambiar imagen de portada |
+| 358 | `select_photo` *(fossify-commons)* | Select photo | Seleccionar foto |
+| 359 | `use_default` *(fossify-commons)* | Use default | Usar predeterminado |
+| 360 | `column_count` *(fossify-commons)* | Column count | Cantidad de columnas |
+| 361 | `open_the_recycle_bin` *(fossify-commons)* | Open the recycle bin | Abrir la papelera |
+| 362 | `grid` *(fossify-commons)* | Grid | Cuadrículas |
+| 363 | `list` *(fossify-commons)* | List | Lista |
+| 364 | `resize` *(fossify-commons)* | Resize | Cambiar tamaño |
+| 365 | `version_placeholder` *(fossify-commons)* | Version %s | Versión %s |

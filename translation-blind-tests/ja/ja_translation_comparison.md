@@ -1,6 +1,6 @@
 # Japanese (values-ja) Translation Completion & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-ja/strings.xml` was audited against `app/src/main/res/values/strings.xml`. All 65 missing strings were translated into Japanese and added, bringing `values-ja` to full parity (343 `<string>` + 2 `<plurals>` = 345 resource entries; 350 total comparison rows including English `one`/`other` plural forms and 15 `fossify-commons` UI keys).
+> **Scope:** `app/src/main/res/values-ja/strings.xml` was audited against `app/src/main/res/values/strings.xml`. All 65 missing strings were translated into Japanese and added, bringing `values-ja` to full parity (343 `<string>` + 2 `<plurals>` = 345 resource entries; 363 total comparison rows including English `one`/`other` plural forms and 29 `fossify-commons` UI keys).
 > **Key Terminology:** `Settings` → `設定` · `Default` → `既定` / `デフォルト` · `Folder` → `フォルダー` · `Album` → `アルバム` · `Encrypted Vault` → `暗号化された保管庫` · `Hidden` → `非表示` · `Excluded` → `除外` · `Password` → `パスワード` · `Encrypt / Decrypt` → `暗号化 / 復号` · `Clipboard` → `クリップボード`
 
 ## 1. Summary of Newly Added Japanese Strings & Translations
@@ -103,9 +103,9 @@ These 18 strings already exist in the original Fossify Gallery (upstream); only 
 | 17 | `system_default`                            | System default                                                                                                                                                                                                                                                                                                                                                      | システムのデフォルト                                                                                                                                                                                                               | Matches standard Android Japanese system default phrasing                          |
 | 18 | `language`                                  | Language                                                                                                                                                                                                                                                                                                                                                            | 言語                                                                                                                                                                                                                       | Language setting label                                                             |
 
-### `fossify-commons` Inherited UI Strings (14 Keys)
+### `fossify-commons` Inherited UI Strings (29 Keys)
 
-All 14 shared UI keys below are already localized in `org.fossify:commons:7.1.3` (`res/values-ja/values-ja.xml`); no local override in `values-ja/strings.xml` was required:
+All 29 shared UI keys below are already localized in `org.fossify:commons:7.1.3` (`res/values-ja/values-ja.xml`); no local override in `values-ja/strings.xml` was required (the last 13 keys were verified as fully translated in this revision):
 
 | # | Key (`name`) | English (`fossify-commons`) | Japanese (`fossify-commons`) | Source / Notes |
 |---:|---|---|---|---|
@@ -125,6 +125,19 @@ All 14 shared UI keys below are already localized in `org.fossify:commons:7.1.3`
 | 14 | `print` | Print | 印刷 | Inherited from `fossify-commons` (ViewPager menu) |
 | 15 | `search_files` | Search files | ファイルを検索 | Inherited from `fossify-commons` (Search bar hint) |
 | 16 | `search_folders` | Search folders | フォルダーを検索 | Local override in `values-ja/strings.xml` (`fossify-commons` uses `フォルダを検索`; overridden to match `フォルダー` terminology) |
+| 17 | `manage_excluded_folders` | Manage excluded folders | 除外フォルダの管理 | Inherited from `fossify-commons` (Settings); verified translated in this revision |
+| 18 | `exclude` | Exclude | 除外する | Inherited from `fossify-commons` (Album selection / long-press menu); verified translated in this revision |
+| 19 | `exclude_folder` | Exclude folder | フォルダを除外 | Inherited from `fossify-commons` (Options menu); verified translated in this revision |
+| 20 | `lock_folder` | Lock folder | フォルダに鍵をかける | Inherited from `fossify-commons` (Album selection / long-press menu); verified translated in this revision |
+| 21 | `change_cover_image` | Change cover image | カバー画像を変更 | Inherited from `fossify-commons` (Album selection / long-press menu); verified translated in this revision |
+| 22 | `select_photo` | Select photo | 写真を選択 | Inherited from `fossify-commons` (Album selection, "Change cover image" dialog); verified translated in this revision |
+| 23 | `use_default` | Use default | デフォルトを使用 | Inherited from `fossify-commons` (Album selection, "Change cover image" dialog); verified translated in this revision |
+| 24 | `column_count` | Column count | 列数 | Inherited from `fossify-commons` (Main screen and in-album Options menu); verified translated in this revision |
+| 25 | `open_the_recycle_bin` | Open the recycle bin | ごみ箱を開く | Inherited from `fossify-commons` (In-album Options menu); verified translated in this revision |
+| 26 | `grid` | Grid | グリッド | Inherited from `fossify-commons` (In-album Options menu, view type); verified translated in this revision |
+| 27 | `list` | List | リスト | Inherited from `fossify-commons` (In-album Options menu, view type); verified translated in this revision |
+| 28 | `resize` | Resize | リサイズ | Inherited from `fossify-commons` (Selection CAB menu); verified translated in this revision |
+| 29 | `version_placeholder` | Version %s | バージョン %s | Inherited from `fossify-commons` (About screen version text); verified translated in this revision |
 
 ## 2. Full 1-to-1 Comparison: English vs. Japanese
 
@@ -480,3 +493,16 @@ All 14 shared UI keys below are already localized in `org.fossify:commons:7.1.3`
 | 348 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | 暗号化された保管庫を開くには引き下げ続けてください |
 | 349 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | 暗号化された保管庫を開くには押し続けてください |
 | 350 | `release_to_open_vault` | Release to open Encrypted Vault | 指を離して暗号化された保管庫を開く |
+| 351 | `manage_excluded_folders` *(fossify-commons)* | Manage excluded folders | 除外フォルダの管理 |
+| 352 | `exclude` *(fossify-commons)* | Exclude | 除外する |
+| 353 | `exclude_folder` *(fossify-commons)* | Exclude folder | フォルダを除外 |
+| 354 | `lock_folder` *(fossify-commons)* | Lock folder | フォルダに鍵をかける |
+| 355 | `change_cover_image` *(fossify-commons)* | Change cover image | カバー画像を変更 |
+| 356 | `select_photo` *(fossify-commons)* | Select photo | 写真を選択 |
+| 357 | `use_default` *(fossify-commons)* | Use default | デフォルトを使用 |
+| 358 | `column_count` *(fossify-commons)* | Column count | 列数 |
+| 359 | `open_the_recycle_bin` *(fossify-commons)* | Open the recycle bin | ごみ箱を開く |
+| 360 | `grid` *(fossify-commons)* | Grid | グリッド |
+| 361 | `list` *(fossify-commons)* | List | リスト |
+| 362 | `resize` *(fossify-commons)* | Resize | リサイズ |
+| 363 | `version_placeholder` *(fossify-commons)* | Version %s | バージョン %s |

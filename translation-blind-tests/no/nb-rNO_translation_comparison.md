@@ -1,6 +1,6 @@
 # Norwegian Bokmål (values-nb-rNO) Translation Completion & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-nb-rNO/strings.xml` was audited against `app/src/main/res/values/strings.xml`. Three existing errors/typos were corrected, two multiline placeholders were normalized, and all 91 missing strings were translated into Norwegian Bokmål and added, bringing `values-nb-rNO` to full parity (343 `<string>` + 2 `<plurals>` = 345 app resource entries; `search` and 16 shared UI keys from `fossify-commons` plus the newly added `skip_the_recycle_bin` override; 351 total comparison rows with plural forms expanded).
+> **Scope:** `app/src/main/res/values-nb-rNO/strings.xml` was audited against `app/src/main/res/values/strings.xml`. Three existing errors/typos were corrected, two multiline placeholders were normalized, and all 91 missing strings were translated into Norwegian Bokmål and added, bringing `values-nb-rNO` to full parity (354 `<string>` + 2 `<plurals>` = 356 app resource entries; `search` and 17 previously overridden shared UI keys from `fossify-commons` plus 4 additional `fossify-commons` UI keys (`exclude_folder`, `column_count`, `open_the_recycle_bin`, `version_placeholder`) newly overridden because they are missing in `fossify-commons` `values-nb-rNO`; 355 total comparison rows with plural forms expanded).
 > **Key Terminology:** `Settings` → `Innstillinger` · `Default` → `Standard` / `Systemstandard` · `Folder` → `Mappe` · `Album` → `Album` · `Encrypted Vault` → `Kryptert hvelv` · `Hidden` → `Skjult` · `Excluded` → `Ekskludert` · `Password` → `Passord` · `Encrypt / Decrypt` → `Krypter / Dekrypter` · `Thumbnails` → `Minibilder` · `Recycle bin` → `Papirkurv` · `Clipboard` → `Utklippstavlen`
 
 ## 1. Summary of Revisions & Newly Added Norwegian Bokmål Strings & Translations
@@ -138,9 +138,9 @@ These 45 strings already exist in the original Fossify Gallery (upstream); only 
 | 44 | `faq_18_text` | Our apps have no ads whatsoever. If you see them during video playback, you must be using some other apps video player. Try finding your default video player in the device settings, then do a \"Clear defaults\" on it. The next time you invoke some video intent you will see an app picker prompt, where you can select what app you want to use. | Appene våre har ingen reklame overhodet. Hvis du ser reklame under videoavspilling, bruker du sannsynligvis videospilleren til en annen app. Prøv å finne standard videospiller i enhetsinnstillingene, og velg \"Fjern standardvalg\" på den. Neste gang du åpner en video, vil du se en appvelger der du kan velge hvilken app du vil bruke. | FAQ 18 answer |
 | 45 | `enter_password` | Enter password | Skriv inn passord | Password prompt |
 
-### 1.4 `fossify-commons` Inherited UI Strings & Local Overrides (17 Keys)
+### 1.4 `fossify-commons` Inherited UI Strings & Local Overrides (21 Keys)
 
-10 of these 17 shared UI keys are inherited from `org.fossify:commons:7.1.3` (`res/values-nb-rNO/values-nb-rNO.xml`), while `contributors`, `known_issues`, `donate_to_fossify`, `privacy_policy`, and `skip_the_recycle_bin` were missing and added as local overrides in `app/src/main/res/values-nb-rNO/strings.xml`:
+10 of these 21 shared UI keys are inherited from `org.fossify:commons:7.1.3` (`res/values-nb-rNO/values-nb-rNO.xml`), while `contributors`, `known_issues`, `donate_to_fossify`, `privacy_policy`, `skip_the_recycle_bin`, `exclude_folder`, `column_count`, `open_the_recycle_bin`, and `version_placeholder` were missing and added as local overrides in `app/src/main/res/values-nb-rNO/strings.xml`:
 
 | # | Key (`name`) | English (`fossify-commons`) | Norwegian Bokmål | Source / Notes |
 |---:|---|---|---|---|
@@ -161,6 +161,10 @@ These 45 strings already exist in the original Fossify Gallery (upstream); only 
 | 15 | `search_files` | Search files | Søk i filer | Local override in `values-nb-rNO/strings.xml` (Search bar hint) |
 | 16 | `search_folders` | Search folders | Søk i mapper | Local override in `values-nb-rNO/strings.xml` (Search bar hint) |
 | 17 | `skip_the_recycle_bin` | Skip the recycle bin, delete files directly | Hopp over papirkurven og slett filene direkte | Local override in `values-nb-rNO/strings.xml` (Delete confirmation dialog); key missing in `fossify-commons` `values-nb-rNO` |
+| 18 | `exclude_folder` | Exclude folder | Ekskluder mappe | Local override in `values-nb-rNO/strings.xml` (Options menu); key missing in `fossify-commons` `values-nb-rNO` |
+| 19 | `column_count` | Column count | Antall kolonner | Local override in `values-nb-rNO/strings.xml` (Main screen and in-album Options menu); key missing in `fossify-commons` `values-nb-rNO` |
+| 20 | `open_the_recycle_bin` | Open the recycle bin | Åpne papirkurven | Local override in `values-nb-rNO/strings.xml` (In-album Options menu); key missing in `fossify-commons` `values-nb-rNO` |
+| 21 | `version_placeholder` | Version %s | Versjon %s | Local override in `values-nb-rNO/strings.xml` (About screen version text); key missing in `fossify-commons` `values-nb-rNO` |
 
 ## 2. Full 1-to-1 Comparison: English vs. Norwegian Bokmål
 
@@ -517,3 +521,7 @@ These 45 strings already exist in the original Fossify Gallery (upstream); only 
 | 349 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Fortsett å dra ned for kryptert hvelv |
 | 350 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Fortsett å holde for å åpne kryptert hvelv |
 | 351 | `release_to_open_vault` | Release to open Encrypted Vault | Slipp for å åpne kryptert hvelv |
+| 352 | `exclude_folder` *(fossify-commons)* | Exclude folder | Ekskluder mappe |
+| 353 | `column_count` *(fossify-commons)* | Column count | Antall kolonner |
+| 354 | `open_the_recycle_bin` *(fossify-commons)* | Open the recycle bin | Åpne papirkurven |
+| 355 | `version_placeholder` *(fossify-commons)* | Version %s | Versjon %s |

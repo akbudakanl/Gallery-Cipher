@@ -1,6 +1,6 @@
 # Norwegian Nynorsk (values-nn) Translation Completion & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-nn/strings.xml` was audited from scratch against `app/src/main/res/values/strings.xml`. Previously, `values-nn` contained only 23 `<string>` entries (and 0 `<plurals>`). Three inaccurate/typoed existing entries were fixed, and all 285 missing `<string>` entries plus 2 `<plurals>` entries (`restore_confirmation` and `failed_to_resize_images`) were translated into Norwegian Nynorsk, bringing `values-nn` to full parity (343 `<string>` + 2 `<plurals>` = 345 app resource entries; `search` and 16 shared UI keys from `fossify-commons` plus the newly added `skip_the_recycle_bin` and `skip_delete_confirmation` overrides; 352 total comparison rows with plural forms expanded).
+> **Scope:** `app/src/main/res/values-nn/strings.xml` was audited from scratch against `app/src/main/res/values/strings.xml`. Previously, `values-nn` contained only 23 `<string>` entries (and 0 `<plurals>`). Three inaccurate/typoed existing entries were fixed, and all 285 missing `<string>` entries plus 2 `<plurals>` entries (`restore_confirmation` and `failed_to_resize_images`) were translated into Norwegian Nynorsk, bringing `values-nn` to full parity (374 `<string>` + 2 `<plurals>` = 376 app resource entries; `search` and 18 previously overridden shared UI keys from `fossify-commons` plus 13 additional `fossify-commons` UI keys (`manage_excluded_folders`, `exclude`, `exclude_folder`, `lock_folder`, `change_cover_image`, `select_photo`, `use_default`, `column_count`, `open_the_recycle_bin`, `grid`, `list`, `resize`, `version_placeholder`) newly overridden because they are missing in `fossify-commons` `values-nn`; 365 total comparison rows with plural forms expanded).
 > **Key Terminology:** `Settings` → `Innstillingar` · `Default` → `Standard` / `Systemstandard` · `Folder` → `Mappe` · `Album` → `Album` · `Encrypted Vault` → `Kryptert kvelv` · `Hidden` → `Skjult` · `Excluded` → `Ekskludert` · `Password` → `Passord` · `Encrypt / Decrypt` → `Kryptera / Dekryptera` · `Thumbnails` → `Minibilete` · `Recycle bin` → `Papirkorg` · `Clipboard` → `Utklippstavla`
 
 ## 1. Review of 23 Previously Existing Translations and Changes Made
@@ -33,9 +33,9 @@
 
 > **Added Entries:** All remaining 285 `<string>` keys and 2 `<plurals>` blocks (4 CLDR `one`/`other` items) from `values/strings.xml` were translated following standard Norwegian Nynorsk orthography and consistent terminology with the existing entries (e.g., `syna`, `ljosstyrke`, `ljodstyrke`, `bilete`, `minibilete`). See Section 2 for the complete 1-to-1 English comparison.
 
-### `fossify-commons` Inherited UI Overrides (18 Keys)
+### `fossify-commons` Inherited UI Overrides (31 Keys)
 
-`org.fossify:commons:7.1.3` (`res/values-nn/values-nn.xml`) omits all 18 UI keys below, so local overrides were added to `app/src/main/res/values-nn/strings.xml`:
+`org.fossify:commons:7.1.3` (`res/values-nn/values-nn.xml`) omits all 31 UI keys below (18 overridden in the previous audit and 13 added in this revision), so local overrides were added to `app/src/main/res/values-nn/strings.xml`:
 
 | # | Key (`name`) | English (`fossify-commons`) | Norwegian Nynorsk (`values-nn/strings.xml`) | Source / Notes |
 |---:|---|---|---|---|
@@ -57,6 +57,19 @@
 | 16 | `search_folders` | Search folders | Søk i mapper | Local override in `values-nn/strings.xml` (Search bar hint) |
 | 17 | `skip_the_recycle_bin` | Skip the recycle bin, delete files directly | Hopp over papirkorga og slett filene direkte | Local override in `values-nn/strings.xml` (Delete confirmation dialog); key missing in `fossify-commons` `values-nn` |
 | 18 | `skip_delete_confirmation` | Always skip delete confirmation dialog | Hopp alltid over dialogen for stadfesting av sletting | Local override in `values-nn/strings.xml` (Settings); key missing in `fossify-commons` `values-nn` |
+| 19 | `manage_excluded_folders` | Manage excluded folders | Handter ekskluderte mapper | Local override in `values-nn/strings.xml` (Settings); key missing in `fossify-commons` `values-nn` |
+| 20 | `exclude` | Exclude | Ekskluder | Local override in `values-nn/strings.xml` (Album selection / long-press menu); key missing in `fossify-commons` `values-nn` |
+| 21 | `exclude_folder` | Exclude folder | Ekskluder mappe | Local override in `values-nn/strings.xml` (Options menu); key missing in `fossify-commons` `values-nn` |
+| 22 | `lock_folder` | Lock folder | Lås mappe | Local override in `values-nn/strings.xml` (Album selection / long-press menu); key missing in `fossify-commons` `values-nn` |
+| 23 | `change_cover_image` | Change cover image | Endra omslagsbilete | Local override in `values-nn/strings.xml` (Album selection / long-press menu); key missing in `fossify-commons` `values-nn` |
+| 24 | `select_photo` | Select photo | Vel bilete | Local override in `values-nn/strings.xml` (Album selection, "Change cover image" dialog); key missing in `fossify-commons` `values-nn` |
+| 25 | `use_default` | Use default | Bruk standard | Local override in `values-nn/strings.xml` (Album selection, "Change cover image" dialog); key missing in `fossify-commons` `values-nn` |
+| 26 | `column_count` | Column count | Tal på kolonnar | Local override in `values-nn/strings.xml` (Main screen and in-album Options menu); key missing in `fossify-commons` `values-nn` |
+| 27 | `open_the_recycle_bin` | Open the recycle bin | Opna papirkorga | Local override in `values-nn/strings.xml` (In-album Options menu); key missing in `fossify-commons` `values-nn` |
+| 28 | `grid` | Grid | Rutenett | Local override in `values-nn/strings.xml` (In-album Options menu, view type); key missing in `fossify-commons` `values-nn` |
+| 29 | `list` | List | Liste | Local override in `values-nn/strings.xml` (In-album Options menu, view type); key missing in `fossify-commons` `values-nn` |
+| 30 | `resize` | Resize | Endra storleik | Local override in `values-nn/strings.xml` (Selection CAB menu); key missing in `fossify-commons` `values-nn` |
+| 31 | `version_placeholder` | Version %s | Versjon %s | Local override in `values-nn/strings.xml` (About screen version text); key missing in `fossify-commons` `values-nn` |
 
 ### Newly Added Fork-Only Strings (66 Keys)
 
@@ -488,3 +501,16 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 350 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Hald fram med å dra ned for kryptert kvelv |
 | 351 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Hald fram med å halde for å opne kryptert kvelv |
 | 352 | `release_to_open_vault` | Release to open Encrypted Vault | Slepp for å opne kryptert kvelv |
+| 353 | `manage_excluded_folders` *(fossify-commons)* | Manage excluded folders | Handter ekskluderte mapper |
+| 354 | `exclude` *(fossify-commons)* | Exclude | Ekskluder |
+| 355 | `exclude_folder` *(fossify-commons)* | Exclude folder | Ekskluder mappe |
+| 356 | `lock_folder` *(fossify-commons)* | Lock folder | Lås mappe |
+| 357 | `change_cover_image` *(fossify-commons)* | Change cover image | Endra omslagsbilete |
+| 358 | `select_photo` *(fossify-commons)* | Select photo | Vel bilete |
+| 359 | `use_default` *(fossify-commons)* | Use default | Bruk standard |
+| 360 | `column_count` *(fossify-commons)* | Column count | Tal på kolonnar |
+| 361 | `open_the_recycle_bin` *(fossify-commons)* | Open the recycle bin | Opna papirkorga |
+| 362 | `grid` *(fossify-commons)* | Grid | Rutenett |
+| 363 | `list` *(fossify-commons)* | List | Liste |
+| 364 | `resize` *(fossify-commons)* | Resize | Endra storleik |
+| 365 | `version_placeholder` *(fossify-commons)* | Version %s | Versjon %s |

@@ -1,6 +1,6 @@
 # Traditional Chinese (Taiwan, values-zh-rTW) Translation Audit, Revision & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-zh-rTW/strings.xml` was audited against `app/src/main/res/values/strings.xml` and `fossify-commons` (`values-zh-rTW`). 14 existing entries with mistranslations, Mainland Chinese phrasing, terminology mismatches, or formatting bugs were revised, and all 50 missing strings were translated into Taiwanese Traditional Chinese (`zh-rTW`) and added, bringing `values-zh-rTW` to full parity (343 `<string>` + 2 `<plurals>` = 345 resource entries; 350 total comparison rows including English `one`/`other` plural forms and 15 `fossify-commons` UI keys).
+> **Scope:** `app/src/main/res/values-zh-rTW/strings.xml` was audited against `app/src/main/res/values/strings.xml` and `fossify-commons` (`values-zh-rTW`). 14 existing entries with mistranslations, Mainland Chinese phrasing, terminology mismatches, or formatting bugs were revised, and all 50 missing strings were translated into Taiwanese Traditional Chinese (`zh-rTW`) and added, bringing `values-zh-rTW` to full parity (343 `<string>` + 2 `<plurals>` = 345 resource entries; 363 total comparison rows including English `one`/`other` plural forms and 29 `fossify-commons` UI keys).
 > **Key Terminology:** `Settings` → `設定` · `Default` → `預設` / `系統預設` · `Folder` → `資料夾` · `Album` → `相簿` · `Encrypted Vault` → `加密保險箱` · `Hidden` → `隱藏` · `Excluded` → `已排除` · `Password` → `密碼` · `Encrypt / Decrypt` → `加密 / 解密` · `Copy to` → `複製` (matches `fossify-commons`) · `Clipboard` → `剪貼簿` · `Search` → `搜尋` (inherited from `fossify-commons`)
 
 ## 1. Audit of Existing Translations & Newly Added Entries
@@ -111,9 +111,9 @@ These 3 strings already exist in the original Fossify Gallery (upstream); only t
 | 2 | `system_default` | System default | 系統預設 | Matches `fossify-commons` `system_default` (`系統預設`) |
 | 3 | `language` | Language | 語言 | Matches `fossify-commons` `language` (`語言`) |
 
-### 1.4 `fossify-commons` Inherited UI Strings (14 Keys)
+### 1.4 `fossify-commons` Inherited UI Strings (29 Keys)
 
-All 14 shared UI keys below are already localized in `org.fossify:commons:7.1.3` (`res/values-zh-rTW/values-zh-rTW.xml`); no local override in `values-zh-rTW/strings.xml` was required:
+All 29 shared UI keys below are already localized in `org.fossify:commons:7.1.3` (`res/values-zh-rTW/values-zh-rTW.xml`); no local override in `values-zh-rTW/strings.xml` was required (the last 13 keys were verified as fully translated in this revision):
 
 | # | Key (`name`) | English (`fossify-commons`) | Taiwanese (`fossify-commons`) | Source / Notes |
 |---:|---|---|---|---|
@@ -133,6 +133,19 @@ All 14 shared UI keys below are already localized in `org.fossify:commons:7.1.3`
 | 14 | `print` | Print | 列印 | Inherited from `fossify-commons` (ViewPager menu) |
 | 15 | `search_files` | Search files | 搜尋檔案 | Inherited from `fossify-commons` (Search bar hint) |
 | 16 | `search_folders` | Search folders | 搜尋資料夾 | Inherited from `fossify-commons` (Search bar hint) |
+| 17 | `manage_excluded_folders` | Manage excluded folders | 管理排除的資料夾 | Inherited from `fossify-commons` (Settings); verified translated in this revision |
+| 18 | `exclude` | Exclude | 排除 | Inherited from `fossify-commons` (Album selection / long-press menu); verified translated in this revision |
+| 19 | `exclude_folder` | Exclude folder | 排除資料夾 | Inherited from `fossify-commons` (Options menu); verified translated in this revision |
+| 20 | `lock_folder` | Lock folder | 上鎖資料夾 | Inherited from `fossify-commons` (Album selection / long-press menu); verified translated in this revision |
+| 21 | `change_cover_image` | Change cover image | 更換封面圖片 | Inherited from `fossify-commons` (Album selection / long-press menu); verified translated in this revision |
+| 22 | `select_photo` | Select photo | 選擇相片 | Inherited from `fossify-commons` (Album selection, "Change cover image" dialog); verified translated in this revision |
+| 23 | `use_default` | Use default | 使用預設 | Inherited from `fossify-commons` (Album selection, "Change cover image" dialog); verified translated in this revision |
+| 24 | `column_count` | Column count | 欄數 | Inherited from `fossify-commons` (Main screen and in-album Options menu); verified translated in this revision |
+| 25 | `open_the_recycle_bin` | Open the recycle bin | 開啟回收桶 | Inherited from `fossify-commons` (In-album Options menu); verified translated in this revision |
+| 26 | `grid` | Grid | 格狀 | Inherited from `fossify-commons` (In-album Options menu, view type); verified translated in this revision |
+| 27 | `list` | List | 列表 | Inherited from `fossify-commons` (In-album Options menu, view type); verified translated in this revision |
+| 28 | `resize` | Resize | 調整尺寸 | Inherited from `fossify-commons` (Selection CAB menu); verified translated in this revision |
+| 29 | `version_placeholder` | Version %s | 版本 %s | Inherited from `fossify-commons` (About screen version text); verified translated in this revision |
 
 ## 2. Full 1-to-1 Comparison: English vs. Traditional Chinese (Taiwan)
 
@@ -488,3 +501,16 @@ All 14 shared UI keys below are already localized in `org.fossify:commons:7.1.3`
 | 348 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | 繼續向下拉以開啟加密保險箱 |
 | 349 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | 按住不放以開啟加密保險箱 |
 | 350 | `release_to_open_vault` | Release to open Encrypted Vault | 放開以開啟加密保險箱 |
+| 351 | `manage_excluded_folders` *(fossify-commons)* | Manage excluded folders | 管理排除的資料夾 |
+| 352 | `exclude` *(fossify-commons)* | Exclude | 排除 |
+| 353 | `exclude_folder` *(fossify-commons)* | Exclude folder | 排除資料夾 |
+| 354 | `lock_folder` *(fossify-commons)* | Lock folder | 上鎖資料夾 |
+| 355 | `change_cover_image` *(fossify-commons)* | Change cover image | 更換封面圖片 |
+| 356 | `select_photo` *(fossify-commons)* | Select photo | 選擇相片 |
+| 357 | `use_default` *(fossify-commons)* | Use default | 使用預設 |
+| 358 | `column_count` *(fossify-commons)* | Column count | 欄數 |
+| 359 | `open_the_recycle_bin` *(fossify-commons)* | Open the recycle bin | 開啟回收桶 |
+| 360 | `grid` *(fossify-commons)* | Grid | 格狀 |
+| 361 | `list` *(fossify-commons)* | List | 列表 |
+| 362 | `resize` *(fossify-commons)* | Resize | 調整尺寸 |
+| 363 | `version_placeholder` *(fossify-commons)* | Version %s | 版本 %s |

@@ -329,6 +329,10 @@
     <string name="donate_to_fossify">Doner til Fossify</string>
     <string name="privacy_policy">Personvernerklæring</string>
     <string name="skip_the_recycle_bin">Hopp over papirkurven og slett filene direkte</string>
+    <string name="exclude_folder">Ekskluder mappe</string>
+    <string name="column_count">Antall kolonner</string>
+    <string name="open_the_recycle_bin">Åpne papirkurven</string>
+    <string name="version_placeholder">Versjon %s</string>
     <string name="access_hidden_items_with_biometrics">Få tilgang til skjulte elementer med biometri</string>
     <string name="enable_hidden_protection_first_prompt">Aktiver passordbeskyttelse for skjulte elementer først</string>
     <string name="biometric_unlock_vault">Lås opp kryptert hvelv</string>

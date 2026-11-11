@@ -1,6 +1,6 @@
 # Azerbaijani (values-az) Translation Revision & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-az/strings.xml` was reviewed from scratch: existing inaccurate translations were corrected, and all missing keys from `values/strings.xml` (343 `<string>` + 2 `<plurals>` = 345 app resource entries; `search` and 16 shared UI keys from `fossify-commons` plus the newly added `skip_the_recycle_bin` override; 351 total comparison rows) were completed.
+> **Scope:** `app/src/main/res/values-az/strings.xml` was reviewed from scratch: existing inaccurate translations were corrected, and all missing keys from `values/strings.xml` (343 `<string>` + 2 `<plurals>` = 345 app resource entries; `search` and 17 previously overridden shared UI keys from `fossify-commons` plus the `skip_the_recycle_bin` override, and 13 additional `fossify-commons` UI keys (`manage_excluded_folders`, `exclude`, `exclude_folder`, `lock_folder`, `change_cover_image`, `select_photo`, `use_default`, `column_count`, `open_the_recycle_bin`, `grid`, `list`, `resize`, `version_placeholder`) newly overridden because they are missing in `fossify-commons` `values-az`; 364 total comparison rows) were completed.
 > **Key Terminology:** `Settings` → `Parametrlər` · `Default` → `Susmaya görə` · `Folder` → `Qovluq` · `Encrypted Vault` → `Şifrəli Seyf` · `Password` → `Parol` · `Encrypt/Decrypt` → `Şifrələ / Şifrəsini aç` · `Thumbnails` → `Miniatürlər` · `Recycle bin` → `Zibil qutusu` · `Clipboard` → `Mübadilə buferi`
 
 ## 1. Review of 11 Previously Existing Translations and Changes Made
@@ -19,9 +19,9 @@
 | `system_default` | Sistem standartı | Sistem (susmaya görə) | **Improved** (Standard Azerbaijani software terminology) |
 | `open_system_language_settings` | Sistem dil parametrlərini aç | Sistem dil parametrlərini aç | Kept |
 
-### `fossify-commons` Inherited UI Overrides (14 Keys)
+### `fossify-commons` Inherited UI Overrides (30 Keys)
 
-`org.fossify:commons:7.1.3` (`res/values-az/values-az.xml`) omitted these 16 UI strings, so local overrides were added to `app/src/main/res/values-az/strings.xml`:
+`org.fossify:commons:7.1.3` (`res/values-az/values-az.xml`) omitted these 30 UI strings (17 overridden in the previous audit and 13 added in this revision), so local overrides were added to `app/src/main/res/values-az/strings.xml`:
 
 | # | Key (`name`) | English (`fossify-commons`) | Azerbaijani (`values-az/strings.xml`) | Source / Notes |
 |---:|---|---|---|---|
@@ -42,6 +42,19 @@
 | 15 | `search_files` | Search files | Faylları axtar | Local override in `values-az/strings.xml` (Search bar hint) |
 | 16 | `search_folders` | Search folders | Qovluqları axtar | Local override in `values-az/strings.xml` (Search bar hint) |
 | 17 | `skip_the_recycle_bin` | Skip the recycle bin, delete files directly | Zibil qutusunu keçin, faylları birbaşa silin | Local override in `values-az/strings.xml` (Delete confirmation dialog); key missing in `fossify-commons` `values-az` |
+| 18 | `manage_excluded_folders` | Manage excluded folders | İstisna edilmiş qovluqları idarə et | Local override in `values-az/strings.xml` (Settings); key missing in `fossify-commons` `values-az` |
+| 19 | `exclude` | Exclude | İstisna et | Local override in `values-az/strings.xml` (Album selection / long-press menu); key missing in `fossify-commons` `values-az` |
+| 20 | `exclude_folder` | Exclude folder | Qovluğu istisna et | Local override in `values-az/strings.xml` (Options menu); key missing in `fossify-commons` `values-az` |
+| 21 | `lock_folder` | Lock folder | Qovluğu kilidlə | Local override in `values-az/strings.xml` (Album selection / long-press menu); key missing in `fossify-commons` `values-az` |
+| 22 | `change_cover_image` | Change cover image | Üz qabığı şəklini dəyiş | Local override in `values-az/strings.xml` (Album selection / long-press menu); key missing in `fossify-commons` `values-az` |
+| 23 | `select_photo` | Select photo | Foto seç | Local override in `values-az/strings.xml` (Album selection, "Change cover image" dialog); key missing in `fossify-commons` `values-az` |
+| 24 | `use_default` | Use default | Susmaya görə istifadə et | Local override in `values-az/strings.xml` (Album selection, "Change cover image" dialog); key missing in `fossify-commons` `values-az` |
+| 25 | `column_count` | Column count | Sütun sayı | Local override in `values-az/strings.xml` (Main screen and in-album Options menu); key missing in `fossify-commons` `values-az` |
+| 26 | `open_the_recycle_bin` | Open the recycle bin | Zibil qutusunu aç | Local override in `values-az/strings.xml` (In-album Options menu); key missing in `fossify-commons` `values-az` |
+| 27 | `grid` | Grid | Tor | Local override in `values-az/strings.xml` (In-album Options menu, view type); key missing in `fossify-commons` `values-az` |
+| 28 | `list` | List | Siyahı | Local override in `values-az/strings.xml` (In-album Options menu, view type); key missing in `fossify-commons` `values-az` |
+| 29 | `resize` | Resize | Ölçüsünü dəyiş | Local override in `values-az/strings.xml` (Selection CAB menu); key missing in `fossify-commons` `values-az` |
+| 30 | `version_placeholder` | Version %s | Versiya %s | Local override in `values-az/strings.xml` (About screen version text); key missing in `fossify-commons` `values-az` |
 
 ### Newly Added Fork-Only Strings (66 Keys)
 
@@ -472,3 +485,16 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 349 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Şifrəli seyf üçün aşağı çəkməyə davam edin |
 | 350 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Şifrəli seyfi açmaq üçün basılı saxlayın |
 | 351 | `release_to_open_vault` | Release to open Encrypted Vault | Şifrəli seyfi açmaq üçün buraxın |
+| 352 | `manage_excluded_folders` *(fossify-commons)* | Manage excluded folders | İstisna edilmiş qovluqları idarə et |
+| 353 | `exclude` *(fossify-commons)* | Exclude | İstisna et |
+| 354 | `exclude_folder` *(fossify-commons)* | Exclude folder | Qovluğu istisna et |
+| 355 | `lock_folder` *(fossify-commons)* | Lock folder | Qovluğu kilidlə |
+| 356 | `change_cover_image` *(fossify-commons)* | Change cover image | Üz qabığı şəklini dəyiş |
+| 357 | `select_photo` *(fossify-commons)* | Select photo | Foto seç |
+| 358 | `use_default` *(fossify-commons)* | Use default | Susmaya görə istifadə et |
+| 359 | `column_count` *(fossify-commons)* | Column count | Sütun sayı |
+| 360 | `open_the_recycle_bin` *(fossify-commons)* | Open the recycle bin | Zibil qutusunu aç |
+| 361 | `grid` *(fossify-commons)* | Grid | Tor |
+| 362 | `list` *(fossify-commons)* | List | Siyahı |
+| 363 | `resize` *(fossify-commons)* | Resize | Ölçüsünü dəyiş |
+| 364 | `version_placeholder` *(fossify-commons)* | Version %s | Versiya %s |
