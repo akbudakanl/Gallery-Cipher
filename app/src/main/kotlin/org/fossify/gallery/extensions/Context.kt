@@ -91,11 +91,13 @@ import org.fossify.gallery.helpers.LOCATION_INTERNAL
 import org.fossify.gallery.helpers.LOCATION_OTG
 import org.fossify.gallery.helpers.LOCATION_SD
 import org.fossify.gallery.helpers.MediaFetcher
+import org.fossify.gallery.helpers.MediaIdentity
 import org.fossify.gallery.helpers.MyWidgetProvider
 import org.fossify.gallery.helpers.PicassoRoundedCornersTransformation
 import org.fossify.gallery.helpers.RECYCLE_BIN
 import org.fossify.gallery.helpers.ROUNDED_CORNERS_NONE
 import org.fossify.gallery.helpers.ROUNDED_CORNERS_SMALL
+import org.fossify.gallery.helpers.ReferenceBackupManager
 import org.fossify.gallery.helpers.SHOW_ALL
 import org.fossify.gallery.helpers.THUMBNAIL_FADE_DURATION_MS
 import org.fossify.gallery.helpers.TYPE_GIFS
@@ -104,6 +106,7 @@ import org.fossify.gallery.helpers.TYPE_PORTRAITS
 import org.fossify.gallery.helpers.TYPE_RAWS
 import org.fossify.gallery.helpers.TYPE_SVGS
 import org.fossify.gallery.helpers.TYPE_VIDEOS
+import org.fossify.gallery.helpers.VirtualAlbumSyncManager
 import org.fossify.gallery.interfaces.DateTakensDao
 import org.fossify.gallery.interfaces.DirectoryDao
 import org.fossify.gallery.interfaces.FavoritesDao
@@ -1089,7 +1092,14 @@ fun Context.getCachedMedia(
         }
 
         if (!shouldShowHidden || !CryptoManager.isVaultUnlocked) {
-            media = media.filter { !it.path.contains("/.") && !CryptoManager.isEncryptedFile(it.path) } as ArrayList<Medium>
+            // Favorites and virtual album items point at their files explicitly, so a file coming
+            // from a hidden folder stays visible there. Only vault content is protected.
+            val isExplicitlyReferenced = path == FAVORITES || path.isVirtualAlbumPath()
+            media = if (isExplicitlyReferenced) {
+                media.filter { !CryptoManager.isVaultMediaPath(this, it.path) } as ArrayList<Medium>
+            } else {
+                media.filter { !it.path.contains("/.") && !CryptoManager.isEncryptedFile(it.path) } as ArrayList<Medium>
+            }
         }
 
         val filterMedia = config.filterMedia
@@ -1165,13 +1175,49 @@ fun Context.updateDBMediaPath(oldPath: String, newPath: String) {
     val newParentPath = newPath.getParentPath()
     try {
         if (!isPathHiddenOrEncrypted(newPath)) {
-            mediaDB.updateMedium(newFilename, newPath, newParentPath, oldPath)
+            mediaDB.updateMedium(oldPath, newParentPath, newFilename, newPath)
         } else {
             mediaDB.deleteMediumPath(oldPath)
         }
         favoritesDB.updateFavorite(newFilename, newPath, newParentPath, oldPath)
         virtualAlbumsDB.updateItemPath(oldPath, newPath, newFilename, newParentPath)
+        updateReferenceIdentitiesForPath(newPath)
     } catch (ignored: Exception) {
+    }
+
+    // The backup files have to follow the database, otherwise they would bring the old path back
+    // on the next start.
+    try {
+        val albumIds = virtualAlbumsDB.getAlbumIdsWithItem(newPath)
+        albumIds.forEach { VirtualAlbumSyncManager.saveAlbumToFile(this, it) }
+        ReferenceBackupManager.saveFavorites(this)
+    } catch (ignored: Exception) {
+    }
+}
+
+/**
+ * Stores the identity of the file at [path] for every reference that points to it, so it can be
+ * found again after a rename or move.
+ */
+fun Context.updateReferenceIdentitiesForPath(path: String) {
+    val file = File(path)
+    if (!file.isFile) {
+        return
+    }
+
+    try {
+        val identity = MediaIdentity.of(file)
+        if (!identity.isUsable) {
+            return
+        }
+
+        favoritesDB.updateFavoriteIdentity(
+            path, identity.mediaStoreId, identity.size, identity.lastModified, identity.fingerprint
+        )
+        virtualAlbumsDB.updateItemIdentity(
+            path, identity.mediaStoreId, identity.size, identity.lastModified, identity.fingerprint
+        )
+    } catch (_: Exception) {
     }
 }
 
@@ -1202,22 +1248,29 @@ fun Context.getOTGFolderChildrenNames(path: String): MutableList<String?>? {
 
 fun Context.getFavoritePaths(): ArrayList<String> {
     return try {
-        favoritesDB.getValidFavoritePaths() as ArrayList<String>
+        // A favorite whose file was deleted outside of the app must not show up in the list. The
+        // parent folder is checked as well, so a favorite on an unmounted card is kept.
+        favoritesDB.getValidFavoritePaths().filter { path ->
+            File(path).isFile || File(path).parentFile?.exists() != true
+        } as ArrayList<String>
     } catch (e: Exception) {
         ArrayList()
     }
 }
 
-fun Context.getFavoriteFromPath(path: String): Favorite {
-    return Favorite(null, path, path.getFilenameFromPath(), path.getParentPath())
-}
-
 fun Context.updateFavorite(path: String, isFavorite: Boolean) {
     try {
         if (isFavorite) {
+            // Favorites never hold vault content. Files from a hidden folder are fine, they are
+            // explicitly referenced by the user.
+            if (CryptoManager.isVaultMediaPath(this, path)) {
+                return
+            }
             favoritesDB.insert(getFavoriteFromPath(path))
+            ReferenceBackupManager.saveFavorites(this)
         } else {
             favoritesDB.deleteFavoritePath(path)
+            ReferenceBackupManager.saveFavorites(this)
         }
     } catch (e: Exception) {
         toast(org.fossify.commons.R.string.unknown_error_occurred)

@@ -7,11 +7,18 @@ import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.favoritesDB
 import org.fossify.gallery.extensions.getFavoriteFromPath
 import org.fossify.gallery.extensions.mediaDB
+import org.fossify.gallery.extensions.restoreFavoritesFromBackup
 import org.fossify.gallery.helpers.HOME_VIEW_FILES
 import org.fossify.gallery.models.Favorite
 
 class SplashActivity : BaseSplashActivity() {
     override fun initActivity() {
+        ensureBackgroundThread {
+            // The app data may have been cleared while the backups in the Cipher folder survived.
+            // In that case the favorites are brought back from the backup.
+            restoreFavoritesFromBackup()
+        }
+
         // check if previously selected favorite items have been properly migrated into the new Favorites table
         if (config.wereFavoritesMigrated) {
             launchActivity()

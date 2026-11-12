@@ -122,6 +122,7 @@ import org.fossify.gallery.extensions.launchAbout
 import org.fossify.gallery.extensions.launchCamera
 import org.fossify.gallery.extensions.launchSettings
 import org.fossify.gallery.extensions.mediaDB
+import org.fossify.gallery.extensions.repairReferencesAfterExternalChange
 import org.fossify.gallery.extensions.movePathsInRecycleBin
 import org.fossify.gallery.extensions.movePinnedDirectoriesToFront
 import org.fossify.gallery.extensions.openRecycleBin
@@ -909,6 +910,12 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         mLastMediaFetcher?.shouldStop = true
         mShouldStopFetching = false
         mIsGettingDirs = true
+
+        // Files that were renamed or moved outside of the app are looked up by their identity, so
+        // the favorites and the virtual albums keep pointing at them.
+        ensureBackgroundThread {
+            repairReferencesAfterExternalChange()
+        }
 
         val getImages = mIsPickImageIntent || mIsGetImageContentIntent
         val getVideos = mIsPickVideoIntent || mIsGetVideoContentIntent
