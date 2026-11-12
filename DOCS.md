@@ -149,7 +149,7 @@ The application transitions through three distinct operational states to balance
     1. **Standard non-hidden directories** (Camera, Pictures, Downloads, etc.)
     2. **Unencrypted hidden directories** (folders with `.nomedia` or starting with `.`)
     3. **Encrypted hidden vaults** (physical vaults under `Cipher_Secrets/` with decrypted names)
-    4. *(If copying)* Eligible virtual albums.
+    4. *(If copying)* All virtual albums, no matter which physical folder the source files live in.
   - Safeguards ensure recycle bins are excluded from destination pickers, and Android 11+ SAF path restrictions are bypassed for internal encrypted vault directories.
 
 ### 🛑 Lock & Memory Zeroization (RAM Purge)
