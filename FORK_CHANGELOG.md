@@ -21,6 +21,13 @@ For full architectural details, cryptography specifications, and user guides, se
   - The actions that would be shown at the bottom remain available in the top menu, so nothing gets lost when the bottom bar is not shown.
 - **Extended details are never shown for encrypted files (`ViewPagerFragment`, `PhotoFragment`, `VideoFragment`):**
   - The *"Show extended details over fullscreen media"* setting, together with *"Hide extended details when status bar is hidden"* and *"Manage extended details"*, does not apply to encrypted files. Encrypted media never displays any extended details, even if the setting is enabled.
+- **Smoother rotation by aspect ratio (`MediaDimensions`, `AspectRatioOrientation`, `ViewPagerActivity`, `VideoFragment`, `PhotoFragment`):**
+  - The dimensions of the media are no longer read on the main thread. They are resolved in the background and cached, so the screen is rotated as soon as the aspect ratio of the media is known.
+  - Videos use the exact display size reported by the media player, so the rotation is applied at the same time as the playback starts. With autoplay enabled the playback waits for the rotation, without it the rotation happens as soon as the video appears on the screen.
+### Fixed
+- **Rotation by aspect ratio did not work for encrypted files (`MediaDimensions`, `AspectRatioOrientation`, `ViewPagerActivity`):**
+  - Root cause: the rotation relied on the file extension to determine the type of the media. The encrypted files use the `.bin` / `.fenc` extension, so their dimensions could never be read and the rotation was silently skipped.
+  - The dimensions of encrypted files are now read from their decrypted content: images and GIFs from their header, videos from the frame embedded into the encrypted header or from the metadata of the decrypted stream. The EXIF orientation of encrypted images is read from the decrypted content as well.
 ### Added
 - **Continue where you left off after the vault was wiped (`VaultResumeState`, `promptVaultUnlock`):**
   - Open album path, album/file names, sorting, view type, grouping and scroll offset are stored in `savedInstanceState` as a single blob encrypted with the vault key (`CryptoManager.encryptStringForVault`); nothing is stored in plain text.

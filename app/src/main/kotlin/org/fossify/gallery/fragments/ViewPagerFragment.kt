@@ -47,6 +47,16 @@ abstract class ViewPagerFragment : Fragment() {
         fun saveVideoPlaybackPosition(path: String, position: Long) {}
 
         fun getVideoPlaybackPosition(path: String): Long? = null
+
+        /**
+         * Applies the screen orientation that matches the aspect ratio of the media with the given
+         * path. If the dimensions of the media are not known yet, they are read in the background.
+         * [onApplied] is called on the UI thread once the orientation has been applied, or once it
+         * turned out that no orientation can be applied.
+         */
+        fun applyAspectRatioOrientation(path: String, width: Int, height: Int, onApplied: () -> Unit = {}) {
+            onApplied()
+        }
     }
 
     fun getMediumExtendedDetails(medium: Medium): String {

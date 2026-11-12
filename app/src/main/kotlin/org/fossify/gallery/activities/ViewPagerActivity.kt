@@ -28,7 +28,6 @@ import android.view.WindowManager
 import android.view.animation.DecelerateInterpolator
 import android.widget.Toast
 import androidx.core.graphics.drawable.toDrawable
-import androidx.exifinterface.media.ExifInterface
 import androidx.print.PrintHelper
 import androidx.viewpager.widget.ViewPager
 import com.bumptech.glide.Glide
@@ -57,7 +56,6 @@ import org.fossify.commons.extensions.getImageResolution
 import org.fossify.commons.extensions.getIsPathDirectory
 import org.fossify.commons.extensions.getParentPath
 import org.fossify.commons.extensions.getProperBackgroundColor
-import org.fossify.commons.extensions.getResolution
 import org.fossify.commons.extensions.getUriMimeType
 import org.fossify.commons.extensions.handleDeletePasswordProtection
 import org.fossify.commons.extensions.handleLockedFolderOpening
@@ -141,6 +139,7 @@ import org.fossify.gallery.extensions.updateFavoritePaths
 import org.fossify.gallery.fragments.PhotoFragment
 import org.fossify.gallery.fragments.VideoFragment
 import org.fossify.gallery.fragments.ViewPagerFragment
+import org.fossify.gallery.helpers.AspectRatioOrientation
 import org.fossify.gallery.helpers.BOTTOM_ACTION_CHANGE_ORIENTATION
 import org.fossify.gallery.helpers.BOTTOM_ACTION_COPY
 import org.fossify.gallery.helpers.BOTTOM_ACTION_DELETE
@@ -224,6 +223,13 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     private var mRandomSlideshowStopped = false
 
     private var mIsOrientationLocked = false
+
+    // The screen orientation that was applied last, so that the media is not rotated twice.
+    private var mAppliedScreenOrientation = 0
+    // The callbacks waiting for the orientation of the media with the given path.
+    private val mOrientationCallbacks = mutableMapOf<String, MutableList<() -> Unit>>()
+    // The paths whose orientation is currently being resolved in the background.
+    private val mOngoingOrientationRequests = mutableSetOf<String>()
 
     private var mMediaFiles = ArrayList<Medium>()
     // MediaActivity keeps the album in a process-local cache. After Android reclaims the
@@ -1020,6 +1026,8 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     private fun toggleOrientation(orientation: Int) {
         requestedOrientation = orientation
         mIsOrientationLocked = orientation != SCREEN_ORIENTATION_UNSPECIFIED
+        // The manually set orientation may be replaced by the aspect ratio of the media again.
+        mAppliedScreenOrientation = 0
         refreshMenuItems()
     }
 
@@ -1838,23 +1846,127 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     @SuppressLint("SourceLockedOrientationActivity")
     private fun checkOrientation() {
         if (!mIsOrientationLocked && config.screenRotation == ROTATE_BY_ASPECT_RATIO) {
-            var flipSides = false
-            try {
-                val pathToLoad = getCurrentPath()
-                val exif = ExifInterface(pathToLoad)
-                val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, -1)
-                flipSides = orientation == ExifInterface.ORIENTATION_ROTATE_90 || orientation == ExifInterface.ORIENTATION_ROTATE_270
+            resolveAspectRatioOrientation(getCurrentPath())
+        }
+    }
+
+    /**
+     * Applies the screen orientation matching the aspect ratio of the media with the given path.
+     *
+     * The dimensions of the media are read in the background, because reading them may require
+     * decoding or even decrypting the file, which would delay the rotation. If the dimensions are
+     * already known, they are used directly. [onApplied] is called on the UI thread once the
+     * orientation has been applied, or once it turned out that no orientation can be applied.
+     */
+    override fun applyAspectRatioOrientation(path: String, width: Int, height: Int, onApplied: () -> Unit) {
+        if (path.isEmpty() || mIsOrientationLocked || config.screenRotation != ROTATE_BY_ASPECT_RATIO) {
+            onApplied()
+            return
+        }
+
+        val key = AspectRatioOrientation.getKey(path)
+        val decidedOrientation = AspectRatioOrientation.getDecision(key)
+        if (decidedOrientation != null) {
+            applyOrientationIfCurrent(path, decidedOrientation)
+            notifyOrientationCallbacks(path)
+            onApplied()
+            return
+        }
+
+        if (width > 0 && height > 0) {
+            val orientation = AspectRatioOrientation.getOrientation(width, height, 0)
+            // A square media keeps the current orientation, which is stored as no rotation at all.
+            AspectRatioOrientation.decide(key, orientation ?: 0)
+            applyOrientationIfCurrent(path, orientation)
+
+            // Everybody waiting for the orientation of this media can continue now.
+            notifyOrientationCallbacks(path)
+            onApplied()
+            return
+        }
+
+        // The dimensions are not known yet, read them from the file itself.
+        resolveAspectRatioOrientation(path, onApplied)
+    }
+
+    /**
+     * Reads the dimensions of the media with the given path in the background and applies the
+     * screen orientation matching its aspect ratio. [onApplied] is called on the UI thread once
+     * the orientation has been applied, or once it turned out that no orientation can be applied.
+     */
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
+    private fun resolveAspectRatioOrientation(path: String, onApplied: () -> Unit = {}) {
+        if (path.isEmpty() || mIsOrientationLocked || config.screenRotation != ROTATE_BY_ASPECT_RATIO) {
+            onApplied()
+            return
+        }
+
+        val key = AspectRatioOrientation.getKey(path)
+        val decidedOrientation = AspectRatioOrientation.getDecision(key)
+        if (decidedOrientation != null) {
+            applyOrientationIfCurrent(path, decidedOrientation)
+            onApplied()
+            return
+        }
+
+        mOrientationCallbacks.getOrPut(path) { mutableListOf() }.add(onApplied)
+        if (!mOngoingOrientationRequests.add(path)) {
+            return
+        }
+
+        ensureBackgroundThread {
+            val orientation = try {
+                AspectRatioOrientation.resolve(path)
             } catch (e: Exception) {
+                null
+            } catch (e: OutOfMemoryError) {
+                null
             }
-            val resolution = applicationContext.getResolution(getCurrentPath()) ?: return
-            val width = if (flipSides) resolution.y else resolution.x
-            val height = if (flipSides) resolution.x else resolution.y
-            if (width > height) {
-                requestedOrientation = SCREEN_ORIENTATION_LANDSCAPE
-            } else if (width < height) {
-                requestedOrientation = SCREEN_ORIENTATION_PORTRAIT
+            runOnUiThread {
+                mOngoingOrientationRequests.remove(path)
+                if (orientation != null) {
+                    // The orientation may have been decided already, for example by the media
+                    // player. In that case the existing one has to be used.
+                    val decided = AspectRatioOrientation.decide(key, orientation)
+                    val effectiveOrientation = if (decided) {
+                        orientation
+                    } else {
+                        AspectRatioOrientation.getDecision(key)
+                    }
+
+                    applyOrientationIfCurrent(path, effectiveOrientation)
+                }
+
+                notifyOrientationCallbacks(path)
             }
         }
+    }
+
+    /**
+     * Applies the given orientation, but only if the media it belongs to is the one that is
+     * currently shown.
+     */
+    private fun applyOrientationIfCurrent(path: String, orientation: Int?) {
+        if (orientation != null && orientation != 0 && path == getCurrentPath()) {
+            applyScreenOrientation(orientation)
+        }
+    }
+
+    private fun notifyOrientationCallbacks(path: String) {
+        mOrientationCallbacks.remove(path)?.forEach { it.invoke() }
+    }
+
+    /**
+     * Rotates the screen to the given orientation, unless it is already showing that orientation.
+     */
+    private fun applyScreenOrientation(orientation: Int) {
+        if (orientation == 0 || orientation == mAppliedScreenOrientation) {
+            return
+        }
+
+        mAppliedScreenOrientation = orientation
+        @SuppressLint("SourceLockedOrientationActivity")
+        requestedOrientation = orientation
     }
 
     override fun fragmentClicked() {

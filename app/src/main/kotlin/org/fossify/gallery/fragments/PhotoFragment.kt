@@ -249,6 +249,11 @@ class PhotoFragment : ViewPagerFragment() {
         if (mIsFullscreen) {
             binding.bottomActionsDummy.beGone()
         }
+
+        // Rotate the screen to the aspect ratio of the photo as soon as its dimensions are known,
+        // so that the photo is not shown in the wrong orientation.
+        listener?.applyAspectRatioOrientation(mMedium.path, 0, 0)
+
         loadImage()
         initExtendedDetails()
         mWasInit = true

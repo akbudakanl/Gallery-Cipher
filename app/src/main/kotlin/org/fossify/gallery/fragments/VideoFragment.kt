@@ -86,6 +86,7 @@ import org.fossify.gallery.helpers.EXOPLAYER_MIN_BUFFER_MS
 import org.fossify.gallery.helpers.EncryptedMediaDataSource
 import org.fossify.gallery.helpers.MAX_ZOOM_EQUALITY_TOLERANCE
 import org.fossify.gallery.helpers.MEDIUM
+import org.fossify.gallery.helpers.ROTATE_BY_ASPECT_RATIO
 import org.fossify.gallery.helpers.SHOULD_INIT_FRAGMENT
 import org.fossify.gallery.interfaces.PlaybackSpeedListener
 import org.fossify.gallery.models.Medium
@@ -143,6 +144,11 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
     private var mExoPlayer: ExoPlayer? = null
     private var mVideoSize = Point(1, 1)
     private var mTimerHandler = Handler()
+
+    // True once the player reported the size of the video.
+    private var mVideoSizeKnown = false
+    // True if the playback was requested, but it waits for the screen to be rotated.
+    private var mPendingPlayStart = false
 
     private var mStoredShowExtendedDetails = false
     private var mStoredHideExtendedDetails = false
@@ -305,6 +311,11 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         }
 
         storeStateVariables()
+
+        // The media player reports the exact display size of the video, but it may take a moment.
+        // Reading the dimensions of the file in the background allows rotating the screen to the
+        // aspect ratio of the video even before the player is ready.
+        listener?.applyAspectRatioOrientation(mMedium.path, 0, 0)
 
         // Starting Glide's video-frame decoder and ExoPlayer at the same time makes both
         // compete for I/O and the hardware decoder. That was introduced by player
@@ -622,11 +633,14 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
                 prepare()
 
                 if (playOnPrepared) {
-                    playWhenReady = true
                     mWasVideoStarted = true
                     mPlayPauseButton.setImageResource(org.fossify.commons.R.drawable.ic_pause_outline_vector)
                     showVideoControls()
                     activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    // The playback itself is started once the player is ready. It waits for the
+                    // screen to be rotated to the aspect ratio of the video, so that the video
+                    // does not start playing in the wrong orientation.
+                    mPlayOnPrepared = true
                 }
             }
 
@@ -674,6 +688,12 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
                 mVideoSize.x = videoSize.width
                 mVideoSize.y = (videoSize.height / videoSize.pixelWidthHeightRatio).toInt()
                 setVideoSize()
+                mVideoSizeKnown = true
+
+                // The player knows the exact display size of the video, so the screen can be
+                // rotated to its aspect ratio right before the playback starts.
+                applyAspectRatioOrientation()
+                startPendingPlayback()
             }
 
             override fun onPlayerErrorChanged(error: PlaybackException?) {
@@ -921,6 +941,64 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
             return
         }
 
+        if (shouldWaitForOrientation()) {
+            // The screen has to be rotated to the aspect ratio of the video first, otherwise the
+            // playback would start in the wrong orientation.
+            mPendingPlayStart = true
+            val orientationListener = listener
+            if (orientationListener == null) {
+                startPendingPlayback()
+                return
+            }
+
+            orientationListener.applyAspectRatioOrientation(mMedium.path, 0, 0) {
+                startPendingPlayback()
+            }
+            return
+        }
+
+        startPlayback()
+    }
+
+    /**
+     * True if the screen has to be rotated to the aspect ratio of the video before the playback
+     * may start.
+     */
+    private fun shouldWaitForOrientation(): Boolean {
+        if (mVideoSizeKnown || mConfig.gestureVideoPlayer) {
+            return false
+        }
+
+        return mConfig.screenRotation == ROTATE_BY_ASPECT_RATIO
+    }
+
+    /**
+     * Starts the playback that was waiting for the screen to be rotated.
+     */
+    private fun startPendingPlayback() {
+        if (!mPendingPlayStart || !isAdded) {
+            return
+        }
+
+        mPendingPlayStart = false
+        startPlayback()
+    }
+
+    /**
+     * Rotates the screen to the aspect ratio of the video. The media player knows the exact
+     * display size of the video, so the rotation can be applied right before the playback starts.
+     */
+    private fun applyAspectRatioOrientation() {
+        if (mVideoSize.x <= 0 || mVideoSize.y <= 0) {
+            return
+        }
+
+        listener?.applyAspectRatioOrientation(mMedium.path, mVideoSize.x, mVideoSize.y) {
+            startPendingPlayback()
+        }
+    }
+
+    private fun startPlayback() {
         // Playback is starting (or resuming), so the center play icon must go immediately,
         // not only once the first frame is rendered.
         binding.videoPlayOutline.beGone()
@@ -960,6 +1038,8 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
         }
 
         mPlayOnPrepared = false
+        // A playback that was waiting for the screen rotation must not start anymore.
+        mPendingPlayStart = false
         mIsPlaying = false
         stopTimer()
         val ended = videoEnded()
