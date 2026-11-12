@@ -27,7 +27,11 @@ data class VirtualAlbumBackup(
 
 data class VirtualAlbumItemBackup(
     @SerializedName(value = "fullPath", alternate = ["full_path", "path"]) val fullPath: String? = null,
-    @SerializedName(value = "addedTs", alternate = ["added_ts", "addedTS"]) val addedTs: Long? = null
+    @SerializedName(value = "addedTs", alternate = ["added_ts", "addedTS"]) val addedTs: Long? = null,
+    @SerializedName(value = "mediaStoreId", alternate = ["media_store_id"]) val mediaStoreId: Long? = null,
+    @SerializedName(value = "fileSize", alternate = ["file_size"]) val fileSize: Long? = null,
+    @SerializedName(value = "lastModified", alternate = ["last_modified"]) val lastModified: Long? = null,
+    @SerializedName(value = "fingerprint") val fingerprint: String? = null
 )
 
 object VirtualAlbumSyncManager {
@@ -105,7 +109,11 @@ object VirtualAlbumSyncManager {
             val backupItems = validItems.map {
                 VirtualAlbumItemBackup(
                     fullPath = it.fullPath,
-                    addedTs = it.addedTS
+                    addedTs = it.addedTS,
+                    mediaStoreId = it.mediaStoreId,
+                    fileSize = it.fileSize,
+                    lastModified = it.lastModified,
+                    fingerprint = it.fingerprint
                 )
             }
 
@@ -206,6 +214,13 @@ object VirtualAlbumSyncManager {
         }
     }
 
+    /**
+     * Handles items whose file could not be found at the cached path.
+     *
+     * Nothing is deleted here. A missing file may simply have been renamed or moved, and the
+     * identity of the item allows finding it again later. Removing the row would destroy the only
+     * information needed to relocate it.
+     */
     fun pruneMissingItems(context: Context, albumId: Long, missingPaths: Collection<String>) {
         if (missingPaths.isEmpty()) return
         try {
@@ -215,8 +230,13 @@ object VirtualAlbumSyncManager {
                 !f.exists() && f.parentFile?.exists() == true
             }
             if (actuallyMissing.isEmpty()) return
+
+            // The item stays in the album and in the backup. It is only marked as unresolved so the
+            // UI can tell the user that the file could not be found.
             val dao = context.virtualAlbumsDB
-            actuallyMissing.forEach { dao.removeItemFromAlbum(albumId, it) }
+            actuallyMissing.forEach { path ->
+                dao.markItemUnresolved(albumId, path)
+            }
             saveAlbumToFile(context, albumId)
         } catch (_: Exception) {
         }
@@ -326,15 +346,16 @@ object VirtualAlbumSyncManager {
                     val existingItems = dao.getItems(albumId)
                     val existingPaths = existingItems.map { it.fullPath.lowercase() }.toHashSet()
 
-                    val rawItems = backup.items?.mapNotNull { it.fullPath?.let { path -> path to (it.addedTs ?: createdTs) } }
-                        ?: backup.mediaPaths?.map { it to createdTs }
+                    val rawItems = backup.items
+                        ?: backup.mediaPaths?.map { VirtualAlbumItemBackup(fullPath = it, addedTs = createdTs) }
                         ?: emptyList()
 
                     val itemsToInsert = ArrayList<VirtualAlbumItem>()
                     var hadMissingFiles = false
 
-                    for ((path, addedTs) in rawItems) {
+                    for (entry in rawItems) {
                         try {
+                            val path = entry.fullPath ?: continue
                             if (path.isBlank()) continue
                             val targetFile = File(path)
                             // If file definitely doesn't exist and parent exists, skip it
@@ -351,7 +372,11 @@ object VirtualAlbumSyncManager {
                                         fullPath = path,
                                         filename = targetFile.name,
                                         parentPath = targetFile.parent ?: path.getParentPath(),
-                                        addedTS = if (addedTs > 0) addedTs else System.currentTimeMillis()
+                                        addedTS = if ((entry.addedTs ?: 0L) > 0) entry.addedTs!! else System.currentTimeMillis(),
+                                        mediaStoreId = entry.mediaStoreId ?: 0L,
+                                        fileSize = entry.fileSize ?: 0L,
+                                        lastModified = entry.lastModified ?: 0L,
+                                        fingerprint = entry.fingerprint ?: ""
                                     )
                                 )
                                 existingPaths.add(path.lowercase())
@@ -370,7 +395,9 @@ object VirtualAlbumSyncManager {
                         !f.exists() && f.parentFile?.exists() == true
                     }.map { it.fullPath }
                     if (missingDbPaths.isNotEmpty()) {
-                        missingDbPaths.forEach { dao.removeItemFromAlbum(albumId, it) }
+                        // The item is kept, only marked as unresolved. It may have been renamed or
+                        // moved, and the identity is what allows finding it again.
+                        missingDbPaths.forEach { dao.markItemUnresolved(albumId, it) }
                         hadMissingFiles = true
                     }
 
@@ -448,15 +475,16 @@ object VirtualAlbumSyncManager {
                         val existingItems = dao.getItems(albumId)
                         val existingPaths = existingItems.map { it.fullPath.lowercase() }.toHashSet()
 
-                        val rawItems = innerBackup.items?.mapNotNull { it.fullPath?.let { path -> path to (it.addedTs ?: createdTs) } }
-                            ?: innerBackup.mediaPaths?.map { it to createdTs }
+                        val rawItems = innerBackup.items
+                            ?: innerBackup.mediaPaths?.map { VirtualAlbumItemBackup(fullPath = it, addedTs = createdTs) }
                             ?: emptyList()
 
                         val itemsToInsert = ArrayList<VirtualAlbumItem>()
                         var hadMissingFiles = false
 
-                        for ((path, addedTs) in rawItems) {
+                        for (entry in rawItems) {
                             try {
+                                val path = entry.fullPath ?: continue
                                 if (path.isBlank()) continue
                                 val targetFile = File(path)
                                 if (!targetFile.exists() && targetFile.parentFile?.exists() == true) {
@@ -472,7 +500,11 @@ object VirtualAlbumSyncManager {
                                             fullPath = path,
                                             filename = targetFile.name,
                                             parentPath = targetFile.parent ?: path.getParentPath(),
-                                            addedTS = if (addedTs > 0) addedTs else System.currentTimeMillis()
+                                            addedTS = if ((entry.addedTs ?: 0L) > 0) entry.addedTs!! else System.currentTimeMillis(),
+                                            mediaStoreId = entry.mediaStoreId ?: 0L,
+                                            fileSize = entry.fileSize ?: 0L,
+                                            lastModified = entry.lastModified ?: 0L,
+                                            fingerprint = entry.fingerprint ?: ""
                                         )
                                     )
                                     existingPaths.add(path.lowercase())
@@ -491,7 +523,8 @@ object VirtualAlbumSyncManager {
                             !f.exists() && f.parentFile?.exists() == true
                         }.map { it.fullPath }
                         if (missingDbPaths.isNotEmpty()) {
-                            missingDbPaths.forEach { dao.removeItemFromAlbum(albumId, it) }
+                            // Kept, only marked as unresolved, so a renamed file can be found again.
+                            missingDbPaths.forEach { dao.markItemUnresolved(albumId, it) }
                             hadMissingFiles = true
                         }
 

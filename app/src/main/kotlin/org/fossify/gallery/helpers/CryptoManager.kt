@@ -3128,7 +3128,8 @@ object CryptoManager {
             context.mediaDB.deleteMediumPath(plaintextPath)
             context.favoritesDB.deleteFavoritePath(plaintextPath)
             GalleryDatabase.getInstance(context.applicationContext).DateTakensDao().deleteDateTaken(plaintextPath)
-            context.virtualAlbumsDB.removeItemFromAllAlbums(plaintextPath)
+            // The extension also rewrites the backup files, so they stay in sync with the database.
+            context.deleteVirtualAlbumItemFromAllAlbums(plaintextPath)
         } catch (_: Exception) {}
 
         try {

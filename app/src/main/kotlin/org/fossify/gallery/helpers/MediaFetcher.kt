@@ -343,9 +343,9 @@ class MediaFetcher(val context: Context, var isSecretVaultView: Boolean = false)
         val fileSizes = if (checkProperFileSize || checkFileExistence) getFolderSizes(folder) else HashMap()
 
         val files = when {
-            folder == FAVORITES -> favoritePaths.filter { showHidden || !it.contains("/.") }.map { File(it) }.toMutableList() as ArrayList<File>
+            folder == FAVORITES -> favoritePaths.map { File(it) }.toMutableList() as ArrayList<File>
             folder == RECYCLE_BIN -> deletedMedia.map { File(it.path) }.toMutableList() as ArrayList<File>
-            folder.isVirtualAlbumPath() -> context.getVirtualAlbumPaths(folder).filter { showHidden || !it.contains("/.") }.map { File(it) }.toMutableList() as ArrayList<File>
+            folder.isVirtualAlbumPath() -> context.getVirtualAlbumPaths(folder).map { File(it) }.toMutableList() as ArrayList<File>
             else -> File(folder).listFiles()?.toMutableList() ?: return media
         }
 
