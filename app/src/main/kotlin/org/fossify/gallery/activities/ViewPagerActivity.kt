@@ -325,7 +325,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     fun refreshMenuItems() {
         val currentMedium = getCurrentMedium() ?: return
         currentMedium.isFavorite = mFavoritePaths.contains(currentMedium.path)
-        val visibleBottomActions = if (config.bottomActions) config.visibleBottomActions else 0
+        val visibleBottomActions = getVisibleBottomActions()
 
         runOnUiThread {
             val rotationDegrees = getCurrentPhotoFragment()?.mCurrentRotationDegrees ?: 0
@@ -1123,11 +1123,24 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     }
 
     private fun initBottomActionsLayout() {
-        if (config.bottomActions && !isCurrentMediumInVault()) {
+        if (config.bottomActions && !isCurrentMediumInVault() && !isCurrentMediumHidden()) {
             binding.bottomActions.root.beVisible()
         } else {
             binding.bottomActions.root.beGone()
         }
+    }
+
+    /**
+     * The bottom actions are never shown for the files of the encrypted vault or for hidden files.
+     * The actions that would be shown at the bottom stay available in the top menu in that case,
+     * so that nothing gets lost.
+     */
+    private fun getVisibleBottomActions(): Int {
+        if (!config.bottomActions || isCurrentMediumInVault() || isCurrentMediumHidden()) {
+            return 0
+        }
+
+        return config.visibleBottomActions
     }
 
     private fun isCurrentMediumInVault(): Boolean {
@@ -1136,9 +1149,28 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
             (mDirectory.isVirtualAlbumPath() && isHiddenVirtualAlbumPath(mDirectory))
     }
 
+    /**
+     * True for the files that are hidden with the leading dot convention, no matter if they are
+     * images, animated images or videos.
+     */
+    private fun isCurrentMediumHidden(): Boolean {
+        val currentMedium = getCurrentMedium() ?: return false
+        return isHiddenPath(currentMedium.path)
+    }
+
+    private fun isHiddenPath(path: String): Boolean {
+        if (path.isEmpty() || CryptoManager.isEncryptedFile(path)) {
+            return false
+        }
+
+        // A leading dot in the name of the file or in the name of any of its parent folders
+        // hides it from the gallery.
+        return path.contains("/.")
+    }
+
     private fun initBottomActionButtons() {
         val currentMedium = getCurrentMedium()
-        val visibleBottomActions = if (config.bottomActions) config.visibleBottomActions else 0
+        val visibleBottomActions = getVisibleBottomActions()
         binding.bottomActions.bottomFavorite.beVisibleIf(visibleBottomActions and BOTTOM_ACTION_TOGGLE_FAVORITE != 0 && currentMedium?.getIsInRecycleBin() == false)
         binding.bottomActions.bottomFavorite.setOnLongClickListener { toast(R.string.toggle_favorite); true }
         binding.bottomActions.bottomFavorite.setOnClickListener {
@@ -1163,7 +1195,9 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
             checkDeleteConfirmation()
         }
 
-        binding.bottomActions.bottomRotate.beVisibleIf(config.visibleBottomActions and BOTTOM_ACTION_ROTATE != 0 && getCurrentMedium()?.isImage() == true)
+        binding.bottomActions.bottomRotate.beVisibleIf(
+            visibleBottomActions and BOTTOM_ACTION_ROTATE != 0 && getCurrentMedium()?.isImage() == true
+        )
         binding.bottomActions.bottomRotate.setOnLongClickListener { toast(R.string.rotate); true }
         binding.bottomActions.bottomRotate.setOnClickListener {
             rotateImage(90)
@@ -1258,7 +1292,9 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
             if (medium.isHidden()) org.fossify.commons.R.drawable.ic_unhide_vector else org.fossify.commons.R.drawable.ic_hide_vector
         binding.bottomActions.bottomToggleFileVisibility.setImageResource(hideIcon)
 
-        binding.bottomActions.bottomRotate.beVisibleIf(config.visibleBottomActions and BOTTOM_ACTION_ROTATE != 0 && getCurrentMedium()?.isImage() == true)
+        binding.bottomActions.bottomRotate.beVisibleIf(
+            getVisibleBottomActions() and BOTTOM_ACTION_ROTATE != 0 && getCurrentMedium()?.isImage() == true
+        )
         binding.bottomActions.bottomChangeOrientation.setImageResource(getChangeOrientationIcon())
     }
 

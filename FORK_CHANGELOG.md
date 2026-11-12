@@ -16,6 +16,9 @@ For full architectural details, cryptography specifications, and user guides, se
 - **RAM wipe is no longer triggered by `onStop` / screen off / UI hidden (`App`, `VaultSessionManager`, `MainActivity`, `MediaActivity`):**
   - Previously the vault keys, decrypted metadata and image caches were wiped the moment the last activity stopped. Now only the *last active time* is remembered (`VaultSessionManager`); the wipe happens once the app has been in the background for `VAULT_AUTO_LOCK_TIMEOUT_MS` (30 minutes). Set the constant to `0` to never wipe automatically. A deadline check (`SystemClock.elapsedRealtime()`) when the app returns to the foreground guarantees the lock even if the delayed task was held back by device sleep.
   - `MainActivity.onDestroy` / `MediaActivity.onDestroy` wipe immediately only on a real exit (`isFinishing`); a system-initiated destroy keeps the vault until the timeout.
+- **Bottom actions are not shown for hidden files (`ViewPagerActivity`):**
+  - The *"Show some action buttons at the bottom of the screen"* setting no longer applies to hidden files, no matter if they are images, GIFs or videos. The bottom action bar stays hidden for them.
+  - The actions that would be shown at the bottom remain available in the top menu, so nothing gets lost when the bottom bar is not shown.
 ### Added
 - **Continue where you left off after the vault was wiped (`VaultResumeState`, `promptVaultUnlock`):**
   - Open album path, album/file names, sorting, view type, grouping and scroll offset are stored in `savedInstanceState` as a single blob encrypted with the vault key (`CryptoManager.encryptStringForVault`); nothing is stored in plain text.
