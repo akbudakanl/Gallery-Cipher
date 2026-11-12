@@ -233,7 +233,7 @@ class VirtualAlbumSyncTest {
     }
 
     @Test
-    fun testSinglePhysicalFolderFilteringLogic() {
+    fun testAlbumsMayHoldItemsFromSeveralPhysicalFolders() {
         val cameraFolder = "/storage/emulated/0/DCIM/Camera"
         val screenshotsFolder = "/storage/emulated/0/Pictures/Screenshots"
         val downloadsFolder = "/storage/emulated/0/Download"
@@ -244,28 +244,27 @@ class VirtualAlbumSyncTest {
             VirtualAlbum(id = 3L, name = "Camera 2", createdTs = 0L, thumbnail = "", parentPhysicalPath = cameraFolder)
         )
 
-        // When copying from Camera folder, only albums belonging to Camera folder must match
+        // The remembered source folder is only a hint for the copy dialog, it does not restrict
+        // which albums may be offered as a destination.
         val cameraMatchedAlbums = albums.filter { it.parentPhysicalPath.equals(cameraFolder, ignoreCase = true) }
         assertEquals(2, cameraMatchedAlbums.size)
         assertTrue(cameraMatchedAlbums.any { it.name == "Camera 1" })
         assertTrue(cameraMatchedAlbums.any { it.name == "Camera 2" })
         assertFalse(cameraMatchedAlbums.any { it.name == "Screenshots 1" })
 
-        // Adding items restriction: items from Downloads cannot be added to a Camera-bound album
+        // An album may hold items from any number of physical folders, exactly like the favorites.
         val incomingItems = listOf(
             "$cameraFolder/IMG_001.jpg",
             "$downloadsFolder/doc_photo.jpg",
-            "$cameraFolder/IMG_002.jpg"
+            "$cameraFolder/IMG_002.jpg",
+            "$screenshotsFolder/shot.png"
         )
-        val targetAlbumOwner = cameraFolder
-        val allowedItems = incomingItems.filter {
-            val parent = it.substringBeforeLast('/')
-            parent.equals(targetAlbumOwner, ignoreCase = true)
+        val allowedItems = incomingItems.filter { path ->
+            File(path).name.isNotEmpty()
         }
-        assertEquals(2, allowedItems.size)
-        assertTrue(allowedItems.contains("$cameraFolder/IMG_001.jpg"))
-        assertTrue(allowedItems.contains("$cameraFolder/IMG_002.jpg"))
-        assertFalse(allowedItems.contains("$downloadsFolder/doc_photo.jpg"))
+        assertEquals(4, allowedItems.size)
+        assertTrue(allowedItems.contains("$downloadsFolder/doc_photo.jpg"))
+        assertTrue(allowedItems.contains("$screenshotsFolder/shot.png"))
 
         // Copy destination restriction: cannot copy from a virtual album to its owner physical album
         val destinationDirs = listOf(cameraFolder, screenshotsFolder, downloadsFolder)
