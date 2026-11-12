@@ -108,7 +108,10 @@ import org.fossify.gallery.extensions.getSortedDirectories
 import org.fossify.gallery.extensions.getVirtualAlbumDirectories
 import org.fossify.gallery.extensions.handleExcludedFolderPasswordProtection
 import org.fossify.gallery.extensions.handleMediaManagementPrompt
+import org.fossify.gallery.extensions.captureScrollOffset
 import org.fossify.gallery.extensions.hasVaultCreated
+import org.fossify.gallery.extensions.promptVaultUnlock
+import org.fossify.gallery.extensions.restoreScrollOffset
 import org.fossify.gallery.extensions.isDownloadsFolder
 import org.fossify.gallery.extensions.isFolderOrAlbumHidden
 import org.fossify.gallery.extensions.isEncryptedVaultAlbum
@@ -129,6 +132,9 @@ import org.fossify.gallery.extensions.tryDeleteFileDirItem
 import org.fossify.gallery.extensions.updateDBDirectory
 import org.fossify.gallery.extensions.updateWidgets
 import org.fossify.gallery.helpers.CryptoManager
+import org.fossify.gallery.helpers.VAULT_RESUME_STATE
+import org.fossify.gallery.helpers.VaultResumeState
+import org.fossify.gallery.helpers.VaultSessionManager
 import org.fossify.gallery.helpers.DIRECTORY
 import org.fossify.gallery.helpers.GET_ANY_INTENT
 import org.fossify.gallery.helpers.GET_IMAGE_INTENT
@@ -231,6 +237,11 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     private var mIsVaultDialogShowing = false
     private var mIsSecretVaultView = false
     private var mHiddenDisplayMode = DISPLAY_NONE
+
+    // "Continue where I left off" after the vault keys were wiped (30 min in background / process restart).
+    // mVaultResumeBlob is the encrypted state from savedInstanceState, mVaultResume the decrypted one to apply.
+    private var mVaultResumeBlob: String? = null
+    private var mVaultResume: VaultResumeState? = null
     private val mFetchGeneration = AtomicLong(0L)
     private var mLastOpenedDirectoryPath: String? = null
     private val mPendingPrioritizedPaths = LinkedHashSet<String>()
@@ -267,6 +278,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         if (savedInstanceState != null) {
             mIsSecretVaultView = savedInstanceState.getBoolean(IS_SECRET_VAULT_VIEW, false)
             mHiddenDisplayMode = savedInstanceState.getInt(HIDDEN_DISPLAY_MODE, DISPLAY_NONE)
+            mVaultResumeBlob = savedInstanceState.getString(VAULT_RESUME_STATE)
         } else {
             mIsSecretVaultView = false
             mHiddenDisplayMode = DISPLAY_NONE
@@ -364,6 +376,28 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         mDateFormat = config.dateFormat
         mTimeFormat = getTimeFormat()
 
+        // The person was inside the vault but the keys are gone from RAM (30 min in the background, or the
+        // process was restarted). Remember the position now; the fallback below would reset the screen.
+        if (CryptoManager.isVaultUnlocked) {
+            VaultSessionManager.clearAutoWipe()
+        }
+        // only an automatic wipe (timeout) or a process restart with saved state asks again; locking on purpose
+        // (e.g. from settings) keeps the old behaviour of falling back to the normal gallery
+        val vaultWipedWhileInside = (mIsSecretVaultView || mHiddenDisplayMode == DISPLAY_SECRET_VAULT) &&
+            !CryptoManager.isVaultUnlocked &&
+            (VaultSessionManager.isAutoWiped() || mVaultResumeBlob != null)
+        if (vaultWipedWhileInside && mVaultResume == null) {
+            val scroll = binding.directoriesGrid.captureScrollOffset()
+            mVaultResume = VaultResumeState(
+                inSecretVault = true,
+                displayMode = mHiddenDisplayMode,
+                sorting = config.directorySorting,
+                viewType = config.viewTypeFolders,
+                scrollPosition = scroll?.first ?: 0,
+                scrollOffset = scroll?.second ?: 0
+            )
+        }
+
         if (!config.temporarilyShowHidden || !CryptoManager.isVaultUnlocked) {
             mIsSecretVaultView = false
             if (!config.temporarilyShowHidden) {
@@ -435,6 +469,61 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         if (!mIsSecretVaultView) {
             binding.mainMenu.updateHintText(getString(org.fossify.commons.R.string.search_folders))
         }
+
+        if (vaultWipedWhileInside) {
+            if (VaultSessionManager.consumeUnlockDeclined()) {
+                // the person just dismissed the password prompt on a screen above this one: do not ask twice
+                VaultSessionManager.clearAutoWipe()
+                mVaultResume = null
+                mVaultResumeBlob = null
+            } else {
+                promptToResumeVault()
+            }
+        }
+    }
+
+    /** Asks for the vault password again and puts the person back into the vault where they left off. */
+    private fun promptToResumeVault() {
+        if (mIsVaultDialogShowing) return
+        mIsVaultDialogShowing = true
+        promptVaultUnlock { success ->
+            mIsVaultDialogShowing = false
+            if (!success) {
+                VaultSessionManager.consumeUnlockDeclined()
+                VaultSessionManager.clearAutoWipe()
+                mVaultResume = null
+                mVaultResumeBlob = null
+                return@promptVaultUnlock
+            }
+
+            // process restart case: the in-memory state is gone, read the encrypted blob now that the key is back
+            mVaultResume = VaultResumeState.decrypt(mVaultResumeBlob) ?: mVaultResume
+            mVaultResumeBlob = null
+            mIsSecretVaultView = true
+            mHiddenDisplayMode = DISPLAY_SECRET_VAULT
+            toast(R.string.secret_vault)
+            ensureBackgroundThread {
+                CryptoManager.getOrCreateDefaultHiddenAlbum(this)
+                runOnUiThread {
+                    if (!isDestroyed && !isFinishing) {
+                        toggleTemporarilyShowHidden(true)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun applyPendingVaultScroll() {
+        val state = mVaultResume ?: return
+        if (!mIsSecretVaultView || !CryptoManager.isVaultUnlocked) return
+        val itemCount = binding.directoriesGrid.adapter?.itemCount ?: 0
+        if (itemCount <= state.scrollPosition) return
+        mVaultResume = null
+        binding.directoriesGrid.post {
+            if (!isDestroyed && !isFinishing) {
+                binding.directoriesGrid.restoreScrollOffset(state.scrollPosition, state.scrollOffset)
+            }
+        }
     }
 
     override fun onPause() {
@@ -477,14 +566,18 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     override fun onDestroy() {
         super.onDestroy()
         if (!isChangingConfigurations) {
-            mIsSecretVaultView = false
-            mHiddenDisplayMode = DISPLAY_NONE
-            config.temporarilyShowHidden = false
             config.temporarilyShowExcluded = false
             config.tempSkipDeleteConfirmation = false
             config.tempSkipRecycleBin = false
-            CryptoManager.lockVault()
-            CryptoManager.clearAppImageCaches(this)
+            // Only a real exit (back press / finish()) wipes the vault right away. If Android merely destroys
+            // this activity in the background, the vault stays until the inactivity timeout (VaultSessionManager).
+            if (isFinishing) {
+                mIsSecretVaultView = false
+                mHiddenDisplayMode = DISPLAY_NONE
+                config.temporarilyShowHidden = false
+                CryptoManager.lockVault()
+                CryptoManager.clearAppImageCaches(this)
+            }
             mTempShowHiddenHandler.removeCallbacksAndMessages(null)
             removeTempFolder()
             unregisterFileUpdateListener()
@@ -500,6 +593,22 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         super.onSaveInstanceState(outState)
         outState.putBoolean(IS_SECRET_VAULT_VIEW, mIsSecretVaultView)
         outState.putInt(HIDDEN_DISPLAY_MODE, mHiddenDisplayMode)
+
+        // Encrypted with the vault key: unreadable while locked, readable again after the password was entered.
+        val inVault = mIsSecretVaultView || mHiddenDisplayMode == DISPLAY_SECRET_VAULT
+        if (inVault && CryptoManager.isVaultUnlocked) {
+            val scroll = binding.directoriesGrid.captureScrollOffset()
+            VaultResumeState(
+                inSecretVault = true,
+                displayMode = mHiddenDisplayMode,
+                sorting = config.directorySorting,
+                viewType = config.viewTypeFolders,
+                scrollPosition = scroll?.first ?: 0,
+                scrollOffset = scroll?.second ?: 0
+            ).encrypt(this)?.let { outState.putString(VAULT_RESUME_STATE, it) }
+        } else if (inVault) {
+            (mVaultResumeBlob ?: mVaultResume?.encrypt(this))?.let { outState.putString(VAULT_RESUME_STATE, it) }
+        }
     }
 
     override fun onBackPressedCompat(): Boolean {
@@ -1936,6 +2045,8 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
                 (binding.directoriesGrid.adapter as? DirectoryAdapter)?.updateDirs(dirsToShow)
             }
+
+            applyPendingVaultScroll()
 
             binding.directoriesGrid.postDelayed({
                 if (!isDestroyed && !isFinishing) {

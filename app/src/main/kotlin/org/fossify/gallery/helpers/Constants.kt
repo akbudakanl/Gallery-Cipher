@@ -320,3 +320,10 @@ fun getPermissionsToRequest(): Collection<Int> {
 
     return permissions
 }
+
+// Vault auto-lock: keys / decrypted caches are wiped from RAM only after the app has been in the background
+// for this long (measured from the last time the app was active). A value <= 0 means "never wipe automatically".
+const val VAULT_AUTO_LOCK_TIMEOUT_MS = 30 * 60 * 1000L
+
+// Bundle key of the encrypted "resume where I left off" blob stored in savedInstanceState
+const val VAULT_RESUME_STATE = "vault_resume_state"

@@ -67,7 +67,10 @@ import org.fossify.gallery.dialogs.FilterMediaDialog
 import org.fossify.gallery.dialogs.GrantAllFilesDialog
 import org.fossify.gallery.extensions.canAccessHiddenVirtualAlbums
 import org.fossify.gallery.extensions.applyVaultScreenProtection
+import org.fossify.gallery.extensions.captureScrollOffset
 import org.fossify.gallery.extensions.config
+import org.fossify.gallery.extensions.promptVaultUnlock
+import org.fossify.gallery.extensions.restoreScrollOffset
 import org.fossify.gallery.extensions.deleteDBPath
 import org.fossify.gallery.extensions.deleteVirtualAlbumItemFromAllAlbums
 import org.fossify.gallery.extensions.getVirtualAlbumId
@@ -98,6 +101,8 @@ import org.fossify.gallery.extensions.showRestoreConfirmationDialog
 import org.fossify.gallery.extensions.tryDeleteFileDirItem
 import org.fossify.gallery.extensions.updateWidgets
 import org.fossify.gallery.helpers.CryptoManager
+import org.fossify.gallery.helpers.VAULT_RESUME_STATE
+import org.fossify.gallery.helpers.VaultResumeState
 import org.fossify.gallery.helpers.DIRECTORY
 import org.fossify.gallery.helpers.GET_ANY_INTENT
 import org.fossify.gallery.helpers.GET_IMAGE_INTENT
@@ -152,6 +157,12 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     private var mZoomListener: MyRecyclerView.MyZoomListener? = null
     private var mIsVaultOpening = false
 
+    // "Continue where I left off" after the vault keys were wiped from RAM (30 min in background / process restart).
+    // mVaultResumeBlob is the encrypted state from savedInstanceState, mVaultResume the decrypted/live one.
+    private var mVaultResumeBlob: String? = null
+    private var mVaultResume: VaultResumeState? = null
+    private var mIsVaultResumePrompting = false
+
     private val vaultPullGesture by lazy {
         VaultPullGestureHandler(
             containerView = binding.mediaRefreshLayout,
@@ -194,6 +205,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
+        mVaultResumeBlob = savedInstanceState?.getString(VAULT_RESUME_STATE)
 
         intent.apply {
             mIsGetImageIntent = getBooleanExtra(GET_IMAGE_INTENT, false)
@@ -239,7 +251,9 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             (mPath.isNotEmpty() && !mPath.isVirtualAlbumPath() && CryptoManager.isEncryptedFolderPath(this, mPath))
         applyVaultScreenProtection(requiresVault)
         if (requiresVault && !canAccessHiddenVirtualAlbums()) {
-            finish()
+            // The vault keys were wiped from RAM: hide stale content, ask for the password again and continue
+            // in this album instead of closing it.
+            resumeAfterVaultWipe()
             return
         }
 
@@ -334,9 +348,92 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
         }
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        if (!requiresVaultAccess()) return
+
+        // Encrypted with the vault key: unreadable while locked, readable again after the password was entered.
+        if (CryptoManager.isVaultUnlocked) {
+            buildVaultResumeState().encrypt(this)?.let { outState.putString(VAULT_RESUME_STATE, it) }
+        } else {
+            (mVaultResumeBlob ?: mVaultResume?.encrypt(this))?.let { outState.putString(VAULT_RESUME_STATE, it) }
+        }
+    }
+
+    private fun requiresVaultAccess() =
+        (mPath.isVirtualAlbumPath() && isHiddenVirtualAlbumPath(mPath)) ||
+            (mPath.isNotEmpty() && !mPath.isVirtualAlbumPath() && CryptoManager.isEncryptedFolderPath(this, mPath))
+
+    private fun buildVaultResumeState(): VaultResumeState {
+        val scroll = binding.mediaGrid.captureScrollOffset()
+        val albumName = try {
+            if (mPath.isVirtualAlbumPath()) "" else getFolderNameFromPath(mPath)
+        } catch (_: Exception) {
+            ""
+        }
+        return VaultResumeState(
+            albumPath = mPath,
+            albumName = albumName,
+            sorting = config.getFolderSorting(mPath),
+            viewType = config.getFolderViewType(mPath),
+            grouping = config.getFolderGrouping(mPath),
+            scrollPosition = scroll?.first ?: 0,
+            scrollOffset = scroll?.second ?: 0
+        )
+    }
+
+    private fun resumeAfterVaultWipe() {
+        if (mIsVaultResumePrompting) return
+        if (mVaultResume == null) {
+            mVaultResume = buildVaultResumeState()
+        }
+
+        // no stale decrypted thumbnails / names on screen or in RAM while the password is asked for
+        binding.mediaGrid.adapter = null
+        mMedia = ArrayList()
+        mLoadedInitialPhotos = false
+        mShowLoadingIndicator = true
+
+        mIsVaultResumePrompting = true
+        promptVaultUnlock { success ->
+            mIsVaultResumePrompting = false
+            if (!success) {
+                finish()
+                return@promptVaultUnlock
+            }
+
+            // process restart case: the live state is gone, read the encrypted blob now that the key is back
+            VaultResumeState.decrypt(mVaultResumeBlob)?.takeIf { it.albumPath == mPath }?.let { mVaultResume = it }
+            mVaultResumeBlob = null
+            applyResumedViewSettings()
+            refreshMenuItems()
+            tryLoadGallery()
+        }
+    }
+
+    private fun applyResumedViewSettings() {
+        val state = mVaultResume ?: return
+        if (config.getFolderSorting(mPath) != state.sorting) config.saveCustomSorting(mPath, state.sorting)
+        if (config.getFolderViewType(mPath) != state.viewType) config.saveFolderViewType(mPath, state.viewType)
+        if (config.getFolderGrouping(mPath) != state.grouping) config.saveFolderGrouping(mPath, state.grouping)
+    }
+
+    private fun applyPendingScroll() {
+        val state = mVaultResume ?: return
+        val itemCount = binding.mediaGrid.adapter?.itemCount ?: 0
+        if (itemCount <= state.scrollPosition) return
+        mVaultResume = null
+        binding.mediaGrid.post {
+            if (!isDestroyed && !isFinishing) {
+                binding.mediaGrid.restoreScrollOffset(state.scrollPosition, state.scrollOffset)
+            }
+        }
+    }
+
     override fun onDestroy() {
         unregisterFileUpdateListener()
-        if (config.showAll && !isChangingConfigurations) {
+        // only a real exit wipes the vault right away; a system-initiated destroy keeps it until the timeout
+        if (config.showAll && !isChangingConfigurations && isFinishing) {
             config.temporarilyShowHidden = false
             config.tempSkipDeleteConfirmation = false
             config.tempSkipRecycleBin = false
@@ -1141,6 +1238,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             }
             binding.mediaFastscroller.beVisibleIf(binding.mediaEmptyTextPlaceholder.isGone())
             setupAdapter()
+            applyPendingScroll()
         }
 
         mLatestMediaId = getLatestMediaId()

@@ -11,6 +11,21 @@ For full architectural details, cryptography specifications, and user guides, se
 
 ---
 
+## [Unreleased]
+### Changed
+- **RAM wipe is no longer triggered by `onStop` / screen off / UI hidden (`App`, `VaultSessionManager`, `MainActivity`, `MediaActivity`):**
+  - Previously the vault keys, decrypted metadata and image caches were wiped the moment the last activity stopped. Now only the *last active time* is remembered (`VaultSessionManager`); the wipe happens once the app has been in the background for `VAULT_AUTO_LOCK_TIMEOUT_MS` (30 minutes). Set the constant to `0` to never wipe automatically. A deadline check (`SystemClock.elapsedRealtime()`) when the app returns to the foreground guarantees the lock even if the delayed task was held back by device sleep.
+  - `MainActivity.onDestroy` / `MediaActivity.onDestroy` wipe immediately only on a real exit (`isFinishing`); a system-initiated destroy keeps the vault until the timeout.
+### Added
+- **Continue where you left off after the vault was wiped (`VaultResumeState`, `promptVaultUnlock`):**
+  - Open album path, album/file names, sorting, view type, grouping and scroll offset are stored in `savedInstanceState` as a single blob encrypted with the vault key (`CryptoManager.encryptStringForVault`); nothing is stored in plain text.
+  - After an automatic wipe or a process restart, the vault screens (`MainActivity`, `MediaActivity`, `ViewPagerActivity`) ask for the password again and restore the same album, file and scroll position instead of closing.
+- **Vault media handling (`CryptoManager`, `Activity`, `DirectoryAdapter`, `PhotoFragment`, `ViewPagerActivity`):**
+  - Only formats the gallery can display (images, GIFs, videos, RAWs, SVGs) are encrypted when a folder is encrypted or items are moved into the vault; other files (pdf, md, ...) are left untouched and the plaintext folder is kept if such files remain.
+  - Decryption and copy/move into or out of the vault show a blocking `CryptoProgressDialog`; decrypt failures are reported instead of crashing.
+  - Encrypted GIFs animate: bytes are decrypted straight into memory and handed to the GIF view.
+  - Added a "Shuffle" menu item in the viewer for random-sorted albums, and `EXTRA_SECRET_VAULT_FILES` / `GetMediaAsynctask(isSecretVaultView)` for the viewer's vault-files mode.
+
 ## [1.18.3-cipher] - 2026-11-10
 ### Added
 - **Mode 2 Encrypted Vault Recycle Bin (`CryptoManager`, `MainActivity`, `MediaActivity`, `ViewPagerActivity`, `DirectoryAdapter`):**

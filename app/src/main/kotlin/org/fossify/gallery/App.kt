@@ -8,8 +8,7 @@ import com.squareup.picasso.Picasso
 import okhttp3.Request
 import okhttp3.Response
 import org.fossify.commons.FossifyApp
-import org.fossify.gallery.extensions.config
-import org.fossify.gallery.helpers.CryptoManager
+import org.fossify.gallery.helpers.VaultSessionManager
 import java.io.IOException
 import java.net.Proxy
 import java.net.ProxySelector
@@ -38,6 +37,10 @@ class App : FossifyApp() {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
             override fun onActivityStarted(activity: Activity) {
                 startedActivities++
+                if (startedActivities == 1) {
+                    // Back in the foreground: wipe only if the 30 minute background deadline has passed.
+                    VaultSessionManager.onAppForegrounded(this@App)
+                }
             }
             override fun onActivityResumed(activity: Activity) {}
             override fun onActivityPaused(activity: Activity) {}
@@ -46,11 +49,9 @@ class App : FossifyApp() {
                 if (startedActivities <= 0) {
                     startedActivities = 0
                     if (!activity.isChangingConfigurations) {
-                        try {
-                            CryptoManager.lockVault()
-                            CryptoManager.clearAppImageCaches(this@App)
-                            config.temporarilyShowHidden = false
-                        } catch (_: Throwable) {}
+                        // No immediate wipe on onStop / screen off / UI hidden any more. Only remember the last
+                        // active time; the vault is wiped after VAULT_AUTO_LOCK_TIMEOUT_MS in the background.
+                        VaultSessionManager.onAppBackgrounded(this@App)
                     }
                 }
             }

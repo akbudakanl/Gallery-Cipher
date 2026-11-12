@@ -105,6 +105,7 @@ import org.fossify.gallery.dialogs.SlideshowDialog
 import org.fossify.gallery.extensions.canAccessHiddenVirtualAlbums
 import org.fossify.gallery.extensions.applyVaultScreenProtection
 import org.fossify.gallery.extensions.config
+import org.fossify.gallery.extensions.promptVaultUnlock
 import org.fossify.gallery.extensions.deleteDBPath
 import org.fossify.gallery.extensions.deleteVirtualAlbumItemFromAllAlbums
 import org.fossify.gallery.extensions.favoritesDB
@@ -157,6 +158,8 @@ import org.fossify.gallery.helpers.BOTTOM_ACTION_TOGGLE_FAVORITE
 import org.fossify.gallery.helpers.BOTTOM_ACTION_TOGGLE_VISIBILITY
 import org.fossify.gallery.helpers.ColorModeHelper
 import org.fossify.gallery.helpers.CryptoManager
+import org.fossify.gallery.helpers.VAULT_RESUME_STATE
+import org.fossify.gallery.helpers.VaultResumeState
 import org.fossify.gallery.helpers.DefaultPageTransformer
 import org.fossify.gallery.helpers.FadePageTransformer
 import org.fossify.gallery.helpers.GO_TO_NEXT_ITEM
@@ -227,6 +230,10 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     // process while this activity is in the background, that cache is empty and we must
     // reload the album even when random sorting would normally preserve the cached order.
     private var mHasCachedAlbumMedia = false
+
+    // "Continue where I left off" after the vault keys were wiped from RAM (30 min in background / process restart)
+    private var mIsVaultResumePrompting = false
+    private var mVaultResumeBlob: String? = null
     private var mFavoritePaths = ArrayList<String>()
     private var mIgnoredPaths = ArrayList<String>()
     private val mVideoPlaybackPositions = mutableMapOf<String, Long>()
@@ -243,6 +250,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
+        mVaultResumeBlob = savedInstanceState?.getString(VAULT_RESUME_STATE)
         setupEdgeToEdge(
             padBottomSystem = listOf(binding.bottomActions.bottomActionsWrapper),
         )
@@ -276,7 +284,9 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
             (mDirectory.isVirtualAlbumPath() && isHiddenVirtualAlbumPath(mDirectory))
         applyVaultScreenProtection(requiresVaultAccess)
         if (requiresVaultAccess && !canAccessHiddenVirtualAlbums()) {
-            finish()
+            // The vault keys were wiped from RAM: hide the viewer, ask for the password again and show the same
+            // file again instead of closing it.
+            resumeAfterVaultWipe()
             return
         }
 
@@ -480,6 +490,64 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putString(SAVED_PATH, getCurrentPath())
+
+        // Encrypted with the vault key: unreadable while locked, readable again after the password was entered.
+        val currentPath = getCurrentPath().ifEmpty { mPath }
+        val isVaultItem = CryptoManager.isEncryptedFile(currentPath) ||
+            (mDirectory.isNotEmpty() && !mDirectory.isVirtualAlbumPath() && CryptoManager.isEncryptedFolderPath(this, mDirectory))
+        if (!isVaultItem) return
+
+        if (CryptoManager.isVaultUnlocked) {
+            VaultResumeState(
+                albumPath = mDirectory,
+                openedFilePath = currentPath,
+                openedFileName = CryptoManager.getDisplayName(currentPath),
+                sorting = config.getFolderSorting(mDirectory),
+                viewType = config.getFolderViewType(mDirectory),
+                grouping = config.getFolderGrouping(mDirectory),
+                scrollPosition = mPos.coerceAtLeast(0)
+            ).encrypt(this)?.let { outState.putString(VAULT_RESUME_STATE, it) }
+        } else {
+            mVaultResumeBlob?.let { outState.putString(VAULT_RESUME_STATE, it) }
+        }
+    }
+
+    private fun resumeAfterVaultWipe() {
+        if (mIsVaultResumePrompting) return
+
+        // remember which file was open, then drop the fragments (decrypted bitmaps) and the file list from RAM
+        val currentPath = getCurrentPath()
+        if (currentPath.isNotEmpty()) {
+            mPath = currentPath
+        }
+        stopSlideshow()
+        binding.viewPager.removeOnPageChangeListener(this)
+        binding.viewPager.adapter = null
+        binding.viewPager.visibility = View.INVISIBLE
+        mMediaFiles = ArrayList()
+        mHasCachedAlbumMedia = false
+        mPrevHashcode = 0
+
+        mIsVaultResumePrompting = true
+        promptVaultUnlock { success ->
+            mIsVaultResumePrompting = false
+            if (!success) {
+                finish()
+                return@promptVaultUnlock
+            }
+
+            // process restart case: the live state is gone, read the encrypted blob now that the key is back
+            VaultResumeState.decrypt(mVaultResumeBlob)?.let { saved ->
+                if (currentPath.isEmpty() && saved.openedFilePath.isNotEmpty() && File(saved.openedFilePath).exists()) {
+                    mPath = saved.openedFilePath
+                }
+            }
+            mVaultResumeBlob = null
+
+            binding.viewPager.visibility = View.VISIBLE
+            refreshViewPager(true)
+            refreshMenuItems()
+        }
     }
 
     private fun initViewPager(savedPath: String) {
