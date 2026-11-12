@@ -14,8 +14,11 @@ Internal Storage/
     └── Cipher/
         ├── Virtual Album Saves/
         │   ├── Vacation.json
-        │   ├── Favorites.json
-        │   └── Roadtrip.json
+        │   ├── Roadtrip.json
+        │   └── ...
+        │
+        ├── Favorites/
+        │   └── favorites.json
         │
         └── Cipher_Secrets/
             ├── .nomedia
@@ -40,6 +43,13 @@ Internal Storage/
 - Contains JSON manifests for virtual albums created from unencrypted, standard physical folders.
 - The filename matches the display name of the virtual album (e.g., `Vacation.json`).
 - Stores references to original file paths on disk without duplicating data. Adding a photo to any number of virtual albums uses zero additional storage space.
+- Every entry also carries the *identity* of the referenced file (MediaStore id, size, modification time and a content fingerprint), so the album is able to find its files again after they were renamed or moved.
+
+### A2. `Favorites/` (Favorites Backup)
+- Contains `favorites.json`, the backup of the favorites.
+- It lives on the shared storage, outside of the app sandbox, so it survives a wipe of the app data and is restored when the app starts without any data.
+- The backup is only written while the app may access the shared storage.
+- The entries carry the same identity information as the virtual album manifests, so a favorite survives a rename or a move of its file.
 
 ### B. `Cipher_Secrets/` (Cryptographic Vault Container)
 Created when the user enables password protection for hidden items in Settings:
@@ -150,23 +160,28 @@ The application transitions through three distinct operational states to balance
 
 ---
 
-## 4. Virtual Album Rules & Strict Single Physical Album Binding
+## 4. Virtual Album Rules & File Identity
 
-1. **Strict 1-to-1 Physical Ownership:**
-   - A virtual album can only contain items that originate from a **single physical album**.
-   - When copying media from a physical album, the directory picker only displays virtual albums that belong to that specific physical folder. Media from disparate folders cannot be mixed into the same virtual album.
+1. **Multi-Source Albums:**
+   - A virtual album may hold items from **any number of physical folders**, exactly like the favorites do.
+   - The folder the items came from is only remembered as a hint for the copy dialog. It never rejects new items, so a folder that was renamed or moved can no longer leave an album that refuses to accept any file.
+   - The directory picker offers every virtual album as a copy destination, no matter which folder the source files live in.
 2. **"Move" Action Disabled:**
    - Because virtual albums only reference media without altering disk locations, the "Move" action is removed from virtual albums; only non-destructive "Copy" operations are permitted.
 3. **Copy Flows from Virtual Albums:**
-   - Copying media from within a virtual album suggests sibling virtual albums linked to the same parent physical album.
    - Media cannot be copied from a virtual album to its own owning physical album (the media already exists there).
-   - Creating a new virtual album during a copy flow automatically binds the new album to the source physical owner.
+   - Creating a new virtual album during a copy flow remembers the source folder as a hint for later copy flows.
+4. **File Identity Instead of Paths:**
+   - The absolute path is only a *cache* of where a referenced file currently lives. The identity of the file is described by the columns that survive a rename: the MediaStore id, the size, the modification time and a content fingerprint (SHA-256 over the first and the last 64 KB).
+   - A rename or a move performed outside of the app is detected by looking the file up again: first by its MediaStore id, then by its content fingerprint. A candidate is never accepted without being confirmed by the fingerprint, so a reference can never be bound to the wrong file.
+   - A referenced file that cannot be found is **not** removed from the album. It is marked as unresolved and stays in the album and in the backup, so it can be repaired as soon as the file shows up again.
 
 ---
 
 ## 5. Device Migration, Backup & Vault Auto-Detection
 
 - **Portability:** To migrate vaults to a new phone or restore after a factory reset, simply copy the `Documents/Cipher` folder into the new device's `Documents/Cipher` directory.
+- **Automatic Backups:** The favorites and the virtual albums are backed up into this folder as they change, so clearing the app data does not lose them. The backups are restored automatically when the app starts without any data.
 - **Auto-Discovery:** When opening the gallery on the new phone and toggling "Protect hidden item visibility with password", the app automatically scans and detects the existing vault.
 - **Decision Flow:**
   - The dialog prompts: *"Do you want to access your existing Cipher_Secrets folder?"*

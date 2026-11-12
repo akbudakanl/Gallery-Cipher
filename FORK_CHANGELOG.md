@@ -12,7 +12,25 @@ For full architectural details, cryptography specifications, and user guides, se
 ---
 
 ## [Unreleased]
+### Added
+- **Stable File Identity for Favorites and Virtual Album Items (`MediaIdentity`, `MediaIdentityResolver`, `Favorite`, `VirtualAlbumItem`, `FavoritesDao`, `VirtualAlbumsDao`, `GalleryDatabase`):**
+  - Favorites and virtual album items used the absolute path as the identity of the referenced file. A rename or a move therefore broke the reference, and the item was silently dropped from the album.
+  - The identity of a file is now described by the columns that survive a rename: the MediaStore id, the size, the modification time and a content fingerprint. The fingerprint is a SHA-256 over the first and the last 64 KB, so the cost does not depend on the size of the file and it stays stable under renames, moves and copies.
+  - The resolver looks for a file again in three layers, from the most certain to the least: the MediaStore id, the full content fingerprint, and a cheap pre-filter of size and modification time that only narrows down the candidates. A candidate is never accepted without being confirmed by the fingerprint, so an ambiguous situation can never bind a reference to the wrong file.
+  - Schema migration `13 -> 14` adds the identity columns to `favorites` and `virtual_album_items`.
+- **Automatic Backups of the Favorites in the Cipher Folder (`ReferenceBackupManager`, `References`, `SplashActivity`, `MainActivity`):**
+  - The favorites only lived in the database of the app, so clearing the app data removed them for good. The virtual albums survived because their backup files already lived in the Cipher folder on the shared storage.
+  - The favorites are now backed up to `Documents/Cipher/Favorites/favorites.json` and restored when the app starts without any data. The backup is only written while the app may access the shared storage, because the folder cannot be read or written otherwise.
+  - The references are also repaired when the app starts, so a file that was renamed or moved by another app is found again by its identity.
 ### Changed
+- **Virtual Albums Are No Longer Bound to a Single Physical Album (`VirtualAlbums`, `PickDirectoryDialog`, `Activity`, `FavoritesDao`, `VirtualAlbumsDao`):**
+  - The strict 1-to-1 binding between a virtual album and its parent physical album was removed. An album now holds items from any number of physical folders, exactly like the favorites do.
+  - The folder the items came from is only remembered as a hint for the copy dialog and no longer rejects new items, so a folder that was renamed or moved can no longer leave an album that refuses to accept any file.
+  - The directory picker offers every virtual album as a copy destination, no matter which folder the source files live in.
+- **Visibility Rules of Favorites and Virtual Albums (`VirtualAlbums`, `MediaFetcher`, `Context`, `FavoritesDao`, `CryptoManager`):**
+  - Only the vault content is protected. A file coming from a hidden folder is referenced explicitly by the user, so it stays visible in the favorites and in the virtual albums, and it does not hide the album it was added to.
+  - Adding such a file to an album no longer encrypts the name of the album, and an album that holds no vault content is visible without the option to show hidden files.
+  - Favorites never hold vault content, so adding a vault file to them is refused.
 - **RAM wipe is no longer triggered by `onStop` / screen off / UI hidden (`App`, `VaultSessionManager`, `MainActivity`, `MediaActivity`):**
   - Previously the vault keys, decrypted metadata and image caches were wiped the moment the last activity stopped. Now only the *last active time* is remembered (`VaultSessionManager`); the wipe happens once the app has been in the background for `VAULT_AUTO_LOCK_TIMEOUT_MS` (30 minutes). Set the constant to `0` to never wipe automatically. A deadline check (`SystemClock.elapsedRealtime()`) when the app returns to the foreground guarantees the lock even if the delayed task was held back by device sleep.
   - `MainActivity.onDestroy` / `MediaActivity.onDestroy` wipe immediately only on a real exit (`isFinishing`); a system-initiated destroy keeps the vault until the timeout.
@@ -25,6 +43,18 @@ For full architectural details, cryptography specifications, and user guides, se
   - The dimensions of the media are no longer read on the main thread. They are resolved in the background and cached, so the screen is rotated as soon as the aspect ratio of the media is known.
   - Videos use the exact display size reported by the media player, so the rotation is applied at the same time as the playback starts. With autoplay enabled the playback waits for the rotation, without it the rotation happens as soon as the video appears on the screen.
 ### Fixed
+- **Favorites and Virtual Albums Broke When a Folder Was Renamed or Moved (`VirtualAlbums`, `Favorites`, `DirectoryAdapter`, `Activity`):**
+  - Renaming or moving a physical folder left every reference pointing at the old location, so the album appeared empty and could not be filled with new files anymore.
+  - The references below the folder are now rewritten along with it. The SQL uses `instr()` instead of `LIKE`, because a path may contain the wildcard characters of `LIKE`. The parent folder of an item is handled separately, since it may be the renamed folder itself.
+- **Files Disappeared from Virtual Albums After a Rename (`VirtualAlbumSyncManager`, `MediaAdapter`, `ViewPagerActivity`, `Context`, `CryptoManager`):**
+  - An item whose file was missing was removed from the album and from the backup. A rename or a move outside of the app looked exactly like that, so the item was gone for good and the identity needed to relocate it was destroyed with it.
+  - The item is now only marked as unresolved and stays in the album and in the backup, so it can be repaired as soon as the file shows up again. The backup files also carry the identity of the items now, so a restored album is able to find its files again.
+  - The multi-file rename flow did not update the references at all, it repairs them by their identity afterwards.
+- **Favorites of Files in Hidden Folders Vanished from the List (`FavoritesDao`, `Context`):**
+  - The favorites were joined with the media table, but that table only holds the non-hidden files. A favorite pointing at a file in a hidden folder was therefore dropped from the list. The join now keeps those favorites.
+  - A favorite whose file was deleted outside of the app is removed instead of lingering in the list forever.
+- **The Medium Path Update Never Matched a Row (`Context`, `MediumDao`):**
+  - Root cause: `mediaDB.updateMedium` was called with the arguments in the wrong order, so the `WHERE full_path = ...` compared against the bare file name instead of the full path. The update silently did nothing and the media table kept the old path, which also broke the lookup of the cached media of a renamed file.
 - **Rotation by aspect ratio did not work for encrypted files (`MediaDimensions`, `AspectRatioOrientation`, `ViewPagerActivity`):**
   - Root cause: the rotation relied on the file extension to determine the type of the media. The encrypted files use the `.bin` / `.fenc` extension, so their dimensions could never be read and the rotation was silently skipped.
   - The dimensions of encrypted files are now read from their decrypted content: images and GIFs from their header, videos from the frame embedded into the encrypted header or from the metadata of the decrypted stream. The EXIF orientation of encrypted images is read from the decrypted content as well.
