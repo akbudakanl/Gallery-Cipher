@@ -986,7 +986,8 @@ class PhotoFragment : ViewPagerFragment() {
     }
 
     private fun initExtendedDetails() {
-        if (requireContext().config.showExtendedDetails) {
+        // Encrypted files never show any extended details, no matter how the setting is configured.
+        if (requireContext().config.showExtendedDetails && !CryptoManager.isEncryptedFile(mMedium.path)) {
             ensureBackgroundThread {
                 val details = getMediumExtendedDetails(mMedium)
                 activity?.runOnUiThread {

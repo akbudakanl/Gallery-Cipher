@@ -714,7 +714,8 @@ class VideoFragment : ViewPagerFragment(), TextureView.SurfaceTextureListener,
     }
 
     private fun checkExtendedDetails() {
-        if (mConfig.showExtendedDetails) {
+        // Encrypted files never show any extended details, no matter how the setting is configured.
+        if (mConfig.showExtendedDetails && !CryptoManager.isEncryptedFile(mMedium.path)) {
             binding.videoDetails.apply {
                 text = getMediumExtendedDetails(mMedium)
                 beVisibleIf(text.isNotEmpty())

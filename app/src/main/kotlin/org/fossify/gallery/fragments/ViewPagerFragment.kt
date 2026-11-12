@@ -51,6 +51,13 @@ abstract class ViewPagerFragment : Fragment() {
 
     fun getMediumExtendedDetails(medium: Medium): String {
         val context = context ?: return ""
+
+        // Encrypted files must never show any extended details, no matter how the setting is
+        // configured. Their content is encrypted, so most of the details could not be read anyway.
+        if (CryptoManager.isEncryptedFile(medium.path)) {
+            return ""
+        }
+
         val file = File(medium.path)
         if (!context.getDoesFilePathExist(file.absolutePath)) {
             return ""

@@ -19,6 +19,8 @@ For full architectural details, cryptography specifications, and user guides, se
 - **Bottom actions are not shown for hidden files (`ViewPagerActivity`):**
   - The *"Show some action buttons at the bottom of the screen"* setting no longer applies to hidden files, no matter if they are images, GIFs or videos. The bottom action bar stays hidden for them.
   - The actions that would be shown at the bottom remain available in the top menu, so nothing gets lost when the bottom bar is not shown.
+- **Extended details are never shown for encrypted files (`ViewPagerFragment`, `PhotoFragment`, `VideoFragment`):**
+  - The *"Show extended details over fullscreen media"* setting, together with *"Hide extended details when status bar is hidden"* and *"Manage extended details"*, does not apply to encrypted files. Encrypted media never displays any extended details, even if the setting is enabled.
 ### Added
 - **Continue where you left off after the vault was wiped (`VaultResumeState`, `promptVaultUnlock`):**
   - Open album path, album/file names, sorting, view type, grouping and scroll offset are stored in `savedInstanceState` as a single blob encrypted with the vault key (`CryptoManager.encryptStringForVault`); nothing is stored in plain text.
