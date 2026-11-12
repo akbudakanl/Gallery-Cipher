@@ -157,6 +157,8 @@ import org.fossify.gallery.helpers.BOTTOM_ACTION_TOGGLE_FAVORITE
 import org.fossify.gallery.helpers.BOTTOM_ACTION_TOGGLE_VISIBILITY
 import org.fossify.gallery.helpers.ColorModeHelper
 import org.fossify.gallery.helpers.CryptoManager
+import org.fossify.gallery.helpers.MediaIdentity
+import org.fossify.gallery.helpers.ReferenceBackupManager
 import org.fossify.gallery.helpers.VAULT_RESUME_STATE
 import org.fossify.gallery.helpers.VaultResumeState
 import org.fossify.gallery.helpers.DefaultPageTransformer
@@ -194,6 +196,7 @@ import org.fossify.gallery.helpers.TYPE_RAWS
 import org.fossify.gallery.helpers.TYPE_SVGS
 import org.fossify.gallery.helpers.TYPE_VIDEOS
 import org.fossify.gallery.helpers.getPermissionToRequest
+import org.fossify.gallery.models.Favorite
 import org.fossify.gallery.models.Medium
 import org.fossify.gallery.models.ThumbnailItem
 import java.io.File
@@ -1322,7 +1325,26 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         val medium = getCurrentMedium() ?: return
         medium.isFavorite = !medium.isFavorite
         ensureBackgroundThread {
-            updateFavorite(medium.path, medium.isFavorite)
+            if (medium.isFavorite) {
+                // The MediaStore id is known here, so the favorite survives a rename or a move.
+                val identity = MediaIdentity.of(this, medium)
+                favoritesDB.insert(
+                    Favorite(
+                        id = null,
+                        fullPath = medium.path,
+                        filename = medium.name,
+                        parentPath = medium.parentPath.ifEmpty { medium.path.getParentPath() },
+                        mediaStoreId = identity.mediaStoreId,
+                        fileSize = identity.size,
+                        lastModified = identity.lastModified,
+                        fingerprint = identity.fingerprint
+                    )
+                )
+                ReferenceBackupManager.saveFavorites(this)
+            } else {
+                favoritesDB.deleteFavoritePath(medium.path)
+                ReferenceBackupManager.saveFavorites(this)
+            }
             if (medium.isFavorite) {
                 mFavoritePaths.add(medium.path)
             } else {

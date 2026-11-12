@@ -330,11 +330,8 @@ class PickDirectoryDialog(
 
                 if (isPickingCopyMoveDestination && isCopyOperation) {
                     if (dir.isVirtualAlbum()) {
-                        val albumId = dir.path.getVirtualAlbumId() ?: return@filter false
-                        val albumOwner = activity.getVirtualAlbumOwnerPhysicalPath(albumId)
-                        if (albumOwner.isNotEmpty()) {
-                            return@filter albumOwner.equals(effectiveSource, ignoreCase = true) && dir.path != sourcePath
-                        }
+                        // A virtual album may hold items from any number of folders, so it is
+                        // offered as a destination regardless of where the source files live.
                         return@filter dir.path != sourcePath
                     } else if (sourcePath.isVirtualAlbumPath()) {
                         if (effectiveSource.isNotEmpty() && dir.path.trimEnd('/').equals(effectiveSource.trimEnd('/'), ignoreCase = true)) {

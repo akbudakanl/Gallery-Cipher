@@ -69,6 +69,7 @@ import org.fossify.gallery.extensions.getVirtualAlbumId
 import org.fossify.gallery.extensions.isVirtualAlbumPath
 import org.fossify.gallery.extensions.removePathsFromVirtualAlbum
 import org.fossify.gallery.extensions.config
+import org.fossify.gallery.extensions.favoritesDB
 import org.fossify.gallery.extensions.fixDateTaken
 import org.fossify.gallery.extensions.getShortcutImage
 import org.fossify.gallery.extensions.handleMediaManagementPrompt
@@ -79,6 +80,7 @@ import org.fossify.gallery.extensions.loadImage
 import org.fossify.gallery.extensions.openEditor
 import org.fossify.gallery.extensions.openPath
 import org.fossify.gallery.extensions.promptCreateVault
+import org.fossify.gallery.extensions.repairReferencesAfterExternalChange
 import org.fossify.gallery.extensions.rescanFolderMedia
 import java.io.File
 import org.fossify.commons.extensions.rescanPaths
@@ -95,9 +97,11 @@ import org.fossify.gallery.extensions.updateDBMediaPath
 import org.fossify.gallery.extensions.updateFavorite
 import org.fossify.gallery.extensions.updateFavoritePaths
 import org.fossify.gallery.helpers.CryptoManager
+import org.fossify.gallery.helpers.MediaIdentity
 import org.fossify.gallery.helpers.PATH
 import org.fossify.gallery.helpers.PROTECTION_PASSWORD
 import org.fossify.gallery.helpers.RECYCLE_BIN
+import org.fossify.gallery.helpers.ReferenceBackupManager
 import org.fossify.gallery.helpers.ROUNDED_CORNERS_BIG
 import org.fossify.gallery.helpers.ROUNDED_CORNERS_NONE
 import org.fossify.gallery.helpers.ROUNDED_CORNERS_SMALL
@@ -107,6 +111,7 @@ import org.fossify.gallery.helpers.SHOW_RECYCLE_BIN
 import org.fossify.gallery.helpers.TYPE_GIFS
 import org.fossify.gallery.helpers.TYPE_RAWS
 import org.fossify.gallery.interfaces.MediaOperationsListener
+import org.fossify.gallery.models.Favorite
 import org.fossify.gallery.models.Medium
 import org.fossify.gallery.models.ThumbnailItem
 import org.fossify.gallery.models.ThumbnailSection
@@ -382,6 +387,11 @@ class MediaAdapter(
                     return
                 }
                 RenameDialog(activity, plainPaths, true) {
+                    // The dialog does not report the new paths, so the references are repaired by
+                    // their identity afterwards.
+                    ensureBackgroundThread {
+                        activity.repairReferencesAfterExternalChange()
+                    }
                     listener?.refreshItems()
                     finishActMode()
                 }
@@ -629,9 +639,32 @@ class MediaAdapter(
 
     private fun toggleFavorites(add: Boolean) {
         ensureBackgroundThread {
-            getSelectedItems().forEach {
-                it.isFavorite = add
-                activity.updateFavorite(it.path, add)
+            getSelectedItems().forEach { item ->
+                if (item !is Medium) {
+                    return@forEach
+                }
+                if (add) {
+                    // The MediaStore id is known for the medium, so the favorite can be found again
+                    // even after the file was renamed or moved.
+                    val identity = MediaIdentity.of(activity, item)
+                    activity.favoritesDB.insert(
+                        Favorite(
+                            id = null,
+                            fullPath = item.path,
+                            filename = item.name,
+                            parentPath = item.parentPath.ifEmpty { item.path.getParentPath() },
+                            mediaStoreId = identity.mediaStoreId,
+                            fileSize = identity.size,
+                            lastModified = identity.lastModified,
+                            fingerprint = identity.fingerprint
+                        )
+                    )
+                    ReferenceBackupManager.saveFavorites(activity)
+                } else {
+                    activity.favoritesDB.deleteFavoritePath(item.path)
+                    ReferenceBackupManager.saveFavorites(activity)
+                }
+                item.isFavorite = add
             }
             activity.runOnUiThread {
                 listener?.refreshItems()

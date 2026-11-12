@@ -505,7 +505,10 @@ fun BaseSimpleActivity.tryCopyMoveFilesTo(
     } else {
         fileDirItems[0].getParentPath()
     }
-    val isHiddenCopySource = isPathHiddenOrEncrypted(source) || fileDirItems.any { isPathHiddenOrEncrypted(it.path) }
+    // Only vault content is protected. A file from a hidden folder is explicitly referenced by the
+    // user and stays visible in the target.
+    val isHiddenCopySource = CryptoManager.isVaultMediaPath(this, source) ||
+        fileDirItems.any { CryptoManager.isVaultMediaPath(this, it.path) }
 
     PickDirectoryDialog(
         activity = this,
@@ -525,10 +528,13 @@ fun BaseSimpleActivity.tryCopyMoveFilesTo(
             }
             val albumId = destination.getVirtualAlbumId() ?: return@PickDirectoryDialog
             ensureBackgroundThread {
+                // Only vault content makes the album hidden. A file coming from a hidden folder is
+                // explicitly referenced by the user, so it does not hide the album.
+                val hasVaultSource = fileDirItems.any { CryptoManager.isVaultMediaPath(this, it.path) }
                 val added = addFileDirItemsToVirtualAlbum(
                     albumId = albumId,
                     fileDirItems = fileDirItems,
-                    forceMarkAlbumHidden = isHiddenCopySource
+                    forceMarkAlbumHidden = hasVaultSource
                 )
                 val albumName = getVirtualAlbumName(destination) ?: ""
                 runOnUiThread {
@@ -861,7 +867,13 @@ fun BaseSimpleActivity.updateFavoritePaths(fileDirItems: ArrayList<FileDirItem>,
         fileDirItems.forEach {
             val newPath = "$destination/${it.name}"
             updateDBMediaPath(it.path, newPath)
+            // A moved folder takes its content with it, so every reference below it has to follow.
+            if (it.isDirectory) {
+                updateReferencesForFolderRename(it.path, newPath)
+            }
         }
+        // Files that were moved without the app knowing about it are repaired by their identity.
+        repairReferencesAfterExternalChange()
     }
 }
 
