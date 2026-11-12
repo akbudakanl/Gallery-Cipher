@@ -100,6 +100,7 @@ import org.fossify.gallery.extensions.promptCreateVault
 import org.fossify.gallery.extensions.removeNoMedia
 import org.fossify.gallery.extensions.showRecycleBinEmptyingDialog
 import org.fossify.gallery.extensions.tryCopyMoveFilesTo
+import org.fossify.gallery.extensions.updateReferencesForFolderRename
 import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.DIRECTORY
 import org.fossify.gallery.helpers.FOLDER_MEDIA_CNT_BRACKETS
@@ -381,17 +382,19 @@ class DirectoryAdapter(
 
             activity.handleLockedFolderOpening(sourcePath) { success ->
                 if (success) {
-                    RenameItemDialog(activity, dir.absolutePath) {
+                    RenameItemDialog(activity, dir.absolutePath) { newPath ->
                         activity.runOnUiThread {
                             firstDir.apply {
-                                path = it
-                                name = it.getFilenameFromPath()
-                                tmb = File(it, tmb.getFilenameFromPath()).absolutePath
+                                path = newPath
+                                name = newPath.getFilenameFromPath()
+                                tmb = File(newPath, tmb.getFilenameFromPath()).absolutePath
                             }
                             updateDirs(dirs)
                             ensureBackgroundThread {
                                 try {
                                     activity.directoryDB.updateDirectoryAfterRename(firstDir.tmb, firstDir.name, firstDir.path, sourcePath)
+                                    // The folder moved, so every reference below it has to follow.
+                                    activity.updateReferencesForFolderRename(sourcePath, newPath)
                                     listener?.refreshItems()
                                 } catch (e: Exception) {
                                     activity.showErrorToast(e)
@@ -976,6 +979,9 @@ class DirectoryAdapter(
                             ensureBackgroundThread {
                                 activity.mediaDB.clearFavorites()
                                 activity.favoritesDB.clearFavorites()
+                                // The backup has to follow, otherwise the favorites would come back
+                                // after the app data was cleared.
+                                org.fossify.gallery.helpers.ReferenceBackupManager.saveFavorites(activity)
                                 listener?.refreshItems()
                             }
                         }

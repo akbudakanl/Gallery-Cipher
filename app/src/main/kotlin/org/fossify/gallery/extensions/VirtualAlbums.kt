@@ -7,6 +7,11 @@ import org.fossify.commons.models.FileDirItem
 import org.fossify.gallery.R
 import org.fossify.gallery.databases.GalleryDatabase
 import org.fossify.gallery.helpers.*
+import org.fossify.gallery.helpers.CryptoManager
+import org.fossify.gallery.helpers.MediaIdentity
+import org.fossify.gallery.helpers.MediaIdentityResolver
+import org.fossify.gallery.helpers.ReferenceBackupManager
+import org.fossify.gallery.helpers.VirtualAlbumSyncManager
 import org.fossify.gallery.interfaces.VirtualAlbumsDao
 import org.fossify.gallery.models.Directory
 import org.fossify.gallery.models.Medium
@@ -94,14 +99,23 @@ fun Context.getVirtualAlbumPaths(albumPath: String): ArrayList<String> {
         for (item in items) {
             val path = item.fullPath
             if (deletedPaths.contains(path) || path.startsWith(recycleBinPath)) continue
-            val isHiddenOrEnc = CryptoManager.isEncryptedFile(path) ||
-                CryptoManager.isEncryptedFolderPath(this, path.getParentPath()) ||
-                path.contains("/.")
-            if (isHiddenOrEnc && !canAccessHidden) continue
+            // Only vault content is protected inside a virtual album. Files coming from a hidden
+            // folder are explicitly referenced by the user, so they stay visible.
+            val isVaultContent = CryptoManager.isVaultMediaPath(this, path)
+            if (isVaultContent && !canAccessHidden) continue
             if (File(path).exists()) {
                 validPaths.add(path)
             } else {
-                missingPaths.add(path)
+                // The file may have been renamed or moved outside of the app. Its identity allows
+                // finding it again at the new location.
+                val resolved = resolveVirtualAlbumItemPath(item)
+                if (resolved != null) {
+                    validPaths.add(resolved)
+                } else {
+                    // The item stays in the album and is only marked as unresolved, so it can be
+                    // repaired later. It is never removed behind the user's back.
+                    missingPaths.add(path)
+                }
             }
         }
 
@@ -144,13 +158,19 @@ fun Context.getVirtualAlbumMedia(albumId: Long, getVideoDurations: Boolean = fal
         val missingPaths = ArrayList<String>()
 
         for (item in items) {
-            val path = item.fullPath
+            var path = item.fullPath
             if (deletedPaths.contains(path) || path.startsWith(recycleBinPath)) continue
 
-            val file = File(path)
+            var file = File(path)
             if (!file.exists()) {
-                missingPaths.add(path)
-                continue
+                // The file may have been renamed or moved outside of the app.
+                val resolved = resolveVirtualAlbumItemPath(item)
+                if (resolved == null) {
+                    missingPaths.add(path)
+                    continue
+                }
+                path = resolved
+                file = File(path)
             }
 
             if (CryptoManager.isEncryptedFile(path)) {
@@ -175,8 +195,10 @@ fun Context.getVirtualAlbumMedia(albumId: Long, getVideoDurations: Boolean = fal
                 continue
             }
 
-            val isHiddenItem = path.contains("/.") || CryptoManager.isEncryptedFolderPath(this, path.getParentPath())
-            if (isHiddenItem && !canAccessHidden) continue
+            // Only vault content is protected inside a virtual album. Files coming from a hidden
+            // folder are explicitly referenced by the user, so they stay visible.
+            val isVaultContent = CryptoManager.isVaultMediaPath(this, path)
+            if (isVaultContent && !canAccessHidden) continue
 
             val cached = cachedMediaByPath[path]
             if (cached != null) {
@@ -266,6 +288,13 @@ fun Context.virtualAlbumNameExists(name: String, ignoreAlbumId: Long? = null): B
     }
 }
 
+/**
+ * The folder the items of an album mostly came from.
+ *
+ * This is only a hint, for example to preselect the folder of the copy dialog. It does not
+ * restrict the album: an album may hold items from any number of physical folders, exactly like
+ * the favorites do.
+ */
 fun Context.getVirtualAlbumOwnerPhysicalPath(albumId: Long): String {
     val album = virtualAlbumsDB.getAlbumById(albumId) ?: return ""
     if (album.parentPhysicalPath.isNotEmpty()) {
@@ -363,8 +392,15 @@ fun Context.deleteVirtualAlbum(albumId: Long) {
 
 /**
  * Adds references to the given media to the album. Nothing is copied on disk.
- * Hidden or encrypted items are NEVER inserted into `mediaDB`, and if any added item is hidden/encrypted
- * (or `forceMarkAlbumHidden` is true), the virtual album itself is marked hidden with an encrypted name.
+ *
+ * An album may hold items from any number of physical folders, exactly like the favorites. The
+ * folder the items came from is only remembered as a hint for the copy dialog.
+ *
+ * Vault content is NEVER inserted into `mediaDB`. If any added item is vault content (or
+ * `forceMarkAlbumHidden` is true), the album itself is marked hidden with an encrypted name.
+ * Files coming from a hidden folder are not vault content: they are explicitly referenced by the
+ * user and stay visible in the album.
+ *
  * @return how many items were not already in the album
  */
 fun Context.addMediaToVirtualAlbum(albumId: Long, media: Collection<Medium>, forceMarkAlbumHidden: Boolean = false): Int {
@@ -375,48 +411,38 @@ fun Context.addMediaToVirtualAlbum(albumId: Long, media: Collection<Medium>, for
 
     return try {
         val album = virtualAlbumsDB.getAlbumById(albumId)
-        val targetOwner = if (album?.parentPhysicalPath?.isNotEmpty() == true) {
-            album.parentPhysicalPath
-        } else {
+
+        // Remember where the items came from, but never use it to reject items.
+        if (album != null && album.parentPhysicalPath.isEmpty()) {
             val firstParent = validMedia.firstOrNull()?.parentPath ?: ""
-            if (firstParent.isNotEmpty() && album != null) {
+            if (firstParent.isNotEmpty()) {
                 album.parentPhysicalPath = firstParent
                 virtualAlbumsDB.updateAlbumParentPhysicalPath(albumId, firstParent)
             }
-            firstParent
         }
 
-        val allowedMedia = if (targetOwner.isNotEmpty()) {
-            validMedia.filter { it.parentPath.equals(targetOwner, ignoreCase = true) }
-        } else {
-            validMedia
-        }
-        if (allowedMedia.isEmpty()) {
-            return 0
-        }
-
+        val allowedMedia = validMedia
         val existingPaths = virtualAlbumsDB.getItems(albumId).map { it.fullPath.lowercase() }.toHashSet()
         val alreadyInAlbum = allowedMedia.count { existingPaths.contains(it.path.lowercase()) }
-        var hasHiddenItem = forceMarkAlbumHidden
+        var hasVaultItem = forceMarkAlbumHidden
 
         allowedMedia.forEach { medium ->
-            val itemHidden = isPathHiddenOrEncrypted(medium.path)
-            if (itemHidden) {
-                hasHiddenItem = true
-                // Ensure no plaintext metadata of encrypted/hidden files exists in mediaDB
+            if (CryptoManager.isVaultMediaPath(this, medium.path)) {
+                hasVaultItem = true
+                // Ensure no plaintext metadata of encrypted files exists in mediaDB
                 if (CryptoManager.isEncryptedFile(medium.path)) {
                     mediaDB.deleteMediumPath(medium.path)
                 }
             } else {
-                // Only cache non-hidden, non-encrypted public files in mediaDB
+                // Only cache public files in mediaDB
                 mediaDB.insert(medium.copy(id = null, deletedTS = 0L))
             }
         }
 
-        if (hasHiddenItem) {
-            val album = virtualAlbumsDB.getAlbumById(albumId)
-            if (album != null && (!album.isHidden || !CryptoManager.isEncryptedVaultString(album.name))) {
-                val plainName = CryptoManager.decryptStringFromVault(album.name) ?: album.name
+        if (hasVaultItem) {
+            val currentAlbum = virtualAlbumsDB.getAlbumById(albumId)
+            if (currentAlbum != null && (!currentAlbum.isHidden || !CryptoManager.isEncryptedVaultString(currentAlbum.name))) {
+                val plainName = CryptoManager.decryptStringFromVault(currentAlbum.name) ?: currentAlbum.name
                 val encName = CryptoManager.encryptStringForVault(this, plainName)
                 virtualAlbumsDB.updateAlbumVisibilityAndName(albumId, true, encName)
                 directoryDB.deleteDirPath(getVirtualAlbumPath(albumId))
@@ -424,9 +450,21 @@ fun Context.addMediaToVirtualAlbum(albumId: Long, media: Collection<Medium>, for
         }
 
         val now = System.currentTimeMillis()
-        val items = allowedMedia.map {
+        val items = allowedMedia.map { medium ->
             // Always store the on-disk filename (e.g. .fv_xxx.fenc), never decrypted originalName
-            VirtualAlbumItem(null, albumId, it.path, it.path.getFilenameFromPath(), it.path.getParentPath(), now)
+            val identity = MediaIdentity.of(this, medium)
+            VirtualAlbumItem(
+                id = null,
+                albumId = albumId,
+                fullPath = medium.path,
+                filename = medium.path.getFilenameFromPath(),
+                parentPath = medium.path.getParentPath(),
+                addedTS = now,
+                mediaStoreId = identity.mediaStoreId,
+                fileSize = identity.size,
+                lastModified = identity.lastModified,
+                fingerprint = identity.fingerprint
+            )
         }
         virtualAlbumsDB.insertItems(items)
         VirtualAlbumSyncManager.saveAlbumToFile(this, albumId)
@@ -453,42 +491,32 @@ fun Context.addFileDirItemsToVirtualAlbum(
 
     return try {
         val album = virtualAlbumsDB.getAlbumById(albumId)
-        val targetOwner = if (album?.parentPhysicalPath?.isNotEmpty() == true) {
-            album.parentPhysicalPath
-        } else {
+
+        // Remember where the items came from, but never use it to reject items.
+        if (album != null && album.parentPhysicalPath.isEmpty()) {
             val firstParent = validItems.firstOrNull()?.path?.getParentPath() ?: ""
-            if (firstParent.isNotEmpty() && album != null) {
+            if (firstParent.isNotEmpty()) {
                 album.parentPhysicalPath = firstParent
                 virtualAlbumsDB.updateAlbumParentPhysicalPath(albumId, firstParent)
             }
-            firstParent
         }
 
-        val allowedItems = if (targetOwner.isNotEmpty()) {
-            validItems.filter { it.path.getParentPath().equals(targetOwner, ignoreCase = true) }
-        } else {
-            validItems
-        }
-        if (allowedItems.isEmpty()) {
-            return 0
-        }
-
+        val allowedItems = validItems
         val existingPaths = virtualAlbumsDB.getItems(albumId).map { it.fullPath.lowercase() }.toHashSet()
         val alreadyInAlbum = allowedItems.count { existingPaths.contains(it.path.lowercase()) }
-        var hasHiddenItem = forceMarkAlbumHidden
+        var hasVaultItem = forceMarkAlbumHidden
 
         allowedItems.forEach { item ->
             val path = item.path
-            val itemHidden = isPathHiddenOrEncrypted(path)
-            if (itemHidden) {
-                hasHiddenItem = true
+            if (CryptoManager.isVaultMediaPath(this, path)) {
+                hasVaultItem = true
                 if (CryptoManager.isEncryptedFile(path)) {
                     mediaDB.deleteMediumPath(path)
                 }
             }
         }
 
-        if (hasHiddenItem) {
+        if (hasVaultItem) {
             val currentAlbum = virtualAlbumsDB.getAlbumById(albumId)
             if (currentAlbum != null && (!currentAlbum.isHidden || !CryptoManager.isEncryptedVaultString(currentAlbum.name))) {
                 val plainName = CryptoManager.decryptStringFromVault(currentAlbum.name) ?: currentAlbum.name
@@ -499,8 +527,20 @@ fun Context.addFileDirItemsToVirtualAlbum(
         }
 
         val now = System.currentTimeMillis()
-        val items = allowedItems.map {
-            VirtualAlbumItem(null, albumId, it.path, it.path.getFilenameFromPath(), it.path.getParentPath(), now)
+        val items = allowedItems.map { item ->
+            val identity = MediaIdentity.of(File(item.path), item.mediaStoreId)
+            VirtualAlbumItem(
+                id = null,
+                albumId = albumId,
+                fullPath = item.path,
+                filename = item.path.getFilenameFromPath(),
+                parentPath = item.path.getParentPath(),
+                addedTS = now,
+                mediaStoreId = identity.mediaStoreId,
+                fileSize = identity.size,
+                lastModified = identity.lastModified,
+                fingerprint = identity.fingerprint
+            )
         }
         virtualAlbumsDB.insertItems(items)
         VirtualAlbumSyncManager.saveAlbumToFile(this, albumId)
@@ -522,9 +562,130 @@ fun Context.updateVirtualAlbumItemPath(oldPath: String, newPath: String) {
     try {
         val albumIds = virtualAlbumsDB.getAlbumIdsWithItem(oldPath)
         virtualAlbumsDB.updateItemPath(oldPath, newPath, newPath.getFilenameFromPath(), newPath.getParentPath())
+        // The file moved, so its identity has to be captured again at the new location.
+        updateReferenceIdentitiesForPath(newPath)
         albumIds.forEach { VirtualAlbumSyncManager.saveAlbumToFile(this, it) }
     } catch (ignored: Exception) {
     }
+}
+
+/**
+ * Rewrites every reference below [oldRoot] so it points below [newRoot].
+ *
+ * Called when a physical folder is renamed or moved. Without this the favorites and the virtual
+ * album items would keep pointing at the old location and appear empty.
+ */
+fun Context.updateReferencesForFolderRename(oldRoot: String, newRoot: String) {
+    if (oldRoot.isEmpty() || newRoot.isEmpty() || oldRoot.equals(newRoot, ignoreCase = true)) {
+        return
+    }
+
+    try {
+        virtualAlbumsDB.updateItemsByFolderPrefix(oldRoot, newRoot)
+        virtualAlbumsDB.updateItemParentsByFolderPrefix(oldRoot, newRoot)
+        virtualAlbumsDB.updateItemParentsAtFolder(oldRoot, newRoot)
+        virtualAlbumsDB.updateAlbumParentPhysicalPathByPrefix(oldRoot, newRoot)
+        virtualAlbumsDB.updateAlbumParentPhysicalPathAtFolder(oldRoot, newRoot)
+        updateFavoritePathsForFolderRename(oldRoot, newRoot)
+    } catch (ignored: Exception) {
+    }
+
+    // The albums whose items just moved need their backup files rewritten.
+    try {
+        virtualAlbumsDB.getAllAlbums().forEach { album ->
+            album.id?.let { VirtualAlbumSyncManager.saveAlbumToFile(this, it) }
+        }
+        ReferenceBackupManager.saveFavorites(this)
+    } catch (ignored: Exception) {
+    }
+}
+
+/**
+ * Looks for the file of an album item at its current location.
+ *
+ * When the file was renamed or moved outside of the app, the cached path is stale. The identity of
+ * the item is used to find it again, and the album is updated so the new path is used from now on.
+ *
+ * @return the current path of the file, or null when it could not be found
+ */
+fun Context.resolveVirtualAlbumItemPath(item: VirtualAlbumItem): String? {
+    val identity = item.toIdentity()
+    if (!identity.isUsable) {
+        return null
+    }
+
+    val resolution = MediaIdentityResolver.resolve(
+        context = this,
+        identity = identity,
+        hintPaths = listOf(item.fullPath),
+        searchRoots = listOf(item.parentPath)
+    ) ?: return null
+
+    if (resolution.path == item.fullPath) {
+        return item.fullPath
+    }
+
+    try {
+        virtualAlbumsDB.updateItemPath(
+            item.fullPath,
+            resolution.path,
+            resolution.path.getFilenameFromPath(),
+            resolution.path.getParentPath()
+        )
+        virtualAlbumsDB.markItemResolved(item.albumId, resolution.path)
+        updateReferenceIdentitiesForPath(resolution.path)
+    } catch (_: Exception) {
+    }
+
+    return resolution.path
+}
+
+/**
+ * Looks for the items of a virtual album whose file could not be found at the cached path and tries
+ * to find them at their new location.
+ *
+ * @return how many items were repaired
+ */
+fun Context.repairVirtualAlbumItems(albumId: Long): Int {
+    val items = try {
+        virtualAlbumsDB.getItems(albumId)
+    } catch (_: Exception) {
+        return 0
+    }
+
+    var repaired = 0
+    for (item in items) {
+        if (File(item.fullPath).isFile) {
+            continue
+        }
+
+        val identity = item.toIdentity()
+        if (!identity.isUsable) {
+            continue
+        }
+
+        val resolution = MediaIdentityResolver.resolve(
+            context = this,
+            identity = identity,
+            hintPaths = listOf(item.fullPath),
+            searchRoots = listOf(item.parentPath)
+        ) ?: continue
+
+        virtualAlbumsDB.updateItemPath(
+            item.fullPath,
+            resolution.path,
+            resolution.path.getFilenameFromPath(),
+            resolution.path.getParentPath()
+        )
+        updateReferenceIdentitiesForPath(resolution.path)
+        repaired++
+    }
+
+    if (repaired > 0) {
+        VirtualAlbumSyncManager.saveAlbumToFile(this, albumId)
+    }
+
+    return repaired
 }
 
 fun Context.deleteVirtualAlbumItemFromAllAlbums(path: String) {
