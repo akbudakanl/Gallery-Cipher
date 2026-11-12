@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import org.fossify.gallery.interfaces.*
 import org.fossify.gallery.models.*
 
-@Database(entities = [Directory::class, Medium::class, Widget::class, DateTaken::class, Favorite::class, VirtualAlbum::class, VirtualAlbumItem::class], version = 13)
+@Database(entities = [Directory::class, Medium::class, Widget::class, DateTaken::class, Favorite::class, VirtualAlbum::class, VirtualAlbumItem::class], version = 14)
 abstract class GalleryDatabase : RoomDatabase() {
 
     abstract fun DirectoryDao(): DirectoryDao
@@ -44,6 +44,7 @@ abstract class GalleryDatabase : RoomDatabase() {
                             .addMigrations(MIGRATION_10_11)
                             .addMigrations(MIGRATION_11_12)
                             .addMigrations(MIGRATION_12_13)
+                            .addMigrations(MIGRATION_13_14)
                             .build()
                     }
                 }
@@ -132,6 +133,25 @@ abstract class GalleryDatabase : RoomDatabase() {
         private val MIGRATION_12_13 = object : Migration(12, 13) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE virtual_albums ADD COLUMN parent_physical_path TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
+        /**
+         * Adds the identity columns to favorites and virtual album items. They allow a reference to
+         * be found again after the file was renamed or moved, which the path alone cannot do.
+         */
+        private val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE favorites ADD COLUMN media_store_id INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE favorites ADD COLUMN file_size INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE favorites ADD COLUMN last_modified INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE favorites ADD COLUMN fingerprint TEXT NOT NULL DEFAULT ''")
+
+                database.execSQL("ALTER TABLE virtual_album_items ADD COLUMN media_store_id INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE virtual_album_items ADD COLUMN file_size INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE virtual_album_items ADD COLUMN last_modified INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE virtual_album_items ADD COLUMN fingerprint TEXT NOT NULL DEFAULT ''")
+                database.execSQL("ALTER TABLE virtual_album_items ADD COLUMN state TEXT NOT NULL DEFAULT 'OK'")
             }
         }
     }

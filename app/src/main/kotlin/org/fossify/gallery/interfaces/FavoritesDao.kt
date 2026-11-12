@@ -14,7 +14,26 @@ interface FavoritesDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(favorites: List<Favorite>)
 
-    @Query("SELECT favorites.full_path FROM favorites INNER JOIN media ON favorites.full_path = media.full_path WHERE media.deleted_ts = 0")
+    @Query("SELECT * FROM favorites")
+    fun getAll(): List<Favorite>
+
+    @Query("SELECT * FROM favorites WHERE full_path = :path COLLATE NOCASE LIMIT 1")
+    fun getFavorite(path: String): Favorite?
+
+    /**
+     * The paths of all favorites that were not deleted.
+     *
+     * The media table only holds the non-hidden files, so a LEFT JOIN is used: a favorite pointing
+     * at a file in a hidden folder must stay in the list instead of disappearing from it. Whether
+     * the file is really there is checked on disk afterwards.
+     */
+    @Query(
+        """
+        SELECT favorites.full_path FROM favorites
+         LEFT JOIN media ON favorites.full_path = media.full_path
+         WHERE media.deleted_ts IS NULL OR media.deleted_ts = 0
+        """
+    )
     fun getValidFavoritePaths(): List<String>
 
     @Query("SELECT id FROM favorites WHERE full_path = :path COLLATE NOCASE")
@@ -31,4 +50,57 @@ interface FavoritesDao {
 
     @Query("DELETE FROM favorites")
     fun clearFavorites()
+
+    /**
+     * Rewrites every favorite below [oldRoot] so it points below [newRoot]. Used when a physical
+     * folder is renamed or moved, so the favorites survive the operation.
+     */
+    @Query(
+        """
+        UPDATE OR REPLACE favorites
+         SET full_path = :newRoot || substr(full_path, length(:oldRoot) + 1),
+             parent_path = :newRoot || substr(parent_path, length(:oldRoot) + 1)
+         WHERE instr(lower(full_path), lower(:oldRoot) || '/') = 1
+        """
+    )
+    fun updateFavoritesByFolderPrefix(oldRoot: String, newRoot: String)
+
+    /**
+     * The favorites whose parent folder is the renamed folder itself.
+     */
+    @Query(
+        """
+        UPDATE OR REPLACE favorites
+         SET parent_path = :newRoot
+         WHERE lower(parent_path) = lower(:oldRoot)
+        """
+    )
+    fun updateFavoriteParentsAtFolder(oldRoot: String, newRoot: String)
+
+    /** Same as [updateFavoritesByFolderPrefix] but only for the parent folder of the entries. */
+    @Query(
+        """
+        UPDATE OR REPLACE favorites
+         SET parent_path = :newRoot || substr(parent_path, length(:oldRoot) + 1)
+         WHERE instr(lower(parent_path), lower(:oldRoot) || '/') = 1
+        """
+    )
+    fun updateFavoriteParentsByFolderPrefix(oldRoot: String, newRoot: String)
+
+    /** Stores the identity of a favorite so it can be found again after a rename or move. */
+    @Query(
+        """
+        UPDATE OR REPLACE favorites
+         SET media_store_id = :mediaStoreId, file_size = :fileSize,
+             last_modified = :lastModified, fingerprint = :fingerprint
+         WHERE full_path = :path COLLATE NOCASE
+        """
+    )
+    fun updateFavoriteIdentity(
+        path: String,
+        mediaStoreId: Long,
+        fileSize: Long,
+        lastModified: Long,
+        fingerprint: String
+    )
 }
