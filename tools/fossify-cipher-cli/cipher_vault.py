@@ -28,6 +28,9 @@ import shutil
 from pathlib import Path
 from io import BytesIO
 
+# The standalone container of the Android app in the internal storage.
+APP_DIR_NAME = "Fossify Gallery Cipher"
+
 HAS_CRYPTO = True
 try:
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -171,6 +174,7 @@ def find_vault_file() -> Path | None:
                     candidates.append(usb_dir / ".vault")
                     candidates.append(usb_dir / "phone.vault")
                     candidates.append(usb_dir / "Cipher_Secrets" / ".vault")
+                    candidates.append(usb_dir / APP_DIR_NAME / "Cipher_Secrets" / ".vault")
                     candidates.append(usb_dir / "Documents" / "Cipher" / "Cipher_Secrets" / ".vault")
         except Exception:
             pass
@@ -184,7 +188,7 @@ def find_vault_file() -> Path | None:
 def prompt_for_vault_file() -> Path:
     """Interactively prompts user for .vault file if not found automatically."""
     print("\033[1;33m[?] .vault file was not found automatically.\033[0m")
-    print("    You can drop your .vault file (from Documents > Cipher > Cipher_Secrets > .vault)")
+    print(f"    You can drop your .vault file (from {APP_DIR_NAME} > Cipher_Secrets > .vault)")
     print("    onto your Desktop or enter its path below.")
     while True:
         try:
@@ -686,7 +690,7 @@ Custom Directory Usage:
         print(f"\n\033[1;32m[✓] Success! {len(created_bins)} file(s) encrypted and saved:\033[0m")
         print(f"    -> Output Directory: \033[1;36m{output_dir}\033[0m")
         print("\033[1;37m[i] Tip: Transfer the contents of the output folder into your phone's\033[0m")
-        print("\033[1;37m    'Documents/Cipher/Cipher_Secrets/' directory.\033[0m")
+        print(f"\033[1;37m    '{APP_DIR_NAME}/Cipher_Secrets/' directory.\033[0m")
 
         # 6. Secure Wipe & Deletion of Plaintext Source Files
         delete_source = args.delete_source
@@ -721,7 +725,7 @@ Custom Directory Usage:
 
         # 7. ADB Transfer Option
         if args.adb:
-            phone_dest = "/storage/emulated/0/Documents/Cipher/Cipher_Secrets/"
+            phone_dest = f"/storage/emulated/0/{APP_DIR_NAME}/Cipher_Secrets/"
             print(f"\n\033[1;34m[*] Pushing to phone via ADB: {phone_dest}\033[0m")
             res = subprocess.run(["adb", "devices"], capture_output=True, text=True)
             if "device\n" not in res.stdout:

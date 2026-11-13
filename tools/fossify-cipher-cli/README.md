@@ -36,7 +36,7 @@ sudo apt update && sudo apt install -y python3-cryptography python3-argon2 pytho
 *(If you use Tails Persistent Storage, you can configure these as Additional Software so they remain installed across reboots).*
 
 ### 2. Preparation (One-Time)
-Copy the `.vault` file from your phone (`Documents > Cipher > Cipher_Secrets > .vault`) to your Desktop (or Tails Persistent folder).
+Copy the `.vault` file from your phone (`Internal Storage > Fossify Gallery Cipher > Cipher_Secrets > .vault`) to your Desktop (or Tails Persistent folder).
 
 > ℹ️ **Security Note:** The `.vault` file is encrypted with your vault password/PIN via **Argon2id + AES-256-GCM**. It is mathematically impossible to crack without your password.
 
@@ -65,7 +65,7 @@ python3 cipher_vault.py
 4. **Encrypted Output:** The encrypted `.bin` files will be ready in `Encrypted_Output`.
 5. **Transfer to Phone:** Move the files from `Encrypted_Output` into your phone's directory:
    ```
-   Documents/Cipher/Cipher_Secrets/
+   Fossify Gallery Cipher/Cipher_Secrets/
    ```
 6. **Secure Source Sanitation:** The tool prompts whether to securely overwrite (with zeros) and delete the plaintext source files from the `To_Encrypt` folder (`[y/N]`).
 

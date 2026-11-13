@@ -142,6 +142,11 @@ const val ENCRYPTED_FILE_PREFIX = ".fv_"
 const val ENCRYPTED_FOLDER_PREFIX = ".fvault_"
 const val ENCRYPTED_FOLDER_META_FILE = ".fmeta"
 const val CIPHER_ROOT_DIR_NAME = "Cipher"
+/**
+ * The standalone container of this app in the internal storage. It is not nested in the Documents
+ * folder, it sits directly in the internal storage as its own top level folder.
+ */
+const val CIPHER_APP_DIR_NAME = "Fossify Gallery Cipher"
 const val CIPHER_VIRTUAL_ALBUMS_DIR_NAME = "Virtual Album Saves"
 const val CIPHER_SECRETS_DIR_NAME = "Cipher_Secrets"
 

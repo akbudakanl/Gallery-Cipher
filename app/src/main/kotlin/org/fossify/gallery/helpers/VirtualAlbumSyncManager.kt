@@ -49,9 +49,7 @@ object VirtualAlbumSyncManager {
 
     fun getVirtualAlbumsStorageDir(): File {
         customStorageDirForTest?.let { return it }
-        val documentsDir = CryptoManager.getDocumentsDirectory()
-        val cipherDir = File(documentsDir, CIPHER_ROOT_DIR_NAME)
-        return File(cipherDir, CIPHER_VIRTUAL_ALBUMS_DIR_NAME)
+        return File(CryptoManager.getCipherRootDirectory(), CIPHER_VIRTUAL_ALBUMS_DIR_NAME)
     }
 
     fun getVaultStorageDir(context: Context): File {
@@ -71,6 +69,7 @@ object VirtualAlbumSyncManager {
     }
 
     fun ensurePublicStorageDirExists(): File {
+        CryptoManager.ensureCipherRootDirectory()
         val dir = getVirtualAlbumsStorageDir()
         if (!dir.exists()) {
             dir.mkdirs()
@@ -258,20 +257,25 @@ object VirtualAlbumSyncManager {
 
         val documentsDir = CryptoManager.getDocumentsDirectory()
         val legacyDir = File(documentsDir, "Fossify Virtual Albums")
+        // The saves of the older versions lived in the Cipher folder inside the Documents folder.
+        val legacyCipherDir = File(documentsDir, "$CIPHER_ROOT_DIR_NAME/$CIPHER_VIRTUAL_ALBUMS_DIR_NAME")
         val publicDir = getVirtualAlbumsStorageDir()
 
         // 0. Automatically migrate legacy saves from Documents/Fossify Virtual Albums
+        //    and from the old Documents/Cipher folder.
         try {
-            if (legacyDir.exists() && legacyDir.isDirectory) {
-                if (!publicDir.exists()) {
-                    publicDir.mkdirs()
-                }
-                legacyDir.listFiles { file -> file.isFile && file.extension.equals("json", ignoreCase = true) }?.forEach { f ->
-                    val targetFile = File(publicDir, f.name)
-                    if (!targetFile.exists()) {
-                        f.copyTo(targetFile, overwrite = true)
+            for (source in listOf(legacyDir, legacyCipherDir)) {
+                if (source.exists() && source.isDirectory) {
+                    if (!publicDir.exists()) {
+                        publicDir.mkdirs()
                     }
-                    try { f.delete() } catch (_: Exception) {}
+                    source.listFiles { file -> file.isFile && file.extension.equals("json", ignoreCase = true) }?.forEach { f ->
+                        val targetFile = File(publicDir, f.name)
+                        if (!targetFile.exists()) {
+                            f.copyTo(targetFile, overwrite = true)
+                        }
+                        try { f.delete() } catch (_: Exception) {}
+                    }
                 }
             }
         } catch (_: Exception) {}
@@ -280,7 +284,7 @@ object VirtualAlbumSyncManager {
         val processedAlbumNames = HashSet<String>()
 
         // 1. Restore public non-hidden albums from both new and legacy folders
-        val candidateDirs = listOfNotNull(publicDir, legacyDir).filter { it.exists() && it.isDirectory }
+        val candidateDirs = listOfNotNull(publicDir, legacyCipherDir, legacyDir).filter { it.exists() && it.isDirectory }
         for (sourceDir in candidateDirs) {
             val jsonFiles = sourceDir.listFiles { file -> file.isFile && file.extension.equals("json", ignoreCase = true) } ?: emptyArray()
             for (file in jsonFiles) {

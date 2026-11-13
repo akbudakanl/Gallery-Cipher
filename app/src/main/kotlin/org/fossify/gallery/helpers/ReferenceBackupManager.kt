@@ -14,8 +14,8 @@ import java.io.File
  * Keeps a copy of the favorites and the virtual albums in the Cipher folder on shared storage.
  *
  * The app database lives in the internal storage of the app, so it is gone when the user clears
- * the app data. The backups live next to it in `Documents/Cipher`, outside of the app sandbox, and
- * are restored when the app starts without any data.
+ * the app data. The backups live next to it in the `Fossify Gallery Cipher` folder, outside of the
+ * app sandbox, and are restored when the app starts without any data.
  *
  * The backup is only written while the app may access the shared storage. Without that permission
  * the folder cannot be read or written, and nothing is attempted.
@@ -47,11 +47,48 @@ object ReferenceBackupManager {
      * together with the vault and the virtual album saves.
      */
     fun getFavoritesBackupDir(): File {
-        return File(CryptoManager.getDocumentsDirectory(), "$CIPHER_ROOT_DIR_NAME/$FAVORITES_DIR_NAME")
+        return File(CryptoManager.getCipherRootDirectory(), FAVORITES_DIR_NAME)
     }
 
     fun getFavoritesBackupFile(): File {
         return File(getFavoritesBackupDir(), FAVORITES_FILE_NAME)
+    }
+
+    /**
+     * The backup of the older versions, it lived in the Cipher folder inside the Documents folder.
+     */
+    private fun getLegacyFavoritesBackupFile(): File {
+        return File(
+            CryptoManager.getDocumentsDirectory(),
+            "$CIPHER_ROOT_DIR_NAME/$FAVORITES_DIR_NAME/$FAVORITES_FILE_NAME"
+        )
+    }
+
+    /**
+     * Moves the backup of the older versions into the new folder, so the favorites of the user
+     * survive the update to the standalone container.
+     */
+    private fun migrateLegacyBackup(): File? {
+        val legacyFile = getLegacyFavoritesBackupFile()
+        if (!legacyFile.isFile) {
+            return null
+        }
+
+        return try {
+            CryptoManager.ensureCipherRootDirectory()
+            val target = getFavoritesBackupFile()
+            if (!target.exists()) {
+                val dir = getFavoritesBackupDir()
+                if (!dir.exists() && !dir.mkdirs()) {
+                    return null
+                }
+                legacyFile.copyTo(target, overwrite = true)
+            }
+            legacyFile.delete()
+            target.takeIf { it.isFile }
+        } catch (_: Exception) {
+            null
+        }
     }
 
     /**
@@ -79,6 +116,8 @@ object ReferenceBackupManager {
                     )
                 }
             )
+
+            CryptoManager.ensureCipherRootDirectory()
 
             val dir = getFavoritesBackupDir()
             if (!dir.exists() && !dir.mkdirs()) {
@@ -110,10 +149,9 @@ object ReferenceBackupManager {
             return 0
         }
 
-        val file = getFavoritesBackupFile()
-        if (!file.exists()) {
-            return 0
-        }
+        val file = getFavoritesBackupFile().takeIf { it.isFile }
+            ?: migrateLegacyBackup()
+            ?: return 0
 
         return try {
             val content = file.readText(Charsets.UTF_8).trim()

@@ -135,9 +135,10 @@ class VirtualAlbumSyncTest {
         assertEquals(CIPHER_SECRETS_DIR_NAME, vaultRoot.name)
         assertEquals(CIPHER_VIRTUAL_ALBUMS_DIR_NAME, virtualAlbumsDir.name)
 
-        // Both folders must be siblings inside the Documents/Cipher/ container
-        assertEquals(CIPHER_ROOT_DIR_NAME, vaultRoot.parentFile?.name)
-        assertEquals(CIPHER_ROOT_DIR_NAME, virtualAlbumsDir.parentFile?.name)
+        // Both folders must be siblings inside the "Fossify Gallery Cipher" container, which is a
+        // standalone folder in the internal storage and not inside the Documents folder.
+        assertEquals(CIPHER_APP_DIR_NAME, vaultRoot.parentFile?.name)
+        assertEquals(CIPHER_APP_DIR_NAME, virtualAlbumsDir.parentFile?.name)
         assertEquals(vaultRoot.parentFile?.absolutePath, virtualAlbumsDir.parentFile?.absolutePath)
     }
 

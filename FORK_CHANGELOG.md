@@ -23,6 +23,10 @@ For full architectural details, cryptography specifications, and user guides, se
   - The favorites are now backed up to `Documents/Cipher/Favorites/favorites.json` and restored when the app starts without any data. The backup is only written while the app may access the shared storage, because the folder cannot be read or written otherwise.
   - The references are also repaired when the app starts, so a file that was renamed or moved by another app is found again by its identity.
 ### Changed
+- **The Cipher Folder Is Now a Standalone Folder in the Internal Storage (`CryptoManager`, `VirtualAlbumSyncManager`, `ReferenceBackupManager`):**
+  - The vault, the saved virtual albums and the favorites backup no longer live in `Documents/Cipher`. They are now kept in a single top level folder `Fossify Gallery Cipher` in the internal storage, so the data of the app is clearly separated from the documents of the user and easy to back up as a whole.
+  - The new container gets a `.nomedia` file, so it is never listed as a media folder by the system or by other gallery apps.
+  - The vaults and the album saves of the older versions are found and moved into the new folder automatically, so nothing is lost by the update.
 - **Virtual Albums Are No Longer Bound to a Single Physical Album (`VirtualAlbums`, `PickDirectoryDialog`, `Activity`, `FavoritesDao`, `VirtualAlbumsDao`):**
   - The strict 1-to-1 binding between a virtual album and its parent physical album was removed. An album now holds items from any number of physical folders, exactly like the favorites do.
   - The folder the items came from is only remembered as a hint for the copy dialog and no longer rejects new items, so a folder that was renamed or moved can no longer leave an album that refuses to accept any file.

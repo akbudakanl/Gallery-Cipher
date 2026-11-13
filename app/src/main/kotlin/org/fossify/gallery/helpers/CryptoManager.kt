@@ -288,9 +288,45 @@ object CryptoManager {
         }
     }
 
+    /**
+     * The root of the shared storage (the internal storage of the device). The Cipher folder is a
+     * standalone top level folder in here, it is not nested in Documents.
+     */
+    fun getStorageRootDirectory(): File {
+        return try {
+            Environment.getExternalStorageDirectory()
+        } catch (_: Throwable) {
+            null
+        } ?: File("/storage/emulated/0")
+    }
+
+    /**
+     * The container of this app: `<internal storage>/Fossify Gallery Cipher`. It holds the vault,
+     * the saved virtual albums and the backups of the favorites. It is a standalone top level
+     * folder, it is not nested in the Documents folder.
+     */
+    fun getCipherRootDirectory(): File {
+        return File(getStorageRootDirectory(), CIPHER_APP_DIR_NAME)
+    }
+
+    /**
+     * Creates the container of the app in the internal storage, with a .nomedia file so it is
+     * never listed as a media folder by the system or by other gallery apps.
+     */
+    fun ensureCipherRootDirectory(): File {
+        val dir = getCipherRootDirectory()
+        if (!dir.exists()) {
+            dir.mkdirs()
+        }
+        val noMedia = File(dir, NOMEDIA)
+        if (!noMedia.exists()) {
+            try { noMedia.createNewFile() } catch (_: Exception) {}
+        }
+        return dir
+    }
+
     fun getDefaultVaultRoot(): File {
-        val cipherDir = File(getDocumentsDirectory(), CIPHER_ROOT_DIR_NAME)
-        return File(cipherDir, CIPHER_SECRETS_DIR_NAME)
+        return File(getCipherRootDirectory(), CIPHER_SECRETS_DIR_NAME)
     }
 
     // ==================== VAULT EXISTENCE: THE .vault HEADER ON DISK IS THE SINGLE SOURCE OF TRUTH ====================
@@ -352,9 +388,11 @@ object CryptoManager {
     }
 
     private fun knownVaultRootCandidates(context: Context): List<File> {
-        val candidates = ArrayList<File>(4)
+        val candidates = ArrayList<File>(6)
         cachedVaultRoot?.let { candidates.add(it) }
         candidates.add(getDefaultVaultRoot())
+        // Legacy locations: the vault used to live inside the Documents folder.
+        candidates.add(File(getDocumentsDirectory(), "$CIPHER_ROOT_DIR_NAME/$CIPHER_SECRETS_DIR_NAME"))
         candidates.add(File(getDocumentsDirectory(), CIPHER_SECRETS_DIR_NAME))
         val storedPath = context.config.vaultRootPath
         if (storedPath.isNotEmpty()) {
@@ -372,7 +410,10 @@ object CryptoManager {
 
     private fun scanForVaultRoot(context: Context): File? {
         val documentsDir = getDocumentsDirectory()
+        val storageRoot = getStorageRootDirectory()
         val roots = listOfNotNull(
+            storageRoot,
+            getCipherRootDirectory(),
             documentsDir,
             File(documentsDir, CIPHER_ROOT_DIR_NAME),
             try { Environment.getExternalStorageDirectory() } catch (_: Throwable) { null },
@@ -481,6 +522,8 @@ object CryptoManager {
     fun deleteExistingVault(context: Context) {
         val targets = mutableListOf<File>()
         targets.add(getDefaultVaultRoot())
+        // Legacy locations of the vault.
+        targets.add(File(getDocumentsDirectory(), "$CIPHER_ROOT_DIR_NAME/$CIPHER_SECRETS_DIR_NAME"))
         targets.add(File(getDocumentsDirectory(), CIPHER_SECRETS_DIR_NAME))
         val storedPath = context.config.vaultRootPath
         if (storedPath.isNotEmpty()) {
@@ -504,9 +547,10 @@ object CryptoManager {
             }
         }
 
-        val parentCipher = File(getDocumentsDirectory(), CIPHER_ROOT_DIR_NAME)
-        if (parentCipher.exists() && parentCipher.isDirectory && parentCipher.listFiles().isNullOrEmpty()) {
-            try { parentCipher.delete() } catch (_: Exception) {}
+        // The old Cipher container inside the Documents folder, when it is left empty.
+        val legacyParentCipher = File(getDocumentsDirectory(), CIPHER_ROOT_DIR_NAME)
+        if (legacyParentCipher.exists() && legacyParentCipher.isDirectory && legacyParentCipher.listFiles().isNullOrEmpty()) {
+            try { legacyParentCipher.delete() } catch (_: Exception) {}
         }
 
         lockVault()
@@ -539,6 +583,8 @@ object CryptoManager {
     private fun createVaultRoot(context: Context): File {
         findVaultRoot(context)?.let { return it }
 
+        ensureCipherRootDirectory()
+
         val newDir = getDefaultVaultRoot()
         if (!newDir.exists()) {
             newDir.mkdirs()
@@ -563,13 +609,18 @@ object CryptoManager {
 
         val root = locateVaultRootOnDisk(context) ?: return null
 
-        // Migrate the old location Documents/Cipher_Secrets -> Documents/Cipher/Cipher_Secrets
+        // Migrate the vaults of the older versions into the standalone Cipher folder:
+        // Documents/Cipher_Secrets and Documents/Cipher/Cipher_Secrets -> <internal storage>/Cipher/Cipher_Secrets
         val standardDir = getDefaultVaultRoot()
-        val legacyDocDir = File(getDocumentsDirectory(), CIPHER_SECRETS_DIR_NAME)
-        if (root.absolutePath == legacyDocDir.absolutePath && !standardDir.exists()) {
+        val legacyDirs = listOf(
+            File(getDocumentsDirectory(), CIPHER_SECRETS_DIR_NAME),
+            File(getDocumentsDirectory(), "$CIPHER_ROOT_DIR_NAME/$CIPHER_SECRETS_DIR_NAME")
+        )
+        val legacyDir = legacyDirs.firstOrNull { it.absolutePath == root.absolutePath }
+        if (legacyDir != null && !standardDir.exists()) {
             val moved = try {
                 standardDir.parentFile?.mkdirs()
-                legacyDocDir.renameTo(standardDir)
+                legacyDir.renameTo(standardDir)
             } catch (_: Exception) {
                 false
             }
