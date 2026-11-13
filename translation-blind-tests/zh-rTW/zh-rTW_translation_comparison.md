@@ -1,6 +1,6 @@
 # Traditional Chinese (Taiwan, values-zh-rTW) Translation Audit, Revision & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-zh-rTW/strings.xml` was audited against `app/src/main/res/values/strings.xml` and `fossify-commons` (`values-zh-rTW`). 14 existing entries with mistranslations, Mainland Chinese phrasing, terminology mismatches, or formatting bugs were revised, and all 50 missing strings were translated into Taiwanese Traditional Chinese (`zh-rTW`) and added, bringing `values-zh-rTW` to full parity (343 `<string>` + 2 `<plurals>` = 345 resource entries; 363 total comparison rows including English `one`/`other` plural forms and 29 `fossify-commons` UI keys).
+> **Scope:** `app/src/main/res/values-zh-rTW/strings.xml` was audited against `app/src/main/res/values/strings.xml` and `fossify-commons` (`values-zh-rTW`). 14 existing entries with mistranslations, Mainland Chinese phrasing, terminology mismatches, or formatting bugs were revised, and all 50 missing strings were translated into Taiwanese Traditional Chinese (`zh-rTW`) and added, bringing `values-zh-rTW` to full parity (347 `<string>` + 2 `<plurals>` = 349 resource entries; 372 total comparison rows including English `one`/`other` plural forms and 29 `fossify-commons` UI keys). Nine keys that were missing from `values-zh-rTW/strings.xml` were translated and added (`number_of_items`, `random`, `shuffle`, `stop_showing_excluded`, `copy_to_clipboard`, `encrypt`, `decrypt`, `encrypt_album`, `decrypt_album`), and eleven existing entries were revised so that files and albums use the new \"encrypt / decrypt\" wording and so that the favorites import/export labels mention virtual albums as well.
 > **Key Terminology:** `Settings` → `設定` · `Default` → `預設` / `系統預設` · `Folder` → `資料夾` · `Album` → `相簿` · `Encrypted Vault` → `加密保險箱` · `Hidden` → `隱藏` · `Excluded` → `已排除` · `Password` → `密碼` · `Encrypt / Decrypt` → `加密 / 解密` · `Copy to` → `複製` (matches `fossify-commons`) · `Clipboard` → `剪貼簿` · `Search` → `搜尋` (inherited from `fossify-commons`)
 
 ## 1. Audit of Existing Translations & Newly Added Entries
@@ -78,10 +78,10 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 42 | `vault_exit_question_multiple` | Show encrypted albums together with other albums? | 是否將加密相簿與其他相簿一起顯示？ | Dialog question (multiple albums) |
 | 43 | `vault_exit_settings_hint` | For more options, see Settings &gt; On leaving encrypted section | 如需更多選項，請前往「設定」&gt;「離開加密區域時」 | References `設定` and `離開加密區域時` |
 | 44 | `open_system_language_settings` | Open system language settings | 開啟系統語言設定 | Neutral dialog button in language picker |
-| 45 | `file_encrypted_successfully` | File hidden successfully | 已成功隱藏檔案 | Success toast after encrypting/hiding a single file |
-| 46 | `files_encrypted_successfully` | Files hidden successfully | 已成功隱藏檔案 | Success toast after encrypting/hiding multiple files |
-| 47 | `file_decrypted_successfully` | File unhidden successfully | 已成功解除隱藏檔案 | Success toast after decrypting/unhiding a single file |
-| 48 | `files_decrypted_successfully` | Files unhidden successfully | 已成功解除隱藏檔案 | Success toast after decrypting/unhiding multiple files |
+| 45 | `file_encrypted_successfully` | File encrypted successfully | 檔案加密成功  | Success toast after encrypting a single file |
+| 46 | `files_encrypted_successfully` | Files encrypted successfully | 檔案加密成功  | Success toast after encrypting multiple files |
+| 47 | `file_decrypted_successfully` | File decrypted successfully | 檔案解密成功    | Success toast after decrypting a single file |
+| 48 | `files_decrypted_successfully` | Files decrypted successfully | 檔案解密成功    | Success toast after decrypting multiple files |
 | 49 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | 使用生物辨識存取隱藏項目 | Settings switch, setup prompt title, and vault security dialog button |
 | 50 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | 請先啟用隱藏項目的密碼保護 | Toast shown when enabling biometrics before hidden-item password protection |
 | 51 | `biometric_unlock_vault` | Unlock encrypted vault | 解鎖加密保險箱 | BiometricPrompt title when unlocking the encrypted vault |
@@ -91,12 +91,12 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 55 | `biometric_key_invalidated` | Biometric credentials have changed. Please enter your PIN or password. | 生物辨識憑證已變更，請輸入您的 PIN 碼或密碼。 | Toast shown when biometric credentials changed and Keystore key invalidated |
 | 56 | `no_biometric_hardware_or_enrolled` | No biometric hardware or enrolled credentials found on this device | 此裝置上找不到生物辨識硬體或已註冊的憑證 | Toast shown when no biometric hardware or enrolled credentials exist |
 | 57 | `default_hidden_album` | Default Hidden Album | 預設隱藏相簿 | Settings / picker label for default hidden album |
-| 58 | `select_hidden_album` | Select Hidden Album | 選擇隱藏相簿 | Dialog title for choosing target hidden album |
-| 59 | `create_new_hidden_album` | Create New Hidden Album | 建立新隱藏相簿 | Action label to create a new hidden album |
-| 60 | `new_hidden_album` | New hidden album | 新隱藏相簿 | Input hint / default label for new hidden album |
+| 58 | `select_hidden_album` | Select Encrypted Album | 選擇加密相簿 | Dialog title for choosing the target encrypted album |
+| 59 | `create_new_hidden_album` | Create New Encrypted Album | 建立新加密相簿 | Action label to create a new encrypted album |
+| 60 | `new_hidden_album` | New encrypted album | 新加密相簿 | Input hint / default label for a new encrypted album |
 | 61 | `hidden_album_name_empty` | Album name cannot be empty | 相簿名稱不能為空 | Validation error when hidden album name is blank |
-| 62 | `file_hidden_to_album` | File hidden to \"%s\" | 檔案已隱藏至「%s」 | Success toast after hiding a single file into album `%s` |
-| 63 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | %1$d 個檔案已隱藏至「%2$s」 | Success toast after hiding `%1$d` files into album `%2$s` |
+| 62 | `file_hidden_to_album` | File encrypted to \"%s\" | 檔案已加密至「%s」 | Success toast after encrypting a single file into album `%s` |
+| 63 | `files_hidden_to_album` | %1$d files encrypted to \"%2$s\" | %1$d 個檔案已加密至「%2$s」 | Success toast after encrypting `%1$d` files into album `%2$s` |
 | 64 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | 繼續向下拉以開啟加密保險箱 | Vault pull gesture hint shown while the pull is below the open threshold |
 | 65 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | 按住不放以開啟加密保險箱 | Vault pull gesture hint shown once the pull passes the threshold, before the 2.5 s hold completes |
 | 66 | `release_to_open_vault` | Release to open Encrypted Vault | 放開以開啟加密保險箱 | Vault pull gesture hint shown after holding the pull for 2.5 s; releasing opens the vault |
@@ -146,6 +146,33 @@ All 29 shared UI keys below are already localized in `org.fossify:commons:7.1.3`
 | 27 | `list` | List | 列表 | Inherited from `fossify-commons` (In-album Options menu, view type); verified translated in this revision |
 | 28 | `resize` | Resize | 調整尺寸 | Inherited from `fossify-commons` (Selection CAB menu); verified translated in this revision |
 | 29 | `version_placeholder` | Version %s | 版本 %s | Inherited from `fossify-commons` (About screen version text); verified translated in this revision |
+
+### Newly Added Missing Translations (9 Keys) & Revised Entries (11 Keys)
+
+Nine keys that were missing from `values-zh-rTW/strings.xml` were translated and added, and eleven existing entries were revised so that files and albums use the new \"encrypt / decrypt\" wording and so that the favorites import/export labels mention virtual albums as well.
+
+| # | Key (`name`) | English (`values/strings.xml`) | Traditional Chinese (Taiwan) (`values-zh-rTW/strings.xml`) | Notes |
+|---:|---|---|---|---|
+| 1 | `number_of_items` | Number of items | 項目數 | Sorting option shown in the album view only; overridden locally because it is missing in `fossify-commons` for this locale |
+| 2 | `random` | Random | 隨機 | Sorting option offered in every sorting state; overridden locally because it is missing in `fossify-commons` for this locale |
+| 3 | `shuffle` | Shuffle | 隨機排列 | Fullscreen viewer action that randomizes the media order; app owned string that was only available in English |
+| 4 | `stop_showing_excluded` | Stop showing excluded | 停止顯示已排除的項目 | Main screen options-menu action that ends the temporary preview of excluded folders |
+| 5 | `copy_to_clipboard` | Copy to clipboard | 複製到剪貼簿 | Fullscreen viewer action that copies a file to the clipboard |
+| 6 | `encrypt` | Encrypt | 加密 | Replaces the inherited `hide` label for files; files and albums are encrypted, not hidden |
+| 7 | `decrypt` | Decrypt | 解密 | Replaces the inherited `unhide` label for files |
+| 8 | `encrypt_album` | Encrypt album | 加密相簿 | Album (folder) context action that encrypts the album into the vault |
+| 9 | `decrypt_album` | Decrypt album | 解密相簿 | Album (folder) context action that decrypts the album back to its original location |
+| 10 | `export_favorite_paths` | Export favorites and virtual albums | 匯出我的最愛和虛擬相簿 | Settings label; renamed because virtual albums are exported together with the favorites |
+| 11 | `import_favorite_paths` | Import favorites and virtual albums | 匯入我的最愛和虛擬相簿 | Settings label; renamed because virtual albums are imported together with the favorites |
+| 12 | `file_encrypted_successfully` | File encrypted successfully | 檔案加密成功 | Success toast after encrypting a single file |
+| 13 | `files_encrypted_successfully` | Files encrypted successfully | 檔案加密成功 | Success toast after encrypting multiple files |
+| 14 | `file_decrypted_successfully` | File decrypted successfully | 檔案解密成功 | Success toast after decrypting a single file |
+| 15 | `files_decrypted_successfully` | Files decrypted successfully | 檔案解密成功 | Success toast after decrypting multiple files |
+| 16 | `file_hidden_to_album` | File encrypted to \"%s\" | 檔案已加密至「%s」 | Success toast after encrypting a single file into album `%s` |
+| 17 | `files_hidden_to_album` | %1$d files encrypted to \"%2$s\" | %1$d 個檔案已加密至「%2$s」 | Success toast after encrypting `%1$d` files into album `%2$s` |
+| 18 | `select_hidden_album` | Select Encrypted Album | 選擇加密相簿 | Dialog title for choosing the target encrypted album |
+| 19 | `create_new_hidden_album` | Create New Encrypted Album | 建立新加密相簿 | Action label to create a new encrypted album |
+| 20 | `new_hidden_album` | New encrypted album | 新加密相簿 | Input hint / default label for a new encrypted album |
 
 ## 2. Full 1-to-1 Comparison: English vs. Traditional Chinese (Taiwan)
 
@@ -350,8 +377,8 @@ All 29 shared UI keys below are already localized in `org.fossify:commons:7.1.3`
 | 197 | `limit_folder_title` | Limit long folder titles to 1 line | 資料夾名稱最長只顯示一行 |
 | 198 | `square` | Square | 方形 |
 | 199 | `rounded_corners` | Rounded corners | 圓角 |
-| 200 | `export_favorite_paths` | Export favorites | 匯出我的最愛 |
-| 201 | `import_favorite_paths` | Import favorites | 匯入我的最愛 |
+| 200 | `export_favorite_paths` | Export favorites and virtual albums | 匯出我的最愛和虛擬相簿 |
+| 201 | `import_favorite_paths` | Import favorites and virtual albums | 匯入我的最愛和虛擬相簿 |
 | 202 | `paths_imported_successfully` | Paths imported successfully | 路徑匯入成功 |
 | 203 | `media_management_prompt` | To make sure that all file operations work reliably, please make this app a Media management app in your device settings. | 為了確保所有檔案操作都能可靠地運作，請將此應用程式設為裝置設定中的媒體管理應用程式。 |
 | 204 | `password_protect_excluded` | Password protect excluded folder visibility | 以密碼保護已排除資料夾的可見性 |
@@ -434,12 +461,12 @@ All 29 shared UI keys below are already localized in `org.fossify:commons:7.1.3`
 | 281 | `encrypting_files` | Encrypting files… | 正在加密檔案… |
 | 282 | `encrypting_folder` | Encrypting folder… | 正在加密資料夾… |
 | 283 | `folder_encrypted_successfully` | Folder encrypted successfully | 資料夾加密成功 |
-| 284 | `file_encrypted_successfully` | File hidden successfully | 已成功隱藏檔案 |
-| 285 | `files_encrypted_successfully` | Files hidden successfully | 已成功隱藏檔案 |
+| 284 | `file_encrypted_successfully` | File encrypted successfully | 檔案加密成功  |
+| 285 | `files_encrypted_successfully` | Files encrypted successfully | 檔案加密成功  |
 | 286 | `decrypting_folder` | Decrypting folder… | 正在解密資料夾… |
 | 287 | `folder_decrypted_successfully` | Folder decrypted successfully | 資料夾解密成功 |
-| 288 | `file_decrypted_successfully` | File unhidden successfully | 已成功解除隱藏檔案 |
-| 289 | `files_decrypted_successfully` | Files unhidden successfully | 已成功解除隱藏檔案 |
+| 288 | `file_decrypted_successfully` | File decrypted successfully | 檔案解密成功    |
+| 289 | `files_decrypted_successfully` | Files decrypted successfully | 檔案解密成功    |
 | 290 | `decrypting_files` | Decrypting files… | 正在解密檔案… |
 | 291 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | 請將手指放在指紋感應器上 |
 | 292 | `connect_at_least_4_dots_prompt` | Connect at least 4 dots | 請至少連接 4 個點 |
@@ -471,12 +498,12 @@ All 29 shared UI keys below are already localized in `org.fossify:commons:7.1.3`
 | 318 | `biometric_key_invalidated` | Biometric credentials have changed. Please enter your PIN or password. | 生物辨識憑證已變更，請輸入您的 PIN 碼或密碼。 |
 | 319 | `no_biometric_hardware_or_enrolled` | No biometric hardware or enrolled credentials found on this device | 此裝置上找不到生物辨識硬體或已註冊的憑證 |
 | 320 | `default_hidden_album` | Default Hidden Album | 預設隱藏相簿 |
-| 321 | `select_hidden_album` | Select Hidden Album | 選擇隱藏相簿 |
-| 322 | `create_new_hidden_album` | Create New Hidden Album | 建立新隱藏相簿 |
-| 323 | `new_hidden_album` | New hidden album | 新隱藏相簿 |
+| 321 | `select_hidden_album` | Select Encrypted Album | 選擇加密相簿 |
+| 322 | `create_new_hidden_album` | Create New Encrypted Album | 建立新加密相簿 |
+| 323 | `new_hidden_album` | New encrypted album | 新加密相簿 |
 | 324 | `hidden_album_name_empty` | Album name cannot be empty | 相簿名稱不能為空 |
-| 325 | `file_hidden_to_album` | File hidden to \"%s\" | 檔案已隱藏至「%s」 |
-| 326 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | %1$d 個檔案已隱藏至「%2$s」 |
+| 325 | `file_hidden_to_album` | File encrypted to \"%s\" | 檔案已加密至「%s」 |
+| 326 | `files_hidden_to_album` | %1$d files encrypted to \"%2$s\" | %1$d 個檔案已加密至「%2$s」 |
 | 327 | `restore_confirmation` (`one`) | Are you sure you want to restore %d file? | 您確定要還原 %d 個檔案嗎？ *(CLDR `other`)* |
 | 328 | `restore_confirmation` (`other`) | Are you sure you want to restore %d files? | 您確定要還原 %d 個檔案嗎？ |
 | 329 | `failed_to_resize_images` (`one`) | Failed to resize %d image | %d 張圖片尺寸調整失敗 *(CLDR `other`)* |
@@ -514,3 +541,12 @@ All 29 shared UI keys below are already localized in `org.fossify:commons:7.1.3`
 | 361 | `list` *(fossify-commons)* | List | 列表 |
 | 362 | `resize` *(fossify-commons)* | Resize | 調整尺寸 |
 | 363 | `version_placeholder` *(fossify-commons)* | Version %s | 版本 %s |
+| 364 | `number_of_items` *(fossify-commons)* | Number of items | 項目數 |
+| 365 | `random` *(fossify-commons)* | Random | 隨機 |
+| 366 | `shuffle` | Shuffle | 隨機排列 |
+| 367 | `stop_showing_excluded` *(fossify-commons)* | Stop showing excluded | 停止顯示已排除的項目 |
+| 368 | `copy_to_clipboard` *(fossify-commons)* | Copy to clipboard | 複製到剪貼簿 |
+| 369 | `encrypt` | Encrypt | 加密 |
+| 370 | `decrypt` | Decrypt | 解密 |
+| 371 | `encrypt_album` | Encrypt album | 加密相簿 |
+| 372 | `decrypt_album` | Decrypt album | 解密相簿 |

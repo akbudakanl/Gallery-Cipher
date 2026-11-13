@@ -1,6 +1,6 @@
 # Azerbaijani (values-az) Translation Revision & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-az/strings.xml` was reviewed from scratch: existing inaccurate translations were corrected, and all missing keys from `values/strings.xml` (343 `<string>` + 2 `<plurals>` = 345 app resource entries; `search` and 17 previously overridden shared UI keys from `fossify-commons` plus the `skip_the_recycle_bin` override, and 13 additional `fossify-commons` UI keys (`manage_excluded_folders`, `exclude`, `exclude_folder`, `lock_folder`, `change_cover_image`, `select_photo`, `use_default`, `column_count`, `open_the_recycle_bin`, `grid`, `list`, `resize`, `version_placeholder`) newly overridden because they are missing in `fossify-commons` `values-az`; 364 total comparison rows) were completed.
+> **Scope:** `app/src/main/res/values-az/strings.xml` was reviewed from scratch: existing inaccurate translations were corrected, and all missing keys from `values/strings.xml` (347 `<string>` + 2 `<plurals>` = 349 app resource entries; `search` and 17 previously overridden shared UI keys from `fossify-commons` plus the `skip_the_recycle_bin` override, and 13 additional `fossify-commons` UI keys (`manage_excluded_folders`, `exclude`, `exclude_folder`, `lock_folder`, `change_cover_image`, `select_photo`, `use_default`, `column_count`, `open_the_recycle_bin`, `grid`, `list`, `resize`, `version_placeholder`) newly overridden because they are missing in `fossify-commons` `values-az`; 373 total comparison rows) were completed. Nine keys that were missing from `values-az/strings.xml` were translated and added (`number_of_items`, `random`, `shuffle`, `stop_showing_excluded`, `copy_to_clipboard`, `encrypt`, `decrypt`, `encrypt_album`, `decrypt_album`), and eleven existing entries were revised so that files and albums use the new \"encrypt / decrypt\" wording and so that the favorites import/export labels mention virtual albums as well.
 > **Key Terminology:** `Settings` → `Parametrlər` · `Default` → `Susmaya görə` · `Folder` → `Qovluq` · `Encrypted Vault` → `Şifrəli Seyf` · `Password` → `Parol` · `Encrypt/Decrypt` → `Şifrələ / Şifrəsini aç` · `Thumbnails` → `Miniatürlər` · `Recycle bin` → `Zibil qutusu` · `Clipboard` → `Mübadilə buferi`
 
 ## 1. Review of 11 Previously Existing Translations and Changes Made
@@ -106,10 +106,10 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 42 | 42 | `vault_exit_question_multiple` | Show encrypted albums together with other albums? |  |
 | 43 | 43 | `vault_exit_settings_hint` | For more options, see Settings &gt; On leaving encrypted section |  |
 | 44 | 44 | `open_system_language_settings` | Open system language settings |  |
-| 45 | 45 | `file_encrypted_successfully` | File hidden successfully | Success toast after encrypting/hiding a single file |
-| 46 | 46 | `files_encrypted_successfully` | Files hidden successfully | Success toast after encrypting/hiding multiple files |
-| 47 | 47 | `file_decrypted_successfully` | File unhidden successfully | Success toast after decrypting/unhiding a single file |
-| 48 | 48 | `files_decrypted_successfully` | Files unhidden successfully | Success toast after decrypting/unhiding multiple files |
+| 45 | 45 | `file_encrypted_successfully` | File encrypted successfully | Fayl uğurla şifrələndi                       |
+| 46 | 46 | `files_encrypted_successfully` | Files encrypted successfully | Fayllar uğurla şifrələndi                     |
+| 47 | 47 | `file_decrypted_successfully` | File decrypted successfully | Fayl uğurla şifrəsi açıldı                   |
+| 48 | 48 | `files_decrypted_successfully` | Files decrypted successfully | Fayllar uğurla şifrəsi açıldı                 |
 | 49 | 49 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | Settings switch, setup prompt title, and vault security dialog button |
 | 50 | 50 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | Toast shown when enabling biometrics before hidden-item password protection |
 | 51 | 51 | `biometric_unlock_vault` | Unlock encrypted vault | BiometricPrompt title when unlocking the encrypted vault |
@@ -119,16 +119,43 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 55 | 55 | `biometric_key_invalidated` | Biometric credentials have changed. Please enter your PIN or password. | Toast shown when biometric credentials changed and Keystore key invalidated |
 | 56 | 56 | `no_biometric_hardware_or_enrolled` | No biometric hardware or enrolled credentials found on this device | Toast shown when no biometric hardware or enrolled credentials exist |
 | 57 | 57 | `default_hidden_album` | Default Hidden Album | Settings / picker label for default hidden album |
-| 58 | 58 | `select_hidden_album` | Select Hidden Album | Dialog title for choosing target hidden album |
-| 59 | 59 | `create_new_hidden_album` | Create New Hidden Album | Action label to create a new hidden album |
-| 60 | 60 | `new_hidden_album` | New hidden album | Input hint / default label for new hidden album |
+| 58 | 58 | `select_hidden_album` | Select Encrypted Album | Şifrəli Albom Seçin                                  |
+| 59 | 59 | `create_new_hidden_album` | Create New Encrypted Album | Yeni Şifrəli Albom Yarat                     |
+| 60 | 60 | `new_hidden_album` | New encrypted album | Yeni şifrəli albom                                   |
 | 61 | 61 | `hidden_album_name_empty` | Album name cannot be empty | Validation error when hidden album name is blank |
-| 62 | 62 | `file_hidden_to_album` | File hidden to \"%s\" | Success toast after hiding a single file into album `%s` |
-| 63 | 63 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | Success toast after hiding `%1$d` files into album `%2$s` |
+| 62 | 62 | `file_hidden_to_album` | File encrypted to \"%s\" | Fayl \"%s\" albomuna şifrələndi                              |
+| 63 | 63 | `files_hidden_to_album` | %1$d files encrypted to \"%2$s\" | %1$d fayl \"%2$s\" albomuna şifrələndi                        |
 | 64 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Şifrəli seyf üçün aşağı çəkməyə davam edin | Vault pull gesture hint shown while the pull is below the open threshold |
 | 65 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Şifrəli seyfi açmaq üçün basılı saxlayın | Vault pull gesture hint shown once the pull passes the threshold, before the 2.5 s hold completes |
 | 66 | `release_to_open_vault` | Release to open Encrypted Vault | Şifrəli seyfi açmaq üçün buraxın | Vault pull gesture hint shown after holding the pull for 2.5 s; releasing opens the vault |
 
+
+### Newly Added Missing Translations (9 Keys) & Revised Entries (11 Keys)
+
+Nine keys that were missing from `values-az/strings.xml` were translated and added, and eleven existing entries were revised so that files and albums use the new \"encrypt / decrypt\" wording and so that the favorites import/export labels mention virtual albums as well.
+
+| # | Key (`name`) | English (`values/strings.xml`) | Azerbaijani (`values-az/strings.xml`) | Notes |
+|---:|---|---|---|---|
+| 1 | `number_of_items` | Number of items | Element sayı | Sorting option shown in the album view only; overridden locally because it is missing in `fossify-commons` for this locale |
+| 2 | `random` | Random | Təsadüfi | Sorting option offered in every sorting state; overridden locally because it is missing in `fossify-commons` for this locale |
+| 3 | `shuffle` | Shuffle | Qarışdır | Fullscreen viewer action that randomizes the media order; app owned string that was only available in English |
+| 4 | `stop_showing_excluded` | Stop showing excluded | İstisna edilmiş elementləri göstərməyi dayandır | Main screen options-menu action that ends the temporary preview of excluded folders |
+| 5 | `copy_to_clipboard` | Copy to clipboard | Buferə kopyala | Fullscreen viewer action that copies a file to the clipboard |
+| 6 | `encrypt` | Encrypt | Şifrələ | Replaces the inherited `hide` label for files; files and albums are encrypted, not hidden |
+| 7 | `decrypt` | Decrypt | Şifrəni aç | Replaces the inherited `unhide` label for files |
+| 8 | `encrypt_album` | Encrypt album | Albomu şifrələ | Album (folder) context action that encrypts the album into the vault |
+| 9 | `decrypt_album` | Decrypt album | Albomun şifrəsini aç | Album (folder) context action that decrypts the album back to its original location |
+| 10 | `export_favorite_paths` | Export favorites and virtual albums | Sevimliləri və virtual albomları ixrac et | Settings label; renamed because virtual albums are exported together with the favorites |
+| 11 | `import_favorite_paths` | Import favorites and virtual albums | Sevimliləri və virtual albomları idxal et | Settings label; renamed because virtual albums are imported together with the favorites |
+| 12 | `file_encrypted_successfully` | File encrypted successfully | Fayl uğurla şifrələndi | Success toast after encrypting a single file |
+| 13 | `files_encrypted_successfully` | Files encrypted successfully | Fayllar uğurla şifrələndi | Success toast after encrypting multiple files |
+| 14 | `file_decrypted_successfully` | File decrypted successfully | Fayl uğurla şifrəsi açıldı | Success toast after decrypting a single file |
+| 15 | `files_decrypted_successfully` | Files decrypted successfully | Fayllar uğurla şifrəsi açıldı | Success toast after decrypting multiple files |
+| 16 | `file_hidden_to_album` | File encrypted to \"%s\" | Fayl \"%s\" albomuna şifrələndi | Success toast after encrypting a single file into album `%s` |
+| 17 | `files_hidden_to_album` | %1$d files encrypted to \"%2$s\" | %1$d fayl \"%2$s\" albomuna şifrələndi | Success toast after encrypting `%1$d` files into album `%2$s` |
+| 18 | `select_hidden_album` | Select Encrypted Album | Şifrəli Albom Seçin | Dialog title for choosing the target encrypted album |
+| 19 | `create_new_hidden_album` | Create New Encrypted Album | Yeni Şifrəli Albom Yarat | Action label to create a new encrypted album |
+| 20 | `new_hidden_album` | New encrypted album | Yeni şifrəli albom | Input hint / default label for a new encrypted album |
 
 ## 2. Full 1-to-1 Comparison: English vs. Azerbaijani
 
@@ -333,8 +360,8 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 197 | `limit_folder_title` | Limit long folder titles to 1 line | Uzun qovluq adlarını 1 sətirlə məhdudlaşdır |
 | 198 | `square` | Square | Kvadrat |
 | 199 | `rounded_corners` | Rounded corners | Dairəvi künclər |
-| 200 | `export_favorite_paths` | Export favorites | Sevimliləri ixrac et |
-| 201 | `import_favorite_paths` | Import favorites | Sevimliləri idxal et |
+| 200 | `export_favorite_paths` | Export favorites and virtual albums | Sevimliləri və virtual albomları ixrac et |
+| 201 | `import_favorite_paths` | Import favorites and virtual albums | Sevimliləri və virtual albomları idxal et |
 | 202 | `paths_imported_successfully` | Paths imported successfully | Yollar uğurla idxal edildi |
 | 203 | `media_management_prompt` | To make sure that all file operations work reliably, please make this app a Media management app in your device settings. | Bütün fayl əməliyyatlarının etibarlı işləməsini təmin etmək üçün, zəhmət olmasa, cihaz parametrlərində bu tətbiqi Media idarəetmə tətbiqi kimi təyin edin. |
 | 204 | `password_protect_excluded` | Password protect excluded folder visibility | İstisna edilmiş qovluqların görünməsini parolla qoru |
@@ -417,12 +444,12 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 281 | `encrypting_files` | Encrypting files… | Fayllar şifrələnir… |
 | 282 | `encrypting_folder` | Encrypting folder… | Qovluq şifrələnir… |
 | 283 | `folder_encrypted_successfully` | Folder encrypted successfully | Qovluq uğurla şifrələndi |
-| 284 | `file_encrypted_successfully` | File hidden successfully | Fayl uğurla gizlədildi |
-| 285 | `files_encrypted_successfully` | Files hidden successfully | Fayllar uğurla gizlədildi |
+| 284 | `file_encrypted_successfully` | File encrypted successfully | Fayl uğurla şifrələndi |
+| 285 | `files_encrypted_successfully` | Files encrypted successfully | Fayllar uğurla şifrələndi |
 | 286 | `decrypting_folder` | Decrypting folder… | Qovluğun şifrəsi açılır… |
 | 287 | `folder_decrypted_successfully` | Folder decrypted successfully | Qovluğun şifrəsi uğurla açıldı |
-| 288 | `file_decrypted_successfully` | File unhidden successfully | Fayl uğurla göstərildi |
-| 289 | `files_decrypted_successfully` | Files unhidden successfully | Fayllar uğurla göstərildi |
+| 288 | `file_decrypted_successfully` | File decrypted successfully | Fayl uğurla şifrəsi açıldı |
+| 289 | `files_decrypted_successfully` | Files decrypted successfully | Fayllar uğurla şifrəsi açıldı |
 | 290 | `decrypting_files` | Decrypting files… | Faylların şifrəsi açılır… |
 | 291 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | Zəhmət olmasa, barmağınızı barmaq izi sensoruna qoyun |
 | 292 | `connect_at_least_4_dots_prompt` | Connect at least 4 dots | Ən azı 4 nöqtəni birləşdirin |
@@ -454,12 +481,12 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 318 | `biometric_key_invalidated` | Biometric credentials have changed. Please enter your PIN or password. | Biometrik məlumatlar dəyişdirilib. Zəhmət olmasa, PIN və ya parolunuzu daxil edin. |
 | 319 | `no_biometric_hardware_or_enrolled` | No biometric hardware or enrolled credentials found on this device | Bu cihazda biometrik avadanlıq və ya qeydiyyatdan keçmiş məlumat tapılmadı |
 | 320 | `default_hidden_album` | Default Hidden Album | Defolt Gizli Albom |
-| 321 | `select_hidden_album` | Select Hidden Album | Gizli Albom Seçin |
-| 322 | `create_new_hidden_album` | Create New Hidden Album | Yeni Gizli Albom Yarat |
-| 323 | `new_hidden_album` | New hidden album | Yeni gizli albom |
+| 321 | `select_hidden_album` | Select Encrypted Album | Şifrəli Albom Seçin |
+| 322 | `create_new_hidden_album` | Create New Encrypted Album | Yeni Şifrəli Albom Yarat |
+| 323 | `new_hidden_album` | New encrypted album | Yeni şifrəli albom |
 | 324 | `hidden_album_name_empty` | Album name cannot be empty | Albom adı boş ola bilməz |
-| 325 | `file_hidden_to_album` | File hidden to \"%s\" | Fayl \"%s\" albomuna gizlədildi |
-| 326 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | %1$d fayl \"%2$s\" albomuna gizlədildi |
+| 325 | `file_hidden_to_album` | File encrypted to \"%s\" | Fayl \"%s\" albomuna şifrələndi |
+| 326 | `files_hidden_to_album` | %1$d files encrypted to \"%2$s\" | %1$d fayl \"%2$s\" albomuna şifrələndi |
 | 327 | `restore_confirmation` (`one`) | Are you sure you want to restore %d file? | %d faylı bərpa etmək istədiyinizə əminsiniz? |
 | 328 | `restore_confirmation` (`other`) | Are you sure you want to restore %d files? | %d faylı bərpa etmək istədiyinizə əminsiniz? |
 | 329 | `failed_to_resize_images` (`one`) | Failed to resize %d image | %d şəklin ölçüsünü dəyişmək mümkün olmadı |
@@ -498,3 +525,12 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 362 | `list` *(fossify-commons)* | List | Siyahı |
 | 363 | `resize` *(fossify-commons)* | Resize | Ölçüsünü dəyiş |
 | 364 | `version_placeholder` *(fossify-commons)* | Version %s | Versiya %s |
+| 365 | `number_of_items` *(fossify-commons)* | Number of items | Element sayı |
+| 366 | `random` *(fossify-commons)* | Random | Təsadüfi |
+| 367 | `shuffle` | Shuffle | Qarışdır |
+| 368 | `stop_showing_excluded` *(fossify-commons)* | Stop showing excluded | İstisna edilmiş elementləri göstərməyi dayandır |
+| 369 | `copy_to_clipboard` *(fossify-commons)* | Copy to clipboard | Buferə kopyala |
+| 370 | `encrypt` | Encrypt | Şifrələ |
+| 371 | `decrypt` | Decrypt | Şifrəni aç |
+| 372 | `encrypt_album` | Encrypt album | Albomu şifrələ |
+| 373 | `decrypt_album` | Decrypt album | Albomun şifrəsini aç |

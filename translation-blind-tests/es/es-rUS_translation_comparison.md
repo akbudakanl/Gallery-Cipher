@@ -1,6 +1,6 @@
 # Spanish (United States, values-es-rUS) Translation Completion & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-es-rUS/strings.xml` was updated to full parity using Standard Spanish (`values-es/strings.xml`) as reference and adapting all entries to United States Spanish (`es-rUS`). Previously, `values-es-rUS` contained only 9 `<string>` entries (and 0 `<plurals>`). All 9 existing entries (including the local `search` override, which is absent in `fossify-commons` `values-es-rUS`) were preserved, and all 298 missing `<string>` entries plus 2 `<plurals>` blocks were added (374 `<string>` + 2 `<plurals>` = 376 resource entries; 367 total comparison rows including 31 `fossify-commons` keys — 18 previously overridden UI keys plus 13 newly overridden keys (`manage_excluded_folders`, `exclude`, `exclude_folder`, `lock_folder`, `change_cover_image`, `select_photo`, `use_default`, `column_count`, `open_the_recycle_bin`, `grid`, `list`, `resize`, `version_placeholder`), all missing in `fossify-commons` `values-es-rUS`).
+> **Scope:** `app/src/main/res/values-es-rUS/strings.xml` was updated to full parity using Standard Spanish (`values-es/strings.xml`) as reference and adapting all entries to United States Spanish (`es-rUS`). Previously, `values-es-rUS` contained only 9 `<string>` entries (and 0 `<plurals>`). All 9 existing entries (including the local `search` override, which is absent in `fossify-commons` `values-es-rUS`) were preserved, and all 298 missing `<string>` entries plus 2 `<plurals>` blocks were added (383 `<string>` + 2 `<plurals>` = 385 resource entries; 376 total comparison rows including 31 `fossify-commons` keys — 18 previously overridden UI keys plus 13 newly overridden keys (`manage_excluded_folders`, `exclude`, `exclude_folder`, `lock_folder`, `change_cover_image`, `select_photo`, `use_default`, `column_count`, `open_the_recycle_bin`, `grid`, `list`, `resize`, `version_placeholder`), all missing in `fossify-commons` `values-es-rUS`). Nine keys that were missing from `values-es-rUS/strings.xml` were translated and added (`number_of_items`, `random`, `shuffle`, `stop_showing_excluded`, `copy_to_clipboard`, `encrypt`, `decrypt`, `encrypt_album`, `decrypt_album`), and eleven existing entries were revised so that files and albums use the new \"encrypt / decrypt\" wording and so that the favorites import/export labels mention virtual albums as well.
 > **Key Terminology & Regional Adaptations vs. `values-es`:** `Ajustes` → `Configuración` · `vídeo/vídeos` → `video/videos` · `ficheros` → `archivos` · `añadir` → `agregar` · `Gestionar` → `Administrar` · `Sistema por defecto` → `Predeterminado del sistema` · `Introduzca la contraseña` → `Ingresar contraseña` · `pegatinas` → `stickers` · `pulsado` → `presionado` · `Search` → `Buscar` (local override kept for `dialog_select_language.xml`)
 
 ## 1. Existing Regional Entries & Key Adaptations from Standard Spanish
@@ -109,10 +109,10 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 42 | 42 | `vault_exit_question_multiple` | Show encrypted albums together with other albums? |  |
 | 43 | 43 | `vault_exit_settings_hint` | For more options, see Settings &gt; On leaving encrypted section |  |
 | 44 | 44 | `open_system_language_settings` | Open system language settings |  |
-| 45 | 45 | `file_encrypted_successfully` | File hidden successfully | Success toast after encrypting/hiding a single file |
-| 46 | 46 | `files_encrypted_successfully` | Files hidden successfully | Success toast after encrypting/hiding multiple files |
-| 47 | 47 | `file_decrypted_successfully` | File unhidden successfully | Success toast after decrypting/unhiding a single file |
-| 48 | 48 | `files_decrypted_successfully` | Files unhidden successfully | Success toast after decrypting/unhiding multiple files |
+| 45 | 45 | `file_encrypted_successfully` | File encrypted successfully | Archivo cifrado correctamente                |
+| 46 | 46 | `files_encrypted_successfully` | Files encrypted successfully | Archivos cifrados correctamente               |
+| 47 | 47 | `file_decrypted_successfully` | File decrypted successfully | Archivo descifrado correctamente             |
+| 48 | 48 | `files_decrypted_successfully` | Files decrypted successfully | Archivos descifrados correctamente            |
 | 49 | 49 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | Settings switch, setup prompt title, and vault security dialog button |
 | 50 | 50 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | Toast shown when enabling biometrics before hidden-item password protection |
 | 51 | 51 | `biometric_unlock_vault` | Unlock encrypted vault | BiometricPrompt title when unlocking the encrypted vault |
@@ -122,16 +122,43 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 55 | 55 | `biometric_key_invalidated` | Biometric credentials have changed. Please enter your PIN or password. | Toast shown when biometric credentials changed and Keystore key invalidated |
 | 56 | 56 | `no_biometric_hardware_or_enrolled` | No biometric hardware or enrolled credentials found on this device | Toast shown when no biometric hardware or enrolled credentials exist |
 | 57 | 57 | `default_hidden_album` | Default Hidden Album | Settings / picker label for default hidden album |
-| 58 | 58 | `select_hidden_album` | Select Hidden Album | Dialog title for choosing target hidden album |
-| 59 | 59 | `create_new_hidden_album` | Create New Hidden Album | Action label to create a new hidden album |
-| 60 | 60 | `new_hidden_album` | New hidden album | Input hint / default label for new hidden album |
+| 58 | 58 | `select_hidden_album` | Select Encrypted Album | Seleccionar álbum cifrado                            |
+| 59 | 59 | `create_new_hidden_album` | Create New Encrypted Album | Crear nuevo álbum cifrado                    |
+| 60 | 60 | `new_hidden_album` | New encrypted album | Nuevo álbum cifrado                                  |
 | 61 | 61 | `hidden_album_name_empty` | Album name cannot be empty | Validation error when hidden album name is blank |
-| 62 | 62 | `file_hidden_to_album` | File hidden to \"%s\" | Success toast after hiding a single file into album `%s` |
-| 63 | 63 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | Success toast after hiding `%1$d` files into album `%2$s` |
+| 62 | 62 | `file_hidden_to_album` | File encrypted to \"%s\" | Archivo cifrado en \"%s\"                                    |
+| 63 | 63 | `files_hidden_to_album` | %1$d files encrypted to \"%2$s\" | %1$d archivos cifrados en \"%2$s\"                            |
 | 64 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Siga deslizando hacia abajo para la bóveda | Vault pull gesture hint shown while the pull is below the open threshold |
 | 65 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Siga manteniendo pulsado para abrir la bóveda cifrada | Vault pull gesture hint shown once the pull passes the threshold, before the 2.5 s hold completes |
 | 66 | `release_to_open_vault` | Release to open Encrypted Vault | Suelte para abrir la bóveda cifrada | Vault pull gesture hint shown after holding the pull for 2.5 s; releasing opens the vault |
 
+
+### Newly Added Missing Translations (9 Keys) & Revised Entries (11 Keys)
+
+Nine keys that were missing from `values-es-rUS/strings.xml` were translated and added, and eleven existing entries were revised so that files and albums use the new \"encrypt / decrypt\" wording and so that the favorites import/export labels mention virtual albums as well.
+
+| # | Key (`name`) | English (`values/strings.xml`) | Spanish (United States) (`values-es-rUS/strings.xml`) | Notes |
+|---:|---|---|---|---|
+| 1 | `number_of_items` | Number of items | Número de elementos | Sorting option shown in the album view only; overridden locally because it is missing in `fossify-commons` for this locale |
+| 2 | `random` | Random | Aleatorio | Sorting option offered in every sorting state; overridden locally because it is missing in `fossify-commons` for this locale |
+| 3 | `shuffle` | Shuffle | Mezclar | Fullscreen viewer action that randomizes the media order; app owned string that was only available in English |
+| 4 | `stop_showing_excluded` | Stop showing excluded | Dejar de mostrar los excluidos | Main screen options-menu action that ends the temporary preview of excluded folders |
+| 5 | `copy_to_clipboard` | Copy to clipboard | Copiar al portapapeles | Fullscreen viewer action that copies a file to the clipboard |
+| 6 | `encrypt` | Encrypt | Cifrar | Replaces the inherited `hide` label for files; files and albums are encrypted, not hidden |
+| 7 | `decrypt` | Decrypt | Descifrar | Replaces the inherited `unhide` label for files |
+| 8 | `encrypt_album` | Encrypt album | Cifrar el álbum | Album (folder) context action that encrypts the album into the vault |
+| 9 | `decrypt_album` | Decrypt album | Descifrar el álbum | Album (folder) context action that decrypts the album back to its original location |
+| 10 | `export_favorite_paths` | Export favorites and virtual albums | Exportar favoritos y álbumes virtuales | Settings label; renamed because virtual albums are exported together with the favorites |
+| 11 | `import_favorite_paths` | Import favorites and virtual albums | Importar favoritos y álbumes virtuales | Settings label; renamed because virtual albums are imported together with the favorites |
+| 12 | `file_encrypted_successfully` | File encrypted successfully | Archivo cifrado correctamente | Success toast after encrypting a single file |
+| 13 | `files_encrypted_successfully` | Files encrypted successfully | Archivos cifrados correctamente | Success toast after encrypting multiple files |
+| 14 | `file_decrypted_successfully` | File decrypted successfully | Archivo descifrado correctamente | Success toast after decrypting a single file |
+| 15 | `files_decrypted_successfully` | Files decrypted successfully | Archivos descifrados correctamente | Success toast after decrypting multiple files |
+| 16 | `file_hidden_to_album` | File encrypted to \"%s\" | Archivo cifrado en \"%s\" | Success toast after encrypting a single file into album `%s` |
+| 17 | `files_hidden_to_album` | %1$d files encrypted to \"%2$s\" | %1$d archivos cifrados en \"%2$s\" | Success toast after encrypting `%1$d` files into album `%2$s` |
+| 18 | `select_hidden_album` | Select Encrypted Album | Seleccionar álbum cifrado | Dialog title for choosing the target encrypted album |
+| 19 | `create_new_hidden_album` | Create New Encrypted Album | Crear nuevo álbum cifrado | Action label to create a new encrypted album |
+| 20 | `new_hidden_album` | New encrypted album | Nuevo álbum cifrado | Input hint / default label for a new encrypted album |
 
 ## 2. Full 1-to-1 Comparison: English vs. Spanish (United States)
 
@@ -336,8 +363,8 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 197 | `limit_folder_title` | Limit long folder titles to 1 line | Limitar los títulos largos de carpetas a 1 línea |
 | 198 | `square` | Square | Cuadrado |
 | 199 | `rounded_corners` | Rounded corners | Esquinas redondeadas |
-| 200 | `export_favorite_paths` | Export favorites | Exportar favoritos |
-| 201 | `import_favorite_paths` | Import favorites | Importar favoritos |
+| 200 | `export_favorite_paths` | Export favorites and virtual albums | Exportar favoritos y álbumes virtuales |
+| 201 | `import_favorite_paths` | Import favorites and virtual albums | Importar favoritos y álbumes virtuales |
 | 202 | `paths_imported_successfully` | Paths imported successfully | Rutas importadas correctamente |
 | 203 | `media_management_prompt` | To make sure that all file operations work reliably, please make this app a Media management app in your device settings. | Para asegurarte de que todas las operaciones con archivos funcionen de manera confiable, configura esta aplicación como aplicación de administración de medios en la configuración de tu dispositivo. |
 | 204 | `password_protect_excluded` | Password protect excluded folder visibility | Proteger con contraseña la visibilidad de carpetas excluidas |
@@ -420,12 +447,12 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 281 | `encrypting_files` | Encrypting files… | Cifrando archivos… |
 | 282 | `encrypting_folder` | Encrypting folder… | Cifrando carpeta… |
 | 283 | `folder_encrypted_successfully` | Folder encrypted successfully | Carpeta cifrada correctamente |
-| 284 | `file_encrypted_successfully` | File hidden successfully | Archivo ocultado correctamente |
-| 285 | `files_encrypted_successfully` | Files hidden successfully | Archivos ocultados correctamente |
+| 284 | `file_encrypted_successfully` | File encrypted successfully | Archivo cifrado correctamente  |
+| 285 | `files_encrypted_successfully` | Files encrypted successfully | Archivos cifrados correctamente  |
 | 286 | `decrypting_folder` | Decrypting folder… | Descifrando carpeta… |
 | 287 | `folder_decrypted_successfully` | Folder decrypted successfully | Carpeta descifrada correctamente |
-| 288 | `file_decrypted_successfully` | File unhidden successfully | Archivo mostrado correctamente |
-| 289 | `files_decrypted_successfully` | Files unhidden successfully | Archivos mostrados correctamente |
+| 288 | `file_decrypted_successfully` | File decrypted successfully | Archivo descifrado correctamente |
+| 289 | `files_decrypted_successfully` | Files decrypted successfully | Archivos descifrados correctamente |
 | 290 | `decrypting_files` | Decrypting files… | Descifrando archivos… |
 | 291 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | Por favor, coloca tu dedo sobre el sensor de huellas |
 | 292 | `connect_at_least_4_dots_prompt` | Connect at least 4 dots | Conecta al menos 4 puntos |
@@ -457,12 +484,12 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 318 | `biometric_key_invalidated` | Biometric credentials have changed. Please enter your PIN or password. | Las credenciales biométricas han cambiado. Por favor, ingresa tu PIN o contraseña. |
 | 319 | `no_biometric_hardware_or_enrolled` | No biometric hardware or enrolled credentials found on this device | No se encontró hardware biométrico ni credenciales registradas en este dispositivo |
 | 320 | `default_hidden_album` | Default Hidden Album | Álbum oculto predeterminado |
-| 321 | `select_hidden_album` | Select Hidden Album | Seleccionar álbum oculto |
-| 322 | `create_new_hidden_album` | Create New Hidden Album | Crear nuevo álbum oculto |
-| 323 | `new_hidden_album` | New hidden album | Nuevo álbum oculto |
+| 321 | `select_hidden_album` | Select Encrypted Album | Seleccionar álbum cifrado |
+| 322 | `create_new_hidden_album` | Create New Encrypted Album | Crear nuevo álbum cifrado |
+| 323 | `new_hidden_album` | New encrypted album | Nuevo álbum cifrado |
 | 324 | `hidden_album_name_empty` | Album name cannot be empty | El nombre del álbum no puede estar vacío |
-| 325 | `file_hidden_to_album` | File hidden to \"%s\" | Archivo ocultado en \"%s\" |
-| 326 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | %1$d archivos ocultados en \"%2$s\" |
+| 325 | `file_hidden_to_album` | File encrypted to \"%s\" | Archivo cifrado en \"%s\"  |
+| 326 | `files_hidden_to_album` | %1$d files encrypted to \"%2$s\" | %1$d archivos cifrados en \"%2$s\"  |
 | 327 | `restore_confirmation` (`one`) | Are you sure you want to restore %d file? | ¿Seguro que quieres restaurar %d archivo? |
 | 328 | `restore_confirmation` (`many`) | *(CLDR `many` — falls back to English `other`)* | ¿Seguro que quieres restaurar %d archivos? |
 | 329 | `restore_confirmation` (`other`) | Are you sure you want to restore %d files? | ¿Seguro que quieres restaurar %d archivos? |
@@ -504,3 +531,12 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 365 | `list` *(fossify-commons)* | List | Lista |
 | 366 | `resize` *(fossify-commons)* | Resize | Cambiar tamaño |
 | 367 | `version_placeholder` *(fossify-commons)* | Version %s | Versión %s |
+| 368 | `number_of_items` *(fossify-commons)* | Number of items | Número de elementos |
+| 369 | `random` *(fossify-commons)* | Random | Aleatorio |
+| 370 | `shuffle` | Shuffle | Mezclar |
+| 371 | `stop_showing_excluded` *(fossify-commons)* | Stop showing excluded | Dejar de mostrar los excluidos |
+| 372 | `copy_to_clipboard` *(fossify-commons)* | Copy to clipboard | Copiar al portapapeles |
+| 373 | `encrypt` | Encrypt | Cifrar |
+| 374 | `decrypt` | Decrypt | Descifrar |
+| 375 | `encrypt_album` | Encrypt album | Cifrar el álbum |
+| 376 | `decrypt_album` | Decrypt album | Descifrar el álbum |

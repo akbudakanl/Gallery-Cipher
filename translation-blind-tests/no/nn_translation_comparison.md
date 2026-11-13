@@ -1,6 +1,6 @@
 # Norwegian Nynorsk (values-nn) Translation Completion & English 1-to-1 Comparison
 
-> **Scope:** `app/src/main/res/values-nn/strings.xml` was audited from scratch against `app/src/main/res/values/strings.xml`. Previously, `values-nn` contained only 23 `<string>` entries (and 0 `<plurals>`). Three inaccurate/typoed existing entries were fixed, and all 285 missing `<string>` entries plus 2 `<plurals>` entries (`restore_confirmation` and `failed_to_resize_images`) were translated into Norwegian Nynorsk, bringing `values-nn` to full parity (374 `<string>` + 2 `<plurals>` = 376 app resource entries; `search` and 18 previously overridden shared UI keys from `fossify-commons` plus 13 additional `fossify-commons` UI keys (`manage_excluded_folders`, `exclude`, `exclude_folder`, `lock_folder`, `change_cover_image`, `select_photo`, `use_default`, `column_count`, `open_the_recycle_bin`, `grid`, `list`, `resize`, `version_placeholder`) newly overridden because they are missing in `fossify-commons` `values-nn`; 365 total comparison rows with plural forms expanded).
+> **Scope:** `app/src/main/res/values-nn/strings.xml` was audited from scratch against `app/src/main/res/values/strings.xml`. Previously, `values-nn` contained only 23 `<string>` entries (and 0 `<plurals>`). Three inaccurate/typoed existing entries were fixed, and all 285 missing `<string>` entries plus 2 `<plurals>` entries (`restore_confirmation` and `failed_to_resize_images`) were translated into Norwegian Nynorsk, bringing `values-nn` to full parity (383 `<string>` + 2 `<plurals>` = 385 app resource entries; `search` and 18 previously overridden shared UI keys from `fossify-commons` plus 13 additional `fossify-commons` UI keys (`manage_excluded_folders`, `exclude`, `exclude_folder`, `lock_folder`, `change_cover_image`, `select_photo`, `use_default`, `column_count`, `open_the_recycle_bin`, `grid`, `list`, `resize`, `version_placeholder`) newly overridden because they are missing in `fossify-commons` `values-nn`; 374 total comparison rows with plural forms expanded). Nine keys that were missing from `values-nn/strings.xml` were translated and added (`number_of_items`, `random`, `shuffle`, `stop_showing_excluded`, `copy_to_clipboard`, `encrypt`, `decrypt`, `encrypt_album`, `decrypt_album`), and eleven existing entries were revised so that files and albums use the new \"encrypt / decrypt\" wording and so that the favorites import/export labels mention virtual albums as well.
 > **Key Terminology:** `Settings` → `Innstillingar` · `Default` → `Standard` / `Systemstandard` · `Folder` → `Mappe` · `Album` → `Album` · `Encrypted Vault` → `Kryptert kvelv` · `Hidden` → `Skjult` · `Excluded` → `Ekskludert` · `Password` → `Passord` · `Encrypt / Decrypt` → `Kryptera / Dekryptera` · `Thumbnails` → `Minibilete` · `Recycle bin` → `Papirkorg` · `Clipboard` → `Utklippstavla`
 
 ## 1. Review of 23 Previously Existing Translations and Changes Made
@@ -121,10 +121,10 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 42 | 42 | `vault_exit_question_multiple` | Show encrypted albums together with other albums? |  |
 | 43 | 43 | `vault_exit_settings_hint` | For more options, see Settings &gt; On leaving encrypted section |  |
 | 44 | 44 | `open_system_language_settings` | Open system language settings |  |
-| 45 | 45 | `file_encrypted_successfully` | File hidden successfully | Success toast after encrypting/hiding a single file |
-| 46 | 46 | `files_encrypted_successfully` | Files hidden successfully | Success toast after encrypting/hiding multiple files |
-| 47 | 47 | `file_decrypted_successfully` | File unhidden successfully | Success toast after decrypting/unhiding a single file |
-| 48 | 48 | `files_decrypted_successfully` | Files unhidden successfully | Success toast after decrypting/unhiding multiple files |
+| 45 | 45 | `file_encrypted_successfully` | File encrypted successfully | Fila vart kryptert                           |
+| 46 | 46 | `files_encrypted_successfully` | Files encrypted successfully | Filene vart krypterte                         |
+| 47 | 47 | `file_decrypted_successfully` | File decrypted successfully | Fila vart dekryptert                         |
+| 48 | 48 | `files_decrypted_successfully` | Files decrypted successfully | Filene vart dekrypterte                       |
 | 49 | 49 | `access_hidden_items_with_biometrics` | Access hidden items with biometrics | Settings switch, setup prompt title, and vault security dialog button |
 | 50 | 50 | `enable_hidden_protection_first_prompt` | Please enable hidden item password protection first | Toast shown when enabling biometrics before hidden-item password protection |
 | 51 | 51 | `biometric_unlock_vault` | Unlock encrypted vault | BiometricPrompt title when unlocking the encrypted vault |
@@ -134,16 +134,43 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 55 | 55 | `biometric_key_invalidated` | Biometric credentials have changed. Please enter your PIN or password. | Toast shown when biometric credentials changed and Keystore key invalidated |
 | 56 | 56 | `no_biometric_hardware_or_enrolled` | No biometric hardware or enrolled credentials found on this device | Toast shown when no biometric hardware or enrolled credentials exist |
 | 57 | 57 | `default_hidden_album` | Default Hidden Album | Settings / picker label for default hidden album |
-| 58 | 58 | `select_hidden_album` | Select Hidden Album | Dialog title for choosing target hidden album |
-| 59 | 59 | `create_new_hidden_album` | Create New Hidden Album | Action label to create a new hidden album |
-| 60 | 60 | `new_hidden_album` | New hidden album | Input hint / default label for new hidden album |
+| 58 | 58 | `select_hidden_album` | Select Encrypted Album | Vel kryptert album                                   |
+| 59 | 59 | `create_new_hidden_album` | Create New Encrypted Album | Opprett nytt kryptert album                  |
+| 60 | 60 | `new_hidden_album` | New encrypted album | Nytt kryptert album                                  |
 | 61 | 61 | `hidden_album_name_empty` | Album name cannot be empty | Validation error when hidden album name is blank |
-| 62 | 62 | `file_hidden_to_album` | File hidden to \"%s\" | Success toast after hiding a single file into album `%s` |
-| 63 | 63 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | Success toast after hiding `%1$d` files into album `%2$s` |
+| 62 | 62 | `file_hidden_to_album` | File encrypted to \"%s\" | Fil kryptert i «%s»                                          |
+| 63 | 63 | `files_hidden_to_album` | %1$d files encrypted to \"%2$s\" | %1$d filer krypterte i «%2$s»                                 |
 | 64 | `pull_down_to_open_vault` | Keep pulling down for Encrypted Vault | Hald fram med å dra ned for kryptert kvelv | Vault pull gesture hint shown while the pull is below the open threshold |
 | 65 | `keep_holding_to_open_vault` | Keep holding to open Encrypted Vault | Hald fram med å halde for å opne kryptert kvelv | Vault pull gesture hint shown once the pull passes the threshold, before the 2.5 s hold completes |
 | 66 | `release_to_open_vault` | Release to open Encrypted Vault | Slepp for å opne kryptert kvelv | Vault pull gesture hint shown after holding the pull for 2.5 s; releasing opens the vault |
 
+
+### Newly Added Missing Translations (9 Keys) & Revised Entries (11 Keys)
+
+Nine keys that were missing from `values-nn/strings.xml` were translated and added, and eleven existing entries were revised so that files and albums use the new \"encrypt / decrypt\" wording and so that the favorites import/export labels mention virtual albums as well.
+
+| # | Key (`name`) | English (`values/strings.xml`) | Norwegian Nynorsk (`values-nn/strings.xml`) | Notes |
+|---:|---|---|---|---|
+| 1 | `number_of_items` | Number of items | Tal på element | Sorting option shown in the album view only; overridden locally because it is missing in `fossify-commons` for this locale |
+| 2 | `random` | Random | Tilfeldig | Sorting option offered in every sorting state; overridden locally because it is missing in `fossify-commons` for this locale |
+| 3 | `shuffle` | Shuffle | Bland | Fullscreen viewer action that randomizes the media order; app owned string that was only available in English |
+| 4 | `stop_showing_excluded` | Stop showing excluded | Slutt å vise ekskluderte | Main screen options-menu action that ends the temporary preview of excluded folders |
+| 5 | `copy_to_clipboard` | Copy to clipboard | Kopier til utklippstavla | Fullscreen viewer action that copies a file to the clipboard |
+| 6 | `encrypt` | Encrypt | Krypter | Replaces the inherited `hide` label for files; files and albums are encrypted, not hidden |
+| 7 | `decrypt` | Decrypt | Dekrypter | Replaces the inherited `unhide` label for files |
+| 8 | `encrypt_album` | Encrypt album | Krypter album | Album (folder) context action that encrypts the album into the vault |
+| 9 | `decrypt_album` | Decrypt album | Dekrypter album | Album (folder) context action that decrypts the album back to its original location |
+| 10 | `export_favorite_paths` | Export favorites and virtual albums | Eksporter favorittar og virtuelle album | Settings label; renamed because virtual albums are exported together with the favorites |
+| 11 | `import_favorite_paths` | Import favorites and virtual albums | Importer favorittar og virtuelle album | Settings label; renamed because virtual albums are imported together with the favorites |
+| 12 | `file_encrypted_successfully` | File encrypted successfully | Fila vart kryptert | Success toast after encrypting a single file |
+| 13 | `files_encrypted_successfully` | Files encrypted successfully | Filene vart krypterte | Success toast after encrypting multiple files |
+| 14 | `file_decrypted_successfully` | File decrypted successfully | Fila vart dekryptert | Success toast after decrypting a single file |
+| 15 | `files_decrypted_successfully` | Files decrypted successfully | Filene vart dekrypterte | Success toast after decrypting multiple files |
+| 16 | `file_hidden_to_album` | File encrypted to \"%s\" | Fil kryptert i «%s» | Success toast after encrypting a single file into album `%s` |
+| 17 | `files_hidden_to_album` | %1$d files encrypted to \"%2$s\" | %1$d filer krypterte i «%2$s» | Success toast after encrypting `%1$d` files into album `%2$s` |
+| 18 | `select_hidden_album` | Select Encrypted Album | Vel kryptert album | Dialog title for choosing the target encrypted album |
+| 19 | `create_new_hidden_album` | Create New Encrypted Album | Opprett nytt kryptert album | Action label to create a new encrypted album |
+| 20 | `new_hidden_album` | New encrypted album | Nytt kryptert album | Input hint / default label for a new encrypted album |
 
 ## 2. Full 1-to-1 Comparison: English vs. Norwegian Nynorsk
 
@@ -348,8 +375,8 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 197 | `limit_folder_title` | Limit long folder titles to 1 line | Avgrens lange mappetitlar til 1 linje |
 | 198 | `square` | Square | Firkanta |
 | 199 | `rounded_corners` | Rounded corners | Avrunda hjørne |
-| 200 | `export_favorite_paths` | Export favorites | Eksporter favorittar |
-| 201 | `import_favorite_paths` | Import favorites | Importer favorittar |
+| 200 | `export_favorite_paths` | Export favorites and virtual albums | Eksporter favorittar og virtuelle album |
+| 201 | `import_favorite_paths` | Import favorites and virtual albums | Importer favorittar og virtuelle album |
 | 202 | `paths_imported_successfully` | Paths imported successfully | Filstiar vart importerte |
 | 203 | `media_management_prompt` | To make sure that all file operations work reliably, please make this app a Media management app in your device settings. | For å vera sikker på at alle filoperasjonar fungerer påliteleg, gjer denne appen til ein mediaadministrasjonsapp i einingsinnstillingane. |
 | 204 | `password_protect_excluded` | Password protect excluded folder visibility | Passordvern for synlegheita til ekskluderte mapper |
@@ -432,12 +459,12 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 281 | `encrypting_files` | Encrypting files… | Krypterer filer… |
 | 282 | `encrypting_folder` | Encrypting folder… | Krypterer mappe… |
 | 283 | `folder_encrypted_successfully` | Folder encrypted successfully | Mappa vart kryptert |
-| 284 | `file_encrypted_successfully` | File hidden successfully | Fila vart gøymd |
-| 285 | `files_encrypted_successfully` | Files hidden successfully | Filene vart gøymde |
+| 284 | `file_encrypted_successfully` | File encrypted successfully | Fila vart kryptert |
+| 285 | `files_encrypted_successfully` | Files encrypted successfully | Filene vart krypterte |
 | 286 | `decrypting_folder` | Decrypting folder… | Dekrypterer mappe… |
 | 287 | `folder_decrypted_successfully` | Folder decrypted successfully | Mappa vart dekryptert |
-| 288 | `file_decrypted_successfully` | File unhidden successfully | Fila vart vist |
-| 289 | `files_decrypted_successfully` | Files unhidden successfully | Filene vart viste |
+| 288 | `file_decrypted_successfully` | File decrypted successfully | Fila vart dekryptert |
+| 289 | `files_decrypted_successfully` | Files decrypted successfully | Filene vart dekrypterte |
 | 290 | `decrypting_files` | Decrypting files… | Dekrypterer filer… |
 | 291 | `place_finger_prompt` | Please place your finger on the fingerprint sensor | Plasser fingeren på fingeravtrykkssensoren |
 | 292 | `connect_at_least_4_dots_prompt` | Connect at least 4 dots | Kopla saman minst 4 punkt |
@@ -469,12 +496,12 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 318 | `biometric_key_invalidated` | Biometric credentials have changed. Please enter your PIN or password. | Biometriske data er endra. Ver venleg og skriv inn PIN eller passord. |
 | 319 | `no_biometric_hardware_or_enrolled` | No biometric hardware or enrolled credentials found on this device | Fann inga biometrisk maskinvare eller registrerte biometriske data på denne eininga |
 | 320 | `default_hidden_album` | Default Hidden Album | Standard skjult album |
-| 321 | `select_hidden_album` | Select Hidden Album | Vel skjult album |
-| 322 | `create_new_hidden_album` | Create New Hidden Album | Opprett nytt skjult album |
-| 323 | `new_hidden_album` | New hidden album | Nytt skjult album |
+| 321 | `select_hidden_album` | Select Encrypted Album | Vel kryptert album |
+| 322 | `create_new_hidden_album` | Create New Encrypted Album | Opprett nytt kryptert album |
+| 323 | `new_hidden_album` | New encrypted album | Nytt kryptert album |
 | 324 | `hidden_album_name_empty` | Album name cannot be empty | Albumnamn kan ikkje vera tomt |
-| 325 | `file_hidden_to_album` | File hidden to \"%s\" | Fil gøymd i «%s» |
-| 326 | `files_hidden_to_album` | %1$d files hidden to \"%2$s\" | %1$d filer gøymde i «%2$s» |
+| 325 | `file_hidden_to_album` | File encrypted to \"%s\" | Fil kryptert i «%s» |
+| 326 | `files_hidden_to_album` | %1$d files encrypted to \"%2$s\" | %1$d filer krypterte i «%2$s» |
 | 327 | `restore_confirmation` (`one`) | Are you sure you want to restore %d file? | Er du sikker på at du vil gjenoppretta %d fil? |
 | 328 | `restore_confirmation` (`other`) | Are you sure you want to restore %d files? | Er du sikker på at du vil gjenoppretta %d filer? |
 | 329 | `failed_to_resize_images` (`one`) | Failed to resize %d image | Klarte ikkje å endra storleik på %d bilete |
@@ -514,3 +541,12 @@ These 66 strings were introduced by this fork (Gallery-Cipher) and do not exist 
 | 363 | `list` *(fossify-commons)* | List | Liste |
 | 364 | `resize` *(fossify-commons)* | Resize | Endra storleik |
 | 365 | `version_placeholder` *(fossify-commons)* | Version %s | Versjon %s |
+| 366 | `number_of_items` *(fossify-commons)* | Number of items | Tal på element |
+| 367 | `random` *(fossify-commons)* | Random | Tilfeldig |
+| 368 | `shuffle` | Shuffle | Bland |
+| 369 | `stop_showing_excluded` *(fossify-commons)* | Stop showing excluded | Slutt å vise ekskluderte |
+| 370 | `copy_to_clipboard` *(fossify-commons)* | Copy to clipboard | Kopier til utklippstavla |
+| 371 | `encrypt` | Encrypt | Krypter |
+| 372 | `decrypt` | Decrypt | Dekrypter |
+| 373 | `encrypt_album` | Encrypt album | Krypter album |
+| 374 | `decrypt_album` | Decrypt album | Dekrypter album |
