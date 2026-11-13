@@ -46,6 +46,11 @@ For full architectural details, cryptography specifications, and user guides, se
 - **Smoother rotation by aspect ratio (`MediaDimensions`, `AspectRatioOrientation`, `ViewPagerActivity`, `VideoFragment`, `PhotoFragment`):**
   - The dimensions of the media are no longer read on the main thread. They are resolved in the background and cached, so the screen is rotated as soon as the aspect ratio of the media is known.
   - Videos use the exact display size reported by the media player, so the rotation is applied at the same time as the playback starts. With autoplay enabled the playback waits for the rotation, without it the rotation happens as soon as the video appears on the screen.
+- **Files and Albums Are Now Labeled "Encrypt" and "Decrypt" (`strings.xml`, `cab_media.xml`, `cab_directories.xml`, `menu_viewpager.xml`, `DirectoryAdapter`, `ViewPagerActivity`):**
+  - Hiding a file or an album in this fork means encrypting it into the vault, so the inherited "Hide" / "Unhide" labels were misleading. The context actions of the file grid, of the album grid and of the viewer now say "Encrypt" / "Decrypt", and "Encrypt album" / "Decrypt album" for an album.
+  - A folder that is only hidden with a `.nomedia` file keeps the "Unhide" label, because nothing is decrypted in that case.
+  - The success messages of the encryption and the labels of the encrypted album picker use the same wording now, and the settings entries for the favorites were renamed to "Export favorites and virtual albums" / "Import favorites and virtual albums", because the virtual albums are part of the same backup.
+  - The missing translations of the sorting, sharing and encryption labels were added for the Turkish, German, Spanish (standard, Latin America and United States), Japanese, Norwegian (Bokmål and Nynorsk), Azerbaijani and Traditional Chinese locales.
 ### Fixed
 - **Favorites and Virtual Albums Broke When a Folder Was Renamed or Moved (`VirtualAlbums`, `Favorites`, `DirectoryAdapter`, `Activity`):**
   - Renaming or moving a physical folder left every reference pointing at the old location, so the album appeared empty and could not be filled with new files anymore.

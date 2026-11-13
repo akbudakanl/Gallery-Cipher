@@ -1248,7 +1248,7 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
 
         binding.bottomActions.bottomToggleFileVisibility.beVisibleIf(visibleBottomActions and BOTTOM_ACTION_TOGGLE_VISIBILITY != 0)
         binding.bottomActions.bottomToggleFileVisibility.setOnLongClickListener {
-            toast(if (currentMedium?.isHidden() == true) org.fossify.commons.R.string.unhide else org.fossify.commons.R.string.hide); true
+            toast(if (currentMedium?.isHidden() == true) R.string.decrypt else R.string.encrypt); true
         }
 
         binding.bottomActions.bottomToggleFileVisibility.setOnClickListener {

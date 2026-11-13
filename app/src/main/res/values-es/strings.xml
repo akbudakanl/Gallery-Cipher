@@ -209,8 +209,8 @@
     <string name="limit_folder_title">Limitar los títulos largos de las carpetas a 1 línea</string>
     <string name="square">Cuadrado</string>
     <string name="rounded_corners">Esquinas redondeadas</string>
-    <string name="export_favorite_paths">Exportar los favoritos</string>
-    <string name="import_favorite_paths">Importar los favoritos</string>
+    <string name="export_favorite_paths">Exportar favoritos y álbumes virtuales</string>
+    <string name="import_favorite_paths">Importar favoritos y álbumes virtuales</string>
     <string name="paths_imported_successfully">Rutas importadas correctamente</string>
     <string name="media_management_prompt">Para asegurarse de que todas las operaciones en ficheros funcionan de forma segura, por favor haga esta aplicación una aplicación de manejo de medios en los ajustes de su dispositivo.</string>
     <string name="password_protect_excluded">Proteger con contraseña la visibilidad de las carpetas excluidas</string>
@@ -293,12 +293,12 @@
     <string name="encrypting_files">Cifrando archivos…</string>
     <string name="encrypting_folder">Cifrando carpeta…</string>
     <string name="folder_encrypted_successfully">Carpeta cifrada correctamente</string>
-    <string name="file_encrypted_successfully">Archivo ocultado correctamente</string>
-    <string name="files_encrypted_successfully">Archivos ocultados correctamente</string>
+    <string name="file_encrypted_successfully">Archivo cifrado correctamente</string>
+    <string name="files_encrypted_successfully">Archivos cifrados correctamente</string>
     <string name="decrypting_folder">Descifrando carpeta…</string>
     <string name="folder_decrypted_successfully">Carpeta descifrada correctamente</string>
-    <string name="file_decrypted_successfully">Archivo mostrado correctamente</string>
-    <string name="files_decrypted_successfully">Archivos mostrados correctamente</string>
+    <string name="file_decrypted_successfully">Archivo descifrado correctamente</string>
+    <string name="files_decrypted_successfully">Archivos descifrados correctamente</string>
     <string name="decrypting_files">Descifrando archivos…</string>
     <string name="place_finger_prompt">Por favor, ponga el dedo en el sensor de huellas</string>
     <string name="connect_at_least_4_dots_prompt">Conecta al menos 4 puntos</string>
@@ -329,12 +329,12 @@
     <string name="use_password_or_pin">Usar PIN / Contraseña</string>
     <string name="biometric_key_invalidated">Las credenciales biométricas han cambiado. Por favor, introduzca su PIN o contraseña.</string>
     <string name="no_biometric_hardware_or_enrolled">No se ha encontrado hardware biométrico ni credenciales registradas en este dispositivo</string>
-    <string name="select_hidden_album">Seleccionar álbum oculto</string>
-    <string name="create_new_hidden_album">Crear nuevo álbum oculto</string>
-    <string name="new_hidden_album">Nuevo álbum oculto</string>
+    <string name="select_hidden_album">Seleccionar álbum cifrado</string>
+    <string name="create_new_hidden_album">Crear nuevo álbum cifrado</string>
+    <string name="new_hidden_album">Nuevo álbum cifrado</string>
     <string name="hidden_album_name_empty">El nombre del álbum no puede estar vacío</string>
-    <string name="file_hidden_to_album">Archivo ocultado en \"%s\"</string>
-    <string name="files_hidden_to_album">%1$d archivos ocultados en \"%2$s\"</string>
+    <string name="file_hidden_to_album">Archivo cifrado en \"%s\"</string>
+    <string name="files_hidden_to_album">%1$d archivos cifrados en \"%2$s\"</string>
     <string name="encrypted_vault">Bóveda cifrada</string>
     <string name="create_encrypted_vault">Crear bóveda cifrada</string>
     <string name="change_encrypted_vault_password">Cambiar contraseña de la bóveda cifrada</string>
@@ -352,4 +352,15 @@
     <string name="keep_holding_to_open_vault">Siga manteniendo pulsado para abrir la bóveda cifrada</string>
     <string name="release_to_open_vault">Suelte para abrir la bóveda cifrada</string>
     <string name="vault_not_created_prompt">Aún no ha creado una bóveda. ¿Desea crear una bóveda?</string>
+
+    <!-- Acciones de ordenación, copia y cifrado -->
+    <string name="number_of_items">Número de elementos</string>
+    <string name="random">Aleatorio</string>
+    <string name="shuffle">Mezclar</string>
+    <string name="stop_showing_excluded">Dejar de mostrar los excluidos</string>
+    <string name="copy_to_clipboard">Copiar al portapapeles</string>
+    <string name="encrypt">Cifrar</string>
+    <string name="decrypt">Descifrar</string>
+    <string name="encrypt_album">Cifrar el álbum</string>
+    <string name="decrypt_album">Descifrar el álbum</string>
 </resources>

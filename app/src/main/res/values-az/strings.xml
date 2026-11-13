@@ -229,8 +229,8 @@
     <string name="limit_folder_title">Uzun qovluq adlarını 1 sətirlə məhdudlaşdır</string>
     <string name="square">Kvadrat</string>
     <string name="rounded_corners">Dairəvi künclər</string>
-    <string name="export_favorite_paths">Sevimliləri ixrac et</string>
-    <string name="import_favorite_paths">Sevimliləri idxal et</string>
+    <string name="export_favorite_paths">Sevimliləri və virtual albomları ixrac et</string>
+    <string name="import_favorite_paths">Sevimliləri və virtual albomları idxal et</string>
     <string name="paths_imported_successfully">Yollar uğurla idxal edildi</string>
     <string name="media_management_prompt">Bütün fayl əməliyyatlarının etibarlı işləməsini təmin etmək üçün, zəhmət olmasa, cihaz parametrlərində bu tətbiqi Media idarəetmə tətbiqi kimi təyin edin.</string>
     <string name="password_protect_excluded">İstisna edilmiş qovluqların görünməsini parolla qoru</string>
@@ -325,12 +325,12 @@
     <string name="encrypting_files">Fayllar şifrələnir…</string>
     <string name="encrypting_folder">Qovluq şifrələnir…</string>
     <string name="folder_encrypted_successfully">Qovluq uğurla şifrələndi</string>
-    <string name="file_encrypted_successfully">Fayl uğurla gizlədildi</string>
-    <string name="files_encrypted_successfully">Fayllar uğurla gizlədildi</string>
+    <string name="file_encrypted_successfully">Fayl uğurla şifrələndi</string>
+    <string name="files_encrypted_successfully">Fayllar uğurla şifrələndi</string>
     <string name="decrypting_folder">Qovluğun şifrəsi açılır…</string>
     <string name="folder_decrypted_successfully">Qovluğun şifrəsi uğurla açıldı</string>
-    <string name="file_decrypted_successfully">Fayl uğurla göstərildi</string>
-    <string name="files_decrypted_successfully">Fayllar uğurla göstərildi</string>
+    <string name="file_decrypted_successfully">Fayl uğurla şifrəsi açıldı</string>
+    <string name="files_decrypted_successfully">Fayllar uğurla şifrəsi açıldı</string>
     <string name="decrypting_files">Faylların şifrəsi açılır…</string>
     <string name="place_finger_prompt">Zəhmət olmasa, barmağınızı barmaq izi sensoruna qoyun</string>
     <string name="connect_at_least_4_dots_prompt">Ən azı 4 nöqtəni birləşdirin</string>
@@ -394,12 +394,12 @@
     <string name="use_password_or_pin">PIN / Paroldan istifadə et</string>
     <string name="biometric_key_invalidated">Biometrik məlumatlar dəyişdirilib. Zəhmət olmasa, PIN və ya parolunuzu daxil edin.</string>
     <string name="no_biometric_hardware_or_enrolled">Bu cihazda biometrik avadanlıq və ya qeydiyyatdan keçmiş məlumat tapılmadı</string>
-    <string name="select_hidden_album">Gizli Albom Seçin</string>
-    <string name="create_new_hidden_album">Yeni Gizli Albom Yarat</string>
-    <string name="new_hidden_album">Yeni gizli albom</string>
+    <string name="select_hidden_album">Şifrəli Albom Seçin</string>
+    <string name="create_new_hidden_album">Yeni Şifrəli Albom Yarat</string>
+    <string name="new_hidden_album">Yeni şifrəli albom</string>
     <string name="hidden_album_name_empty">Albom adı boş ola bilməz</string>
-    <string name="file_hidden_to_album">Fayl \"%s\" albomuna gizlədildi</string>
-    <string name="files_hidden_to_album">%1$d fayl \"%2$s\" albomuna gizlədildi</string>
+    <string name="file_hidden_to_album">Fayl \"%s\" albomuna şifrələndi</string>
+    <string name="files_hidden_to_album">%1$d fayl \"%2$s\" albomuna şifrələndi</string>
     <string name="encrypted_vault">Şifrəli seyf</string>
     <string name="create_encrypted_vault">Şifrəli seyf yarat</string>
     <string name="change_encrypted_vault_password">Şifrəli seyfin şifrəsini dəyiş</string>
@@ -417,4 +417,15 @@
     <string name="keep_holding_to_open_vault">Şifrəli seyfi açmaq üçün basılı saxlayın</string>
     <string name="release_to_open_vault">Şifrəli seyfi açmaq üçün buraxın</string>
     <string name="vault_not_created_prompt">Hələ seyf yaratmamısınız. Seyf yaratmaq istəyirsiniz?</string>
+
+    <!-- Sıralama, kopyalama və şifrələmə əməliyyatları -->
+    <string name="number_of_items">Element sayı</string>
+    <string name="random">Təsadüfi</string>
+    <string name="shuffle">Qarışdır</string>
+    <string name="stop_showing_excluded">İstisna edilmiş elementləri göstərməyi dayandır</string>
+    <string name="copy_to_clipboard">Buferə kopyala</string>
+    <string name="encrypt">Şifrələ</string>
+    <string name="decrypt">Şifrəni aç</string>
+    <string name="encrypt_album">Albomu şifrələ</string>
+    <string name="decrypt_album">Albomun şifrəsini aç</string>
 </resources>

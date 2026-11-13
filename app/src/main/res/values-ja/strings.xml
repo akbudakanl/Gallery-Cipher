@@ -179,8 +179,8 @@
     <string name="limit_folder_title">長いフォルダー名を1行に制限</string>
     <string name="square">四角</string>
     <string name="rounded_corners">角丸</string>
-    <string name="export_favorite_paths">お気に入りをエクスポート</string>
-    <string name="import_favorite_paths">お気に入りをインポート</string>
+    <string name="export_favorite_paths">お気に入りと仮想アルバムをエクスポート</string>
+    <string name="import_favorite_paths">お気に入りと仮想アルバムをインポート</string>
     <string name="paths_imported_successfully">パスをインポートしました</string>
     <string name="media_management_prompt">すべてのファイル操作を確実に行うためには、端末の設定でこのアプリをメディア管理アプリにする必要があります。</string>
     <string name="password_protect_excluded">除外されたフォルダーの表示をパスワードで保護</string>
@@ -289,12 +289,12 @@
     <string name="encrypting_files">ファイルを暗号化しています…</string>
     <string name="encrypting_folder">フォルダーを暗号化しています…</string>
     <string name="folder_encrypted_successfully">フォルダーを暗号化しました</string>
-    <string name="file_encrypted_successfully">ファイルを非表示にしました</string>
-    <string name="files_encrypted_successfully">ファイルを非表示にしました</string>
+    <string name="file_encrypted_successfully">ファイルを暗号化しました</string>
+    <string name="files_encrypted_successfully">ファイルを暗号化しました</string>
     <string name="decrypting_folder">フォルダーを復号しています…</string>
     <string name="folder_decrypted_successfully">フォルダーを復号しました</string>
-    <string name="file_decrypted_successfully">ファイルを表示しました</string>
-    <string name="files_decrypted_successfully">ファイルを表示しました</string>
+    <string name="file_decrypted_successfully">ファイルを復号しました</string>
+    <string name="files_decrypted_successfully">ファイルを復号しました</string>
     <string name="decrypting_files">ファイルを復号しています…</string>
     <string name="place_finger_prompt">指紋センサーに指を置いてください</string>
     <string name="connect_at_least_4_dots_prompt">4つ以上の点をつなげてください</string>
@@ -325,12 +325,12 @@
     <string name="use_password_or_pin">PIN / パスワードを使用</string>
     <string name="biometric_key_invalidated">生体認証情報が変更されました。PIN またはパスワードを入力してください。</string>
     <string name="no_biometric_hardware_or_enrolled">このデバイスに生体認証ハードウェアまたは登録済みの認証情報が見つかりません</string>
-    <string name="select_hidden_album">非表示アルバムを選択</string>
-    <string name="create_new_hidden_album">新しい非表示アルバムを作成</string>
-    <string name="new_hidden_album">新しい非表示アルバム</string>
+    <string name="select_hidden_album">暗号化アルバムを選択</string>
+    <string name="create_new_hidden_album">新しい暗号化アルバムを作成</string>
+    <string name="new_hidden_album">新しい暗号化アルバム</string>
     <string name="hidden_album_name_empty">アルバム名を空にすることはできません</string>
-    <string name="file_hidden_to_album">ファイルを「%s」に非表示にしました</string>
-    <string name="files_hidden_to_album">%1$d 個のファイルを「%2$s」に非表示にしました</string>
+    <string name="file_hidden_to_album">ファイルを「%s」に暗号化しました</string>
+    <string name="files_hidden_to_album">%1$d 個のファイルを「%2$s」に暗号化しました</string>
     <string name="encrypted_vault">暗号化された保管庫</string>
     <string name="create_encrypted_vault">暗号化された保管庫を作成</string>
     <string name="change_encrypted_vault_password">暗号化された保管庫のパスワードを変更</string>
@@ -351,4 +351,15 @@
 
     <!-- Overrides for strings inherited from fossify-commons -->
     <string name="search_folders">フォルダーを検索</string>
+    <string name="number_of_items">項目数</string>
+    <string name="random">ランダム</string>
+    <string name="stop_showing_excluded">除外した項目を表示しない</string>
+    <string name="copy_to_clipboard">クリップボードにコピー</string>
+
+    <!-- Shuffle and encryption actions -->
+    <string name="shuffle">シャッフル</string>
+    <string name="encrypt">暗号化</string>
+    <string name="decrypt">復号</string>
+    <string name="encrypt_album">アルバムを暗号化</string>
+    <string name="decrypt_album">アルバムを復号</string>
 </resources>

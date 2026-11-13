@@ -198,8 +198,8 @@
     <string name="limit_folder_title">Uzun klasör başlıklarını 1 satırla sınırla</string>
     <string name="square">Kare</string>
     <string name="rounded_corners">Yuvarlatılmış köşeler</string>
-    <string name="export_favorite_paths">Favorileri dışa aktar</string>
-    <string name="import_favorite_paths">Favorileri içe aktar</string>
+    <string name="export_favorite_paths">Favorileri ve sanal albümleri dışa aktar</string>
+    <string name="import_favorite_paths">Favorileri ve sanal albümleri içe aktar</string>
     <string name="paths_imported_successfully">Yollar başarıyla içe aktarıldı</string>
     <string name="media_management_prompt">Tüm dosya işlemlerinin güvenilir bir şekilde çalıştığından emin olmak için lütfen bu uygulamayı aygıt ayarlarınızda bir medya yönetimi uygulaması yapın.</string>
     <string name="password_protect_excluded">Hariç tutulan klasör görünürlüğünü parola ile koru</string>
@@ -296,12 +296,12 @@
     <string name="encrypting_files">Dosyalar şifreleniyor…</string>
     <string name="encrypting_folder">Klasör şifreleniyor…</string>
     <string name="folder_encrypted_successfully">Klasör başarıyla şifrelendi</string>
-    <string name="file_encrypted_successfully">Dosya başarıyla gizlendi</string>
-    <string name="files_encrypted_successfully">Dosyalar başarıyla gizlendi</string>
+    <string name="file_encrypted_successfully">Dosya başarıyla şifrelendi</string>
+    <string name="files_encrypted_successfully">Dosyalar başarıyla şifrelendi</string>
     <string name="decrypting_folder">Klasör şifresi çözülüyor…</string>
     <string name="folder_decrypted_successfully">Klasör şifresi başarıyla çözüldü</string>
-    <string name="file_decrypted_successfully">Dosya başarıyla gösterildi</string>
-    <string name="files_decrypted_successfully">Dosyalar başarıyla gösterildi</string>
+    <string name="file_decrypted_successfully">Dosyanın şifresi başarıyla çözüldü</string>
+    <string name="files_decrypted_successfully">Dosyaların şifresi başarıyla çözüldü</string>
     <string name="decrypting_files">Şifre çözülüyor…</string>
     <string name="place_finger_prompt">Lütfen parmağınızı parmak izi sensörüne yerleştirin</string>
     <string name="connect_at_least_4_dots_prompt">En az 4 noktayı birleştirin</string>
@@ -332,12 +332,12 @@
     <string name="use_password_or_pin">PIN / Parola kullan</string>
     <string name="biometric_key_invalidated">Biyometrik güvenlik kimliği değişti. Lütfen PIN veya parolanızı girin.</string>
     <string name="no_biometric_hardware_or_enrolled">Bu cihazda biyometrik donanım veya kayıtlı biyometri bulunamadı</string>
-    <string name="select_hidden_album">Gizli Albüm Seçin</string>
-    <string name="create_new_hidden_album">Yeni Gizli Albüm Oluştur</string>
-    <string name="new_hidden_album">Yeni gizli albüm</string>
+    <string name="select_hidden_album">Şifreli Albüm Seçin</string>
+    <string name="create_new_hidden_album">Yeni Şifreli Albüm Oluştur</string>
+    <string name="new_hidden_album">Yeni şifreli albüm</string>
     <string name="hidden_album_name_empty">Albüm adı boş olamaz</string>
-    <string name="file_hidden_to_album">Dosya \"%s\" albümüne gizlendi</string>
-    <string name="files_hidden_to_album">%1$d dosya \"%2$s\" albümüne gizlendi</string>
+    <string name="file_hidden_to_album">Dosya \"%s\" albümüne şifrelendi</string>
+    <string name="files_hidden_to_album">%1$d dosya \"%2$s\" albümüne şifrelendi</string>
     <string name="encrypted_vault">Şifreli kasa</string>
     <string name="create_encrypted_vault">Şifreli kasa oluştur</string>
     <string name="change_encrypted_vault_password">Şifreli kasa şifresini değiştir</string>
@@ -355,4 +355,15 @@
     <string name="keep_holding_to_open_vault">Şifreli kasayı açmak için basılı tutun</string>
     <string name="release_to_open_vault">Şifreli kasayı açmak için bırakın</string>
     <string name="vault_not_created_prompt">Henüz bir kasa oluşturmadınız. Kasa oluşturmak istiyor musunuz?</string>
+
+    <!-- Sıralama, paylaşma ve şifreleme eylemleri -->
+    <string name="number_of_items">Öğe sayısı</string>
+    <string name="random">Rastgele</string>
+    <string name="shuffle">Karıştır</string>
+    <string name="stop_showing_excluded">Hariç tutulanları göstermeyi bırak</string>
+    <string name="copy_to_clipboard">Panoya kopyala</string>
+    <string name="encrypt">Şifrele</string>
+    <string name="decrypt">Şifre çöz</string>
+    <string name="encrypt_album">Albümü şifrele</string>
+    <string name="decrypt_album">Albümün şifresini çöz</string>
 </resources>

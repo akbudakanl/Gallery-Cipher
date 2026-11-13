@@ -230,8 +230,8 @@
     <string name="limit_folder_title">Limit long folder titles to 1 line</string>
     <string name="square">Square</string>
     <string name="rounded_corners">Rounded corners</string>
-    <string name="export_favorite_paths">Export favorites</string>
-    <string name="import_favorite_paths">Import favorites</string>
+    <string name="export_favorite_paths">Export favorites and virtual albums</string>
+    <string name="import_favorite_paths">Import favorites and virtual albums</string>
     <string name="paths_imported_successfully">Paths imported successfully</string>
     <string name="media_management_prompt">To make sure that all file operations work reliably, please make this app a Media management app in your device settings.</string>
     <string name="password_protect_excluded">Password protect excluded folder visibility</string>
@@ -308,6 +308,12 @@
         Haven't found some strings? There's more at
         https://github.com/FossifyOrg/Commons/tree/master/commons/src/main/res
     -->
+    <!-- Encrypt / Decrypt -->
+    <string name="encrypt">Encrypt</string>
+    <string name="decrypt">Decrypt</string>
+    <string name="encrypt_album">Encrypt album</string>
+    <string name="decrypt_album">Decrypt album</string>
+
     <!-- Virtual albums -->
     <string name="create_virtual_album">Create virtual album</string>
     <string name="new_virtual_album">New album…</string>
@@ -331,12 +337,12 @@
     <string name="encrypting_files">Encrypting files…</string>
     <string name="encrypting_folder">Encrypting folder…</string>
     <string name="folder_encrypted_successfully">Folder encrypted successfully</string>
-    <string name="file_encrypted_successfully">File hidden successfully</string>
-    <string name="files_encrypted_successfully">Files hidden successfully</string>
+    <string name="file_encrypted_successfully">File encrypted successfully</string>
+    <string name="files_encrypted_successfully">Files encrypted successfully</string>
     <string name="decrypting_folder">Decrypting folder…</string>
     <string name="folder_decrypted_successfully">Folder decrypted successfully</string>
-    <string name="file_decrypted_successfully">File unhidden successfully</string>
-    <string name="files_decrypted_successfully">Files unhidden successfully</string>
+    <string name="file_decrypted_successfully">File decrypted successfully</string>
+    <string name="files_decrypted_successfully">Files decrypted successfully</string>
     <string name="decrypting_files">Decrypting files…</string>
     <string name="place_finger_prompt">Please place your finger on the fingerprint sensor</string>
     <string name="connect_at_least_4_dots_prompt">Connect at least 4 dots</string>
@@ -368,12 +374,12 @@
     <string name="biometric_key_invalidated">Biometric credentials have changed. Please enter your PIN or password.</string>
     <string name="no_biometric_hardware_or_enrolled">No biometric hardware or enrolled credentials found on this device</string>
     <string name="default_hidden_album" translatable="false">Default Secret Album</string>
-    <string name="select_hidden_album">Select Hidden Album</string>
-    <string name="create_new_hidden_album">Create New Hidden Album</string>
-    <string name="new_hidden_album">New hidden album</string>
+    <string name="select_hidden_album">Select Encrypted Album</string>
+    <string name="create_new_hidden_album">Create New Encrypted Album</string>
+    <string name="new_hidden_album">New encrypted album</string>
     <string name="hidden_album_name_empty">Album name cannot be empty</string>
-    <string name="file_hidden_to_album">File hidden to \"%s\"</string>
-    <string name="files_hidden_to_album">%1$d files hidden to \"%2$s\"</string>
+    <string name="file_hidden_to_album">File encrypted to \"%s\"</string>
+    <string name="files_hidden_to_album">%1$d files encrypted to \"%2$s\"</string>
     <string name="encrypted_vault">Encrypted vault</string>
     <string name="create_encrypted_vault">Create encrypted vault</string>
     <string name="change_encrypted_vault_password">Change encrypted vault password</string>

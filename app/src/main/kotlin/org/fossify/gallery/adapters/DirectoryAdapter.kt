@@ -297,10 +297,18 @@ class DirectoryAdapter(
                 !CryptoManager.isEncryptedFolderPath(activity, it) && (!it.doesThisOrParentHaveNoMedia(HashMap(), null) || hasVault)
             }
 
+        val hasEncryptedFolder = selectedPaths.any { CryptoManager.isEncryptedFolderPath(activity, it) }
         menu.findItem(R.id.cab_unhide).isVisible =
             (!isRPlus() || isExternalStorageManager()) && selectedPaths.any {
                 CryptoManager.isEncryptedFolderPath(activity, it) || (!hasVault && it.doesThisOrParentHaveNoMedia(HashMap(), null))
             }
+
+        // encrypted albums are decrypted, while legacy .nomedia folders are just shown again
+        menu.findItem(R.id.cab_unhide).title = if (hasEncryptedFolder) {
+            activity.getString(R.string.decrypt_album)
+        } else {
+            activity.getString(org.fossify.commons.R.string.unhide)
+        }
     }
 
     private fun checkPinBtnVisibility(menu: Menu, selectedPaths: ArrayList<String>) {

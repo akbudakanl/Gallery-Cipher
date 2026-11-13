@@ -186,8 +186,8 @@
     <string name="limit_folder_title">Lange Ordnertitel auf 1 Zeile begrenzen</string>
     <string name="square">Quadrat</string>
     <string name="rounded_corners">Abgerundete Ecken</string>
-    <string name="export_favorite_paths">Favoriten exportieren</string>
-    <string name="import_favorite_paths">Favoriten importieren</string>
+    <string name="export_favorite_paths">Favoriten und virtuelle Alben exportieren</string>
+    <string name="import_favorite_paths">Favoriten und virtuelle Alben importieren</string>
     <string name="paths_imported_successfully">Pfade erfolgreich importiert</string>
     <string name="media_management_prompt">Um sicherzustellen, dass alle Dateivorgänge zuverlässig funktionieren, sollte diese App in den Geräteeinstellungen als Medienverwaltungs-App festgelegt werden.</string>
     <string name="password_protect_excluded">Passwortschutz für die Sichtbarkeit ausgeschlossener Ordner</string>
@@ -291,12 +291,12 @@
     <string name="encrypting_files">Dateien werden verschlüsselt…</string>
     <string name="encrypting_folder">Ordner wird verschlüsselt…</string>
     <string name="folder_encrypted_successfully">Ordner erfolgreich verschlüsselt</string>
-    <string name="file_encrypted_successfully">Datei erfolgreich ausgeblendet</string>
-    <string name="files_encrypted_successfully">Dateien erfolgreich ausgeblendet</string>
+    <string name="file_encrypted_successfully">Datei erfolgreich verschlüsselt</string>
+    <string name="files_encrypted_successfully">Dateien erfolgreich verschlüsselt</string>
     <string name="decrypting_folder">Ordner wird entschlüsselt…</string>
     <string name="folder_decrypted_successfully">Ordner erfolgreich entschlüsselt</string>
-    <string name="file_decrypted_successfully">Datei erfolgreich eingeblendet</string>
-    <string name="files_decrypted_successfully">Dateien erfolgreich eingeblendet</string>
+    <string name="file_decrypted_successfully">Datei erfolgreich entschlüsselt</string>
+    <string name="files_decrypted_successfully">Dateien erfolgreich entschlüsselt</string>
     <string name="decrypting_files">Dateien werden entschlüsselt…</string>
     <string name="place_finger_prompt">Bitte den Finger auf den Fingerabdrucksensor legen</string>
     <string name="connect_at_least_4_dots_prompt">Mindestens 4 Punkte verbinden</string>
@@ -327,12 +327,12 @@
     <string name="use_password_or_pin">PIN / Passwort verwenden</string>
     <string name="biometric_key_invalidated">Biometrische Anmeldedaten wurden geändert. Bitte gib deine PIN oder dein Passwort ein.</string>
     <string name="no_biometric_hardware_or_enrolled">Keine biometrische Hardware oder hinterlegte Anmeldedaten auf diesem Gerät gefunden</string>
-    <string name="select_hidden_album">Verstecktes Album auswählen</string>
-    <string name="create_new_hidden_album">Neues verstecktes Album erstellen</string>
-    <string name="new_hidden_album">Neues verstecktes Album</string>
+    <string name="select_hidden_album">Verschlüsseltes Album auswählen</string>
+    <string name="create_new_hidden_album">Neues verschlüsseltes Album erstellen</string>
+    <string name="new_hidden_album">Neues verschlüsseltes Album</string>
     <string name="hidden_album_name_empty">Albumname darf nicht leer sein</string>
-    <string name="file_hidden_to_album">Datei im Album „%s“ versteckt</string>
-    <string name="files_hidden_to_album">%1$d Dateien im Album „%2$s“ versteckt</string>
+    <string name="file_hidden_to_album">Datei im Album „%s“ verschlüsselt</string>
+    <string name="files_hidden_to_album">%1$d Dateien im Album „%2$s“ verschlüsselt</string>
     <string name="encrypted_vault">Verschlüsselter Tresor</string>
     <string name="create_encrypted_vault">Verschlüsselten Tresor erstellen</string>
     <string name="change_encrypted_vault_password">Passwort des verschlüsselten Tresors ändern</string>
@@ -350,4 +350,15 @@
     <string name="keep_holding_to_open_vault">Zum Öffnen des verschlüsselten Tresors gedrückt halten</string>
     <string name="release_to_open_vault">Loslassen, um den Tresor zu öffnen</string>
     <string name="vault_not_created_prompt">Sie haben noch keinen Tresor erstellt. Möchten Sie einen Tresor erstellen?</string>
+
+    <!-- Sortier-, Freigabe- und Verschlüsselungsaktionen -->
+    <string name="number_of_items">Anzahl der Elemente</string>
+    <string name="random">Zufällig</string>
+    <string name="shuffle">Zufällig mischen</string>
+    <string name="stop_showing_excluded">Ausgeschlossenes nicht mehr anzeigen</string>
+    <string name="copy_to_clipboard">In die Zwischenablage kopieren</string>
+    <string name="encrypt">Verschlüsseln</string>
+    <string name="decrypt">Entschlüsseln</string>
+    <string name="encrypt_album">Album verschlüsseln</string>
+    <string name="decrypt_album">Album entschlüsseln</string>
 </resources>

@@ -188,8 +188,8 @@
     <string name="limit_folder_title">資料夾名稱最長只顯示一行</string>
     <string name="square">方形</string>
     <string name="rounded_corners">圓角</string>
-    <string name="export_favorite_paths">匯出我的最愛</string>
-    <string name="import_favorite_paths">匯入我的最愛</string>
+    <string name="export_favorite_paths">匯出我的最愛和虛擬相簿</string>
+    <string name="import_favorite_paths">匯入我的最愛和虛擬相簿</string>
     <string name="paths_imported_successfully">路徑匯入成功</string>
     <string name="media_management_prompt">為了確保所有檔案操作都能可靠地運作，請將此應用程式設為裝置設定中的媒體管理應用程式。</string>
     <string name="password_protect_excluded">以密碼保護已排除資料夾的可見性</string>
@@ -289,12 +289,12 @@
     <string name="encrypting_files">正在加密檔案…</string>
     <string name="encrypting_folder">正在加密資料夾…</string>
     <string name="folder_encrypted_successfully">資料夾加密成功</string>
-    <string name="file_encrypted_successfully">已成功隱藏檔案</string>
-    <string name="files_encrypted_successfully">已成功隱藏檔案</string>
+    <string name="file_encrypted_successfully">檔案加密成功</string>
+    <string name="files_encrypted_successfully">檔案加密成功</string>
     <string name="decrypting_folder">正在解密資料夾…</string>
     <string name="folder_decrypted_successfully">資料夾解密成功</string>
-    <string name="file_decrypted_successfully">已成功解除隱藏檔案</string>
-    <string name="files_decrypted_successfully">已成功解除隱藏檔案</string>
+    <string name="file_decrypted_successfully">檔案解密成功</string>
+    <string name="files_decrypted_successfully">檔案解密成功</string>
     <string name="decrypting_files">正在解密檔案…</string>
     <string name="place_finger_prompt">請將手指放在指紋感應器上</string>
     <string name="connect_at_least_4_dots_prompt">請至少連接 4 個點</string>
@@ -325,12 +325,12 @@
     <string name="use_password_or_pin">使用 PIN 碼 / 密碼</string>
     <string name="biometric_key_invalidated">生物辨識憑證已變更，請輸入您的 PIN 碼或密碼。</string>
     <string name="no_biometric_hardware_or_enrolled">此裝置上找不到生物辨識硬體或已註冊的憑證</string>
-    <string name="select_hidden_album">選擇隱藏相簿</string>
-    <string name="create_new_hidden_album">建立新隱藏相簿</string>
-    <string name="new_hidden_album">新隱藏相簿</string>
+    <string name="select_hidden_album">選擇加密相簿</string>
+    <string name="create_new_hidden_album">建立新加密相簿</string>
+    <string name="new_hidden_album">新加密相簿</string>
     <string name="hidden_album_name_empty">相簿名稱不能為空</string>
-    <string name="file_hidden_to_album">檔案已隱藏至「%s」</string>
-    <string name="files_hidden_to_album">%1$d 個檔案已隱藏至「%2$s」</string>
+    <string name="file_hidden_to_album">檔案已加密至「%s」</string>
+    <string name="files_hidden_to_album">%1$d 個檔案已加密至「%2$s」</string>
     <string name="encrypted_vault">加密保險箱</string>
     <string name="create_encrypted_vault">建立加密保險箱</string>
     <string name="change_encrypted_vault_password">變更加密保險箱密碼</string>
@@ -348,4 +348,15 @@
     <string name="keep_holding_to_open_vault">按住不放以開啟加密保險箱</string>
     <string name="release_to_open_vault">放開以開啟加密保險箱</string>
     <string name="vault_not_created_prompt">您尚未建立保險箱。是否要建立保險箱？</string>
+
+    <!-- 排序、複製與加密操作 -->
+    <string name="number_of_items">項目數</string>
+    <string name="random">隨機</string>
+    <string name="shuffle">隨機排列</string>
+    <string name="stop_showing_excluded">停止顯示已排除的項目</string>
+    <string name="copy_to_clipboard">複製到剪貼簿</string>
+    <string name="encrypt">加密</string>
+    <string name="decrypt">解密</string>
+    <string name="encrypt_album">加密相簿</string>
+    <string name="decrypt_album">解密相簿</string>
 </resources>

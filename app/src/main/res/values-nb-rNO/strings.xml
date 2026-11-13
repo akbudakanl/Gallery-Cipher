@@ -186,8 +186,8 @@
     <string name="limit_folder_title">Begrens lange mappetitler til 1 linje</string>
     <string name="square">Firkantet</string>
     <string name="rounded_corners">Avrundede hjørner</string>
-    <string name="export_favorite_paths">Eksporter favoritter</string>
-    <string name="import_favorite_paths">Importer favoritter</string>
+    <string name="export_favorite_paths">Eksporter favoritter og virtuelle album</string>
+    <string name="import_favorite_paths">Importer favoritter og virtuelle album</string>
     <string name="paths_imported_successfully">Filbaner importert</string>
     <string name="media_management_prompt">For å være sikker på at alle filoperasjoner fungerer pålitelig, gjør denne appen til en mediaadministrasjonsapp i enhetsinnstillingene.</string>
     <string name="password_protect_excluded">Passordbeskytt synligheten til ekskluderte mapper</string>
@@ -295,12 +295,12 @@
     <string name="encrypting_files">Krypterer filer…</string>
     <string name="encrypting_folder">Krypterer mappe…</string>
     <string name="folder_encrypted_successfully">Mappen ble kryptert</string>
-    <string name="file_encrypted_successfully">Filen ble skjult</string>
-    <string name="files_encrypted_successfully">Filene ble skjult</string>
+    <string name="file_encrypted_successfully">Filen ble kryptert</string>
+    <string name="files_encrypted_successfully">Filene ble kryptert</string>
     <string name="decrypting_folder">Dekrypterer mappe…</string>
     <string name="folder_decrypted_successfully">Mappen ble dekryptert</string>
-    <string name="file_decrypted_successfully">Filen ble vist</string>
-    <string name="files_decrypted_successfully">Filene ble vist</string>
+    <string name="file_decrypted_successfully">Filen ble dekryptert</string>
+    <string name="files_decrypted_successfully">Filene ble dekryptert</string>
     <string name="decrypting_files">Dekrypterer filer…</string>
     <string name="place_finger_prompt">Plasser fingeren på fingeravtrykkssensoren</string>
     <string name="connect_at_least_4_dots_prompt">Koble sammen minst 4 punkter</string>
@@ -341,12 +341,12 @@
     <string name="use_password_or_pin">Bruk PIN / Passord</string>
     <string name="biometric_key_invalidated">Biometriske data er endret. Vennligst skriv inn PIN eller passord.</string>
     <string name="no_biometric_hardware_or_enrolled">Ingen biometrisk maskinvare eller registrerte biometriske data funnet på denne enheten</string>
-    <string name="select_hidden_album">Velg skjult album</string>
-    <string name="create_new_hidden_album">Opprett nytt skjult album</string>
-    <string name="new_hidden_album">Nytt skjult album</string>
+    <string name="select_hidden_album">Velg kryptert album</string>
+    <string name="create_new_hidden_album">Opprett nytt kryptert album</string>
+    <string name="new_hidden_album">Nytt kryptert album</string>
     <string name="hidden_album_name_empty">Albumnavn kan ikke være tomt</string>
-    <string name="file_hidden_to_album">Fil skjult i «%s»</string>
-    <string name="files_hidden_to_album">%1$d filer skjult i «%2$s»</string>
+    <string name="file_hidden_to_album">Fil kryptert i «%s»</string>
+    <string name="files_hidden_to_album">%1$d filer kryptert i «%2$s»</string>
     <string name="encrypted_vault">Kryptert hvelv</string>
     <string name="create_encrypted_vault">Opprett kryptert hvelv</string>
     <string name="change_encrypted_vault_password">Endre passord for kryptert hvelv</string>
@@ -364,4 +364,15 @@
     <string name="keep_holding_to_open_vault">Fortsett å holde for å åpne kryptert hvelv</string>
     <string name="release_to_open_vault">Slipp for å åpne kryptert hvelv</string>
     <string name="vault_not_created_prompt">Du har ikke opprettet et hvelv ennå. Vil du opprette et hvelv?</string>
+
+    <!-- Sorterings-, delings- og krypteringshandlinger -->
+    <string name="number_of_items">Antall elementer</string>
+    <string name="random">Tilfeldig</string>
+    <string name="shuffle">Bland</string>
+    <string name="stop_showing_excluded">Slutt å vise ekskluderte</string>
+    <string name="copy_to_clipboard">Kopier til utklippstavlen</string>
+    <string name="encrypt">Krypter</string>
+    <string name="decrypt">Dekrypter</string>
+    <string name="encrypt_album">Krypter album</string>
+    <string name="decrypt_album">Dekrypter album</string>
 </resources>
