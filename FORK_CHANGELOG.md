@@ -11,7 +11,7 @@ For full architectural details, cryptography specifications, and user guides, se
 
 ---
 
-## [Unreleased]
+## [1.19.0-cipher] - 2026-11-14
 ### Added
 - **Zero-Pollution Folder Identity & Continuity Architecture (`FolderIdentity`, `MediaIdentity`, `GalleryDatabase`, `Favorite`, `VirtualAlbumItem`, `FavoritesDao`, `VirtualAlbumsDao`, `ReferenceBackupManager`, `VirtualAlbumSyncManager`, `FavoritesAndVirtualAlbumsImporter`):**
   - Extends file identity (`mediaStoreId`, `fileSize`, `lastModified`, `fingerprint`) with parent-folder continuity metadata **without writing any hidden marker files into shared user directories**:
