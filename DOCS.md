@@ -312,4 +312,74 @@ For users performing batch media imports or preparing encrypted archives on a PC
    - These files can be copied over USB cable or SD card directly into `Fossify Gallery Cipher/Cipher_Secrets/<random_album_folder>/`.
    - When Fossify Gallery Cipher is opened on Android and unlocked, the files appear instantly in the designated album—fully decryptable, playable, and with zero plaintext exposure on the phone's storage.
 
+---
+
+## 9. Favorites & Virtual Albums Import / Export
+
+Fossify Gallery Cipher provides a unified **Export / Import** mechanism in **Settings** (`SettingsActivity`) for backing up and restoring **Favorites** and **public Virtual Albums**.
+
+> [!CAUTION]
+> **Security Note:** Do **not** import backups from untrusted sources. Imported `.zip` archives and JSON manifests are parsed directly by the application and can reference arbitrary local file paths, alter or overwrite your Favorites list (when using replace mode), and create new Virtual Albums in your library. Only import backup packages that you created yourself or received from a source you explicitly trust.
+
+### Backup Format: JSON Inside a `.zip` Archive
+
+Backups are stored as **JSON files packaged inside a `.zip` archive** (`application/zip`). This keeps both Favorites metadata and individual Virtual Album manifests portable in a single file while preserving full file and folder identity descriptors (`MediaIdentity` and `FolderIdentity`).
+
+```text
+<appName>-favorites_<YYYY-MM-DD_HH-mm-ss>.zip
+├── Favorites/
+│   └── favorites.json
+└── Virtual albums/
+    ├── Vacation.json
+    ├── Roadtrip.json
+    └── ...
+```
+
+- **`Favorites/favorites.json`**: Created when at least one valid favorite exists. Serialized from `ReferenceBackupManager.FavoritesBackup`.
+- **`Virtual albums/<album>.json`**: Created for each non-hidden virtual album. Serialized from `VirtualAlbumSyncManager.VirtualAlbumBackup`. If two albums produce the same filename, `FavoritesAndVirtualAlbumsBackupManager.resolveUniqueZipFileName` appends a numeric suffix (`Album(1).json`, `Album(2).json`, etc.).
+- **Excluded Data:** Hidden/stealth virtual albums (`isHidden == true`), encrypted vault media (`Cipher_Secrets/`), and items in the recycle bin (`recycleBinPath`) are **never** included in exports.
+
+### Export Flow
+
+Implemented across `SettingsActivity` (`setupExportFavorites`, `startExportFavoritesFlow`, `exportFavoritesTo`) and `FavoritesAndVirtualAlbumsBackupManager` (`hasDataToExport`, `exportToStream`, `writeExportPackage`):
+
+1. **Availability Check (`hasDataToExport`):** Verifies whether `favoritesDB.getValidFavoritePaths()` is non-empty or `virtualAlbumsDB.getAllAlbums()` contains at least one non-hidden virtual album (`!it.isHidden`). If neither exists, a *"No items found"* toast is shown.
+2. **Destination Selection (`startExportFavoritesFlow`):**
+   - **Android 10+ (API 29+ / `isQPlus()`):** Opens `ExportFavoritesDialog` for the filename, then launches Android's Storage Access Framework (`Intent.ACTION_CREATE_DOCUMENT`) with MIME type `application/zip`.
+   - **Android 9 and below:** Requests `PERMISSION_WRITE_STORAGE`, opens `ExportFavoritesDialog` for the destination path, and writes directly to the chosen file.
+3. **Data Collection (`exportToStream`):**
+   - **Favorites:** Queries `favoritesDB.getAll()` and filters to paths present in `favoritesDB.getValidFavoritePaths()`.
+   - **Virtual Albums:** Queries `virtualAlbumsDB.getAllAlbums().filter { !it.isHidden }`, excluding paths marked as deleted for each album (`getDeletedPathsForAlbum`) and any path under `recycleBinPath`.
+4. **JSON Serialization & ZIP Packaging (`writeExportPackage`):**
+   - Uses `GsonBuilder().setPrettyPrinting().create()` to serialize `FavoritesBackup` (`version`, `favorites`) and `VirtualAlbumBackup` (`version`, `name`, `createdTs`, `isHidden`, `parentPhysicalPath`, `items`) into UTF-8 entries inside a `ZipOutputStream`.
+   - The exported `.zip` output is identical whether or not all-files storage access is granted.
+
+### Import Flow
+
+Implemented across `SettingsActivity` (`setupImportFavorites`, `importFavorites`, `applyFavoritesAndAlbumsImport`), `FavoritesAndVirtualAlbumsBackupManager.parseImportPackage`, and `FavoritesAndVirtualAlbumsImporter`:
+
+1. **File Selection (`setupImportFavorites`):**
+   - **Android 10+ (`isQPlus()`):** Launches `Intent.ACTION_GET_CONTENT` accepting `application/zip`, `application/x-zip-compressed`, `application/octet-stream`, and `text/plain`.
+   - **Android 9 and below:** Requests `PERMISSION_READ_STORAGE` and opens `FilePickerDialog`.
+2. **Package Parsing (`parseImportPackage`):**
+   - Inspects header bytes (`isZipArchive` checks for ZIP magic bytes `0x50 0x4B` followed by `0x03`, `0x05`, or `0x07`):
+   - **ZIP Archive (`parseZipPackage`):** Iterates entries via `ZipInputStream`, normalizes `\` to `/`, strips leading `/`, and **rejects path traversal** (`..` segments). Only `.json` files are processed:
+     - Entries under `Favorites/` (case-insensitive) are parsed as `FavoritesBackup` (`parseFavoritesJson`), filtering out null/blank `fullPath` entries.
+     - Entries under `Virtual albums/` or `Virtual Album Saves/` (`CIPHER_VIRTUAL_ALBUMS_DIR_NAME`) are parsed as `VirtualAlbumBackup` (`parseVirtualAlbumJson`). Encrypted/stealth virtual albums (`isHidden && encryptedPayload != null`) are ignored. Legacy `mediaPaths` arrays are supported when `items` is absent, and `.json` filenames serve as fallback album names.
+   - **Legacy / Plaintext Fallback (`parseLegacyOrPlainPackage`):** Non-ZIP inputs starting with `{` are parsed as a single `FavoritesBackup` or `VirtualAlbumBackup` JSON object; otherwise each non-empty line is treated as a plain favorite file path.
+3. **Favorites Conflict Resolution (`ImportFavoritesConflictDialog`):**
+   - If imported favorites are present and `hasExistingFavorites` is true, the user chooses between:
+     - **Merge (`FavoritesImportMode.MERGE`):** Keeps existing favorites and adds/updates imported ones.
+     - **Replace (`FavoritesImportMode.DELETE_EXISTING`):** Clears `favoritesDB`, resets favorite flags in `mediaDB`, and removes the `FAVORITES` entry in `directoryDB` before importing.
+4. **Restoring Favorites (`importFavoritesList` & `importSingleFavorite`):**
+   - Resolves each entry via `resolveExistingPath` (direct path check, falling back to `MediaIdentityResolver.resolve(...)` using `MediaIdentity` and `FolderIdentity`).
+   - Rejects paths inside `recycleBinPath` or `CryptoManager.isVaultMediaPath(...)`.
+   - Inserts new `Favorite` records (updating `mediaDB.updateFavorite(resolvedPath, true)`) or enriches missing `fingerprint`/`folderSignature` fields on existing entries.
+   - If shared-storage write access is granted (`canWriteInternalBackups`), syncs `Fossify Gallery Cipher/Favorites/favorites.json` via `ReferenceBackupManager.saveFavorites(context)`.
+5. **Restoring Virtual Albums (`importVirtualAlbumsList` & `insertImportedVirtualAlbum`):**
+   - Assigns collision-safe album names via `resolveUniqueVirtualAlbumName` (appending `(1)`, `(2)`, etc.) so existing virtual albums are never overwritten.
+   - Inserts a new non-hidden `VirtualAlbum` (`isHidden = false`) and bulk-inserts resolved `VirtualAlbumItem` rows (rejecting `recycleBinPath` and vault paths, deduplicating case-insensitively, and preserving `UNRESOLVED` paths when the parent directory does not exist on disk).
+   - If shared-storage write access is granted (`canWriteInternalBackups`), writes `Fossify Gallery Cipher/Virtual Album Saves/<album>.json` via `VirtualAlbumSyncManager.saveAlbumToFile(context, newAlbumId)`; otherwise imported data stays safely in the app's internal Room database.
+
+
 
