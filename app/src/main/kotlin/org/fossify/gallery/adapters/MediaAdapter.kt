@@ -8,6 +8,7 @@ import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.view.allViews
@@ -107,6 +108,7 @@ import org.fossify.gallery.helpers.ensureNotificationPermissionThenRun
 import org.fossify.gallery.helpers.DeleteBehaviorHelper
 import org.fossify.gallery.helpers.DeleteOriginType
 import org.fossify.gallery.helpers.MediaIdentity
+import org.fossify.gallery.helpers.MediaUpdatePolicy
 import org.fossify.gallery.helpers.PATH
 import org.fossify.gallery.helpers.PROTECTION_PASSWORD
 import org.fossify.gallery.helpers.RECYCLE_BIN
@@ -145,7 +147,7 @@ class MediaAdapter(
     private val viewType = config.getFolderViewType(if (config.showAll || path.isEmpty()) SHOW_ALL else path)
     private val isListViewType = viewType == VIEW_TYPE_LIST
     private var rotatedImagePaths = ArrayList<String>()
-    private var currentMediaHash = media.hashCode()
+    private var currentMediaHash = MediaUpdatePolicy.computeMediaContentHash(media)
     private val hasOTGConnected = activity.hasOTGConnected()
 
     private var scrollHorizontally = config.scrollHorizontally
@@ -1101,7 +1103,7 @@ class MediaAdapter(
                 listener?.tryDeleteFiles(fileDirItems, skipRecycleBin)
                 listener?.updateMediaGridDecoration(media)
                 removeSelectedItems(positions)
-                currentMediaHash = media.hashCode()
+                currentMediaHash = MediaUpdatePolicy.computeMediaContentHash(media)
             }
         }
     }
@@ -1116,11 +1118,25 @@ class MediaAdapter(
 
     fun updateMedia(newMedia: ArrayList<ThumbnailItem>) {
         val thumbnailItems = newMedia.clone() as ArrayList<ThumbnailItem>
-        if (thumbnailItems.hashCode() != currentMediaHash) {
-            currentMediaHash = thumbnailItems.hashCode()
+        val newMediaHash = MediaUpdatePolicy.computeMediaContentHash(thumbnailItems)
+        if (newMediaHash != currentMediaHash) {
+            currentMediaHash = newMediaHash
             media = thumbnailItems
-            notifyDataSetChanged()
-            finishActMode()
+            if (actModeCallback.isSelectable) {
+                MediaUpdatePolicy.reconcileSelectedKeys(selectedKeys, thumbnailItems)
+                notifyDataSetChanged()
+                if (selectedKeys.isEmpty()) {
+                    finishActMode()
+                } else {
+                    val selectableCount = getSelectableItemCount()
+                    val selectedCount = minOf(selectedKeys.size, selectableCount)
+                    (actMode?.customView as? TextView)?.text = "$selectedCount / $selectableCount"
+                    actMode?.invalidate()
+                }
+            } else {
+                notifyDataSetChanged()
+                finishActMode()
+            }
         }
     }
 

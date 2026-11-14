@@ -149,6 +149,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     private var mIsGetVideoIntent = false
     private var mIsGetAnyIntent = false
     private var mIsGettingMedia = false
+    private var mPendingMediaRefresh = false
     private var mAllowPickingMultiple = false
     private var mShowAll = false
     private var mLoadedInitialPhotos = false
@@ -344,6 +345,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     override fun onPause() {
         super.onPause()
         mIsGettingMedia = false
+        mPendingMediaRefresh = false
         binding.mediaRefreshLayout.isRefreshing = false
         storeStateVariables()
         mLastMediaHandler.removeCallbacksAndMessages(null)
@@ -474,7 +476,11 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             changedFolderPaths.any { it.equals(mPath, ignoreCase = true) }
 
         if (affectsCurrentView && !binding.mediaMenu.isSearchOpen) {
-            getMedia()
+            if (mIsGettingMedia) {
+                mPendingMediaRefresh = true
+            } else {
+                getMedia()
+            }
         }
     }
 
@@ -960,6 +966,10 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
                 mIsGetImageIntent && !mIsGetVideoIntent,
                 enableRandom = true
             ) {
+                if (isDestroyed || isFinishing) {
+                    mIsGettingMedia = false
+                    return@getCachedMedia
+                }
                 if (it.isEmpty()) {
                     runOnUiThread {
                         binding.mediaRefreshLayout.isRefreshing = true
@@ -967,7 +977,11 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
                 } else {
                     gotMedia(it, true)
                 }
-                startAsyncTask()
+                runOnUiThread {
+                    if (!isDestroyed && !isFinishing && mIsGettingMedia) {
+                        startAsyncTask()
+                    }
+                }
             }
         }
 
@@ -1319,11 +1333,16 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     }
 
     private fun gotMedia(media: ArrayList<ThumbnailItem>, isFromCache: Boolean) {
-        mIsGettingMedia = false
-        checkLastMediaChanged()
-        mMedia = media
+        if (!isFromCache) {
+            mIsGettingMedia = false
+            checkLastMediaChanged()
+        }
 
         runOnUiThread {
+            if (isDestroyed || isFinishing) {
+                return@runOnUiThread
+            }
+            mMedia = media
             binding.loadingIndicator.hide()
             binding.mediaRefreshLayout.isRefreshing = false
             binding.mediaEmptyTextPlaceholder.beVisibleIf(media.isEmpty() && !isFromCache)
@@ -1335,12 +1354,17 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             binding.mediaFastscroller.beVisibleIf(binding.mediaEmptyTextPlaceholder.isGone())
             setupAdapter()
             applyPendingScroll()
+
+            if (!isFromCache && mPendingMediaRefresh) {
+                mPendingMediaRefresh = false
+                getMedia()
+            }
         }
 
         mLatestMediaId = getLatestMediaId()
         mLatestMediaDateId = getLatestMediaByDateId()
         if (!isFromCache && !mPath.isVirtualAlbumPath() && !mIsVaultFilesView) {
-            val mediaToInsert = mMedia
+            val mediaToInsert = media
                 .filter { it is Medium && it.deletedTS == 0L && !isPathHiddenOrEncrypted(it.path) }
                 .map { it as Medium }
             if (mediaToInsert.isNotEmpty()) {
