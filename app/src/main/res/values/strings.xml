@@ -406,4 +406,6 @@
     <string name="keep_original_remove_from_virtual_album">Keep the original file, remove it only from this virtual album</string>
     <string name="keep_original_remove_from_favorites">Keep the original file, remove it only from favorites</string>
     <string name="delete_original_from_favorites_and_virtual_albums">Delete the original version of a file when it is deleted from favorites and virtual albums</string>
+    <string name="cannot_target_encrypted_album">Encrypted albums cannot be targeted for this operation</string>
+    <string name="cannot_mix_encrypted_and_unencrypted">Cannot combine encrypted and unencrypted items in this operation</string>
 </resources>

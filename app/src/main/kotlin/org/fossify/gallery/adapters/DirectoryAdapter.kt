@@ -100,6 +100,7 @@ import org.fossify.gallery.extensions.promptCreateVault
 import org.fossify.gallery.extensions.removeNoMedia
 import org.fossify.gallery.extensions.showRecycleBinEmptyingDialog
 import org.fossify.gallery.extensions.tryCopyMoveFilesTo
+import org.fossify.gallery.extensions.tryDecryptFoldersTo
 import org.fossify.gallery.extensions.updateReferencesForFolderRename
 import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.DIRECTORY
@@ -190,6 +191,23 @@ class DirectoryAdapter(
         }
 
         val isOneItemSelected = isOneItemSelected()
+        val hasVirtualAlbum = selectedPaths.any { it.isVirtualAlbumPath() }
+        val hasFavorites = selectedPaths.contains(FAVORITES)
+        val hasRecycleBin = selectedPaths.contains(RECYCLE_BIN)
+        val hasVaultRecycleBin = selectedPaths.any { CryptoManager.isVaultRecycleBinPath(activity, it) }
+        val hasEncryptedFolder = selectedPaths.any {
+            CryptoManager.isEncryptedFolderPath(activity, it) && !CryptoManager.isVaultRecycleBinPath(activity, it)
+        }
+        val hasUnencryptedRealFolder = selectedPaths.any {
+            !it.isVirtualAlbumPath() &&
+                it != FAVORITES &&
+                it != RECYCLE_BIN &&
+                !CryptoManager.isVaultRecycleBinPath(activity, it) &&
+                !CryptoManager.isEncryptedFolderPath(activity, it)
+        }
+        val isMixedEncryption = hasEncryptedFolder && hasUnencryptedRealFolder
+        val canCopyMove = !hasVirtualAlbum && !hasFavorites && !hasRecycleBin && !hasVaultRecycleBin && !isMixedEncryption
+
         menu.apply {
             findItem(R.id.cab_move_to_top).isVisible = isDragAndDropping
             findItem(R.id.cab_move_to_bottom).isVisible = isDragAndDropping
@@ -199,7 +217,7 @@ class DirectoryAdapter(
             }
             val hasMultipleWithEncrypted = !isOneItemSelected && selectedPaths.any { CryptoManager.isEncryptedFolderPath(activity, it) }
             findItem(R.id.cab_rename).isVisible =
-                !selectedPaths.contains(FAVORITES) && !selectedPaths.contains(RECYCLE_BIN) && !hasNonRenamableEncrypted && !hasMultipleWithEncrypted
+                !hasFavorites && !hasRecycleBin && !hasNonRenamableEncrypted && !hasMultipleWithEncrypted
             findItem(R.id.cab_change_cover_image).isVisible = isOneItemSelected
 
             findItem(R.id.cab_lock).isVisible = selectedPaths.any { !config.isFolderProtected(it) }
@@ -211,12 +229,14 @@ class DirectoryAdapter(
             findItem(R.id.cab_empty_disable_recycle_bin).isVisible = isOneItemSelected && selectedPaths.first() == RECYCLE_BIN
 
             findItem(R.id.cab_create_shortcut).isVisible = isOneItemSelected
+            findItem(R.id.cab_copy_to).isVisible = canCopyMove
+            findItem(R.id.cab_move_to).isVisible = canCopyMove
 
             checkHideBtnVisibility(this, selectedPaths)
             checkPinBtnVisibility(this, selectedPaths)
 
             // virtual albums are not real folders: they cannot be hidden, excluded, locked, copied, moved or inspected on disk
-            if (selectedPaths.any { it.isVirtualAlbumPath() }) {
+            if (hasVirtualAlbum) {
                 findItem(R.id.cab_rename).isVisible = isOneItemSelected
                 findItem(R.id.cab_hide).isVisible = false
                 findItem(R.id.cab_unhide).isVisible = false
@@ -227,6 +247,24 @@ class DirectoryAdapter(
                 findItem(R.id.cab_move_to).isVisible = false
                 findItem(R.id.cab_create_shortcut).isVisible = false
                 findItem(R.id.cab_properties).isVisible = false
+            }
+
+            if (hasFavorites) {
+                findItem(R.id.cab_hide).isVisible = false
+                findItem(R.id.cab_unhide).isVisible = false
+                findItem(R.id.cab_copy_to).isVisible = false
+                findItem(R.id.cab_move_to).isVisible = false
+                findItem(R.id.cab_exclude).isVisible = false
+                findItem(R.id.cab_properties).isVisible = false
+            }
+
+            if (hasVaultRecycleBin) {
+                findItem(R.id.cab_hide).isVisible = false
+                findItem(R.id.cab_unhide).isVisible = false
+                findItem(R.id.cab_exclude).isVisible = false
+                findItem(R.id.cab_lock).isVisible = false
+                findItem(R.id.cab_unlock).isVisible = false
+                findItem(R.id.cab_create_shortcut).isVisible = false
             }
         }
     }
@@ -292,14 +330,32 @@ class DirectoryAdapter(
 
     private fun checkHideBtnVisibility(menu: Menu, selectedPaths: ArrayList<String>) {
         val hasVault = activity.hasVaultCreated()
+        val hasForbidden = selectedPaths.any {
+            it.isVirtualAlbumPath() || it == FAVORITES || CryptoManager.isVaultRecycleBinPath(activity, it)
+        }
+        val realUnencryptedPaths = selectedPaths.filter {
+            !it.isVirtualAlbumPath() &&
+                it != FAVORITES &&
+                !CryptoManager.isVaultRecycleBinPath(activity, it) &&
+                !CryptoManager.isEncryptedFolderPath(activity, it)
+        }
         menu.findItem(R.id.cab_hide).isVisible =
-            (!isRPlus() || isExternalStorageManager()) && selectedPaths.any {
-                !CryptoManager.isEncryptedFolderPath(activity, it) && (!it.doesThisOrParentHaveNoMedia(HashMap(), null) || hasVault)
-            }
+            (!isRPlus() || isExternalStorageManager()) &&
+            !hasForbidden &&
+            realUnencryptedPaths.any { !it.doesThisOrParentHaveNoMedia(HashMap(), null) || hasVault }
 
-        val hasEncryptedFolder = selectedPaths.any { CryptoManager.isEncryptedFolderPath(activity, it) }
+        val decryptablePaths = selectedPaths.filter {
+            !it.isVirtualAlbumPath() &&
+                it != FAVORITES &&
+                it != RECYCLE_BIN &&
+                !CryptoManager.isVaultRecycleBinPath(activity, it)
+        }
+        val hasEncryptedFolder = decryptablePaths.any { CryptoManager.isEncryptedFolderPath(activity, it) }
         menu.findItem(R.id.cab_unhide).isVisible =
-            (!isRPlus() || isExternalStorageManager()) && selectedPaths.any {
+            (!isRPlus() || isExternalStorageManager()) &&
+            !hasForbidden &&
+            !selectedPaths.contains(RECYCLE_BIN) &&
+            decryptablePaths.any {
                 CryptoManager.isEncryptedFolderPath(activity, it) || (!hasVault && it.doesThisOrParentHaveNoMedia(HashMap(), null))
             }
 
@@ -431,7 +487,15 @@ class DirectoryAdapter(
         }
 
         if (hide) {
-            val folderPaths = ArrayList(selectedPaths.filter { it != RECYCLE_BIN })
+            val folderPaths = ArrayList(
+                selectedPaths.filter {
+                    it != RECYCLE_BIN &&
+                        it != FAVORITES &&
+                        !it.isVirtualAlbumPath() &&
+                        !CryptoManager.isVaultRecycleBinPath(activity, it) &&
+                        !CryptoManager.isEncryptedFolderPath(activity, it)
+                }
+            )
             if (folderPaths.isEmpty()) {
                 return
             }
@@ -454,52 +518,46 @@ class DirectoryAdapter(
                 }
             }
         } else {
-            if (selectedPaths.any { !CryptoManager.isEncryptedFolderPath(activity, it) && it.isThisOrParentFolderHidden() }) {
+            val decryptablePaths = selectedPaths.filter {
+                it != FAVORITES &&
+                    it != RECYCLE_BIN &&
+                    !it.isVirtualAlbumPath() &&
+                    !CryptoManager.isVaultRecycleBinPath(activity, it)
+            }
+            if (decryptablePaths.isEmpty()) {
+                return
+            }
+            if (decryptablePaths.any { !CryptoManager.isEncryptedFolderPath(activity, it) && it.isThisOrParentFolderHidden() }) {
                 ConfirmationDialog(activity, "", R.string.cant_unhide_folder, org.fossify.commons.R.string.ok, 0) {}
                 return
             }
 
-            selectedPaths.filter { it != FAVORITES && it != RECYCLE_BIN && (selectedPaths.size == 1 || !config.isFolderProtected(it)) }.forEach {
+            val encryptedPaths = decryptablePaths.filter {
+                CryptoManager.isEncryptedFolderPath(activity, it) && (decryptablePaths.size == 1 || !config.isFolderProtected(it))
+            }
+            if (encryptedPaths.isNotEmpty()) {
+                handleLockedFolderOpeningForFolders(encryptedPaths) { unlockedPaths ->
+                    if (unlockedPaths.isNotEmpty()) {
+                        activity.tryDecryptFoldersTo(unlockedPaths.toList()) {
+                            listener?.refreshItems()
+                            finishActMode()
+                        }
+                    }
+                }
+                return
+            }
+
+            decryptablePaths.filter { decryptablePaths.size == 1 || !config.isFolderProtected(it) }.forEach {
                 val path = it
                 activity.handleLockedFolderOpening(path) { success ->
-                    if (success) {
-                        if (CryptoManager.isEncryptedFolderPath(activity, path)) {
-                            val folder = File(path)
-                            val filesToDecrypt = folder.listFiles()?.filter {
-                                it.isFile && CryptoManager.isEncryptedFile(it.name)
-                            } ?: emptyList()
-
-                            val progressDialog = CryptoProgressDialog(activity, filesToDecrypt.size, R.string.decrypting_folder)
-                            ensureBackgroundThread {
-                                val result = try {
-                                    CryptoManager.decryptFolder(activity, path) { current, total ->
-                                        activity.runOnUiThread {
-                                            progressDialog.updateProgress(current, total)
-                                        }
-                                    }
-                                } catch (e: Exception) {
-                                    null
-                                }
+                    if (success && path.containsNoMedia()) {
+                        activity.removeNoMedia(path) {
+                            if (config.shouldShowHidden) {
+                                updateFolderNames()
+                            } else {
                                 activity.runOnUiThread {
-                                    progressDialog.dismiss()
-                                    if (result != null) {
-                                        activity.toast(R.string.folder_decrypted_successfully)
-                                    } else {
-                                        activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
-                                    }
                                     listener?.refreshItems()
                                     finishActMode()
-                                }
-                            }
-                        } else if (path.containsNoMedia()) {
-                            activity.removeNoMedia(path) {
-                                if (config.shouldShowHidden) {
-                                    updateFolderNames()
-                                } else {
-                                    activity.runOnUiThread {
-                                        listener?.refreshItems()
-                                        finishActMode()
-                                    }
                                 }
                             }
                         }
@@ -803,9 +861,25 @@ class DirectoryAdapter(
     }
 
     private fun copyMoveTo(selectedPaths: Collection<String>, isCopyOperation: Boolean) {
+        val validPaths = selectedPaths.filter {
+            !it.isVirtualAlbumPath() &&
+                it != FAVORITES &&
+                it != RECYCLE_BIN &&
+                !CryptoManager.isVaultRecycleBinPath(activity, it)
+        }
+        if (validPaths.isEmpty()) {
+            return
+        }
+        val hasEncrypted = validPaths.any { CryptoManager.isEncryptedFolderPath(activity, it) }
+        val hasUnencrypted = validPaths.any { !CryptoManager.isEncryptedFolderPath(activity, it) }
+        if (hasEncrypted && hasUnencrypted) {
+            activity.toast(R.string.cannot_mix_encrypted_and_unencrypted)
+            return
+        }
+
         val paths = ArrayList<String>()
         val showHidden = config.shouldShowHidden
-        selectedPaths.forEach {
+        validPaths.forEach {
             val filter = config.filterMedia
             File(it).listFiles()?.filter {
                 !File(it.absolutePath).isDirectory &&
@@ -820,15 +894,16 @@ class DirectoryAdapter(
         }
 
         val fileDirItems = paths.map { FileDirItem(it, it.getFilenameFromPath()) } as ArrayList<FileDirItem>
-        activity.tryCopyMoveFilesTo(fileDirItems, isCopyOperation) {
+        val sourceDirectoryPath = if (validPaths.size == 1) validPaths.first() else ""
+        activity.tryCopyMoveFilesTo(fileDirItems, isCopyOperation, currentDirectoryPath = sourceDirectoryPath) {
             val destinationPath = it
-            val affectedFolders = LinkedHashSet<String>(selectedPaths.size + 1).apply {
-                addAll(selectedPaths)
+            val affectedFolders = LinkedHashSet<String>(validPaths.size + 1).apply {
+                addAll(validPaths)
                 if (!destinationPath.isVirtualAlbumPath()) {
                     add(destinationPath)
                 }
             }
-            if (!destinationPath.isVirtualAlbumPath()) {
+            if (!destinationPath.isVirtualAlbumPath() && !CryptoManager.isEncryptedFolderPath(activity, destinationPath)) {
                 val newPaths = fileDirItems.map { "$destinationPath/${it.name}" }.toMutableList() as ArrayList<String>
                 activity.rescanPaths(newPaths) {
                     activity.fixDateTaken(newPaths, false)

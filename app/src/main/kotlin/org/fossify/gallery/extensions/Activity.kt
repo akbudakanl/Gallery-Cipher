@@ -49,6 +49,7 @@ import org.fossify.gallery.dialogs.ResizeMultipleImagesDialog
 import org.fossify.gallery.dialogs.ResizeWithPathDialog
 import org.fossify.gallery.dialogs.VaultExitDialog
 import org.fossify.gallery.dialogs.VaultSecurityDialog
+import org.fossify.gallery.helpers.CopyMovePolicy
 import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.DIRECTORY
 import org.fossify.gallery.helpers.ENCRYPTED_BIN_EXT
@@ -56,6 +57,7 @@ import org.fossify.gallery.helpers.ON_VAULT_EXIT_ASK_EVERY_TIME
 import org.fossify.gallery.helpers.ON_VAULT_EXIT_HIDE
 import org.fossify.gallery.helpers.ON_VAULT_EXIT_KEEP_SHOWING
 import org.fossify.gallery.helpers.PROTECTION_PASSWORD
+import org.fossify.gallery.helpers.PickDirectoryMode
 import org.fossify.gallery.helpers.RECYCLE_BIN
 import org.fossify.gallery.helpers.TEMP_FOLDER_NAME
 import org.fossify.gallery.helpers.VirtualAlbumSyncManager
@@ -487,6 +489,206 @@ fun BaseSimpleActivity.toggleFileVisibility(oldPath: String, hide: Boolean, call
     }
 }
 
+fun BaseSimpleActivity.ensureVaultUnlocked(
+    onCancelled: () -> Unit = {},
+    onUnlocked: () -> Unit
+) {
+    if (CryptoManager.isVaultUnlocked) {
+        onUnlocked()
+        return
+    }
+
+    val initialType = CryptoManager.getVaultProtectionType(this)
+        ?: if (config.hiddenProtectionType == PROTECTION_PASSWORD) {
+            PROTECTION_PASSWORD
+        } else {
+            PROTECTION_PIN
+        }
+    VaultSecurityDialog(
+        activity = this,
+        requiredHash = config.hiddenPasswordHash,
+        showTabIndex = initialType,
+        minimalist = true
+    ) { _, type, success ->
+        if (success) {
+            config.hiddenProtectionType = type
+            onUnlocked()
+        } else {
+            onCancelled()
+        }
+    }
+}
+
+fun BaseSimpleActivity.tryDecryptFilesTo(
+    fileDirItems: ArrayList<FileDirItem>,
+    currentDirectoryPath: String = "",
+    callback: (destinationPath: String) -> Unit
+) {
+    if (fileDirItems.isEmpty()) {
+        toast(org.fossify.commons.R.string.unknown_error_occurred)
+        return
+    }
+
+    ensureVaultUnlocked {
+        val source = currentDirectoryPath.ifEmpty { fileDirItems[0].getParentPath() }
+        PickDirectoryDialog(
+            activity = this,
+            sourcePath = source,
+            showOtherFolderButton = true,
+            showFavoritesBin = false,
+            isPickingCopyMoveDestination = true,
+            isPickingFolderForWidget = false,
+            isCopyOperation = false,
+            isHiddenCopySource = false,
+            mode = PickDirectoryMode.DECRYPT_MOVE
+        ) { destination ->
+            getAlertDialogBuilder()
+                .setMessage(R.string.confirm_decrypt_hidden_file)
+                .setPositiveButton(org.fossify.commons.R.string.no, null)
+                .setNegativeButton(org.fossify.commons.R.string.yes) { _, _ ->
+                    val progressDialog = CryptoProgressDialog(this, fileDirItems.size, R.string.decrypting_files)
+                    ensureBackgroundThread {
+                        val destDir = File(destination)
+                        var processedCount = 0
+                        var allSuccess = true
+
+                        for (item in fileDirItems) {
+                            val srcFile = File(item.path)
+                            if (!srcFile.exists()) continue
+
+                            val decFile = if (CryptoManager.isEncryptedFile(srcFile.name)) {
+                                CryptoManager.decryptFileToDirectory(
+                                    context = this,
+                                    encryptedFile = srcFile,
+                                    targetDir = destDir,
+                                    deleteEncryptedSource = true
+                                )
+                            } else if (srcFile.name.startsWith('.')) {
+                                val target = File(destDir, srcFile.name.substring(1))
+                                if (srcFile.renameTo(target)) {
+                                    updateDBMediaPath(srcFile.absolutePath, target.absolutePath)
+                                    rescanPaths(arrayListOf(target.absolutePath))
+                                    target
+                                } else {
+                                    null
+                                }
+                            } else {
+                                null
+                            }
+
+                            if (decFile != null && decFile.exists()) {
+                                processedCount++
+                            } else {
+                                allSuccess = false
+                            }
+
+                            runOnUiThread {
+                                progressDialog.updateProgress(processedCount, fileDirItems.size)
+                            }
+                        }
+
+                        CryptoManager.clearAppImageCaches(this)
+                        runOnUiThread {
+                            try {
+                                progressDialog.dismiss()
+                            } catch (_: Exception) {}
+
+                            if (allSuccess && processedCount > 0) {
+                                toast(if (processedCount == 1) R.string.file_decrypted_successfully else R.string.files_decrypted_successfully)
+                            } else {
+                                toast(org.fossify.commons.R.string.unknown_error_occurred)
+                            }
+                            callback(destination)
+                        }
+                    }
+                }
+                .create()
+                .show()
+        }
+    }
+}
+
+fun BaseSimpleActivity.tryDecryptFoldersTo(
+    folderPaths: List<String>,
+    callback: (destinationPath: String) -> Unit
+) {
+    if (folderPaths.isEmpty()) {
+        toast(org.fossify.commons.R.string.unknown_error_occurred)
+        return
+    }
+
+    ensureVaultUnlocked {
+        val source = if (folderPaths.size == 1) folderPaths.first() else ""
+        PickDirectoryDialog(
+            activity = this,
+            sourcePath = source,
+            showOtherFolderButton = true,
+            showFavoritesBin = false,
+            isPickingCopyMoveDestination = true,
+            isPickingFolderForWidget = false,
+            isCopyOperation = false,
+            isHiddenCopySource = false,
+            mode = PickDirectoryMode.DECRYPT_MOVE
+        ) { destination ->
+            getAlertDialogBuilder()
+                .setMessage(R.string.confirm_decrypt_hidden_file)
+                .setPositiveButton(org.fossify.commons.R.string.no, null)
+                .setNegativeButton(org.fossify.commons.R.string.yes) { _, _ ->
+                    val totalFilesCount = folderPaths.sumOf { folderPath ->
+                        File(folderPath).listFiles()?.count { it.isFile && CryptoManager.isEncryptedFile(it.name) } ?: 0
+                    }
+                    val progressDialog = CryptoProgressDialog(this, totalFilesCount, R.string.decrypting_folder)
+                    ensureBackgroundThread {
+                        val destDir = File(destination)
+                        var globalProcessed = 0
+                        var allSuccess = true
+
+                        for (folderPath in folderPaths) {
+                            var folderLastCurrent = 0
+                            val result = try {
+                                CryptoManager.decryptFolder(
+                                    context = this,
+                                    folderPath = folderPath,
+                                    targetFolderOverride = destDir
+                                ) { current, _ ->
+                                    val diff = current - folderLastCurrent
+                                    if (diff > 0) {
+                                        globalProcessed += diff
+                                        folderLastCurrent = current
+                                        runOnUiThread {
+                                            progressDialog.updateProgress(globalProcessed, totalFilesCount)
+                                        }
+                                    }
+                                }
+                            } catch (_: Exception) {
+                                null
+                            }
+                            if (result == null) {
+                                allSuccess = false
+                            }
+                        }
+
+                        CryptoManager.clearAppImageCaches(this)
+                        runOnUiThread {
+                            try {
+                                progressDialog.dismiss()
+                            } catch (_: Exception) {}
+
+                            if (allSuccess) {
+                                toast(R.string.folder_decrypted_successfully)
+                            } else {
+                                toast(org.fossify.commons.R.string.unknown_error_occurred)
+                            }
+                            callback(destination)
+                        }
+                    }
+                }
+                .create()
+                .show()
+        }
+    }
+}
+
 fun BaseSimpleActivity.tryCopyMoveFilesTo(
     fileDirItems: ArrayList<FileDirItem>,
     isCopyOperation: Boolean,
@@ -495,6 +697,11 @@ fun BaseSimpleActivity.tryCopyMoveFilesTo(
 ) {
     if (fileDirItems.isEmpty()) {
         toast(org.fossify.commons.R.string.unknown_error_occurred)
+        return
+    }
+
+    if (!isCopyOperation && CopyMovePolicy.isVirtualOrFavoritesPath(currentDirectoryPath)) {
+        toast(R.string.virtual_album_cannot_be_modified)
         return
     }
 
@@ -509,6 +716,7 @@ fun BaseSimpleActivity.tryCopyMoveFilesTo(
     // user and stays visible in the target.
     val isHiddenCopySource = CryptoManager.isVaultMediaPath(this, source) ||
         fileDirItems.any { CryptoManager.isVaultMediaPath(this, it.path) }
+    val pickerMode = CopyMovePolicy.resolveCopyMoveMode(isCopyOperation, isHiddenCopySource)
 
     PickDirectoryDialog(
         activity = this,
@@ -518,7 +726,8 @@ fun BaseSimpleActivity.tryCopyMoveFilesTo(
         isPickingCopyMoveDestination = true,
         isPickingFolderForWidget = false,
         isCopyOperation = isCopyOperation,
-        isHiddenCopySource = isHiddenCopySource
+        isHiddenCopySource = isHiddenCopySource,
+        mode = pickerMode
     ) {
         val destination = it
         if (destination.isVirtualAlbumPath()) {

@@ -56,7 +56,7 @@
         android:id="@+id/cab_unhide"
         android:icon="@drawable/ic_unhide_vector"
         android:title="@string/decrypt"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="never" />
     <item
         android:id="@+id/cab_copy_to"
         android:showAsAction="never"

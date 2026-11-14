@@ -2710,27 +2710,34 @@ object CryptoManager {
     }
 
     /**
-     * Decrypts an encrypted subfolder back to plaintext inside Pictures/<originalFolderName>.
+     * Decrypts an encrypted subfolder back to plaintext inside Pictures/<originalFolderName>,
+     * or into [targetFolderOverride] when specified by the user.
      */
     fun decryptFolder(
         context: Context,
         folderPath: String,
+        targetFolderOverride: File? = null,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
     ): String? {
         val folder = File(folderPath)
         if (!folder.exists() || !folder.isDirectory) return folderPath
         if (!isVaultUnlocked) return folderPath
 
-        val originalFolderName = getDecryptedFolderName(folder) ?: folder.name
-
-        val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-        var targetFolder = File(picturesDir, originalFolderName)
-        var idx = 1
-        while (targetFolder.exists()) {
-            targetFolder = File(picturesDir, "${originalFolderName}_$idx")
-            idx++
+        val targetExistedBefore = targetFolderOverride?.exists() == true
+        val targetFolder = if (targetFolderOverride != null) {
+            targetFolderOverride
+        } else {
+            val originalFolderName = getDecryptedFolderName(folder) ?: folder.name
+            val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+            var candidate = File(picturesDir, originalFolderName)
+            var idx = 1
+            while (candidate.exists()) {
+                candidate = File(picturesDir, "${originalFolderName}_$idx")
+                idx++
+            }
+            candidate
         }
-        if (!targetFolder.mkdirs() && !targetFolder.exists()) return null
+        if (!targetFolder.exists() && !targetFolder.mkdirs()) return null
 
         val filesToDecrypt = folder.listFiles()?.filter {
             it.isFile && isEncryptedFile(it.name)
@@ -2760,7 +2767,16 @@ object CryptoManager {
 
         // ROLLBACK IF DECRYPTION FAILED
         if (failed || decryptedPairs.size != filesToDecrypt.size) {
-            targetFolder.deleteRecursively()
+            if (targetFolderOverride != null) {
+                decryptedPairs.forEach { (_, decryptedFile) ->
+                    try { decryptedFile.delete() } catch (_: Exception) {}
+                }
+                if (!targetExistedBefore && targetFolder.listFiles().isNullOrEmpty()) {
+                    try { targetFolder.delete() } catch (_: Exception) {}
+                }
+            } else {
+                targetFolder.deleteRecursively()
+            }
             return null
         }
 

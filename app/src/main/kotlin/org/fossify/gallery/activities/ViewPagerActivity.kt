@@ -97,6 +97,7 @@ import org.fossify.gallery.asynctasks.GetMediaAsynctask
 import org.fossify.gallery.databinding.ActivityMediumBinding
 import org.fossify.gallery.dialogs.DeleteWithRememberDialog
 import org.fossify.gallery.dialogs.EncryptedPropertiesDialog
+import org.fossify.gallery.dialogs.GrantAllFilesDialog
 import org.fossify.gallery.dialogs.RenameEncryptedItemDialog
 import org.fossify.gallery.dialogs.SaveAsDialog
 import org.fossify.gallery.dialogs.SlideshowDialog
@@ -133,6 +134,7 @@ import org.fossify.gallery.extensions.showFileOnMap
 import org.fossify.gallery.extensions.showSystemUI
 import org.fossify.gallery.extensions.toggleFileVisibility
 import org.fossify.gallery.extensions.tryCopyMoveFilesTo
+import org.fossify.gallery.extensions.tryDecryptFilesTo
 import org.fossify.gallery.extensions.tryDeleteFileDirItem
 import org.fossify.gallery.extensions.updateDBMediaPath
 import org.fossify.gallery.extensions.updateFavorite
@@ -157,6 +159,7 @@ import org.fossify.gallery.helpers.BOTTOM_ACTION_SLIDESHOW
 import org.fossify.gallery.helpers.BOTTOM_ACTION_TOGGLE_FAVORITE
 import org.fossify.gallery.helpers.BOTTOM_ACTION_TOGGLE_VISIBILITY
 import org.fossify.gallery.helpers.ColorModeHelper
+import org.fossify.gallery.helpers.CopyMovePolicy
 import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.DeleteBehaviorHelper
 import org.fossify.gallery.helpers.DeleteOriginType
@@ -338,6 +341,11 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         val currentMedium = getCurrentMedium() ?: return
         currentMedium.isFavorite = mFavoritePaths.contains(currentMedium.path)
         val visibleBottomActions = getVisibleBottomActions()
+        val isVaultRecycleBin = CryptoManager.isVaultRecycleBinPath(this@ViewPagerActivity, mDirectory) ||
+            CryptoManager.isVaultRecycleBinPath(currentMedium.path)
+        val isInRecycleBin = currentMedium.getIsInRecycleBin() || mDirectory == RECYCLE_BIN || isVaultRecycleBin
+        val isVaultMedium = CryptoManager.isVaultMediaPath(this@ViewPagerActivity, currentMedium.path) ||
+            (mDirectory.isVirtualAlbumPath() && isHiddenVirtualAlbumPath(mDirectory))
 
         runOnUiThread {
             val rotationDegrees = getCurrentPhotoFragment()?.mCurrentRotationDegrees ?: 0
@@ -354,15 +362,21 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
                 findItem(R.id.menu_set_as).isVisible = visibleBottomActions and BOTTOM_ACTION_SET_AS == 0
                 findItem(R.id.menu_copy_to_clipboard).isVisible = currentMedium.isImage() && !CryptoManager.isVaultUnlocked && !config.temporarilyShowHidden
                 findItem(R.id.menu_copy_to).isVisible = visibleBottomActions and BOTTOM_ACTION_COPY == 0
-                findItem(R.id.menu_move_to).isVisible = visibleBottomActions and BOTTOM_ACTION_MOVE == 0 && !mDirectory.isVirtualAlbumPath()
+                findItem(R.id.menu_move_to).isVisible =
+                    visibleBottomActions and BOTTOM_ACTION_MOVE == 0 &&
+                    CopyMovePolicy.canMoveFrom(mDirectory, isInRecycleBin, isVaultRecycleBin)
                 findItem(R.id.menu_save_as).isVisible = rotationDegrees != 0
                 findItem(R.id.menu_print).isVisible = currentMedium.isImage() || currentMedium.isRaw()
                 findItem(R.id.menu_resize).isVisible = visibleBottomActions and BOTTOM_ACTION_RESIZE == 0 && currentMedium.isImage()
                 findItem(R.id.menu_hide).isVisible =
-                    (!isRPlus() || isExternalStorageManager()) && !currentMedium.isHidden() && visibleBottomActions and BOTTOM_ACTION_TOGGLE_VISIBILITY == 0 && !currentMedium.getIsInRecycleBin()
+                    (!isRPlus() || isExternalStorageManager()) &&
+                    visibleBottomActions and BOTTOM_ACTION_TOGGLE_VISIBILITY == 0 &&
+                    CopyMovePolicy.canEncryptFrom(mDirectory, isVaultMedium || currentMedium.isHidden(), isInRecycleBin, isVaultRecycleBin)
 
                 findItem(R.id.menu_unhide).isVisible =
-                    (!isRPlus() || isExternalStorageManager()) && currentMedium.isHidden() && visibleBottomActions and BOTTOM_ACTION_TOGGLE_VISIBILITY == 0 && !currentMedium.getIsInRecycleBin()
+                    (!isRPlus() || isExternalStorageManager()) &&
+                    visibleBottomActions and BOTTOM_ACTION_TOGGLE_VISIBILITY == 0 &&
+                    CopyMovePolicy.canDecryptFrom(mDirectory, isVaultMedium || currentMedium.isHidden(), isInRecycleBin, isVaultRecycleBin)
 
                 findItem(R.id.menu_add_to_favorites).isVisible =
                     !currentMedium.isFavorite && visibleBottomActions and BOTTOM_ACTION_TOGGLE_FAVORITE == 0 && !currentMedium.getIsInRecycleBin()
@@ -378,8 +392,6 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
 
             // Inside the encrypted vault only management actions are allowed.
             // Exposure-type actions (share, reveal, edit, wallpaper...) are removed.
-            val isVaultMedium = CryptoManager.isVaultMediaPath(this@ViewPagerActivity, currentMedium.path) ||
-                (mDirectory.isVirtualAlbumPath() && isHiddenVirtualAlbumPath(mDirectory))
             binding.mediumViewerToolbar.menu.apply {
                 // Favorites, share and edit are completely disabled for hidden files.
                 if (isVaultMedium || currentMedium.isHidden()) {
@@ -398,7 +410,9 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
                     findItem(R.id.menu_slideshow).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
                     findItem(R.id.menu_rotate).isVisible = false
                     findItem(R.id.menu_hide).isVisible = false
-                    findItem(R.id.menu_unhide).isVisible = false
+                    findItem(R.id.menu_unhide).isVisible =
+                        (!isRPlus() || isExternalStorageManager()) &&
+                        CopyMovePolicy.canDecryptFrom(mDirectory, true, isInRecycleBin, isVaultRecycleBin)
                     findItem(R.id.menu_create_shortcut).isVisible = false
                     findItem(R.id.menu_open_with).isVisible = false
                     findItem(R.id.menu_set_as).isVisible = false
@@ -926,7 +940,11 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     }
 
     private fun moveFileTo() {
-        if (mDirectory.isVirtualAlbumPath()) {
+        val currentMedium = getCurrentMedium()
+        val isVaultRecycleBin = CryptoManager.isVaultRecycleBinPath(this, mDirectory) ||
+            (currentMedium != null && CryptoManager.isVaultRecycleBinPath(currentMedium.path))
+        val isInRecycleBin = currentMedium?.getIsInRecycleBin() == true || mDirectory == RECYCLE_BIN || isVaultRecycleBin
+        if (!CopyMovePolicy.canMoveFrom(mDirectory, isInRecycleBin, isVaultRecycleBin)) {
             return
         }
         handleDeletePasswordProtection {
@@ -953,9 +971,11 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
             if (it.isVirtualAlbumPath()) {
                 return@tryCopyMoveFilesTo
             }
-            val newPath = "$it/${currPath.getFilenameFromPath()}"
-            rescanPaths(arrayListOf(newPath)) {
-                fixDateTaken(arrayListOf(newPath), false)
+            if (!CryptoManager.isEncryptedFolderPath(this, it)) {
+                val newPath = "$it/${currPath.getFilenameFromPath()}"
+                rescanPaths(arrayListOf(newPath)) {
+                    fixDateTaken(arrayListOf(newPath), false)
+                }
             }
 
             if (!isCopyOperation) {
@@ -966,7 +986,28 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
     }
 
     private fun toggleFileVisibility(hide: Boolean, callback: (() -> Unit)? = null) {
+        val currentMedium = getCurrentMedium()
+        val isVaultRecycleBin = CryptoManager.isVaultRecycleBinPath(this, mDirectory) ||
+            (currentMedium != null && CryptoManager.isVaultRecycleBinPath(currentMedium.path))
+        val isInRecycleBin = currentMedium?.getIsInRecycleBin() == true || mDirectory == RECYCLE_BIN || isVaultRecycleBin
+        if (!CopyMovePolicy.isRealAlbumSource(mDirectory, isInRecycleBin, isVaultRecycleBin)) {
+            return
+        }
+
         val currentPath = getCurrentPath()
+        if (!hide && CryptoManager.isEncryptedFile(currentPath)) {
+            if (isRPlus() && !isExternalStorageManager()) {
+                GrantAllFilesDialog(this)
+                return
+            }
+            val fileDirItems = arrayListOf(FileDirItem(currentPath, currentPath.getFilenameFromPath()))
+            tryDecryptFilesTo(fileDirItems, currentDirectoryPath = mDirectory) {
+                removePathFromViewer(currentPath)
+                callback?.invoke()
+            }
+            return
+        }
+
         toggleFileVisibility(currentPath, hide) {
             if (it == currentPath && hide) {
                 return@toggleFileVisibility
@@ -1242,7 +1283,14 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
             showFileOnMap(getCurrentPath())
         }
 
-        binding.bottomActions.bottomToggleFileVisibility.beVisibleIf(visibleBottomActions and BOTTOM_ACTION_TOGGLE_VISIBILITY != 0)
+        val isVaultRecycleBin = CryptoManager.isVaultRecycleBinPath(this, mDirectory) ||
+            (currentMedium != null && CryptoManager.isVaultRecycleBinPath(currentMedium.path))
+        val isInRecycleBin = currentMedium?.getIsInRecycleBin() == true || mDirectory == RECYCLE_BIN || isVaultRecycleBin
+        val isRealAlbumSource = CopyMovePolicy.isRealAlbumSource(mDirectory, isInRecycleBin, isVaultRecycleBin)
+
+        binding.bottomActions.bottomToggleFileVisibility.beVisibleIf(
+            visibleBottomActions and BOTTOM_ACTION_TOGGLE_VISIBILITY != 0 && isRealAlbumSource
+        )
         binding.bottomActions.bottomToggleFileVisibility.setOnLongClickListener {
             toast(if (currentMedium?.isHidden() == true) R.string.decrypt else R.string.encrypt); true
         }
@@ -1273,7 +1321,10 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
             checkMediaManagementAndCopy(true)
         }
 
-        binding.bottomActions.bottomMove.beVisibleIf(visibleBottomActions and BOTTOM_ACTION_MOVE != 0 && !mDirectory.isVirtualAlbumPath())
+        binding.bottomActions.bottomMove.beVisibleIf(
+            visibleBottomActions and BOTTOM_ACTION_MOVE != 0 &&
+                CopyMovePolicy.canMoveFrom(mDirectory, isInRecycleBin, isVaultRecycleBin)
+        )
         binding.bottomActions.bottomMove.setOnLongClickListener { toast(org.fossify.commons.R.string.move); true }
         binding.bottomActions.bottomMove.setOnClickListener {
             moveFileTo()
@@ -1517,6 +1568,9 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
         mIgnoredPaths.add(path)
         val media = mMediaFiles.filter { !mIgnoredPaths.contains(it.path) } as ArrayList<Medium>
         if (media.isNotEmpty()) {
+            if (mPos >= media.size) {
+                mPos = media.lastIndex
+            }
             refreshUI(media, false)
         }
         if (media.size == 1) {

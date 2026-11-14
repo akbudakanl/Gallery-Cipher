@@ -95,9 +95,11 @@ import org.fossify.gallery.extensions.shareMediumPath
 import org.fossify.gallery.extensions.showRestoreConfirmationDialog
 import org.fossify.gallery.extensions.toggleFileVisibility
 import org.fossify.gallery.extensions.tryCopyMoveFilesTo
+import org.fossify.gallery.extensions.tryDecryptFilesTo
 import org.fossify.gallery.extensions.updateDBMediaPath
 import org.fossify.gallery.extensions.updateFavorite
 import org.fossify.gallery.extensions.updateFavoritePaths
+import org.fossify.gallery.helpers.CopyMovePolicy
 import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.DeleteBehaviorHelper
 import org.fossify.gallery.helpers.DeleteOriginType
@@ -212,13 +214,19 @@ class MediaAdapter(
 
         val isOneItemSelected = isOneItemSelected()
         val selectedPaths = selectedItems.map { it.path } as ArrayList<String>
-        val isInRecycleBin = selectedItems.firstOrNull()?.getIsInRecycleBin() == true || CryptoManager.isVaultRecycleBinPath(activity, path)
+        val isVaultRecycleBin = CryptoManager.isVaultRecycleBinPath(activity, path)
+        val isInRecycleBin = selectedItems.firstOrNull()?.getIsInRecycleBin() == true || path == RECYCLE_BIN || isVaultRecycleBin
+        val hasEncrypted = selectedItems.any { CryptoManager.isVaultMediaPath(activity, it.path) }
+        val hasUnencrypted = selectedItems.any { !CryptoManager.isVaultMediaPath(activity, it.path) }
+        val isMixedEncryption = hasEncrypted && hasUnencrypted
         menu.apply {
             findItem(R.id.cab_rotate).isVisible = selectedItems.all { it.isImage() }
             findItem(R.id.cab_rename).isVisible = !isInRecycleBin && (isOneItemSelected || config.allowBatchRenaming)
             findItem(R.id.cab_add_to_favorites).isVisible = !isInRecycleBin
             findItem(R.id.cab_remove_from_virtual_album).isVisible = path.isVirtualAlbumPath()
-            findItem(R.id.cab_move_to).isVisible = !isInRecycleBin && !path.isVirtualAlbumPath()
+            findItem(R.id.cab_copy_to).isVisible = !isMixedEncryption
+            findItem(R.id.cab_move_to).isVisible =
+                !isMixedEncryption && CopyMovePolicy.canMoveFrom(path, isInRecycleBin, isVaultRecycleBin)
             findItem(R.id.cab_open_with).isVisible = isOneItemSelected
             findItem(R.id.cab_edit).isVisible = isOneItemSelected
             findItem(R.id.cab_set_as).isVisible = isOneItemSelected
@@ -227,17 +235,15 @@ class MediaAdapter(
             findItem(R.id.cab_restore_recycle_bin_files).isVisible = selectedPaths.all { it.startsWith(activity.recycleBinPath) || CryptoManager.isVaultRecycleBinPath(activity, it) }
             findItem(R.id.cab_create_shortcut).isVisible = isOneItemSelected
 
-            checkHideBtnVisibility(this, selectedItems)
+            checkHideBtnVisibility(this, selectedItems, isInRecycleBin, isVaultRecycleBin, hasEncrypted, isMixedEncryption)
             checkFavoriteBtnVisibility(this, selectedItems)
 
             // Inside the encrypted vault only management actions are allowed.
             // Exposure-type actions (share, reveal, edit, wallpaper...) are removed.
-            val isVaultSelection = selectedItems.any { CryptoManager.isVaultMediaPath(activity, it.path) }
-            if (isVaultSelection) {
+            if (hasEncrypted) {
                 findItem(R.id.cab_share).isVisible = false
                 findItem(R.id.cab_rotate).isVisible = false
                 findItem(R.id.cab_hide).isVisible = false
-                findItem(R.id.cab_unhide).isVisible = false
                 findItem(R.id.cab_create_shortcut).isVisible = false
                 findItem(R.id.cab_open_with).isVisible = false
                 findItem(R.id.cab_set_as).isVisible = false
@@ -254,13 +260,18 @@ class MediaAdapter(
             return
         }
 
+        val selectedItems = getSelectedItems()
+        val isVaultRecycleBin = CryptoManager.isVaultRecycleBinPath(activity, path)
+        val isInRecycleBin = selectedItems.firstOrNull()?.getIsInRecycleBin() == true || path == RECYCLE_BIN || isVaultRecycleBin
+        val hasEncrypted = selectedItems.any { CryptoManager.isVaultMediaPath(activity, it.path) }
+
         when (id) {
             R.id.cab_confirm_selection -> confirmSelection()
             R.id.cab_properties -> showProperties()
             R.id.cab_rename -> checkMediaManagementAndRename()
             R.id.cab_edit -> editFile()
-            R.id.cab_hide -> toggleFileVisibility(true)
-            R.id.cab_unhide -> toggleFileVisibility(false)
+            R.id.cab_hide -> if (CopyMovePolicy.canEncryptFrom(path, hasEncrypted, isInRecycleBin, isVaultRecycleBin)) toggleFileVisibility(true)
+            R.id.cab_unhide -> decryptOrUnhideSelected(isInRecycleBin, isVaultRecycleBin)
             R.id.cab_add_to_favorites -> toggleFavorites(true)
             R.id.cab_remove_from_favorites -> toggleFavorites(false)
             R.id.cab_remove_from_virtual_album -> removeFromVirtualAlbum()
@@ -270,7 +281,7 @@ class MediaAdapter(
             R.id.cab_rotate_left -> rotateSelection(270)
             R.id.cab_rotate_one_eighty -> rotateSelection(180)
             R.id.cab_copy_to -> checkMediaManagementAndCopy(true)
-            R.id.cab_move_to -> if (!path.isVirtualAlbumPath()) moveFilesTo()
+            R.id.cab_move_to -> if (CopyMovePolicy.canMoveFrom(path, isInRecycleBin, isVaultRecycleBin)) moveFilesTo()
             R.id.cab_create_shortcut -> createShortcut()
             R.id.cab_select_all -> selectAll()
             R.id.cab_open_with -> openPath()
@@ -305,10 +316,48 @@ class MediaAdapter(
 
     fun isASectionTitle(position: Int) = media.getOrNull(position) is ThumbnailSection
 
-    private fun checkHideBtnVisibility(menu: Menu, selectedItems: ArrayList<Medium>) {
-        val isInRecycleBin = selectedItems.firstOrNull()?.getIsInRecycleBin() == true
-        menu.findItem(R.id.cab_hide).isVisible = (!isRPlus() || isExternalStorageManager()) && !isInRecycleBin && selectedItems.any { !it.isHidden() }
-        menu.findItem(R.id.cab_unhide).isVisible = (!isRPlus() || isExternalStorageManager()) && !isInRecycleBin && selectedItems.any { it.isHidden() }
+    private fun checkHideBtnVisibility(
+        menu: Menu,
+        selectedItems: ArrayList<Medium>,
+        isInRecycleBin: Boolean,
+        isVaultRecycleBin: Boolean,
+        hasEncrypted: Boolean,
+        isMixedEncryption: Boolean
+    ) {
+        val hasPermission = !isRPlus() || isExternalStorageManager()
+        val hasHiddenOrEncrypted = selectedItems.any { it.isHidden() || CryptoManager.isEncryptedFile(it.path) }
+        menu.findItem(R.id.cab_hide).isVisible =
+            hasPermission &&
+            !isMixedEncryption &&
+            CopyMovePolicy.canEncryptFrom(path, hasEncrypted, isInRecycleBin, isVaultRecycleBin) &&
+            selectedItems.any { !it.isHidden() }
+        menu.findItem(R.id.cab_unhide).isVisible =
+            hasPermission &&
+            !isMixedEncryption &&
+            CopyMovePolicy.canDecryptFrom(path, hasHiddenOrEncrypted, isInRecycleBin, isVaultRecycleBin)
+    }
+
+    private fun decryptOrUnhideSelected(isInRecycleBin: Boolean, isVaultRecycleBin: Boolean) {
+        if (isRPlus() && !isExternalStorageManager()) {
+            GrantAllFilesDialog(activity)
+            return
+        }
+        val selectedItems = getSelectedItems()
+        val hasHiddenOrEncrypted = selectedItems.any { it.isHidden() || CryptoManager.isEncryptedFile(it.path) }
+        if (!CopyMovePolicy.canDecryptFrom(path, hasHiddenOrEncrypted, isInRecycleBin, isVaultRecycleBin)) {
+            return
+        }
+
+        val encryptedItems = selectedItems.filter { CryptoManager.isEncryptedFile(it.path) }
+        if (encryptedItems.isNotEmpty()) {
+            val fileDirItems = ArrayList(encryptedItems.map { FileDirItem(it.path, it.path.getFilenameFromPath()) })
+            activity.tryDecryptFilesTo(fileDirItems, currentDirectoryPath = path) {
+                finishActMode()
+                listener?.refreshItems()
+            }
+        } else {
+            toggleFileVisibility(false)
+        }
     }
 
     private fun checkFavoriteBtnVisibility(menu: Menu, selectedItems: ArrayList<Medium>) {
@@ -758,7 +807,9 @@ class MediaAdapter(
     }
 
     private fun moveFilesTo() {
-        if (path.isVirtualAlbumPath()) {
+        val isVaultRecycleBin = CryptoManager.isVaultRecycleBinPath(activity, path)
+        val isInRecycleBin = getSelectedItems().firstOrNull()?.getIsInRecycleBin() == true || path == RECYCLE_BIN || isVaultRecycleBin
+        if (!CopyMovePolicy.canMoveFrom(path, isInRecycleBin, isVaultRecycleBin)) {
             return
         }
         activity.handleDeletePasswordProtection {
@@ -774,6 +825,12 @@ class MediaAdapter(
 
     private fun copyMoveTo(isCopyOperation: Boolean) {
         val paths = getSelectedPaths()
+        val hasEncrypted = paths.any { CryptoManager.isVaultMediaPath(activity, it) }
+        val hasUnencrypted = paths.any { !CryptoManager.isVaultMediaPath(activity, it) }
+        if (hasEncrypted && hasUnencrypted) {
+            activity.toast(R.string.cannot_mix_encrypted_and_unencrypted)
+            return
+        }
 
         val recycleBinPath = activity.recycleBinPath
         val fileDirItems = paths.asSequence().filter { isCopyOperation || !it.startsWith(recycleBinPath) }.map {
@@ -796,15 +853,17 @@ class MediaAdapter(
                 finishActMode()
                 return@tryCopyMoveFilesTo
             }
-            activity.applicationContext.rescanFolderMedia(destinationPath)
-            activity.applicationContext.rescanFolderMedia(fileDirItems.first().getParentPath())
+            if (!CryptoManager.isEncryptedFolderPath(activity, destinationPath)) {
+                activity.applicationContext.rescanFolderMedia(destinationPath)
+                activity.applicationContext.rescanFolderMedia(fileDirItems.first().getParentPath())
 
-            val newPaths = fileDirItems.map { "$destinationPath/${it.name}" }.toMutableList() as ArrayList<String>
-            activity.rescanPaths(newPaths) {
-                activity.fixDateTaken(newPaths, false)
-                if (!isCopyOperation || destinationPath == path) {
-                    activity.runOnUiThread {
-                        listener?.refreshItems()
+                val newPaths = fileDirItems.map { "$destinationPath/${it.name}" }.toMutableList() as ArrayList<String>
+                activity.rescanPaths(newPaths) {
+                    activity.fixDateTaken(newPaths, false)
+                    if (!isCopyOperation || destinationPath == path) {
+                        activity.runOnUiThread {
+                            listener?.refreshItems()
+                        }
                     }
                 }
             }
