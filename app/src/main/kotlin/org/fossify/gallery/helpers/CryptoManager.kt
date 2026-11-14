@@ -84,10 +84,24 @@ class BoundedInputStream(
 
     override fun skip(n: Long): Long {
         if (n <= 0 || remaining <= 0) return 0L
-        val toSkip = minOf(n, remaining)
-        val skipped = wrapped.skip(toSkip)
-        if (skipped > 0) remaining -= skipped
-        return skipped
+        var totalSkipped = 0L
+        var left = minOf(n, remaining)
+        val skipBuffer = ByteArray(minOf(left, 4096L).toInt())
+        while (left > 0) {
+            val skipped = wrapped.skip(left)
+            if (skipped > 0) {
+                totalSkipped += skipped
+                remaining -= skipped
+                left -= skipped
+            } else {
+                val read = wrapped.read(skipBuffer, 0, minOf(left, skipBuffer.size.toLong()).toInt())
+                if (read == -1) break
+                totalSkipped += read
+                remaining -= read
+                left -= read
+            }
+        }
+        return totalSkipped
     }
 
     override fun available(): Int {
@@ -2539,8 +2553,19 @@ object CryptoManager {
             return null
         }
 
-        val originalFolderName = getDecryptedFolderName(folder) ?: folder.name
+        val rawFolderName = getDecryptedFolderName(folder) ?: folder.name
         val vaultRoot = findVaultRoot(context) ?: return null
+
+        val existingEncryptedNames = vaultRoot.listFiles()
+            ?.filter { it.isDirectory }
+            ?.mapNotNull { getDecryptedFolderName(it)?.takeIf { name -> name != VAULT_RECYCLE_BIN_NAME } }
+            ?: emptyList()
+        var originalFolderName = rawFolderName
+        var nameCollisionIdx = 1
+        while (existingEncryptedNames.any { it.equals(originalFolderName, ignoreCase = true) }) {
+            originalFolderName = "$rawFolderName($nameCollisionIdx)"
+            nameCollisionIdx++
+        }
 
         // Only formats supported by the gallery are encrypted; other files (pdf, md, ...) are left untouched.
         val filesToEncrypt = folder.listFiles()?.filter { isEncryptableMediaFile(it) } ?: emptyList()
@@ -2578,7 +2603,7 @@ object CryptoManager {
                 failed = true
                 break
             }
-            onProgress?.invoke(index + 1, total)
+            onProgress?.invoke(((index + 1) * 7) / 10, total)
         }
 
         // ROLLBACK IF ENCRYPTION FAILED ON ANY FILE
@@ -2588,9 +2613,59 @@ object CryptoManager {
         }
 
         // ALL FILES ENCRYPTED SUCCESSFULLY! WIPE AND DELETE ORIGINAL MEDIA FILES:
-        for ((sourceFile, encFile) in encryptedPairs) {
-            context.updateVirtualAlbumItemPath(sourceFile.absolutePath, encFile.absolutePath)
-            secureWipeAndDeleteFile(context, sourceFile)
+        val wipedPaths = ArrayList<String>(encryptedPairs.size)
+        val wipedFileNames = HashSet<String>(encryptedPairs.size)
+        val encBaseProgress = (total * 7) / 10
+        val wipeWeight = total - encBaseProgress
+        for ((index, pair) in encryptedPairs.withIndex()) {
+            val (sourceFile, encFile) = pair
+            val sourcePath = sourceFile.absolutePath
+            context.updateVirtualAlbumItemPath(sourcePath, encFile.absolutePath)
+            if (secureWipeAndDeleteFile(sourceFile, context, syncParentDir = false, purgeTraces = false)) {
+                wipedPaths.add(sourcePath)
+                wipedFileNames.add(sourceFile.name)
+            }
+            val wipeProgress = if (encryptedPairs.isNotEmpty()) {
+                encBaseProgress + ((index + 1) * wipeWeight) / encryptedPairs.size
+            } else {
+                total
+            }
+            onProgress?.invoke(wipeProgress, total)
+        }
+        syncDir(folder)
+
+        // Batch-purge MediaStore, Room DB, and thumbnail traces once for all wiped files
+        if (wipedPaths.isNotEmpty()) {
+            val cleanFolderPath = folder.absolutePath.trimEnd('/')
+            try {
+                context.contentResolver.delete(
+                    MediaStore.Files.getContentUri("external"),
+                    "${MediaStore.MediaColumns.DATA} LIKE ?",
+                    arrayOf("$cleanFolderPath/%")
+                )
+                MediaScannerConnection.scanFile(context, wipedPaths.toTypedArray(), null, null)
+            } catch (_: Exception) {}
+
+            try {
+                context.mediaDB.deleteMediaFromPath(cleanFolderPath)
+                context.favoritesDB.deleteFavoritesByPrefix(cleanFolderPath)
+                GalleryDatabase.getInstance(context.applicationContext).DateTakensDao().deleteDateTakensFromPath(cleanFolderPath)
+            } catch (_: Exception) {}
+
+            try {
+                val dcimThumbnails = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), ".thumbnails")
+                val picThumbnails = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), ".thumbnails")
+                val parentThumbnails = File(folder, ".thumbnails")
+                listOf(dcimThumbnails, picThumbnails, parentThumbnails).forEach { tDir ->
+                    if (tDir.exists() && tDir.isDirectory) {
+                        tDir.listFiles()?.forEach { thumbFile ->
+                            if (wipedFileNames.any { name -> thumbFile.name.contains(name) }) {
+                                secureWipeAndDeleteFile(thumbFile, null, syncParentDir = false, purgeTraces = false)
+                            }
+                        }
+                    }
+                }
+            } catch (_: Exception) {}
         }
 
         // Preserve any existing .bin files that were already encrypted in this folder
@@ -2728,11 +2803,14 @@ object CryptoManager {
             targetFolderOverride
         } else {
             val originalFolderName = getDecryptedFolderName(folder) ?: folder.name
-            val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+            val picturesDir = File(context.internalStoragePath, Environment.DIRECTORY_PICTURES)
+            if (!picturesDir.exists()) {
+                picturesDir.mkdirs()
+            }
             var candidate = File(picturesDir, originalFolderName)
             var idx = 1
             while (candidate.exists()) {
-                candidate = File(picturesDir, "${originalFolderName}_$idx")
+                candidate = File(picturesDir, "$originalFolderName($idx)")
                 idx++
             }
             candidate
@@ -3298,7 +3376,12 @@ object CryptoManager {
         return secureWipeAndDeleteFile(file, context)
     }
 
-    fun secureWipeAndDeleteFile(file: File, context: Context? = null): Boolean {
+    fun secureWipeAndDeleteFile(
+        file: File,
+        context: Context? = null,
+        syncParentDir: Boolean = true,
+        purgeTraces: Boolean = true
+    ): Boolean {
         if (!file.exists()) return true
         val originalPath = file.absolutePath
 
@@ -3312,9 +3395,11 @@ object CryptoManager {
             deleted = context.tryFastDocumentDelete(originalPath, false)
         }
 
-        syncDir(file.parentFile)
+        if (syncParentDir) {
+            syncDir(file.parentFile)
+        }
 
-        if (context != null) {
+        if (purgeTraces && context != null) {
             purgeTracesForFile(context, originalPath)
         }
 
@@ -3325,16 +3410,15 @@ object CryptoManager {
         return try {
             val length = file.length()
             if (length > 0L) {
-                val random = SecureRandom()
                 val bufSize = 1024 * 1024 // 1 MiB chunk
                 val buf = ByteArray(bufSize)
-                RandomAccessFile(file, "rws").use { raf ->
+                RandomAccessFile(file, "rw").use { raf ->
                     val ch = raf.channel
                     var rem = length
                     ch.position(0L)
                     while (rem > 0L) {
                         val toWrite = minOf(rem, bufSize.toLong()).toInt()
-                        random.nextBytes(buf)
+                        secureRandom.nextBytes(buf)
                         val byteBuf = java.nio.ByteBuffer.wrap(buf, 0, toWrite)
                         while (byteBuf.hasRemaining()) {
                             ch.write(byteBuf)

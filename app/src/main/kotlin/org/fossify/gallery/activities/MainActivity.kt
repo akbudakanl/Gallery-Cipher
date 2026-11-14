@@ -452,7 +452,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         }
 
         binding.directoriesFastscroller.updateColors(primaryColor)
-        binding.directoriesRefreshLayout.isEnabled = false
+        binding.directoriesRefreshLayout.isEnabled = mIsSecretVaultView && !binding.mainMenu.isSearchOpen && config.enablePullToRefresh
         getRecyclerAdapter()?.apply {
             dateFormat = config.dateFormat
             timeFormat = getTimeFormat()
@@ -758,7 +758,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
         binding.mainMenu.onSearchTextChangedListener = { text ->
             setupAdapter(mDirsIgnoringSearch, text)
-            binding.directoriesRefreshLayout.isEnabled = false
+            binding.directoriesRefreshLayout.isEnabled = mIsSecretVaultView && text.isEmpty() && config.enablePullToRefresh
             binding.directoriesSwitchSearching.beVisibleIf(text.isNotEmpty())
         }
 
@@ -1063,6 +1063,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     private fun updateVaultModeUi() {
         runOnUiThread {
             if (isDestroyed || isFinishing) return@runOnUiThread
+            binding.directoriesRefreshLayout.isEnabled = mIsSecretVaultView && !binding.mainMenu.isSearchOpen && config.enablePullToRefresh
             val hasEncryptedActive = mIsSecretVaultView || (CryptoManager.isVaultUnlocked && (mHiddenDisplayMode == DISPLAY_ALL_HIDDEN || mHiddenDisplayMode == DISPLAY_ENCRYPTED_ONLY))
             applyVaultScreenProtection(hasEncryptedActive)
             if (mIsSecretVaultView) {
@@ -1988,6 +1989,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         val dirsCopy = ArrayList(dirs)
         runOnUiThread {
             if (isDestroyed || isFinishing) return@runOnUiThread
+            binding.directoriesRefreshLayout.isEnabled = mIsSecretVaultView && !binding.mainMenu.isSearchOpen && config.enablePullToRefresh
             val query = textToSearch ?: binding.mainMenu.getCurrentQuery()
             val currAdapter = binding.directoriesGrid.adapter
             val filtered = if (mIsSecretVaultView) {

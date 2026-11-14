@@ -316,7 +316,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
 
         binding.mediaFastscroller.updateColors(primaryColor)
         mIsVaultOpening = false
-        binding.mediaRefreshLayout.isEnabled = !mShowAll && config.enablePullToRefresh
+        binding.mediaRefreshLayout.isEnabled = (!mShowAll || mIsVaultFilesView) && config.enablePullToRefresh
         getMediaAdapter()?.apply {
             dateFormat = config.dateFormat
             timeFormat = getTimeFormat()
@@ -599,7 +599,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
         binding.mediaMenu.onSearchTextChangedListener = { text ->
             mLastSearchedText = text
             searchQueryChanged(text)
-            binding.mediaRefreshLayout.isEnabled = !mShowAll && text.isEmpty() && config.enablePullToRefresh
+            binding.mediaRefreshLayout.isEnabled = (!mShowAll || mIsVaultFilesView) && text.isEmpty() && config.enablePullToRefresh
         }
 
         binding.mediaMenu.requireToolbar().setOnMenuItemClickListener { menuItem ->

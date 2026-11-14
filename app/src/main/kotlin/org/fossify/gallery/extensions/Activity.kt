@@ -693,6 +693,20 @@ fun BaseSimpleActivity.tryDecryptFilesTo(
     }
 }
 
+fun BaseSimpleActivity.tryDecryptFolders(
+    folderPaths: List<String>,
+    callback: (destinationPath: String) -> Unit
+) {
+    if (folderPaths.isEmpty()) {
+        toast(org.fossify.commons.R.string.unknown_error_occurred)
+        return
+    }
+
+    ensureVaultUnlocked {
+        confirmAndDecryptFolders(folderPaths, targetDir = null, callback = callback)
+    }
+}
+
 fun BaseSimpleActivity.tryDecryptFoldersTo(
     folderPaths: List<String>,
     callback: (destinationPath: String) -> Unit
@@ -715,63 +729,73 @@ fun BaseSimpleActivity.tryDecryptFoldersTo(
             isHiddenCopySource = false,
             mode = PickDirectoryMode.DECRYPT_MOVE
         ) { destination ->
-            getAlertDialogBuilder()
-                .setMessage(R.string.confirm_decrypt_hidden_file)
-                .setPositiveButton(org.fossify.commons.R.string.no, null)
-                .setNegativeButton(org.fossify.commons.R.string.yes) { _, _ ->
-                    val totalFilesCount = folderPaths.sumOf { folderPath ->
-                        File(folderPath).listFiles()?.count { it.isFile && CryptoManager.isEncryptedFile(it.name) } ?: 0
-                    }
-                    val progressDialog = CryptoProgressDialog(this, totalFilesCount, R.string.decrypting_folder)
-                    ensureBackgroundThread {
-                        val destDir = File(destination)
-                        var globalProcessed = 0
-                        var allSuccess = true
-
-                        for (folderPath in folderPaths) {
-                            var folderLastCurrent = 0
-                            val result = try {
-                                CryptoManager.decryptFolder(
-                                    context = this,
-                                    folderPath = folderPath,
-                                    targetFolderOverride = destDir
-                                ) { current, _ ->
-                                    val diff = current - folderLastCurrent
-                                    if (diff > 0) {
-                                        globalProcessed += diff
-                                        folderLastCurrent = current
-                                        runOnUiThread {
-                                            progressDialog.updateProgress(globalProcessed, totalFilesCount)
-                                        }
-                                    }
-                                }
-                            } catch (_: Exception) {
-                                null
-                            }
-                            if (result == null) {
-                                allSuccess = false
-                            }
-                        }
-
-                        CryptoManager.clearAppImageCaches(this)
-                        runOnUiThread {
-                            try {
-                                progressDialog.dismiss()
-                            } catch (_: Exception) {}
-
-                            if (allSuccess) {
-                                toast(R.string.folder_decrypted_successfully)
-                            } else {
-                                toast(org.fossify.commons.R.string.unknown_error_occurred)
-                            }
-                            callback(destination)
-                        }
-                    }
-                }
-                .create()
-                .show()
+            confirmAndDecryptFolders(folderPaths, targetDir = File(destination), callback = callback)
         }
     }
+}
+
+private fun BaseSimpleActivity.confirmAndDecryptFolders(
+    folderPaths: List<String>,
+    targetDir: File?,
+    callback: (destinationPath: String) -> Unit
+) {
+    getAlertDialogBuilder()
+        .setMessage(R.string.confirm_decrypt_hidden_file)
+        .setPositiveButton(org.fossify.commons.R.string.no, null)
+        .setNegativeButton(org.fossify.commons.R.string.yes) { _, _ ->
+            val totalFilesCount = folderPaths.sumOf { folderPath ->
+                File(folderPath).listFiles()?.count { it.isFile && CryptoManager.isEncryptedFile(it.name) } ?: 0
+            }
+            val progressDialog = CryptoProgressDialog(this, totalFilesCount, R.string.decrypting_folder)
+            ensureBackgroundThread {
+                var globalProcessed = 0
+                var allSuccess = true
+                var lastDestination = targetDir?.absolutePath ?: ""
+
+                for (folderPath in folderPaths) {
+                    var folderLastCurrent = 0
+                    val result = try {
+                        CryptoManager.decryptFolder(
+                            context = this,
+                            folderPath = folderPath,
+                            targetFolderOverride = targetDir
+                        ) { current, _ ->
+                            val diff = current - folderLastCurrent
+                            if (diff > 0) {
+                                globalProcessed += diff
+                                folderLastCurrent = current
+                                runOnUiThread {
+                                    progressDialog.updateProgress(globalProcessed, totalFilesCount)
+                                }
+                            }
+                        }
+                    } catch (_: Exception) {
+                        null
+                    }
+                    if (result == null) {
+                        allSuccess = false
+                    } else if (lastDestination.isEmpty()) {
+                        lastDestination = result
+                    }
+                }
+
+                CryptoManager.clearAppImageCaches(this)
+                runOnUiThread {
+                    try {
+                        progressDialog.dismiss()
+                    } catch (_: Exception) {}
+
+                    if (allSuccess) {
+                        toast(R.string.folder_decrypted_successfully)
+                    } else {
+                        toast(org.fossify.commons.R.string.unknown_error_occurred)
+                    }
+                    callback(lastDestination)
+                }
+            }
+        }
+        .create()
+        .show()
 }
 
 fun BaseSimpleActivity.tryCopyMoveFilesTo(

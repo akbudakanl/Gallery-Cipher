@@ -414,4 +414,6 @@
     <string name="delete_original_from_favorites_and_virtual_albums">Delete the original version of a file when it is deleted from favorites and virtual albums</string>
     <string name="cannot_target_encrypted_album">Encrypted albums cannot be targeted for this operation</string>
     <string name="cannot_mix_encrypted_and_unencrypted">Cannot combine encrypted and unencrypted items in this operation</string>
+    <string name="lock_album">Lock album</string>
+    <string name="unlock_album">Unlock album</string>
 </resources>

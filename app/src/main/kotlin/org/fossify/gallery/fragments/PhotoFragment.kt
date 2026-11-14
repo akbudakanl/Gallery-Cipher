@@ -178,8 +178,21 @@ class PhotoFragment : ViewPagerFragment() {
                 }
             })
 
-            gifView.setOnTouchListener { v, event ->
+            gifView.setOnTouchListener { _, event ->
                 if (context.config.allowDownGesture && abs(gifViewFrame.controller.state.zoom - 1f) < MAX_ZOOM_EQUALITY_TOLERANCE) handleEvent(event)
+                false
+            }
+
+            gifViewFrame.setOnTouchListener { _, event ->
+                if (context.config.allowDownGesture && abs(gifViewFrame.controller.state.zoom - 1f) < MAX_ZOOM_EQUALITY_TOLERANCE) handleEvent(event)
+                false
+            }
+
+            photoHolder.setOnTouchListener { _, event ->
+                if (gifViewFrame.isVisible() && context.config.allowDownGesture && abs(gifViewFrame.controller.state.zoom - 1f) < MAX_ZOOM_EQUALITY_TOLERANCE) {
+                    handleEvent(event)
+                    return@setOnTouchListener true
+                }
                 false
             }
 

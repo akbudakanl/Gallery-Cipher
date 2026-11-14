@@ -13,6 +13,8 @@ class CryptoProgressDialog(
     private val titleId: Int = R.string.encrypting_folder
 ) {
     private var dialog: AlertDialog? = null
+    @Volatile
+    private var isDismissed = false
     private val binding = DialogCryptoProgressBinding.inflate(activity.layoutInflater)
 
     init {
@@ -25,9 +27,15 @@ class CryptoProgressDialog(
         activity.getAlertDialogBuilder().apply {
             setCancelable(false)
             activity.setupDialogStuff(binding.root, this, titleId = titleId) { alertDialog ->
-                dialog = alertDialog
-                alertDialog.setCanceledOnTouchOutside(false)
-                alertDialog.setCancelable(false)
+                if (isDismissed || activity.isFinishing || activity.isDestroyed) {
+                    try {
+                        alertDialog.dismiss()
+                    } catch (_: Exception) {}
+                } else {
+                    dialog = alertDialog
+                    alertDialog.setCanceledOnTouchOutside(false)
+                    alertDialog.setCancelable(false)
+                }
             }
         }
     }
@@ -42,6 +50,7 @@ class CryptoProgressDialog(
     }
 
     fun dismiss() {
+        isDismissed = true
         try {
             dialog?.dismiss()
         } catch (_: Exception) {}

@@ -101,7 +101,8 @@ import org.fossify.gallery.extensions.promptCreateVault
 import org.fossify.gallery.extensions.removeNoMedia
 import org.fossify.gallery.extensions.showRecycleBinEmptyingDialog
 import org.fossify.gallery.extensions.tryCopyMoveFilesTo
-import org.fossify.gallery.extensions.tryDecryptFoldersTo
+import org.fossify.gallery.extensions.isHiddenVirtualAlbumPath
+import org.fossify.gallery.extensions.tryDecryptFolders
 import org.fossify.gallery.extensions.updateReferencesForFolderRename
 import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.DIRECTORY
@@ -221,8 +222,13 @@ class DirectoryAdapter(
                 !hasFavorites && !hasRecycleBin && !hasNonRenamableEncrypted && !hasMultipleWithEncrypted
             findItem(R.id.cab_change_cover_image).isVisible = isOneItemSelected
 
-            findItem(R.id.cab_lock).isVisible = selectedPaths.any { !config.isFolderProtected(it) }
-            findItem(R.id.cab_unlock).isVisible = selectedPaths.any { config.isFolderProtected(it) }
+            val lockablePaths = selectedPaths.filter {
+                !CryptoManager.isEncryptedFolderPath(activity, it) &&
+                    !CryptoManager.isVaultRecycleBinPath(activity, it) &&
+                    !(it.isVirtualAlbumPath() && activity.isHiddenVirtualAlbumPath(it))
+            }
+            findItem(R.id.cab_lock).isVisible = lockablePaths.any { !config.isFolderProtected(it) }
+            findItem(R.id.cab_unlock).isVisible = lockablePaths.any { config.isFolderProtected(it) }
 
             val selectedDir = getSelectedItems().firstOrNull()
             val isRecycleBin = isOneItemSelected && (selectedPaths.first() == RECYCLE_BIN || selectedDir?.isRecycleBin() == true)
@@ -236,14 +242,12 @@ class DirectoryAdapter(
             checkHideBtnVisibility(this, selectedPaths)
             checkPinBtnVisibility(this, selectedPaths)
 
-            // virtual albums are not real folders: they cannot be hidden, excluded, locked, copied, moved or inspected on disk
+            // virtual albums are not real folders: they cannot be hidden, excluded, copied, moved or inspected on disk
             if (hasVirtualAlbum) {
                 findItem(R.id.cab_rename).isVisible = isOneItemSelected
                 findItem(R.id.cab_hide).isVisible = false
                 findItem(R.id.cab_unhide).isVisible = false
                 findItem(R.id.cab_exclude).isVisible = false
-                findItem(R.id.cab_lock).isVisible = false
-                findItem(R.id.cab_unlock).isVisible = false
                 findItem(R.id.cab_copy_to).isVisible = false
                 findItem(R.id.cab_move_to).isVisible = false
                 findItem(R.id.cab_create_shortcut).isVisible = false
@@ -533,7 +537,7 @@ class DirectoryAdapter(
             if (encryptedPaths.isNotEmpty()) {
                 handleLockedFolderOpeningForFolders(encryptedPaths) { unlockedPaths ->
                     if (unlockedPaths.isNotEmpty()) {
-                        activity.tryDecryptFoldersTo(unlockedPaths.toList()) {
+                        activity.tryDecryptFolders(unlockedPaths.toList()) {
                             listener?.refreshItems()
                             finishActMode()
                         }
@@ -782,7 +786,12 @@ class DirectoryAdapter(
     private fun lockFolder() {
         SecurityDialog(activity, "", SHOW_ALL_TABS) { hash, type, success ->
             if (success) {
-                getSelectedPaths().filter { !config.isFolderProtected(it) }.forEach {
+                getSelectedPaths().filter {
+                    !config.isFolderProtected(it) &&
+                        !CryptoManager.isEncryptedFolderPath(activity, it) &&
+                        !CryptoManager.isVaultRecycleBinPath(activity, it) &&
+                        !(it.isVirtualAlbumPath() && activity.isHiddenVirtualAlbumPath(it))
+                }.forEach {
                     config.addFolderProtection(it, hash, type)
                     lockedFolderPaths.add(it)
                 }
@@ -1177,11 +1186,12 @@ class DirectoryAdapter(
         val isSelected = selectedKeys.contains(directory.path.hashCode())
         bindItem(view).apply {
             dirPath?.text = "${directory.path.substringBeforeLast("/")}/"
+            val tmbDisplayName = CryptoManager.getDisplayName(directory.tmb)
             val thumbnailType = when {
-                directory.tmb.isVideoFast() -> TYPE_VIDEOS
-                directory.tmb.isGif() -> TYPE_GIFS
-                directory.tmb.isRawFast() -> TYPE_RAWS
-                directory.tmb.isSvg() -> TYPE_SVGS
+                tmbDisplayName.isVideoFast() -> TYPE_VIDEOS
+                tmbDisplayName.isGif() -> TYPE_GIFS
+                tmbDisplayName.isRawFast() -> TYPE_RAWS
+                tmbDisplayName.isSvg() -> TYPE_SVGS
                 else -> TYPE_IMAGES
             }
 
