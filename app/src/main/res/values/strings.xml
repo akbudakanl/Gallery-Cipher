@@ -369,8 +369,8 @@
     <string name="on_vault_exit_hide">Hide encrypted albums</string>
     <string name="on_vault_exit_ask_every_time">Always ask</string>
     <string name="vault_exit_dialog_title">Exiting Encrypted Section</string>
-    <string name="vault_exit_question_single">Show encrypted album together with other albums?</string>
-    <string name="vault_exit_question_multiple">Show encrypted albums together with other albums?</string>
+    <string name="vault_exit_question_single">Show encrypted album together with other albums?\n\nIn this case, during the app session, you will need to unlock the hidden vault whenever you send the app to the background and return to it, or turn the screen off and back on.</string>
+    <string name="vault_exit_question_multiple">Show encrypted albums together with other albums?\n\nIn this case, during the app session, you will need to unlock the hidden vault whenever you send the app to the background and return to it, or turn the screen off and back on.</string>
     <string name="vault_exit_settings_hint">For more options, see Settings &gt; On leaving encrypted section</string>
     <string name="stop_showing_hidden">Stop showing encrypted media</string>
     <string name="system_default">System default</string>

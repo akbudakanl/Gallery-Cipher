@@ -318,8 +318,8 @@
     <string name="on_vault_exit_hide">Şifreli albümleri gizle</string>
     <string name="on_vault_exit_ask_every_time">Her zaman sor</string>
     <string name="vault_exit_dialog_title">Şifreli Bölümden Çıkış</string>
-    <string name="vault_exit_question_single">Şifreli albüm, diğer albümlerle birlikte gösterilmeye devam edilsin mi?</string>
-    <string name="vault_exit_question_multiple">Şifreli albümler, diğer albümlerle birlikte gösterilmeye devam edilsin mi?</string>
+    <string name="vault_exit_question_single">Şifreli albüm, diğer albümlerle birlikte gösterilmeye devam edilsin mi?\n\nBu durumda uygulama oturumu boyunca uygulamayı arka plana atıp tekrar döndüğünüzde veya ekranı kapatıp tekrar açtığınızda gizli kasa şifresini açmanız gerekir.</string>
+    <string name="vault_exit_question_multiple">Şifreli albümler, diğer albümlerle birlikte gösterilmeye devam edilsin mi?\n\nBu durumda uygulama oturumu boyunca uygulamayı arka plana atıp tekrar döndüğünüzde veya ekranı kapatıp tekrar açtığınızda gizli kasa şifresini açmanız gerekir.</string>
     <string name="vault_exit_settings_hint">Daha fazla seçenek için Ayarlar &gt; Şifreli bölümden çıkıldığında bölümüne bakın</string>
     <string name="stop_showing_hidden">Şifreli medyayı göstermeyi bırak</string>
     <string name="system_default">Sistem varsayılanı</string>
