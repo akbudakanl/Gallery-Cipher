@@ -46,14 +46,21 @@ data class VirtualAlbumItem(
     @ColumnInfo(name = "last_modified") var lastModified: Long = 0L,
     @ColumnInfo(name = "fingerprint") var fingerprint: String = "",
     /** OK while the file was found, UNRESOLVED when it could not be located. */
-    @ColumnInfo(name = "state") var state: String = ITEM_STATE_OK
+    @ColumnInfo(name = "state") var state: String = ITEM_STATE_OK,
+    @ColumnInfo(name = "folder_inode") var folderInode: Long = 0L,
+    @ColumnInfo(name = "folder_signature") var folderSignature: String = "",
+    @ColumnInfo(name = "captured_at_sec") var capturedAtSec: Long = 0L
 ) {
     fun toIdentity(): MediaIdentity {
+        val effectiveCapturedSec = if (capturedAtSec > 0L) capturedAtSec else (addedTS / 1000L)
         return MediaIdentity(
             mediaStoreId = mediaStoreId,
             size = fileSize,
             lastModified = lastModified,
-            fingerprint = fingerprint
+            fingerprint = fingerprint,
+            folderInode = folderInode,
+            folderSignature = folderSignature,
+            capturedAtSec = effectiveCapturedSec
         )
     }
 }

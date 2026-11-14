@@ -22,13 +22,26 @@ data class MediaIdentity(
     val mediaStoreId: Long = 0L,
     val size: Long = 0L,
     val lastModified: Long = 0L,
-    val fingerprint: String = ""
+    val fingerprint: String = "",
+    val folderInode: Long = 0L,
+    val folderSignature: String = "",
+    val capturedAtSec: Long = 0L
 ) {
     val hasFingerprint: Boolean
         get() = fingerprint.isNotEmpty()
 
+    val hasFolderEvidence: Boolean
+        get() = folderInode > 0L || folderSignature.isNotEmpty()
+
     val isUsable: Boolean
         get() = mediaStoreId > 0L || hasFingerprint || size > 0L
+
+    fun withFolder(folder: FolderIdentity): MediaIdentity {
+        return copy(
+            folderInode = folder.dirInode,
+            folderSignature = folder.serializedSignature
+        )
+    }
 
     companion object {
         /**
@@ -44,8 +57,24 @@ data class MediaIdentity(
                 mediaStoreId = mediaStoreId,
                 size = file.length(),
                 lastModified = file.lastModified(),
-                fingerprint = computeFingerprint(file)
+                fingerprint = computeFingerprint(file),
+                capturedAtSec = System.currentTimeMillis() / 1000L
             )
+        }
+
+        /**
+         * Captures both file and parent-folder identity without writing any marker files to disk.
+         */
+        fun ofWithFolder(
+            context: Context,
+            file: File,
+            mediaStoreId: Long = 0L,
+            captureSession: FolderIdentity.CaptureSession? = null
+        ): MediaIdentity {
+            val base = of(context, file, mediaStoreId)
+            if (!file.isFile) return base
+            val folder = captureSession?.captureForFile(file) ?: FolderIdentity.captureForFile(file)
+            return base.withFolder(folder)
         }
 
         /**

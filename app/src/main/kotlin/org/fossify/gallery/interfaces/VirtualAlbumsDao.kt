@@ -147,7 +147,10 @@ interface VirtualAlbumsDao {
          SET media_store_id = CASE WHEN :mediaStoreId > 0 THEN :mediaStoreId ELSE media_store_id END,
              file_size = :fileSize,
              last_modified = :lastModified,
-             fingerprint = :fingerprint
+             fingerprint = :fingerprint,
+             folder_inode = CASE WHEN :folderInode > 0 THEN :folderInode ELSE folder_inode END,
+             folder_signature = CASE WHEN length(:folderSignature) > 0 THEN :folderSignature ELSE folder_signature END,
+             captured_at_sec = CASE WHEN :capturedAtSec > 0 THEN :capturedAtSec ELSE captured_at_sec END
          WHERE full_path = :path COLLATE NOCASE
         """
     )
@@ -156,7 +159,10 @@ interface VirtualAlbumsDao {
         mediaStoreId: Long,
         fileSize: Long,
         lastModified: Long,
-        fingerprint: String
+        fingerprint: String,
+        folderInode: Long = 0L,
+        folderSignature: String = "",
+        capturedAtSec: Long = 0L
     )
 
     /** Returns the items whose file could not be found at the cached path. */

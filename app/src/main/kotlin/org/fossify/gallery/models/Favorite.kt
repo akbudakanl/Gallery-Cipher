@@ -20,14 +20,20 @@ data class Favorite(
     @ColumnInfo(name = "media_store_id") var mediaStoreId: Long = 0L,
     @ColumnInfo(name = "file_size") var fileSize: Long = 0L,
     @ColumnInfo(name = "last_modified") var lastModified: Long = 0L,
-    @ColumnInfo(name = "fingerprint") var fingerprint: String = ""
+    @ColumnInfo(name = "fingerprint") var fingerprint: String = "",
+    @ColumnInfo(name = "folder_inode") var folderInode: Long = 0L,
+    @ColumnInfo(name = "folder_signature") var folderSignature: String = "",
+    @ColumnInfo(name = "captured_at_sec") var capturedAtSec: Long = 0L
 ) {
     fun toIdentity(): org.fossify.gallery.helpers.MediaIdentity {
         return org.fossify.gallery.helpers.MediaIdentity(
             mediaStoreId = mediaStoreId,
             size = fileSize,
             lastModified = lastModified,
-            fingerprint = fingerprint
+            fingerprint = fingerprint,
+            folderInode = folderInode,
+            folderSignature = folderSignature,
+            capturedAtSec = capturedAtSec
         )
     }
 }

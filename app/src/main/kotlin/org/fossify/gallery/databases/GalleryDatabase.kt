@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import org.fossify.gallery.interfaces.*
 import org.fossify.gallery.models.*
 
-@Database(entities = [Directory::class, Medium::class, Widget::class, DateTaken::class, Favorite::class, VirtualAlbum::class, VirtualAlbumItem::class], version = 14)
+@Database(entities = [Directory::class, Medium::class, Widget::class, DateTaken::class, Favorite::class, VirtualAlbum::class, VirtualAlbumItem::class], version = 15)
 abstract class GalleryDatabase : RoomDatabase() {
 
     abstract fun DirectoryDao(): DirectoryDao
@@ -45,6 +45,7 @@ abstract class GalleryDatabase : RoomDatabase() {
                             .addMigrations(MIGRATION_11_12)
                             .addMigrations(MIGRATION_12_13)
                             .addMigrations(MIGRATION_13_14)
+                            .addMigrations(MIGRATION_14_15)
                             .build()
                     }
                 }
@@ -152,6 +153,23 @@ abstract class GalleryDatabase : RoomDatabase() {
                 database.execSQL("ALTER TABLE virtual_album_items ADD COLUMN last_modified INTEGER NOT NULL DEFAULT 0")
                 database.execSQL("ALTER TABLE virtual_album_items ADD COLUMN fingerprint TEXT NOT NULL DEFAULT ''")
                 database.execSQL("ALTER TABLE virtual_album_items ADD COLUMN state TEXT NOT NULL DEFAULT 'OK'")
+            }
+        }
+
+        /**
+         * Adds zero-pollution folder identity columns (`folder_inode`, `folder_signature`,
+         * `captured_at_sec`) to favorites and virtual album items so moved/renamed folders can
+         * be distinguished cleanly from unrelated folders with identical-content copies.
+         */
+        private val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE favorites ADD COLUMN folder_inode INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE favorites ADD COLUMN folder_signature TEXT NOT NULL DEFAULT ''")
+                database.execSQL("ALTER TABLE favorites ADD COLUMN captured_at_sec INTEGER NOT NULL DEFAULT 0")
+
+                database.execSQL("ALTER TABLE virtual_album_items ADD COLUMN folder_inode INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE virtual_album_items ADD COLUMN folder_signature TEXT NOT NULL DEFAULT ''")
+                database.execSQL("ALTER TABLE virtual_album_items ADD COLUMN captured_at_sec INTEGER NOT NULL DEFAULT 0")
             }
         }
     }
