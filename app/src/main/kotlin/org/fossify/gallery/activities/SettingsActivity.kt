@@ -102,7 +102,6 @@ class SettingsActivity : SimpleActivity() {
         setupAllowDownGesture()
         setupAllowRotatingWithGestures()
         setupShowNotch()
-        setupBottomActions()
         setupFileThumbnailStyle()
         setupFolderThumbnailStyle()
         setupKeepLastModified()
@@ -116,8 +115,6 @@ class SettingsActivity : SimpleActivity() {
         setupManageExtendedDetails()
         setupSkipDeleteConfirmation()
         setupDeleteOriginalFromFavoritesAndVirtualAlbums()
-        setupAllowBatchRenaming()
-        setupManageBottomActions()
         setupUseRecycleBin()
         setupShowRecycleBin()
         setupShowRecycleBinLast()
@@ -140,7 +137,6 @@ class SettingsActivity : SimpleActivity() {
             binding.settingsExtendedDetailsLabel,
             binding.settingsSecurityLabel,
             binding.settingsFileOperationsLabel,
-            binding.settingsBottomActionsLabel,
             binding.settingsRecycleBinLabel,
             binding.settingsMigratingLabel
         ).forEach {
@@ -971,14 +967,6 @@ class SettingsActivity : SimpleActivity() {
         }
     }
 
-    private fun setupAllowBatchRenaming() {
-        binding.settingsAllowBatchRenaming.isChecked = config.allowBatchRenaming
-        binding.settingsAllowBatchRenamingHolder.setOnClickListener {
-            binding.settingsAllowBatchRenaming.toggle()
-            config.allowBatchRenaming = binding.settingsAllowBatchRenaming.isChecked
-        }
-    }
-
     private fun setupScreenRotation() {
         binding.settingsScreenRotation.text = getScreenRotationText()
         binding.settingsScreenRotationHolder.setOnClickListener {
@@ -1002,28 +990,6 @@ class SettingsActivity : SimpleActivity() {
             else -> R.string.screen_rotation_aspect_ratio
         }
     )
-
-    private fun setupBottomActions() {
-        binding.settingsBottomActionsCheckbox.isChecked = config.bottomActions
-        binding.settingsManageBottomActionsHolder.beVisibleIf(config.bottomActions)
-        binding.settingsBottomActionsCheckboxHolder.setOnClickListener {
-            binding.settingsBottomActionsCheckbox.toggle()
-            config.bottomActions = binding.settingsBottomActionsCheckbox.isChecked
-            binding.settingsManageBottomActionsHolder.beVisibleIf(config.bottomActions)
-        }
-    }
-
-    private fun setupManageBottomActions() {
-        binding.settingsManageBottomActionsHolder.setOnClickListener {
-            ManageBottomActionsDialog(this) {
-                if (config.visibleBottomActions == 0) {
-                    binding.settingsBottomActionsCheckboxHolder.callOnClick()
-                    config.bottomActions = false
-                    config.visibleBottomActions = DEFAULT_BOTTOM_ACTIONS
-                }
-            }
-        }
-    }
 
     private fun setupUseRecycleBin() {
         updateRecycleBinButtons()
@@ -1064,7 +1030,7 @@ class SettingsActivity : SimpleActivity() {
     private fun setupEmptyRecycleBin() {
         ensureBackgroundThread {
             try {
-                mRecycleBinContentSize = mediaDB.getDeletedMedia().sumByLong { medium ->
+                val plainSize = mediaDB.getDeletedMedia().sumByLong { medium ->
                     val size = medium.size
                     if (size == 0L) {
                         val path = medium.path.removePrefix(RECYCLE_BIN).prependIndent(recycleBinPath)
@@ -1073,6 +1039,12 @@ class SettingsActivity : SimpleActivity() {
                         size
                     }
                 }
+                val vaultSize = if (CryptoManager.isVaultUnlocked) {
+                    CryptoManager.getVaultRecycleBinSize(this)
+                } else {
+                    0L
+                }
+                mRecycleBinContentSize = plainSize + vaultSize
             } catch (ignored: Exception) {
             }
 
@@ -1087,6 +1059,11 @@ class SettingsActivity : SimpleActivity() {
             } else {
                 showRecycleBinEmptyingDialog {
                     emptyTheRecycleBin()
+                    if (CryptoManager.isVaultUnlocked) {
+                        ensureBackgroundThread {
+                            CryptoManager.emptyVaultRecycleBin(this)
+                        }
+                    }
                     mRecycleBinContentSize = 0L
                     binding.settingsEmptyRecycleBinSize.text = 0L.formatSize()
                 }

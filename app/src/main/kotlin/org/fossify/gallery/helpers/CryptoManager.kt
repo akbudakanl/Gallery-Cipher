@@ -1680,6 +1680,11 @@ object CryptoManager {
         return binFolder.listFiles()?.count { isEncryptedFile(it.name) } ?: 0
     }
 
+    fun getVaultRecycleBinSize(context: Context): Long {
+        val binFolder = getVaultRecycleBin(context) ?: return 0L
+        return binFolder.listFiles()?.filter { isEncryptedFile(it.name) }?.sumOf { it.length() } ?: 0L
+    }
+
     fun getVaultRecycleBinRestoreMap(context: Context): HashMap<String, String> {
         val binFolder = getVaultRecycleBin(context) ?: return HashMap()
         val restoreFile = File(binFolder, VAULT_RESTORE_INFO_FILE)

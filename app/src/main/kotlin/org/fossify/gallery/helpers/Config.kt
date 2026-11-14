@@ -474,8 +474,8 @@ class Config(context: Context) : BaseConfig(context) {
         set(useRecycleBin) = prefs.edit().putBoolean(USE_RECYCLE_BIN, useRecycleBin).apply()
 
     var bottomActions: Boolean
-        get() = prefs.getBoolean(BOTTOM_ACTIONS, true)
-        set(bottomActions) = prefs.edit().putBoolean(BOTTOM_ACTIONS, bottomActions).apply()
+        get() = true
+        set(_) {}
 
     fun removeLastVideoPosition(path: String) {
         prefs.edit().remove("$LAST_VIDEO_POSITION_PREFIX${path.lowercase(Locale.getDefault())}").apply()
