@@ -967,13 +967,13 @@ class DirectoryAdapter(
     }
 
     private fun askConfirmDelete() {
-        val selectedVirtualAlbums = getSelectedItems().filter { it.isVirtualAlbum() }
-        if (selectedVirtualAlbums.isNotEmpty()) {
-            if (selectedVirtualAlbums.size != selectedKeys.size) {
-                // never mix deleting real folders with removing virtual albums
+        val selectedReferenceAlbums = getSelectedItems().filter { it.isVirtualAlbum() || it.areFavorites() }
+        if (selectedReferenceAlbums.isNotEmpty()) {
+            if (selectedReferenceAlbums.size != selectedKeys.size) {
+                // never mix deleting real folders with removing virtual albums or favorites
                 activity.toast(R.string.virtual_album_cannot_be_modified)
             } else {
-                confirmDeleteVirtualAlbums(selectedVirtualAlbums)
+                confirmDeleteReferenceAlbums(selectedReferenceAlbums)
             }
             return
         }
@@ -1022,7 +1022,7 @@ class DirectoryAdapter(
         }
     }
 
-    private fun confirmDeleteVirtualAlbums(albums: List<Directory>) {
+    private fun confirmDeleteReferenceAlbums(albums: List<Directory>) {
         val items = if (albums.size == 1) {
             "\"${albums.first().name}\""
         } else {
@@ -1038,9 +1038,13 @@ class DirectoryAdapter(
             org.fossify.commons.R.string.no
         ) {
             ensureBackgroundThread {
-                // only the album and its references are removed, the files themselves are never touched
+                // only the album and its references are removed, the original files stay untouched
                 albums.forEach { album ->
-                    album.path.getVirtualAlbumId()?.let { activity.deleteVirtualAlbum(it) }
+                    if (album.areFavorites()) {
+                        clearFavoritesAlbum()
+                    } else {
+                        album.path.getVirtualAlbumId()?.let { activity.deleteVirtualAlbum(it) }
+                    }
                 }
 
                 activity.runOnUiThread {
@@ -1049,6 +1053,15 @@ class DirectoryAdapter(
                 }
             }
         }
+    }
+
+    private fun clearFavoritesAlbum() {
+        activity.mediaDB.clearFavorites()
+        activity.favoritesDB.clearFavorites()
+        activity.directoryDB.deleteDirPath(FAVORITES)
+        // The backup has to follow, otherwise the favorites would come back
+        // after the app data was cleared.
+        org.fossify.gallery.helpers.ReferenceBackupManager.saveFavorites(activity)
     }
 
     private fun deleteFolders() {
@@ -1075,12 +1088,10 @@ class DirectoryAdapter(
                             tryEmptyRecycleBin(false)
                         } else {
                             ensureBackgroundThread {
-                                activity.mediaDB.clearFavorites()
-                                activity.favoritesDB.clearFavorites()
-                                // The backup has to follow, otherwise the favorites would come back
-                                // after the app data was cleared.
-                                org.fossify.gallery.helpers.ReferenceBackupManager.saveFavorites(activity)
-                                listener?.refreshItems()
+                                clearFavoritesAlbum()
+                                activity.runOnUiThread {
+                                    listener?.refreshItems()
+                                }
                             }
                         }
 
