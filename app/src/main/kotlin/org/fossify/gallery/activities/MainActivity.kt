@@ -296,8 +296,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                 CryptoManager.lockVault()
             }
             config.temporarilyShowExcluded = false
-            config.tempSkipDeleteConfirmation = false
-            config.tempSkipRecycleBin = false
+            config.resetTempDeleteConfirmation()
             removeTempFolder()
             checkRecycleBinItems()
             startNewPhotoFetcher()
@@ -566,8 +565,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         if (config.tempSkipDeleteConfirmation || config.temporarilyShowExcluded) {
             mTempShowHiddenHandler.postDelayed({
                 config.temporarilyShowExcluded = false
-                config.tempSkipDeleteConfirmation = false
-                config.tempSkipRecycleBin = false
+                config.resetTempDeleteConfirmation()
             }, SHOW_TEMP_HIDDEN_DURATION)
         } else {
             mTempShowHiddenHandler.removeCallbacksAndMessages(null)
@@ -578,8 +576,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         super.onDestroy()
         if (!isChangingConfigurations) {
             config.temporarilyShowExcluded = false
-            config.tempSkipDeleteConfirmation = false
-            config.tempSkipRecycleBin = false
+            config.resetTempDeleteConfirmation()
             // Only a real exit (back press / finish()) wipes the vault right away. If Android merely destroys
             // this activity in the background, the vault stays until the inactivity timeout (VaultSessionManager).
             if (isFinishing && !mIsSwitchingVaultView) {

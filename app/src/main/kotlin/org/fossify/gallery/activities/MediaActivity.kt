@@ -357,8 +357,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
 
         if (config.tempSkipDeleteConfirmation) {
             mTempShowHiddenHandler.postDelayed({
-                config.tempSkipDeleteConfirmation = false
-                config.tempSkipRecycleBin = false
+                config.resetTempDeleteConfirmation()
             }, SHOW_TEMP_HIDDEN_DURATION)
         } else {
             mTempShowHiddenHandler.removeCallbacksAndMessages(null)
@@ -454,8 +453,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
         // only a real exit wipes the vault right away; a system-initiated destroy keeps it until the timeout
         if ((config.showAll || mIsVaultFilesView) && !mIsSwitchingVaultView && !isChangingConfigurations && isFinishing) {
             config.temporarilyShowHidden = false
-            config.tempSkipDeleteConfirmation = false
-            config.tempSkipRecycleBin = false
+            config.resetTempDeleteConfirmation()
             CryptoManager.lockVault()
             GalleryDatabase.destroyInstance()
         }
@@ -526,8 +524,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             VaultSessionManager.markPreserveVaultOnSwitch()
         } else {
             config.temporarilyShowHidden = false
-            config.tempSkipDeleteConfirmation = false
-            config.tempSkipRecycleBin = false
+            config.resetTempDeleteConfirmation()
             CryptoManager.lockVault()
         }
 

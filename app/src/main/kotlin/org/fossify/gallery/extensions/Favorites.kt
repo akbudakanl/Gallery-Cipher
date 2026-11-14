@@ -5,6 +5,7 @@ import org.fossify.commons.extensions.getFilenameFromPath
 import org.fossify.commons.extensions.getParentPath
 import org.fossify.gallery.helpers.MediaIdentity
 import org.fossify.gallery.helpers.MediaIdentityResolver
+import org.fossify.gallery.helpers.ReferenceBackupManager
 import org.fossify.gallery.models.Favorite
 import org.fossify.gallery.models.Medium
 import java.io.File
@@ -160,6 +161,24 @@ fun Context.updateFavoritePathsForFolderRename(oldRoot: String, newRoot: String)
         favoritesDB.updateFavoritesByFolderPrefix(oldRoot, newRoot)
         favoritesDB.updateFavoriteParentsByFolderPrefix(oldRoot, newRoot)
         favoritesDB.updateFavoriteParentsAtFolder(oldRoot, newRoot)
+    } catch (_: Exception) {
+    }
+}
+
+/**
+ * Removes [paths] from favorites, updates the media cache flag, and syncs the favorites backup.
+ */
+fun Context.removeFavoritePaths(paths: Collection<String>) {
+    if (paths.isEmpty()) {
+        return
+    }
+
+    try {
+        paths.forEach { path ->
+            favoritesDB.deleteFavoritePath(path)
+            mediaDB.updateFavorite(path, false)
+        }
+        ReferenceBackupManager.saveFavorites(this)
     } catch (_: Exception) {
     }
 }

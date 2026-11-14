@@ -81,6 +81,7 @@ const val LAST_FILEPICKER_PATH = "last_filepicker_path"
 const val LAST_COPY_PATH = "last_copy_path"
 const val TEMP_SKIP_DELETE_CONFIRMATION = "temp_skip_delete_confirmation"
 const val TEMP_SKIP_RECYCLE_BIN = "temp_skip_recycle_bin"
+const val TEMP_KEEP_ORIGINAL_FILE = "temp_keep_original_file"
 const val BOTTOM_ACTIONS = "bottom_actions"
 const val LAST_VIDEO_POSITION_PREFIX = "last_video_position_"
 const val VISIBLE_BOTTOM_ACTIONS = "visible_bottom_actions"
@@ -127,6 +128,7 @@ const val HOME_VIEW_FILES = 1
 const val LAST_EXPORTED_FAVORITES_FOLDER = "last_exported_favorites_folder"
 const val SHOW_PERMISSION_RATIONALE = "show_permission_rationale"
 const val ALLOW_BATCH_RENAMING = "allow_batch_renaming"
+const val DELETE_ORIGINAL_FROM_FAVORITES_AND_VIRTUAL_ALBUMS = "delete_original_from_favorites_and_virtual_albums"
 
 // AES-256 Vault Encryption
 const val PROTECTION_PASSWORD = 3

@@ -403,4 +403,7 @@
     <string name="release_to_open_vault">Release to open Encrypted Vault</string>
     <string name="vault_not_created_prompt">You haven\'t created a vault yet. Do you want to create a vault?</string>
     <string name="allow_batch_renaming">Allow batch renaming when multiple files are selected</string>
+    <string name="keep_original_remove_from_virtual_album">Keep the original file, remove it only from this virtual album</string>
+    <string name="keep_original_remove_from_favorites">Keep the original file, remove it only from favorites</string>
+    <string name="delete_original_from_favorites_and_virtual_albums">Delete the original version of a file when it is deleted from favorites and virtual albums</string>
 </resources>

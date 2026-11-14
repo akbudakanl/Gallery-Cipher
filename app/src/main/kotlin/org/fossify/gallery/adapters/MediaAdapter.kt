@@ -77,9 +77,11 @@ import org.fossify.gallery.extensions.hasVaultCreated
 import org.fossify.gallery.extensions.launchResizeImageDialog
 import org.fossify.gallery.extensions.launchResizeMultipleImagesDialog
 import org.fossify.gallery.extensions.loadImage
+import org.fossify.gallery.extensions.mediaDB
 import org.fossify.gallery.extensions.openEditor
 import org.fossify.gallery.extensions.openPath
 import org.fossify.gallery.extensions.promptCreateVault
+import org.fossify.gallery.extensions.removeFavoritePaths
 import org.fossify.gallery.extensions.repairReferencesAfterExternalChange
 import org.fossify.gallery.extensions.rescanFolderMedia
 import java.io.File
@@ -97,6 +99,8 @@ import org.fossify.gallery.extensions.updateDBMediaPath
 import org.fossify.gallery.extensions.updateFavorite
 import org.fossify.gallery.extensions.updateFavoritePaths
 import org.fossify.gallery.helpers.CryptoManager
+import org.fossify.gallery.helpers.DeleteBehaviorHelper
+import org.fossify.gallery.helpers.DeleteOriginType
 import org.fossify.gallery.helpers.MediaIdentity
 import org.fossify.gallery.helpers.PATH
 import org.fossify.gallery.helpers.PROTECTION_PASSWORD
@@ -637,11 +641,8 @@ class MediaAdapter(
 
     private fun toggleFavorites(add: Boolean) {
         ensureBackgroundThread {
-            getSelectedItems().forEach { item ->
-                if (item !is Medium) {
-                    return@forEach
-                }
-                if (add) {
+            if (add) {
+                getSelectedItems().forEach { item ->
                     // The MediaStore id is known for the medium, so the favorite can be found again
                     // even after the file was renamed or moved.
                     val identity = MediaIdentity.of(activity, item)
@@ -657,12 +658,14 @@ class MediaAdapter(
                             fingerprint = identity.fingerprint
                         )
                     )
-                    ReferenceBackupManager.saveFavorites(activity)
-                } else {
-                    activity.favoritesDB.deleteFavoritePath(item.path)
-                    ReferenceBackupManager.saveFavorites(activity)
+                    activity.mediaDB.updateFavorite(item.path, true)
+                    item.isFavorite = true
                 }
-                item.isFavorite = add
+                ReferenceBackupManager.saveFavorites(activity)
+            } else {
+                val items = getSelectedItems()
+                activity.removeFavoritePaths(items.map { it.path })
+                items.forEach { it.isFavorite = false }
             }
             activity.runOnUiThread {
                 listener?.refreshItems()
@@ -843,16 +846,48 @@ class MediaAdapter(
     }
 
     private fun checkDeleteConfirmation() {
+        val keepOriginalOnSkip = DeleteBehaviorHelper.shouldKeepOriginalOnSkippedDelete(
+            directoryPath = path,
+            skipDeleteConfirmation = config.skipDeleteConfirmation,
+            tempSkipDeleteConfirmation = config.tempSkipDeleteConfirmation,
+            tempKeepOriginalFile = config.tempKeepOriginalFile,
+            deleteOriginalFromFavoritesAndVirtualAlbums = config.deleteOriginalFromFavoritesAndVirtualAlbums
+        )
+
+        if (!config.isDeletePasswordProtectionOn &&
+            (config.tempSkipDeleteConfirmation || config.skipDeleteConfirmation) &&
+            keepOriginalOnSkip
+        ) {
+            keepOriginalAndRemoveReferences()
+            return
+        }
+
         activity.handleMediaManagementPrompt {
             if (config.isDeletePasswordProtectionOn) {
                 activity.handleDeletePasswordProtection {
-                    deleteFiles(config.tempSkipRecycleBin)
+                    if (keepOriginalOnSkip) {
+                        keepOriginalAndRemoveReferences()
+                    } else {
+                        deleteFiles(config.tempSkipRecycleBin)
+                    }
                 }
             } else if (config.tempSkipDeleteConfirmation || config.skipDeleteConfirmation) {
-                deleteFiles(config.tempSkipRecycleBin)
+                if (keepOriginalOnSkip) {
+                    keepOriginalAndRemoveReferences()
+                } else {
+                    deleteFiles(config.tempSkipRecycleBin)
+                }
             } else {
                 askConfirmDelete()
             }
+        }
+    }
+
+    private fun keepOriginalAndRemoveReferences() {
+        when (DeleteBehaviorHelper.getOriginType(path)) {
+            DeleteOriginType.VIRTUAL_ALBUM -> removeFromVirtualAlbum()
+            DeleteOriginType.FAVORITES -> toggleFavorites(false)
+            DeleteOriginType.OTHER -> Unit
         }
     }
 
@@ -883,15 +918,31 @@ class MediaAdapter(
             if (config.useRecycleBin && !config.tempSkipRecycleBin && !isRecycleBin) org.fossify.commons.R.string.move_to_recycle_bin_confirmation else org.fossify.commons.R.string.deletion_confirmation
         val question = String.format(resources.getString(baseString), itemsAndSize)
         val showSkipRecycleBinOption = config.useRecycleBin && !isRecycleBin
+        val keepOriginalOptionTextRes = DeleteBehaviorHelper.getKeepOriginalOptionTextRes(path)
+        val keepOriginalDefaultChecked = DeleteBehaviorHelper.getKeepOriginalDefaultChecked(
+            directoryPath = path,
+            deleteOriginalFromFavoritesAndVirtualAlbums = config.deleteOriginalFromFavoritesAndVirtualAlbums
+        )
 
-        DeleteWithRememberDialog(activity, question, showSkipRecycleBinOption) { remember, skipRecycleBin ->
-            config.tempSkipDeleteConfirmation = remember
+        DeleteWithRememberDialog(
+            activity = activity,
+            message = question,
+            showSkipRecycleBinOption = showSkipRecycleBinOption,
+            keepOriginalOptionTextRes = keepOriginalOptionTextRes,
+            keepOriginalDefaultChecked = keepOriginalDefaultChecked
+        ) { remember, skipRecycleBin, keepOriginal ->
+            config.applyRememberedDeleteChoices(
+                remember = remember,
+                skipRecycleBin = skipRecycleBin,
+                hasKeepOriginalOption = keepOriginalOptionTextRes != null,
+                keepOriginal = keepOriginal
+            )
 
-            if (remember) {
-                config.tempSkipRecycleBin = skipRecycleBin
+            if (keepOriginal) {
+                keepOriginalAndRemoveReferences()
+            } else {
+                deleteFiles(skipRecycleBin)
             }
-
-            deleteFiles(skipRecycleBin)
         }
     }
 

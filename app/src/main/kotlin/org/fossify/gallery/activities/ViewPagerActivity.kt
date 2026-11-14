@@ -113,6 +113,7 @@ import org.fossify.gallery.extensions.getVirtualAlbumId
 import org.fossify.gallery.extensions.isHiddenVirtualAlbumPath
 import org.fossify.gallery.extensions.isPathHiddenOrEncrypted
 import org.fossify.gallery.extensions.isVirtualAlbumPath
+import org.fossify.gallery.extensions.removeFavoritePaths
 import org.fossify.gallery.extensions.removePathsFromVirtualAlbum
 import org.fossify.gallery.extensions.getShortcutImage
 import org.fossify.gallery.extensions.handleMediaManagementPrompt
@@ -157,6 +158,8 @@ import org.fossify.gallery.helpers.BOTTOM_ACTION_TOGGLE_FAVORITE
 import org.fossify.gallery.helpers.BOTTOM_ACTION_TOGGLE_VISIBILITY
 import org.fossify.gallery.helpers.ColorModeHelper
 import org.fossify.gallery.helpers.CryptoManager
+import org.fossify.gallery.helpers.DeleteBehaviorHelper
+import org.fossify.gallery.helpers.DeleteOriginType
 import org.fossify.gallery.helpers.MediaIdentity
 import org.fossify.gallery.helpers.ReferenceBackupManager
 import org.fossify.gallery.helpers.VAULT_RESUME_STATE
@@ -1444,16 +1447,84 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
             return
         }
 
+        val keepOriginalOnSkip = DeleteBehaviorHelper.shouldKeepOriginalOnSkippedDelete(
+            directoryPath = mDirectory,
+            skipDeleteConfirmation = config.skipDeleteConfirmation,
+            tempSkipDeleteConfirmation = config.tempSkipDeleteConfirmation,
+            tempKeepOriginalFile = config.tempKeepOriginalFile,
+            deleteOriginalFromFavoritesAndVirtualAlbums = config.deleteOriginalFromFavoritesAndVirtualAlbums
+        )
+
+        if (!config.isDeletePasswordProtectionOn &&
+            (config.tempSkipDeleteConfirmation || config.skipDeleteConfirmation) &&
+            keepOriginalOnSkip
+        ) {
+            removeCurrentKeepOriginal()
+            return
+        }
+
         handleMediaManagementPrompt {
             if (config.isDeletePasswordProtectionOn) {
                 handleDeletePasswordProtection {
-                    deleteConfirmed(config.tempSkipRecycleBin)
+                    if (keepOriginalOnSkip) {
+                        removeCurrentKeepOriginal()
+                    } else {
+                        deleteConfirmed(config.tempSkipRecycleBin)
+                    }
                 }
             } else if (config.tempSkipDeleteConfirmation || config.skipDeleteConfirmation) {
-                deleteConfirmed(config.tempSkipRecycleBin)
+                if (keepOriginalOnSkip) {
+                    removeCurrentKeepOriginal()
+                } else {
+                    deleteConfirmed(config.tempSkipRecycleBin)
+                }
             } else {
                 askConfirmDelete()
             }
+        }
+    }
+
+    private fun removeCurrentKeepOriginal() {
+        val currentMedium = getCurrentMedium() ?: return
+        val path = currentMedium.path
+        when (DeleteBehaviorHelper.getOriginType(mDirectory)) {
+            DeleteOriginType.VIRTUAL_ALBUM -> {
+                val albumId = mDirectory.getVirtualAlbumId() ?: return
+                ensureBackgroundThread {
+                    removePathsFromVirtualAlbum(albumId, listOf(path))
+                    runOnUiThread {
+                        toast(R.string.removed_from_virtual_album)
+                        removePathFromViewer(path)
+                    }
+                }
+            }
+
+            DeleteOriginType.FAVORITES -> {
+                ensureBackgroundThread {
+                    removeFavoritePaths(listOf(path))
+                    runOnUiThread {
+                        mFavoritePaths.remove(path)
+                        removePathFromViewer(path)
+                    }
+                }
+            }
+
+            DeleteOriginType.OTHER -> Unit
+        }
+    }
+
+    private fun removePathFromViewer(path: String) {
+        mIgnoredPaths.add(path)
+        val media = mMediaFiles.filter { !mIgnoredPaths.contains(it.path) } as ArrayList<Medium>
+        if (media.isNotEmpty()) {
+            refreshUI(media, false)
+        }
+        if (media.size == 1) {
+            onPageSelected(0)
+        }
+        mIgnoredPaths.remove(path)
+        if (media.isEmpty()) {
+            finish()
         }
     }
 
@@ -1473,15 +1544,31 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
 
         val message = String.format(resources.getString(baseString), filenameAndSize)
         val showSkipRecycleBinOption = config.useRecycleBin && !isInRecycleBin
+        val keepOriginalOptionTextRes = DeleteBehaviorHelper.getKeepOriginalOptionTextRes(mDirectory)
+        val keepOriginalDefaultChecked = DeleteBehaviorHelper.getKeepOriginalDefaultChecked(
+            directoryPath = mDirectory,
+            deleteOriginalFromFavoritesAndVirtualAlbums = config.deleteOriginalFromFavoritesAndVirtualAlbums
+        )
 
-        DeleteWithRememberDialog(this, message, showSkipRecycleBinOption) { remember, skipRecycleBin ->
-            config.tempSkipDeleteConfirmation = remember
+        DeleteWithRememberDialog(
+            activity = this,
+            message = message,
+            showSkipRecycleBinOption = showSkipRecycleBinOption,
+            keepOriginalOptionTextRes = keepOriginalOptionTextRes,
+            keepOriginalDefaultChecked = keepOriginalDefaultChecked
+        ) { remember, skipRecycleBin, keepOriginal ->
+            config.applyRememberedDeleteChoices(
+                remember = remember,
+                skipRecycleBin = skipRecycleBin,
+                hasKeepOriginalOption = keepOriginalOptionTextRes != null,
+                keepOriginal = keepOriginal
+            )
 
-            if (remember) {
-                config.tempSkipRecycleBin = skipRecycleBin
+            if (keepOriginal) {
+                removeCurrentKeepOriginal()
+            } else {
+                deleteConfirmed(skipRecycleBin)
             }
-
-            deleteConfirmed(skipRecycleBin)
         }
     }
 

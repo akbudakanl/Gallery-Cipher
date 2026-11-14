@@ -997,6 +997,21 @@
             </RelativeLayout>
 
             <RelativeLayout
+                android:id="@+id/settings_delete_original_from_favorites_and_virtual_albums_holder"
+                style="@style/SettingsHolderSwitchStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <org.fossify.commons.views.MyMaterialSwitch
+                    android:id="@+id/settings_delete_original_from_favorites_and_virtual_albums"
+                    style="@style/SettingsSwitchStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/delete_original_from_favorites_and_virtual_albums" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
                 android:id="@+id/settings_allow_batch_renaming_holder"
                 style="@style/SettingsHolderSwitchStyle"
                 android:layout_width="match_parent"

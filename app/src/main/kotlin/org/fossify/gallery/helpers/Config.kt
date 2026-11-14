@@ -424,6 +424,35 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(TEMP_SKIP_RECYCLE_BIN, false)
         set(tempSkipRecycleBin) = prefs.edit().putBoolean(TEMP_SKIP_RECYCLE_BIN, tempSkipRecycleBin).apply()
 
+    var tempKeepOriginalFile: Int
+        get() = prefs.getInt(TEMP_KEEP_ORIGINAL_FILE, DeleteBehaviorHelper.TEMP_KEEP_ORIGINAL_UNSET)
+        set(tempKeepOriginalFile) = prefs.edit().putInt(TEMP_KEEP_ORIGINAL_FILE, tempKeepOriginalFile).apply()
+
+    fun applyRememberedDeleteChoices(
+        remember: Boolean,
+        skipRecycleBin: Boolean,
+        hasKeepOriginalOption: Boolean,
+        keepOriginal: Boolean
+    ) {
+        tempSkipDeleteConfirmation = remember
+        if (remember) {
+            tempSkipRecycleBin = skipRecycleBin
+            if (hasKeepOriginalOption) {
+                tempKeepOriginalFile = if (keepOriginal) {
+                    DeleteBehaviorHelper.TEMP_KEEP_ORIGINAL_TRUE
+                } else {
+                    DeleteBehaviorHelper.TEMP_KEEP_ORIGINAL_FALSE
+                }
+            }
+        }
+    }
+
+    fun resetTempDeleteConfirmation() {
+        tempSkipDeleteConfirmation = false
+        tempSkipRecycleBin = false
+        tempKeepOriginalFile = DeleteBehaviorHelper.TEMP_KEEP_ORIGINAL_UNSET
+    }
+
     var wereFavoritesPinned: Boolean
         get() = prefs.getBoolean(WERE_FAVORITES_PINNED, false)
         set(wereFavoritesPinned) = prefs.edit().putBoolean(WERE_FAVORITES_PINNED, wereFavoritesPinned).apply()
@@ -629,6 +658,12 @@ class Config(context: Context) : BaseConfig(context) {
     var allowBatchRenaming: Boolean
         get() = prefs.getBoolean(ALLOW_BATCH_RENAMING, false)
         set(allowBatchRenaming) = prefs.edit().putBoolean(ALLOW_BATCH_RENAMING, allowBatchRenaming).apply()
+
+    var deleteOriginalFromFavoritesAndVirtualAlbums: Boolean
+        get() = prefs.getBoolean(DELETE_ORIGINAL_FROM_FAVORITES_AND_VIRTUAL_ALBUMS, true)
+        set(deleteOriginalFromFavoritesAndVirtualAlbums) = prefs.edit()
+            .putBoolean(DELETE_ORIGINAL_FROM_FAVORITES_AND_VIRTUAL_ALBUMS, deleteOriginalFromFavoritesAndVirtualAlbums)
+            .apply()
 
     var vaultWrappedKeyData: String
         get() = prefs.getString(VAULT_WRAPPED_KEY_DATA, "")!!

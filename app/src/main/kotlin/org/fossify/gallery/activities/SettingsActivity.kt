@@ -115,6 +115,7 @@ class SettingsActivity : SimpleActivity() {
         setupHideExtendedDetails()
         setupManageExtendedDetails()
         setupSkipDeleteConfirmation()
+        setupDeleteOriginalFromFavoritesAndVirtualAlbums()
         setupAllowBatchRenaming()
         setupManageBottomActions()
         setupUseRecycleBin()
@@ -962,6 +963,14 @@ class SettingsActivity : SimpleActivity() {
         }
     }
 
+    private fun setupDeleteOriginalFromFavoritesAndVirtualAlbums() {
+        binding.settingsDeleteOriginalFromFavoritesAndVirtualAlbums.isChecked = config.deleteOriginalFromFavoritesAndVirtualAlbums
+        binding.settingsDeleteOriginalFromFavoritesAndVirtualAlbumsHolder.setOnClickListener {
+            binding.settingsDeleteOriginalFromFavoritesAndVirtualAlbums.toggle()
+            config.deleteOriginalFromFavoritesAndVirtualAlbums = binding.settingsDeleteOriginalFromFavoritesAndVirtualAlbums.isChecked
+        }
+    }
+
     private fun setupAllowBatchRenaming() {
         binding.settingsAllowBatchRenaming.isChecked = config.allowBatchRenaming
         binding.settingsAllowBatchRenamingHolder.setOnClickListener {
@@ -1323,6 +1332,7 @@ class SettingsActivity : SimpleActivity() {
                 put(DELETE_EMPTY_FOLDERS, config.deleteEmptyFolders)
                 put(KEEP_LAST_MODIFIED, config.keepLastModified)
                 put(SKIP_DELETE_CONFIRMATION, config.skipDeleteConfirmation)
+                put(DELETE_ORIGINAL_FROM_FAVORITES_AND_VIRTUAL_ALBUMS, config.deleteOriginalFromFavoritesAndVirtualAlbums)
                 put(ALLOW_BATCH_RENAMING, config.allowBatchRenaming)
                 put(BOTTOM_ACTIONS, config.bottomActions)
                 put(VISIBLE_BOTTOM_ACTIONS, config.visibleBottomActions)
@@ -1472,6 +1482,7 @@ class SettingsActivity : SimpleActivity() {
                 DELETE_EMPTY_FOLDERS -> config.deleteEmptyFolders = value.toBoolean()
                 KEEP_LAST_MODIFIED -> config.keepLastModified = value.toBoolean()
                 SKIP_DELETE_CONFIRMATION -> config.skipDeleteConfirmation = value.toBoolean()
+                DELETE_ORIGINAL_FROM_FAVORITES_AND_VIRTUAL_ALBUMS -> config.deleteOriginalFromFavoritesAndVirtualAlbums = value.toBoolean()
                 ALLOW_BATCH_RENAMING -> config.allowBatchRenaming = value.toBoolean()
                 BOTTOM_ACTIONS -> config.bottomActions = value.toBoolean()
                 VISIBLE_BOTTOM_ACTIONS -> config.visibleBottomActions = value.toInt()
