@@ -52,7 +52,6 @@
     <string name="change_filters_underlined"><u>Change filters</u></string>
 
     <!-- Hide / Exclude -->
-    <string name="hide_folder_description">This function hides the folder by adding a \'.nomedia\' file into it, it will hide all subfolders too. You can see them by toggling the \'Show hidden items\' option in Settings. Continue?</string>
     <string name="exclude_folder_description">This will exclude the selection together with its subfolders from Fossify Gallery only. You can manage excluded folders in Settings.</string>
     <string name="exclude_folder_parent">Exclude a parent instead?</string>
     <string name="excluded_activity_placeholder">Excluding folders will make them together with their subfolders hidden just in Fossify Gallery, they will still be visible in other applications.\n\nIf you want to hide them from other apps too, use the Hide function.</string>
@@ -318,6 +317,11 @@
     <string name="decrypt">Decrypt</string>
     <string name="encrypt_album">Encrypt album</string>
     <string name="decrypt_album">Decrypt album</string>
+    <string name="confirm_encrypt_album">Are you sure you want to encrypt this album? All of its media files will be encrypted and moved to the encrypted vault. The original files will be deleted.</string>
+    <string name="confirm_encrypt_albums">Are you sure you want to encrypt the selected albums? All of their media files will be encrypted and moved to the encrypted vault. The original files will be deleted.</string>
+    <string name="confirm_encrypt_file">Are you sure you want to encrypt this file? It will be encrypted and moved to the encrypted vault. The original file will be deleted.</string>
+    <string name="confirm_encrypt_files">Are you sure you want to encrypt the selected files? They will be encrypted and moved to the encrypted vault. The original files will be deleted.</string>
+    <string name="confirm_encrypt_files_to_vault">The selected files will be encrypted when they are copied into the encrypted vault. Do you want to continue?</string>
 
     <!-- Virtual albums -->
     <string name="create_virtual_album">Create virtual album</string>

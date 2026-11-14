@@ -34,7 +34,6 @@
     <string name="portraits">ì„¸ë¡œ ì‚¬ì§„</string>
     <string name="no_media_with_filters">ì„ íƒí•œ í•„í„°ì— í•´ë‹¹í•˜ëŠ” ë¯¸ë””ì–´ íŒŒì¼ì´ ì—†ìŠµë‹ˆë‹¤.</string>
     <string name="change_filters_underlined"><u>í•„í„° ë³€ê²½</u></string>
-    <string name="hide_folder_description">ì´ ê¸°ëŠ¥ì€ í´ë”ì— \'.nomedia\' íŒŒì¼ì„ ì¶”ê°€í•˜ì—¬ í•´ë‹¹ í´ë”ì™€ ëª¨ë“  í•˜ìœ„ í´ë”ë¥¼ ìˆ¨ê¹ë‹ˆë‹¤. ì„¤ì •ì—ì„œ \'ìˆ¨ê¹€ í•­ëª© í‘œì‹œ\' ì˜µì…˜ì„ ì¼œë©´ ë‹¤ì‹œ ë³¼ ìˆ˜ ìˆìŠµë‹ˆë‹¤. ê³„ì†í•˜ì‹œê² ìŠµë‹ˆê¹Œ?</string>
     <string name="exclude_folder_parent">ëŒ€ì‹  ìƒìœ„ í´ë”ë¥¼ ì œì™¸í•˜ì‹œê² ìŠµë‹ˆê¹Œ?</string>
     <string name="hidden_folders">ìˆ¨ê²¨ì§„ í´ë”</string>
     <string name="manage_hidden_folders">ìˆ¨ê²¨ì§„ í´ë” ê´€ë¦¬</string>

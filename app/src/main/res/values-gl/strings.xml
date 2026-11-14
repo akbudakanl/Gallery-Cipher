@@ -39,7 +39,6 @@
     <string name="portraits">Retratos</string>
     <string name="no_media_with_filters">Non se atopou multimedia do tipo indicado polo filtro.</string>
     <string name="change_filters_underlined"><u>Cambiar filtro</u></string>
-    <string name="hide_folder_description">Esta funciÃ³n oculta o cartafol engadÃ­ndolle ficheiro \'.nomedia\', tamÃ©n ocultarÃ¡ os subcartafoles. Podes velos premendo a opciÃ³n \'Mostrar elementos ocultos\' nos Axustes. Continuar?</string>
     <string name="exclude_folder_description">Isto sÃ³ excluirÃ¡ de Fossify Gallery a selecciÃ³n e os seus subcartafoles. Podes xestionar os cartafoles excluÃ­dos nos Axustes.</string>
     <string name="exclude_folder_parent">ExcluÃ­r o cartafol pai no seu lugar\?</string>
     <string name="excluded_activity_placeholder">Ao excluÃ­r un cartafol xunto cos seus cartafoles farÃ¡s que non sexan visibles sÃ³ en Fossify Gallery, serÃ¡n aÃ­nda visibles noutras aplicaciÃ³ns.\n\nSe queres ocultalos tamÃ©n doutras apps, usa a funciÃ³n Ocultar.</string>

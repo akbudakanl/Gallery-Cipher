@@ -42,7 +42,6 @@
     <string name="portraits">Portreti</string>
     <string name="no_media_with_filters">Na podlagi izbranih filtrov ne najdem nobenih medijskih datotek.</string>
     <string name="change_filters_underlined"><u>Spremeni filtre</u></string>
-    <string name="hide_folder_description">Ta funkcija skrije mapo tako, da vanjo doda \'.nomedia\' datoteko, kar skrije tudi vse podmape. Ponovno jih lahko prikaÅ¾ete z uporabo moÅ¾nosti \'PrikaÅ¾i skrite elemente\' v Nastavitvah. Nadaljujem\?</string>
     <string name="exclude_folder_parent">Namesto tega izkljuÄim nadrejeno mapo\?</string>
     <string name="hidden_folders">Skrite mape</string>
     <string name="manage_hidden_folders">Urejaj skrite mape</string>

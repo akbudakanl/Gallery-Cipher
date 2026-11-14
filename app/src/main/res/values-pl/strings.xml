@@ -42,7 +42,6 @@
     <string name="portraits">Portrety</string>
     <string name="no_media_with_filters">Nie znaleziono plikÃ³w multimedialnych z wybranymi filtrami.</string>
     <string name="change_filters_underlined"><u>ZmieÅ„ filtry</u></string>
-    <string name="hide_folder_description">Ta funkcja ukrywa folder, dodajÄ…c do niego plik â€.nomediaâ€, i ukryje rÃ³wnieÅ¼ wszystkie podfoldery. MoÅ¼esz je zobaczyÄ‡, przeÅ‚Ä…czajÄ…c opcjÄ™ â€Pokazuj ukryte elementyâ€ w Ustawieniach. KontynuowaÄ‡\?</string>
     <string name="exclude_folder_description">Spowoduje to wykluczenie wybranego folderu i jego podfolderÃ³w z Fossify Gallery. MoÅ¼esz zarzÄ…dzaÄ‡ wykluczonymi folderami w Ustawieniach.</string>
     <string name="exclude_folder_parent">Czy zamiast tego wykluczyÄ‡ folder nadrzÄ™dny\?</string>
     <string name="excluded_activity_placeholder">Wykluczenie folderÃ³w spowoduje ukrycie ich wraz z podfolderami tylko w Fossify Gallery, w innych aplikacjach bÄ™dÄ… nadal widoczne.

@@ -42,7 +42,6 @@
     <string name="portraits">Portretter</string>
     <string name="no_media_with_filters">Ingen mediafiler er funnet med de valgte filtrene.</string>
     <string name="change_filters_underlined"><u>Endre filtre</u></string>
-    <string name="hide_folder_description">Denne funksjonen skjuler mappen ved å legge til filen \'.nomedia\' i den. Alle undermapper blir også skjult. Du kan se dem ved å aktivere alternativet \'Vis skjulte elementer\' i innstillinger. Fortsette\?</string>
     <string name="exclude_folder_parent">Ekskludere en overordnet isteden\?</string>
     <string name="hidden_folders">Skjulte mapper</string>
     <string name="manage_hidden_folders">Håndter skjulte mapper</string>

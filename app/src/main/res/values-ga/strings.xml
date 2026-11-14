@@ -87,7 +87,6 @@
     <string name="exclude_folder_description">NÃ­ fhÃ¡gfaidh sÃ© seo an roghnÃº mar aon lena fofhillteÃ¡in Ã³ GhailearaÃ­ Fossify amhÃ¡in. Is fÃ©idir leat fillteÃ¡in eisiata a bhainistiÃº i Socruithe.</string>
     <string name="manage_hidden_folders">Bainistigh fillteÃ¡in fholaithe</string>
     <string name="hidden_folders_placeholder">DealraÃ­onn sÃ© cosÃºil nach bhfuil aon fillteÃ¡in i bhfolach le comhad \".nomedia\".</string>
-    <string name="hide_folder_description">FolaÃ­onn an fheidhm seo an fillteÃ¡n trÃ­ chomhad \'.nomedia\' a chur isteach ann, cuirfidh sÃ© gach fofhillteÃ¡n i bhfolach freisin. Is fÃ©idir leat iad a fheiceÃ¡il trÃ­d an rogha \'TaispeÃ¡in mÃ­reanna folaithe\' a chlibeÃ¡il in Socruithe. Lean ar aghaidh?</string>
     <string name="hidden_all_files">Caithfidh tÃº rochtain a thabhairt don aip All Files chun comhaid fholaithe a fheiceÃ¡il, rud eile nach fÃ©idir leis oibriÃº.</string>
     <string name="cant_unhide_folder">MÃ¡ tÃ¡ ponc ag fillteÃ¡n nÃ³ ceann dÃ¡ mhÃ¡thairfhillteÃ¡in roimh a ainm, tÃ¡ sÃ© i bhfolach agus nÃ­ fÃ©idir Ã© a unhidden mar seo. Caithfidh tÃº an ponc a bhaint trÃ­ Ã© a athainmniÃº.</string>
     <string name="include_folders">FillteÃ¡in san Ã¡ireamh</string>

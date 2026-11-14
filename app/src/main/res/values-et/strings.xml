@@ -42,7 +42,6 @@
     <string name="portraits">Portreed</string>
     <string name="no_media_with_filters">Valitud pÃ¤ringu alusel ei leidu meediafaile.</string>
     <string name="change_filters_underlined"><u>Muuda filtreid</u></string>
-    <string name="hide_folder_description">See funktsioon peidab kausta koos alamkaustadega, lisades sinna faili â€.nomediaâ€œ. Neid nÃ¤ed, lÃ¼litades seadetes sisse valiku â€Kuva peidetud kirjedâ€œ. Kas jÃ¤tkame\?</string>
     <string name="exclude_folder_parent">Kas selle asemel jÃ¤tame Ã¼lemkirjed vÃ¤lja\?</string>
     <string name="hidden_folders">Peidetud kaustad</string>
     <string name="manage_hidden_folders">Halda peidetud kaustu</string>

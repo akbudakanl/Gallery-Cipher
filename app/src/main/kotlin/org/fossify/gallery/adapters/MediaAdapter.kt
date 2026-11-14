@@ -60,6 +60,7 @@ import org.fossify.gallery.dialogs.DeleteWithRememberDialog
 import android.os.Environment
 import org.fossify.commons.helpers.PROTECTION_PIN
 import org.fossify.gallery.dialogs.CryptoProgressDialog
+import org.fossify.gallery.dialogs.EncryptConfirmationDialog
 import org.fossify.gallery.dialogs.EncryptedPropertiesDialog
 import org.fossify.gallery.dialogs.GrantAllFilesDialog
 import org.fossify.gallery.dialogs.RenameEncryptedItemDialog
@@ -500,95 +501,22 @@ class MediaAdapter(
         }
 
         if (hide) {
-            if (!activity.hasVaultCreated()) {
-                activity.promptCreateVault(
-                    onCreated = {
-                        toggleFileVisibility(true)
-                    }
-                )
-                return
-            }
-
-            if (!CryptoManager.isVaultUnlocked) {
-                val initialType = CryptoManager.getVaultProtectionType(activity)
-                    ?: if (config.hiddenProtectionType == PROTECTION_PASSWORD) {
-                        PROTECTION_PASSWORD
-                    } else {
-                        PROTECTION_PIN
-                    }
-                VaultSecurityDialog(
-                    activity = activity,
-                    requiredHash = config.hiddenPasswordHash,
-                    showTabIndex = initialType,
-                    minimalist = true
-                ) { _, type, success ->
-                    if (success) {
-                        config.hiddenProtectionType = type
-                        toggleFileVisibility(true)
-                    }
-                }
-                return
-            }
-
             val selectedMedia = getSelectedItems().filter { !it.isHidden() && !CryptoManager.isEncryptedFile(it.path) }
             if (selectedMedia.isEmpty()) {
                 finishActMode()
                 return
             }
 
-            PickVaultAlbumDialog(activity) { targetDir, albumName ->
-                val totalFilesCount = selectedMedia.size
-                val progressDialog = CryptoProgressDialog(activity, totalFilesCount, R.string.encrypting_files)
+            // The files are encrypted, so the confirmation has to be shown before the vault
+            // password is requested.
+            val message = if (selectedMedia.size == 1) {
+                activity.getString(R.string.confirm_encrypt_file)
+            } else {
+                activity.getString(R.string.confirm_encrypt_files)
+            }
 
-                ensureBackgroundThread {
-                    var processedCount = 0
-                    var allSuccess = true
-                    for (medium in selectedMedia) {
-                        val srcFile = File(medium.path)
-                        if (!srcFile.exists()) continue
-
-                        val encFile = CryptoManager.encryptFileToDirectory(
-                            context = activity,
-                            sourceFile = srcFile,
-                            targetDir = targetDir,
-                            wipeSource = true,
-                            clearCachesNow = false
-                        )
-
-                        if (encFile != null && encFile.exists() && encFile.length() > 0L) {
-                            processedCount++
-                        } else {
-                            allSuccess = false
-                        }
-
-                        activity.runOnUiThread {
-                            progressDialog.updateProgress(processedCount, totalFilesCount)
-                        }
-                    }
-
-                    CryptoManager.clearAppImageCaches(activity)
-
-                    activity.runOnUiThread {
-                        try {
-                            progressDialog.dismiss()
-                        } catch (_: Exception) {}
-
-                        if (allSuccess) {
-                            val msg = if (totalFilesCount == 1) {
-                                activity.getString(R.string.file_hidden_to_album, albumName)
-                            } else {
-                                activity.getString(R.string.files_hidden_to_album, totalFilesCount, albumName)
-                            }
-                            activity.toast(msg)
-                        } else if (processedCount > 0) {
-                            activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
-                        } else {
-                            activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
-                        }
-                        finishActMode()
-                        listener?.refreshItems()
-                    }
-                }
+            EncryptConfirmationDialog(activity, message) {
+                encryptFiles(selectedMedia)
             }
         } else {
             // UNHIDE (DECRYPT) FILES
@@ -678,6 +606,99 @@ class MediaAdapter(
                         activity.toast(if (totalFilesCount == 1) R.string.file_decrypted_successfully else R.string.files_decrypted_successfully)
                     } else if (processedCount > 0) {
                         activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
+                    } else {
+                        activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
+                    }
+                    finishActMode()
+                    listener?.refreshItems()
+                }
+            }
+        }
+    }
+
+    /**
+     * Encrypts the selected files and moves them into the encrypted vault. The vault has to be
+     * created and unlocked before the files can be encrypted.
+     */
+    private fun encryptFiles(selectedMedia: List<Medium>) {
+        if (!activity.hasVaultCreated()) {
+            activity.promptCreateVault(
+                onCreated = {
+                    encryptFiles(selectedMedia)
+                }
+            )
+            return
+        }
+
+        if (!CryptoManager.isVaultUnlocked) {
+            val initialType = CryptoManager.getVaultProtectionType(activity)
+                ?: if (config.hiddenProtectionType == PROTECTION_PASSWORD) {
+                    PROTECTION_PASSWORD
+                } else {
+                    PROTECTION_PIN
+                }
+            VaultSecurityDialog(
+                activity = activity,
+                requiredHash = config.hiddenPasswordHash,
+                showTabIndex = initialType,
+                minimalist = true
+            ) { _, type, success ->
+                if (success) {
+                    config.hiddenProtectionType = type
+                    encryptFiles(selectedMedia)
+                }
+            }
+            return
+        }
+
+        encryptFilesToAlbum(selectedMedia)
+    }
+
+    private fun encryptFilesToAlbum(selectedMedia: List<Medium>) {
+        PickVaultAlbumDialog(activity) { targetDir, albumName ->
+            val totalFilesCount = selectedMedia.size
+            val progressDialog = CryptoProgressDialog(activity, totalFilesCount, R.string.encrypting_files)
+
+            ensureBackgroundThread {
+                var processedCount = 0
+                var allSuccess = true
+                for (medium in selectedMedia) {
+                    val srcFile = File(medium.path)
+                    if (!srcFile.exists()) continue
+
+                    val encFile = CryptoManager.encryptFileToDirectory(
+                        context = activity,
+                        sourceFile = srcFile,
+                        targetDir = targetDir,
+                        wipeSource = true,
+                        clearCachesNow = false
+                    )
+
+                    if (encFile != null && encFile.exists() && encFile.length() > 0L) {
+                        processedCount++
+                    } else {
+                        allSuccess = false
+                    }
+
+                    activity.runOnUiThread {
+                        progressDialog.updateProgress(processedCount, totalFilesCount)
+                    }
+                }
+
+                CryptoManager.clearAppImageCaches(activity)
+
+                activity.runOnUiThread {
+                    try {
+                        progressDialog.dismiss()
+                    } catch (_: Exception) {}
+
+                    if (allSuccess) {
+                        val msg = if (totalFilesCount == 1) {
+                            activity.getString(R.string.file_hidden_to_album, albumName)
+                        } else {
+                            activity.getString(R.string.files_hidden_to_album, totalFilesCount, albumName)
+                        }
+                        activity.toast(msg)
                     } else {
                         activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
                     }

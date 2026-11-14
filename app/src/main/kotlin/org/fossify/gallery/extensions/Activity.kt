@@ -43,6 +43,7 @@ import org.fossify.gallery.activities.SimpleActivity
 import org.fossify.gallery.activities.VideoPlayerActivity
 import org.fossify.gallery.dialogs.AllFilesPermissionDialog
 import org.fossify.gallery.dialogs.CryptoProgressDialog
+import org.fossify.gallery.dialogs.EncryptConfirmationDialog
 import org.fossify.gallery.dialogs.GrantAllFilesDialog
 import org.fossify.gallery.dialogs.PickDirectoryDialog
 import org.fossify.gallery.dialogs.PickVaultAlbumDialog
@@ -421,60 +422,16 @@ fun BaseSimpleActivity.toggleFileVisibility(oldPath: String, hide: Boolean, call
             return
         }
 
-        if (!hasVaultCreated()) {
-            promptCreateVault(
-                onCreated = {
-                    toggleFileVisibility(oldPath, true, callback)
-                },
-                onCancelled = {
-                    callback?.invoke(oldPath)
-                }
-            )
-            return
-        }
-
-        if (!CryptoManager.isVaultUnlocked) {
-            val initialType = CryptoManager.getVaultProtectionType(this)
-                ?: if (config.hiddenProtectionType == PROTECTION_PASSWORD) {
-                    PROTECTION_PASSWORD
-                } else {
-                    PROTECTION_PIN
-                }
-            VaultSecurityDialog(
-                activity = this,
-                requiredHash = config.hiddenPasswordHash,
-                showTabIndex = initialType,
-                minimalist = true
-            ) { _, type, success ->
-                if (success) {
-                    config.hiddenProtectionType = type
-                    toggleFileVisibility(oldPath, true, callback)
-                } else {
-                    callback?.invoke(oldPath)
-                }
+        // The file is encrypted, so the confirmation has to be shown before the vault password is
+        // requested.
+        EncryptConfirmationDialog(
+            activity = this,
+            message = getString(R.string.confirm_encrypt_file),
+            onCancel = {
+                callback?.invoke(oldPath)
             }
-            return
-        }
-
-        PickVaultAlbumDialog(this) { targetDir, albumName ->
-            ensureBackgroundThread {
-                val encryptedFile = CryptoManager.encryptFileToDirectory(
-                    context = this,
-                    sourceFile = srcFile,
-                    targetDir = targetDir,
-                    wipeSource = true,
-                    clearCachesNow = true
-                )
-                val resultPath = encryptedFile?.absolutePath ?: oldPath
-                runOnUiThread {
-                    if (encryptedFile != null && encryptedFile.exists()) {
-                        toast(getString(R.string.file_hidden_to_album, albumName))
-                    } else {
-                        toast(org.fossify.commons.R.string.unknown_error_occurred)
-                    }
-                    callback?.invoke(resultPath)
-                }
-            }
+        ) {
+            encryptFileToVault(oldPath, callback)
         }
     } else {
         if (CryptoManager.isEncryptedFile(oldPath)) {
@@ -549,6 +506,70 @@ fun BaseSimpleActivity.toggleFileVisibility(oldPath: String, hide: Boolean, call
             }
         } else {
             callback?.invoke(oldPath)
+        }
+    }
+}
+
+/**
+ * Encrypts a single file and moves it into the encrypted vault. The vault has to be created and
+ * unlocked before the file can be encrypted.
+ */
+private fun BaseSimpleActivity.encryptFileToVault(oldPath: String, callback: ((newPath: String) -> Unit)? = null) {
+    val srcFile = File(oldPath)
+
+    if (!hasVaultCreated()) {
+        promptCreateVault(
+            onCreated = {
+                encryptFileToVault(oldPath, callback)
+            },
+            onCancelled = {
+                callback?.invoke(oldPath)
+            }
+        )
+        return
+    }
+
+    if (!CryptoManager.isVaultUnlocked) {
+        val initialType = CryptoManager.getVaultProtectionType(this)
+            ?: if (config.hiddenProtectionType == PROTECTION_PASSWORD) {
+                PROTECTION_PASSWORD
+            } else {
+                PROTECTION_PIN
+            }
+        VaultSecurityDialog(
+            activity = this,
+            requiredHash = config.hiddenPasswordHash,
+            showTabIndex = initialType,
+            minimalist = true
+        ) { _, type, success ->
+            if (success) {
+                config.hiddenProtectionType = type
+                encryptFileToVault(oldPath, callback)
+            } else {
+                callback?.invoke(oldPath)
+            }
+        }
+        return
+    }
+
+    PickVaultAlbumDialog(this) { targetDir, albumName ->
+        ensureBackgroundThread {
+            val encryptedFile = CryptoManager.encryptFileToDirectory(
+                context = this,
+                sourceFile = srcFile,
+                targetDir = targetDir,
+                wipeSource = true,
+                clearCachesNow = true
+            )
+            val resultPath = encryptedFile?.absolutePath ?: oldPath
+            runOnUiThread {
+                if (encryptedFile != null && encryptedFile.exists()) {
+                    toast(getString(R.string.file_hidden_to_album, albumName))
+                } else {
+                    toast(org.fossify.commons.R.string.unknown_error_occurred)
+                }
+                callback?.invoke(resultPath)
+            }
         }
     }
 }
@@ -827,6 +848,9 @@ fun BaseSimpleActivity.tryCopyMoveFilesTo(
         val isDestNonHiddenPhysical = !destination.isVirtualAlbumPath() && !isDestEncrypted && !destination.trimEnd('/').substringAfterLast('/').startsWith(".")
 
         val needsDecryptionConfirmation = (isSourceHiddenPhysical || isSourceHiddenVirtual) && isDestNonHiddenPhysical
+        // Files that are copied into the encrypted vault get encrypted, so they need a confirmation
+        val needsEncryptionConfirmation = isDestEncrypted &&
+            fileDirItems.any { !CryptoManager.isEncryptedFile(it.path) }
 
         val proceedWithCopyMove = {
             if (isDestEncrypted || hasEncryptedSources) {
@@ -923,6 +947,13 @@ fun BaseSimpleActivity.tryCopyMoveFilesTo(
                 }
                 .create()
                 .show()
+        } else if (needsEncryptionConfirmation) {
+            EncryptConfirmationDialog(
+                activity = this,
+                message = getString(R.string.confirm_encrypt_files_to_vault)
+            ) {
+                proceedWithCopyMove()
+            }
         } else {
             proceedWithCopyMove()
         }

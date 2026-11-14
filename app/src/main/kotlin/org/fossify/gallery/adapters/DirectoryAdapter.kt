@@ -74,6 +74,7 @@ import org.fossify.gallery.databinding.DirectoryItemGridSquareBinding
 import org.fossify.gallery.databinding.DirectoryItemListBinding
 import org.fossify.gallery.dialogs.ConfirmDeleteFolderDialog
 import org.fossify.gallery.dialogs.CryptoProgressDialog
+import org.fossify.gallery.dialogs.EncryptConfirmationDialog
 import org.fossify.gallery.dialogs.ExcludeFolderDialog
 import org.fossify.gallery.dialogs.PickMediumDialog
 import org.fossify.gallery.dialogs.RenameEncryptedFolderDialog
@@ -500,22 +501,16 @@ class DirectoryAdapter(
                 return
             }
 
-            if (!activity.hasVaultCreated()) {
-                activity.promptCreateVault(
-                    onCreated = {
-                        hideFolders(folderPaths)
-                    }
-                )
-                return
+            // The album is encrypted, so the confirmation has to be shown before the vault password
+            // is requested.
+            val message = if (folderPaths.size == 1) {
+                activity.getString(R.string.confirm_encrypt_album)
+            } else {
+                activity.getString(R.string.confirm_encrypt_albums)
             }
 
-            if (config.wasHideFolderTooltipShown) {
+            EncryptConfirmationDialog(activity, message) {
                 hideFolders(folderPaths)
-            } else {
-                config.wasHideFolderTooltipShown = true
-                ConfirmationDialog(activity, activity.getString(R.string.hide_folder_description)) {
-                    hideFolders(folderPaths)
-                }
             }
         } else {
             val decryptablePaths = selectedPaths.filter {

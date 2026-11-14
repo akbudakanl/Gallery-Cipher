@@ -42,7 +42,6 @@
     <string name="portraits">Portreler</string>
     <string name="no_media_with_filters">Seçilen süzgeçlerle hiçbir medya dosyası bulunamadı.</string>
     <string name="change_filters_underlined"><u>Süzgeçleri değiştir</u></string>
-    <string name="hide_folder_description">Bu işlev, klasöre bir \'.nomedia\' dosyası ekleyerek gizler, tüm alt klasörleri de gizler. Ayarlar\'dan \'Gizli ögeleri göster\' seçeneğini değiştirerek onları görebilirsiniz. Devam edilsin mi\?</string>
     <string name="exclude_folder_description">Bu, alt klasörleriyle birlikte seçimi yalnızca Fossify Galeriden hariç tutacaktır. Hariç tutulan klasörleri Ayarlar\'dan yönetebilirsiniz.</string>
     <string name="exclude_folder_parent">Bunun yerine bir üst dizin hariç tutulsun mu\?</string>
     <string name="excluded_activity_placeholder">Klasörleri hariç tutmak, onları yalnızca Fossify Galeri\'de gizlenen alt klasörleriyle bir araya getirecek, diğer uygulamalarda görünmeye devam edecektir.

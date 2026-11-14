@@ -42,7 +42,6 @@
     <string name="portraits">PortrÃ©ty</string>
     <string name="no_media_with_filters">Se zvolenÃ½mi filtry nebyly nalezeny Å¾Ã¡dnÃ© mediÃ¡lnÃ­ soubory.</string>
     <string name="change_filters_underlined"><u>ZmÄ›nit filtry</u></string>
-    <string name="hide_folder_description">Tato funkce skryje sloÅ¾ku vÄetnÄ› podsloÅ¾ek pÅ™idÃ¡nÃ­m souboru \'.nomedia\'. ZobrazÃ­te je zvolenÃ­m moÅ¾nosti \'Zobrazit skrytÃ© poloÅ¾ky\' v nastavenÃ­. PokraÄovat\?</string>
     <string name="exclude_folder_parent">Chcete vylouÄit nadÅ™azenou sloÅ¾ku\?</string>
     <string name="hidden_folders">SkrytÃ© sloÅ¾ky</string>
     <string name="manage_hidden_folders">Spravovat skrytÃ© sloÅ¾ky</string>

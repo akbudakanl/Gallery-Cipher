@@ -52,7 +52,6 @@
     <string name="change_filters_underlined"><u>Endra filtre</u></string>
 
     <!-- Hide / Exclude -->
-    <string name="hide_folder_description">Denne funksjonen skjuler mappa ved å leggja til ei \'.nomedia\'-fil i henne, og skjuler alle undermapper òg. Du kan sjå dei ved å slå på valet \'Syn skjulte element\' i Innstillingar. Halda fram?</string>
     <string name="exclude_folder_description">Dette vil ekskludera utvalet saman med undermapper berre frå Fossify Gallery. Du kan handsama ekskluderte mapper i Innstillingar.</string>
     <string name="exclude_folder_parent">Ekskludera ei overordna mappe i staden?</string>
     <string name="excluded_activity_placeholder">Ekskludering av mapper gjer dei og undermappene deira skjulte berre i Fossify Gallery; dei vil framleis vera synlege i andre appar.\n\nViss du vil skjula dei frå andre appar òg, bruk Skjul-funksjonen.</string>

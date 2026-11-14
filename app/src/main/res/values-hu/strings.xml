@@ -42,7 +42,6 @@
     <string name="portraits">PortrÃ©k</string>
     <string name="no_media_with_filters">A kivÃ¡lasztott szÅ±rÅ‘k nem talÃ¡ltak mÃ©diafÃ¡jlokat.</string>
     <string name="change_filters_underlined"><u>SzÅ±rÅ‘k vÃ¡ltoztatÃ¡sa</u></string>
-    <string name="hide_folder_description">Ez a funkciÃ³ elrejti a mappÃ¡t egy â€.nomediaâ€ fÃ¡jl hozzÃ¡adÃ¡sÃ¡val, Ã©s elrejti az almappÃ¡kat is. LÃ¡thatÃ³vÃ¡ teheti ezeket a BeÃ¡llÃ­tÃ¡sok â€Rejtett elemek megjelenÃ­tÃ©se\" lehetÅ‘sÃ©gÃ©nek bekapcsolÃ¡sÃ¡va. Folytatja\?</string>
     <string name="exclude_folder_parent">KizÃ¡rja a szÃ¼lÅ‘mappÃ¡t\?</string>
     <string name="hidden_folders">Rejtett mappÃ¡k</string>
     <string name="manage_hidden_folders">Rejtett mappÃ¡k kezelÃ©se</string>

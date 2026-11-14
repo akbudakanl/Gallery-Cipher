@@ -52,7 +52,6 @@
     <string name="change_filters_underlined"><u>Süzgəcləri dəyiş</u></string>
 
     <!-- Hide / Exclude -->
-    <string name="hide_folder_description">Bu funksiya qovluğun içinə \'.nomedia\' faylı əlavə etməklə onu və bütün alt qovluqlarını gizlədir. Onları Parametrlərdə \'Gizli elementləri göstər\' seçimini aktivləşdirərək görə bilərsiniz. Davam edilsin?</string>
     <string name="exclude_folder_description">Bu, seçilmiş qovluğu alt qovluqları ilə birlikdə yalnız Fossify Qalereyadan istisna edəcək. İstisna edilmiş qovluqları Parametrlərdən idarə edə bilərsiniz.</string>
     <string name="exclude_folder_parent">Əvəzində üst qovluq istisna edilsin?</string>
     <string name="excluded_activity_placeholder">Qovluqları istisna etmək onları alt qovluqları ilə birlikdə yalnız Fossify Qalereyada gizlədər, digər tətbiqlərdə görünməyə davam edər.\n\nƏgər onları digər tətbiqlərdən də gizlətmək istəyirsinizsə, Gizlət funksiyasından istifadə edin.</string>

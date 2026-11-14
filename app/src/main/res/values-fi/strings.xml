@@ -42,7 +42,6 @@
     <string name="portraits">Potretit</string>
     <string name="no_media_with_filters">Mediaa ei lÃ¶ytynyt valituilla suotimilla.</string>
     <string name="change_filters_underlined"><u>Muuta suotimia</u></string>
-    <string name="hide_folder_description">TÃ¤mÃ¤ piilottaa kansion ja alikansiot lisÃ¤Ã¤mÃ¤llÃ¤ \'.nomedia\' tiedoston kansioon. NÃ¤et ne valitsemalla \'NÃ¤ytÃ¤ piilotetut kansiot\' asetuksissa. Jatketaanko\?</string>
     <string name="exclude_folder_parent">Poissulje ylÃ¤kansio tÃ¤mÃ¤n sijaan\?</string>
     <string name="hidden_folders">Piilotetut kansiot</string>
     <string name="manage_hidden_folders">Hallitse piilotettuja kansioita</string>

@@ -47,7 +47,6 @@
     <string name="reorder_by_dragging_pro">Reordigi dosierujojn per treni (Pro)</string>
     <string name="restore_to_path">RestaÅ­rado al \"%s\"</string>
     <string name="filter_media">Filtri aÅ­dvidaÄµojn</string>
-    <string name="hide_folder_description">Äˆi tiu funkcio kaÅas dosierujon per aldoni al Äi dosieron nomitan \".nomedia\", kaj ankaÅ­ kaÅas Ä‰iujn subdosierujojn. Vi povos vidi ilin per baskuligi la opcion \"Montri kaÅitajn elementojn\" en la agordoj. Äˆu vi Åatus adi?</string>
     <string name="exclude_folder_description">Tio Ä‰i ekskluzivos la elekton kaj Äiajn subdosierujojn el nur Fossify Galario. Vi povas administri ekskluzivitajn dosierujojn en la agordoj.</string>
     <string name="keep_aspect_ratio">Gardi bildformaton</string>
     <string name="invalid_values">Bonvolu enigi validan distingivon</string>

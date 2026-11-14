@@ -66,10 +66,6 @@ class Config(context: Context) : BaseConfig(context) {
 
     fun hasCustomViewType(path: String) = prefs.contains(VIEW_TYPE_PREFIX + path.lowercase(Locale.getDefault()))
 
-    var wasHideFolderTooltipShown: Boolean
-        get() = prefs.getBoolean(HIDE_FOLDER_TOOLTIP_SHOWN, false)
-        set(wasShown) = prefs.edit().putBoolean(HIDE_FOLDER_TOOLTIP_SHOWN, wasShown).apply()
-
     var shouldShowHidden = showHiddenMedia || temporarilyShowHidden
 
     var showHiddenMedia: Boolean

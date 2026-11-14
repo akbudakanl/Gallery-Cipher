@@ -49,7 +49,6 @@
     <string name="portraits">Retratos</string>
     <string name="no_media_with_filters">No se encontraron archivos multimedia con los filtros seleccionados.</string>
     <string name="change_filters_underlined"><u>Cambiar filtros</u></string>
-    <string name="hide_folder_description">Esta función oculta la carpeta agregando un archivo \'.nomedia\' en ella, y también ocultará todas las subcarpetas. Puedes verlas activando la opción \'Mostrar ítems ocultados\' en Configuración. ¿Continuar?</string>
     <string name="exclude_folder_description">Esto excluirá la selección junto con sus subcarpetas solo de la Galería Fossify. Puedes administrar las carpetas excluidas en Configuración.</string>
     <string name="exclude_folder_parent">¿Excluir la carpeta superior en su lugar?</string>
     <string name="excluded_activity_placeholder">Al excluir carpetas, estas y sus subcarpetas quedarán ocultas solo en la Galería Fossify, pero seguirán siendo visibles en otras aplicaciones.\n\nSi quieres ocultarlas también de otras aplicaciones, usa la función Ocultar.</string>

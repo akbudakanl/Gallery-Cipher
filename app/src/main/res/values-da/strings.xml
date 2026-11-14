@@ -42,7 +42,6 @@
     <string name="portraits">PortrÃ¦tter</string>
     <string name="no_media_with_filters">Ingen mediefiler fundet med de valgte filtre.</string>
     <string name="change_filters_underlined"><u>Skift filter</u></string>
-    <string name="hide_folder_description">Denne funktion skjuler mappen ved at lÃ¦gge en \".nomedia\"-fil i den, hvilket ogsÃ¥ skjuler alle undermapper. Du kan vise dem igen via \"Vis skjulte elementer\" i Indstillinger. FortsÃ¦t?</string>
     <string name="exclude_folder_parent">Ekskluder en overordnet mappe i stedet?</string>
     <string name="hidden_folders">Skjulte mapper</string>
     <string name="manage_hidden_folders">Administrer skjulte mapper</string>

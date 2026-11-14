@@ -42,7 +42,6 @@
     <string name="portraits">PortrÃ¤tt</string>
     <string name="no_media_with_filters">Inga mediafiler hittades med de valda filtren.</string>
     <string name="change_filters_underlined"><u>Ã„ndra filter</u></string>
-    <string name="hide_folder_description">Denna funktion dÃ¶ljer mappen och alla dess undermappar genom att lÃ¤gga till en \'.nomedia\'-fil i den. Du kan se dem genom att vÃ¤xla \'Visa dolda objekt\'-alternativet i InstÃ¤llningar. Vill du fortsÃ¤tta\?</string>
     <string name="exclude_folder_parent">Vill du utesluta en Ã¶verordnad mapp istÃ¤llet\?</string>
     <string name="hidden_folders">Dolda mappar</string>
     <string name="manage_hidden_folders">Hantera dolda mappar</string>

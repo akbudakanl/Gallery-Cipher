@@ -39,7 +39,6 @@
     <string name="svgs">SVG</string>
     <string name="no_media_with_filters">Aucun fichier mÃ©dia trouvÃ© avec les filtres sÃ©lectionnÃ©s.</string>
     <string name="change_filters_underlined"><u>Modifier les filtres</u></string>
-    <string name="hide_folder_description">Cette option cache le dossier en y ajoutant un fichier \".nomedia\", elle cachera aussi tous les sous-dossiers. Vous pouvez afficher ces dossiers avec l\'option \"Afficher les fichiers cachÃ©s\" dans les paramÃ¨tres. Continuerâ€¯?</string>
     <string name="exclude_folder_description">Ceci exclura la sÃ©lection et ses sous-dossiers de Fossify Gallery uniquement. Vous pouvez gÃ©rer les dossiers exclus dans ParamÃ¨tres.</string>
     <string name="exclude_folder_parent">Exclure un dossier parent \?</string>
     <string name="excluded_activity_placeholder">Exclure les dossiers va les cacher (ainsi que leur sous-dossiers) uniquement dans Fossify Gallery, ils seront toujours visibles dans les autres applications.\n\nSi vous voulez aussi les cacher des autres applications, utilisez la fonction \"Cacher\".</string>

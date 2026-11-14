@@ -42,7 +42,6 @@
     <string name="portraits">PortrÃ©ty</string>
     <string name="no_media_with_filters">So zvolenÃ½mi filtrami sa nenaÅ¡li Å¾iadne mÃ©dia sÃºbory.</string>
     <string name="change_filters_underlined"><u>ZmeniÅ¥ filtre</u></string>
-    <string name="hide_folder_description">TÃ¡to funkcia skryje prieÄinok pridanÃ­m sÃºboru \'.nomedia\', skrytÃ© budÃº aj podprieÄinky. MÃ´Å¾ete ich vidieÅ¥ zvolenÃ­m moÅ¾nosti \'ZobraziÅ¥ skrytÃ© prieÄinky\' v nastaveniach. PokraÄovaÅ¥\?</string>
     <string name="exclude_folder_parent">Chcete vylÃºÄiÅ¥ nadprieÄinok\?</string>
     <string name="hidden_folders">SkrytÃ© prieÄinky</string>
     <string name="manage_hidden_folders">SpravovaÅ¥ skrytÃ© prieÄinky</string>

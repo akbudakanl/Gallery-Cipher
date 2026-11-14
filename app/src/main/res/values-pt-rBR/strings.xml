@@ -39,7 +39,6 @@
     <string name="portraits">Retratos</string>
     <string name="no_media_with_filters">Nenhum arquivo de mÃ­dia encontrado a partir dos filtros selecionados.</string>
     <string name="change_filters_underlined"><u>Alterar filtros</u></string>
-    <string name="hide_folder_description">Esta opÃ§Ã£o oculta a pasta ao adicionar um arquivo \".nomedia\" dentro dela, o que tambÃ©m ocultarÃ¡ todas as suas subpastas. VocÃª poderÃ¡ voltar a exibir estas pastas com a opÃ§Ã£o \"Exibir pastas ocultas\". Continuar\?</string>
     <string name="exclude_folder_parent">Ignorar a pasta raiz ao invÃ©s desta\?</string>
     <string name="hidden_folders">Pastas ocultas</string>
     <string name="manage_hidden_folders">Gerenciar pastas ocultas</string>

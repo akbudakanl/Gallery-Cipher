@@ -33,7 +33,6 @@
     <string name="svgs">SVG</string>
     <string name="no_media_with_filters">æœªç™¼ç¾ç¬¦åˆç¯©é¸æ¢ä»¶çš„åª’é«”æª”æ¡ˆã€‚</string>
     <string name="change_filters_underlined"><u>æ›´æ”¹ç¯©é¸æ¢ä»¶</u></string>
-    <string name="hide_folder_description">å•Ÿç”¨æ­¤åŠŸèƒ½å°‡åœ¨é¸å®šè³‡æ–™å¤¾ä¸­å»ºç«‹ã€Œ.nomediaã€æª”æ¡ˆï¼Œè©²è³‡æ–™å¤¾åŠå…¶æ‰€æœ‰å­è³‡æ–™å¤¾å°‡è¢«éš±è—ã€‚å¦‚è¦æª¢è¦–éš±è—çš„è³‡æ–™å¤¾ï¼Œå¯åœ¨è¨­å®šä¸­å•Ÿç”¨ã€Œé¡¯ç¤ºéš±è—é …ç›®ã€ã€‚æ˜¯å¦ç¹¼çºŒï¼Ÿ</string>
     <string name="exclude_folder_parent">æ˜¯å¦æ’é™¤ä¸Šå±¤è³‡æ–™å¤¾ï¼Ÿ</string>
     <string name="hidden_folders">éš±è—è³‡æ–™å¤¾</string>
     <string name="manage_hidden_folders">ç®¡ç†éš±è—çš„è³‡æ–™å¤¾</string>
