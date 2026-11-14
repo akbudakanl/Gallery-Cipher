@@ -23,6 +23,8 @@ import org.fossify.gallery.extensions.deleteVirtualAlbumItemFromAllAlbums
 import org.fossify.gallery.extensions.directoryDB
 import org.fossify.gallery.extensions.mediaDB
 import org.fossify.gallery.extensions.updateVirtualAlbumItemPath
+import org.fossify.gallery.extensions.updateVirtualAlbumItemPathOnDecrypt
+import org.fossify.gallery.extensions.updateVirtualAlbumItemPathOnEncrypt
 import org.fossify.gallery.extensions.virtualAlbumsDB
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -2072,7 +2074,7 @@ object CryptoManager {
             }
 
             if (wipeSource) {
-                context.updateVirtualAlbumItemPath(sourcePath, encryptedFile.absolutePath)
+                context.updateVirtualAlbumItemPathOnEncrypt(sourcePath, encryptedFile.absolutePath)
                 secureWipeAndDeleteFile(context, sourceFile)
             }
             if (clearCachesNow) {
@@ -2353,7 +2355,7 @@ object CryptoManager {
             outFile.setLastModified(meta.lastModified)
 
             if (deleteEncryptedSource) {
-                context.updateVirtualAlbumItemPath(encPath, outFile.absolutePath)
+                context.updateVirtualAlbumItemPathOnDecrypt(encPath, outFile.absolutePath)
                 metadataCache.remove(encPath)?.fileKey?.fill(0)
                 context.mediaDB.deleteMediumPath(encPath)
                 encryptedFile.delete()
@@ -2625,7 +2627,7 @@ object CryptoManager {
         for ((index, pair) in encryptedPairs.withIndex()) {
             val (sourceFile, encFile) = pair
             val sourcePath = sourceFile.absolutePath
-            context.updateVirtualAlbumItemPath(sourcePath, encFile.absolutePath)
+            context.updateVirtualAlbumItemPathOnEncrypt(sourcePath, encFile.absolutePath)
             if (secureWipeAndDeleteFile(sourceFile, context, syncParentDir = false, purgeTraces = false)) {
                 wipedPaths.add(sourcePath)
                 wipedFileNames.add(sourceFile.name)
@@ -2866,7 +2868,7 @@ object CryptoManager {
         // ALL FILES DECRYPTED! Now delete encrypted files:
         for ((encFile, decryptedFile) in decryptedPairs) {
             val encPath = encFile.absolutePath
-            context.updateVirtualAlbumItemPath(encPath, decryptedFile.absolutePath)
+            context.updateVirtualAlbumItemPathOnDecrypt(encPath, decryptedFile.absolutePath)
             metadataCache.remove(encPath)?.fileKey?.fill(0)
             context.mediaDB.deleteMediumPath(encPath)
             encFile.delete()

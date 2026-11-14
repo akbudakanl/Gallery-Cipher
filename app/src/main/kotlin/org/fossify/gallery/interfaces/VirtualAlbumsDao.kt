@@ -82,6 +82,9 @@ interface VirtualAlbumsDao {
     @Query("UPDATE OR REPLACE virtual_album_items SET full_path = :newPath, filename = :newFilename, parent_path = :newParentPath WHERE full_path = :oldPath COLLATE NOCASE")
     fun updateItemPath(oldPath: String, newPath: String, newFilename: String, newParentPath: String)
 
+    @Query("UPDATE OR REPLACE virtual_album_items SET full_path = :newPath, filename = :newFilename, parent_path = :newParentPath WHERE album_id = :albumId AND full_path = :oldPath COLLATE NOCASE")
+    fun updateItemPathInAlbum(albumId: Long, oldPath: String, newPath: String, newFilename: String, newParentPath: String)
+
     @Query("SELECT * FROM virtual_album_items WHERE album_id = :albumId ORDER BY added_ts DESC")
     fun getItems(albumId: Long): List<VirtualAlbumItem>
 

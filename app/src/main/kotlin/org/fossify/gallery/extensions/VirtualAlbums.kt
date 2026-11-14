@@ -105,7 +105,7 @@ fun Context.getVirtualAlbumPaths(albumPath: String): ArrayList<String> {
                 !(CryptoManager.isVaultMediaPath(this, path) && !canAccessHidden) &&
                 !File(path).exists()
         }
-        val resolvedMissingMap = resolveVirtualAlbumItemsTwoPass(items, missingItems, session = null)
+        val resolvedMissingMap = resolveVirtualAlbumItemsTwoPass(items, missingItems, session = null, vaultOnly = album.isHidden)
 
         for (item in items) {
             val path = item.fullPath
@@ -113,6 +113,7 @@ fun Context.getVirtualAlbumPaths(albumPath: String): ArrayList<String> {
             // Only vault content is protected inside a virtual album. Files coming from a hidden
             // folder are explicitly referenced by the user, so they stay visible.
             val isVaultContent = CryptoManager.isVaultMediaPath(this, path)
+            if (!album.isHidden && isVaultContent) continue
             if (isVaultContent && !canAccessHidden) continue
             if (File(path).exists()) {
                 if (item.state == ITEM_STATE_UNRESOLVED) {
@@ -185,7 +186,7 @@ fun Context.getVirtualAlbumMedia(albumId: Long, getVideoDurations: Boolean = fal
             val path = item.fullPath
             !deletedPaths.contains(path) && !path.startsWith(recycleBinPath) && !File(path).exists()
         }
-        val resolvedMissingMap = resolveVirtualAlbumItemsTwoPass(items, missingItems, session = null)
+        val resolvedMissingMap = resolveVirtualAlbumItemsTwoPass(items, missingItems, session = null, vaultOnly = album.isHidden)
 
         for (item in items) {
             var path = item.fullPath
@@ -213,7 +214,7 @@ fun Context.getVirtualAlbumMedia(albumId: Long, getVideoDurations: Boolean = fal
             }
 
             if (CryptoManager.isEncryptedFile(path)) {
-                if (!canAccessHidden || !CryptoManager.isVaultUnlocked) continue
+                if (!album.isHidden || !canAccessHidden || !CryptoManager.isVaultUnlocked) continue
                 val meta = CryptoManager.readMetadata(file) ?: continue
                 result.add(
                     Medium(
@@ -237,6 +238,7 @@ fun Context.getVirtualAlbumMedia(albumId: Long, getVideoDurations: Boolean = fal
             // Only vault content is protected inside a virtual album. Files coming from a hidden
             // folder are explicitly referenced by the user, so they stay visible.
             val isVaultContent = CryptoManager.isVaultMediaPath(this, path)
+            if (!album.isHidden && isVaultContent) continue
             if (isVaultContent && !canAccessHidden) continue
 
             val cached = cachedMediaByPath[path]
@@ -617,6 +619,65 @@ fun Context.updateVirtualAlbumItemPath(oldPath: String, newPath: String) {
 }
 
 /**
+ * Updates virtual album references when an encrypted vault file is decrypted back to plaintext.
+ * Public virtual albums follow the decrypted file, while hidden (encrypted) virtual albums must
+ * not expose decrypted files and therefore mark the item unresolved at its vault path.
+ */
+fun Context.updateVirtualAlbumItemPathOnDecrypt(oldEncPath: String, newPlaintextPath: String) {
+    updateVirtualAlbumItemPathForBoundary(
+        oldPath = oldEncPath,
+        newPath = newPlaintextPath,
+        updateHiddenAlbums = false
+    )
+}
+
+/**
+ * Updates virtual album references when a plaintext file is encrypted into the vault.
+ * Hidden (encrypted) virtual albums follow the encrypted file, while public virtual albums must
+ * not expose vault files (even when unlocked) and therefore mark the item unresolved at its old path.
+ */
+fun Context.updateVirtualAlbumItemPathOnEncrypt(oldPlaintextPath: String, newEncPath: String) {
+    updateVirtualAlbumItemPathForBoundary(
+        oldPath = oldPlaintextPath,
+        newPath = newEncPath,
+        updateHiddenAlbums = true
+    )
+}
+
+private fun Context.updateVirtualAlbumItemPathForBoundary(
+    oldPath: String,
+    newPath: String,
+    updateHiddenAlbums: Boolean
+) {
+    try {
+        val albumIds = virtualAlbumsDB.getAlbumIdsWithItem(oldPath)
+        if (albumIds.isEmpty()) return
+
+        var updatedAny = false
+        for (albumId in albumIds) {
+            val album = virtualAlbumsDB.getAlbumById(albumId) ?: continue
+            if (album.isHidden == updateHiddenAlbums) {
+                virtualAlbumsDB.updateItemPathInAlbum(
+                    albumId = albumId,
+                    oldPath = oldPath,
+                    newPath = newPath,
+                    newFilename = newPath.getFilenameFromPath(),
+                    newParentPath = newPath.getParentPath()
+                )
+                updatedAny = true
+            } else {
+                virtualAlbumsDB.markItemUnresolved(albumId, oldPath)
+            }
+            VirtualAlbumSyncManager.saveAlbumToFile(this, albumId)
+        }
+        if (updatedAny) {
+            updateReferenceIdentitiesForPath(newPath)
+        }
+    } catch (ignored: Exception) {
+    }
+}
+
+/**
  * Rewrites every reference below [oldRoot] so it points below [newRoot].
  *
  * Called when a physical folder is renamed or moved. Without this the favorites and the virtual
@@ -660,22 +721,39 @@ fun Context.resolveVirtualAlbumItemPath(
     session: MediaIdentityResolver.ResolutionSession? = null,
     saveBackup: Boolean = true,
     excludedPaths: Set<String> = emptySet(),
-    allowAmbiguous: Boolean = true
+    allowAmbiguous: Boolean = true,
+    vaultOnly: Boolean = false
 ): String? {
     val identity = item.toIdentity()
     if (!identity.isUsable) {
         return null
     }
 
-    val resolution = MediaIdentityResolver.resolve(
-        context = this,
-        identity = identity,
-        hintPaths = listOf(item.fullPath),
-        searchRoots = listOf(item.parentPath),
-        session = session,
-        excludedPaths = excludedPaths,
-        allowAmbiguous = allowAmbiguous
-    ) ?: return null
+    val resolution = if (vaultOnly) {
+        val vaultRoot = CryptoManager.findVaultRoot(this)?.takeIf { it.isDirectory } ?: return null
+        val vaultHints = listOf(item.fullPath).filter { CryptoManager.isVaultMediaPath(this, it) }
+        MediaIdentityResolver.resolveInFilesystem(
+            identity = identity,
+            hintPaths = vaultHints,
+            searchRoots = listOf(vaultRoot.absolutePath),
+            session = session,
+            extraRoots = emptyList(),
+            excludedPaths = excludedPaths,
+            allowAmbiguous = allowAmbiguous
+        )?.takeIf { CryptoManager.isVaultMediaPath(this, it.path) } ?: return null
+    } else {
+        MediaIdentityResolver.resolve(
+            context = this,
+            identity = identity,
+            hintPaths = listOf(item.fullPath),
+            searchRoots = listOf(item.parentPath),
+            session = session,
+            excludedPaths = excludedPaths,
+            allowAmbiguous = allowAmbiguous
+        )?.takeIf {
+            !CryptoManager.isVaultMediaPath(this, it.path) && !CryptoManager.isEncryptedFile(it.path)
+        } ?: return null
+    }
 
     if (resolution.path == item.fullPath) {
         if (item.state == ITEM_STATE_UNRESOLVED) {
@@ -713,7 +791,8 @@ fun Context.resolveVirtualAlbumItemPath(
 private fun Context.resolveVirtualAlbumItemsTwoPass(
     allItems: List<VirtualAlbumItem>,
     missingItems: List<VirtualAlbumItem>,
-    session: MediaIdentityResolver.ResolutionSession?
+    session: MediaIdentityResolver.ResolutionSession?,
+    vaultOnly: Boolean = false
 ): Map<String, String> {
     if (missingItems.isEmpty()) return emptyMap()
 
@@ -725,7 +804,9 @@ private fun Context.resolveVirtualAlbumItemsTwoPass(
     }
 
     val activeSession = session ?: MediaIdentityResolver.ResolutionSession().apply {
-        preloadMediaStore(this@resolveVirtualAlbumItemsTwoPass, missingItems.map { it.toIdentity() })
+        if (!vaultOnly) {
+            preloadMediaStore(this@resolveVirtualAlbumItemsTwoPass, missingItems.map { it.toIdentity() })
+        }
     }
 
     val resolvedByOldPath = HashMap<String, String>(missingItems.size)
@@ -738,7 +819,8 @@ private fun Context.resolveVirtualAlbumItemsTwoPass(
             session = activeSession,
             saveBackup = false,
             excludedPaths = claimedPaths,
-            allowAmbiguous = firstPassAllowAmbiguous
+            allowAmbiguous = firstPassAllowAmbiguous,
+            vaultOnly = vaultOnly
         )
         if (resolved != null) {
             resolvedByOldPath[item.fullPath] = resolved
@@ -754,7 +836,8 @@ private fun Context.resolveVirtualAlbumItemsTwoPass(
             session = activeSession,
             saveBackup = false,
             excludedPaths = claimedPaths,
-            allowAmbiguous = true
+            allowAmbiguous = true,
+            vaultOnly = vaultOnly
         )
         if (resolved != null) {
             resolvedByOldPath[item.fullPath] = resolved
@@ -800,7 +883,12 @@ fun Context.repairVirtualAlbumItems(
     }
 
     if (missing.isNotEmpty()) {
-        val resolvedMap = resolveVirtualAlbumItemsTwoPass(items, missing, session)
+        val isHiddenAlbum = try {
+            virtualAlbumsDB.getAlbumById(albumId)?.isHidden == true
+        } catch (_: Exception) {
+            false
+        }
+        val resolvedMap = resolveVirtualAlbumItemsTwoPass(items, missing, session, vaultOnly = isHiddenAlbum)
         for ((oldPath, newPath) in resolvedMap) {
             if (newPath != oldPath) {
                 repaired++
