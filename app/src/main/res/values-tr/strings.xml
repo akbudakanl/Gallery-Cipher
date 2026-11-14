@@ -275,6 +275,7 @@
     <string name="open_system_default_player">Varsayılan oynatma uygulamasını aç</string>
     <!-- Virtual albums -->
     <string name="create_virtual_album">Sanal albüm oluştur</string>
+    <string name="create_new_encrypted_virtual_album">Yeni şifreli sanal albüm oluştur</string>
     <string name="new_virtual_album">Yeni albüm…</string>
     <string name="rename_virtual_album">Albümü yeniden adlandır</string>
     <string name="album_name">Albüm adı</string>
@@ -335,6 +336,7 @@
     <string name="select_hidden_album">Şifreli Albüm Seçin</string>
     <string name="create_new_hidden_album">Yeni Şifreli Albüm Oluştur</string>
     <string name="new_hidden_album">Yeni şifreli albüm</string>
+    <string name="new_album">Yeni albüm</string>
     <string name="hidden_album_name_empty">Albüm adı boş olamaz</string>
     <string name="file_hidden_to_album">Dosya \"%s\" albümüne şifrelendi</string>
     <string name="files_hidden_to_album">%1$d dosya \"%2$s\" albümüne şifrelendi</string>

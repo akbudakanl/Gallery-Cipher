@@ -268,6 +268,7 @@
     <string name="video_double_tap_duration">點兩下跳轉時間</string>
     <string name="video_seek_duration_seconds">%d 秒</string>
     <string name="create_virtual_album">建立虛擬相簿</string>
+    <string name="create_new_encrypted_virtual_album">建立新的加密虛擬相簿</string>
     <string name="new_virtual_album">新增相簿…</string>
     <string name="rename_virtual_album">重新命名相簿</string>
     <string name="album_name">相簿名稱</string>
@@ -328,6 +329,7 @@
     <string name="select_hidden_album">選擇加密相簿</string>
     <string name="create_new_hidden_album">建立新加密相簿</string>
     <string name="new_hidden_album">新加密相簿</string>
+    <string name="new_album">新增相簿</string>
     <string name="hidden_album_name_empty">相簿名稱不能為空</string>
     <string name="file_hidden_to_album">檔案已加密至「%s」</string>
     <string name="files_hidden_to_album">%1$d 個檔案已加密至「%2$s」</string>

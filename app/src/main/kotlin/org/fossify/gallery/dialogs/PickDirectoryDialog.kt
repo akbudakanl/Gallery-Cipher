@@ -93,8 +93,10 @@ class PickDirectoryDialog(
             .setNegativeButton(org.fossify.commons.R.string.cancel, null)
 
         if (showOtherFolderButton) {
+            // The neutral button has to stay short enough, otherwise the dialog stacks its
+            // buttons vertically instead of showing them in a single row.
             val neutralTextRes = if (effectiveMode == PickDirectoryMode.ENCRYPTED_MOVE) {
-                R.string.new_hidden_album
+                R.string.new_album
             } else {
                 R.string.other_folder
             }
@@ -357,7 +359,7 @@ class PickDirectoryDialog(
                     val effectiveSource = activity.resolveEffectiveSourcePhysicalPath(sourcePath)
                     activity.runOnUiThread {
                         val items = arrayListOf(
-                            RadioItem(1, activity.getString(R.string.create_virtual_album)),
+                            RadioItem(1, activity.getString(R.string.create_new_encrypted_virtual_album)),
                             RadioItem(2, activity.getString(R.string.create_new_hidden_album))
                         )
                         RadioGroupDialog(activity, items) { selected ->

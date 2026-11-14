@@ -321,6 +321,7 @@
 
     <!-- Virtual albums -->
     <string name="create_virtual_album">Create virtual album</string>
+    <string name="create_new_encrypted_virtual_album">Create new encrypted virtual album</string>
     <string name="new_virtual_album">New album…</string>
     <string name="rename_virtual_album">Rename album</string>
     <string name="album_name">Album name</string>
@@ -382,6 +383,7 @@
     <string name="select_hidden_album">Select Encrypted Album</string>
     <string name="create_new_hidden_album">Create New Encrypted Album</string>
     <string name="new_hidden_album">New encrypted album</string>
+    <string name="new_album">New album</string>
     <string name="hidden_album_name_empty">Album name cannot be empty</string>
     <string name="file_hidden_to_album">File encrypted to \"%s\"</string>
     <string name="files_hidden_to_album">%1$d files encrypted to \"%2$s\"</string>

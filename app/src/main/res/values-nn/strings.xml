@@ -304,6 +304,7 @@
 
     <!-- Virtual albums -->
     <string name="create_virtual_album">Lag virtuelt album</string>
+    <string name="create_new_encrypted_virtual_album">Opprett nytt kryptert virtuelt album</string>
     <string name="new_virtual_album">Nytt album…</string>
     <string name="rename_virtual_album">Gje albumet nytt namn</string>
     <string name="album_name">Albumnamn</string>
@@ -398,6 +399,7 @@
     <string name="select_hidden_album">Vel kryptert album</string>
     <string name="create_new_hidden_album">Opprett nytt kryptert album</string>
     <string name="new_hidden_album">Nytt kryptert album</string>
+    <string name="new_album">Nytt album</string>
     <string name="hidden_album_name_empty">Albumnamn kan ikkje vera tomt</string>
     <string name="file_hidden_to_album">Fil kryptert i «%s»</string>
     <string name="files_hidden_to_album">%1$d filer krypterte i «%2$s»</string>

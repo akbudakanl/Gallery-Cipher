@@ -272,6 +272,7 @@
     <string name="faq_18_title">¿Por qué veo anuncios durante la reproducción de videos?</string>
     <string name="faq_18_text">Nuestras aplicaciones no tienen ningún tipo de anuncios. Si los ves al reproducir videos, seguramente estás usando el reproductor de video de otra aplicación. Busca tu reproductor de video predeterminado en la configuración del dispositivo y selecciona \"Borrar valores predeterminados\". La próxima vez que abras un video verás un selector de aplicaciones donde podrás elegir qué aplicación usar.</string>
     <string name="create_virtual_album">Crear álbum virtual</string>
+    <string name="create_new_encrypted_virtual_album">Crear nuevo álbum virtual cifrado</string>
     <string name="new_virtual_album">Nuevo álbum…</string>
     <string name="rename_virtual_album">Renombrar álbum</string>
     <string name="album_name">Nombre del álbum</string>
@@ -366,6 +367,7 @@
     <string name="select_hidden_album">Seleccionar álbum cifrado</string>
     <string name="create_new_hidden_album">Crear nuevo álbum cifrado</string>
     <string name="new_hidden_album">Nuevo álbum cifrado</string>
+    <string name="new_album">Nuevo álbum</string>
     <string name="hidden_album_name_empty">El nombre del álbum no puede estar vacío</string>
     <string name="file_hidden_to_album">Archivo cifrado en \"%s\"</string>
     <string name="files_hidden_to_album">%1$d archivos cifrados en \"%2$s\"</string>

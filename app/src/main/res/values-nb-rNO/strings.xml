@@ -274,6 +274,7 @@
     <string name="faq_18_title">Hvorfor ser jeg reklame under videoavspilling?</string>
     <string name="faq_18_text">Appene våre har ingen reklame overhodet. Hvis du ser reklame under videoavspilling, bruker du sannsynligvis videospilleren til en annen app. Prøv å finne standard videospiller i enhetsinnstillingene, og velg \"Fjern standardvalg\" på den. Neste gang du åpner en video, vil du se en appvelger der du kan velge hvilken app du vil bruke.</string>
     <string name="create_virtual_album">Opprett virtuelt album</string>
+    <string name="create_new_encrypted_virtual_album">Opprett nytt kryptert virtuelt album</string>
     <string name="new_virtual_album">Nytt album…</string>
     <string name="rename_virtual_album">Gi albumet nytt navn</string>
     <string name="album_name">Albumnavn</string>
@@ -344,6 +345,7 @@
     <string name="select_hidden_album">Velg kryptert album</string>
     <string name="create_new_hidden_album">Opprett nytt kryptert album</string>
     <string name="new_hidden_album">Nytt kryptert album</string>
+    <string name="new_album">Nytt album</string>
     <string name="hidden_album_name_empty">Albumnavn kan ikke være tomt</string>
     <string name="file_hidden_to_album">Fil kryptert i «%s»</string>
     <string name="files_hidden_to_album">%1$d filer kryptert i «%2$s»</string>

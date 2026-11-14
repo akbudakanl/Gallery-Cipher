@@ -304,6 +304,7 @@
 
     <!-- Virtual albums -->
     <string name="create_virtual_album">Virtual albom yarat</string>
+    <string name="create_new_encrypted_virtual_album">Yeni şifrəli virtual albom yarat</string>
     <string name="new_virtual_album">Yeni albom…</string>
     <string name="rename_virtual_album">Albomun adını dəyiş</string>
     <string name="album_name">Albom adı</string>
@@ -397,6 +398,7 @@
     <string name="select_hidden_album">Şifrəli Albom Seçin</string>
     <string name="create_new_hidden_album">Yeni Şifrəli Albom Yarat</string>
     <string name="new_hidden_album">Yeni şifrəli albom</string>
+    <string name="new_album">Yeni albom</string>
     <string name="hidden_album_name_empty">Albom adı boş ola bilməz</string>
     <string name="file_hidden_to_album">Fayl \"%s\" albomuna şifrələndi</string>
     <string name="files_hidden_to_album">%1$d fayl \"%2$s\" albomuna şifrələndi</string>

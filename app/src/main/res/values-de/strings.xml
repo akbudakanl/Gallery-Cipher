@@ -270,6 +270,7 @@
     <string name="open_in_app_player">In-App-Player öffnen</string>
     <string name="on_video_tap">Beim Tippen aufs Video</string>
     <string name="create_virtual_album">Virtuelles Album erstellen</string>
+    <string name="create_new_encrypted_virtual_album">Neues verschlüsseltes virtuelles Album erstellen</string>
     <string name="new_virtual_album">Neues Album…</string>
     <string name="rename_virtual_album">Album umbenennen</string>
     <string name="album_name">Albumname</string>
@@ -330,6 +331,7 @@
     <string name="select_hidden_album">Verschlüsseltes Album auswählen</string>
     <string name="create_new_hidden_album">Neues verschlüsseltes Album erstellen</string>
     <string name="new_hidden_album">Neues verschlüsseltes Album</string>
+    <string name="new_album">Neues Album</string>
     <string name="hidden_album_name_empty">Albumname darf nicht leer sein</string>
     <string name="file_hidden_to_album">Datei im Album „%s“ verschlüsselt</string>
     <string name="files_hidden_to_album">%1$d Dateien im Album „%2$s“ verschlüsselt</string>

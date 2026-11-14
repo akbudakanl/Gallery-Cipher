@@ -268,6 +268,7 @@
     <string name="faq_1_text">まず、端末の「設定」の「アプリ」セクションで現在デフォルトに設定されているギャラリーを見つけ、「デフォルトで開く」などのボタンをタップして「デフォルト設定をクリア」を選択します。次回、画像や動画を開こうとした際にアプリ選択画面が表示されるので、そこでFossifyギャラリーを選択してデフォルトのアプリに設定してください。</string>
     <string name="faq_5_text">「除外」はFossifyギャラリー内でのみフォルダーを表示しないようにするのに対し、「非表示」はシステム全体で機能し、他のギャラリーアプリからもフォルダーを隠します。これは指定したフォルダー内に空の「.nomedia」ファイルを作成することで動作し、任意のファイルマネージャーで削除することもできます。なお、一部の端末では Camera、Screenshots、Downloads などのフォルダーを非表示にできない場合があります。</string>
     <string name="create_virtual_album">仮想アルバムを作成</string>
+    <string name="create_new_encrypted_virtual_album">新しい暗号化仮想アルバムを作成</string>
     <string name="new_virtual_album">新しいアルバム…</string>
     <string name="rename_virtual_album">アルバム名を変更</string>
     <string name="album_name">アルバム名</string>
@@ -328,6 +329,7 @@
     <string name="select_hidden_album">暗号化アルバムを選択</string>
     <string name="create_new_hidden_album">新しい暗号化アルバムを作成</string>
     <string name="new_hidden_album">新しい暗号化アルバム</string>
+    <string name="new_album">新しいアルバム</string>
     <string name="hidden_album_name_empty">アルバム名を空にすることはできません</string>
     <string name="file_hidden_to_album">ファイルを「%s」に暗号化しました</string>
     <string name="files_hidden_to_album">%1$d 個のファイルを「%2$s」に暗号化しました</string>
