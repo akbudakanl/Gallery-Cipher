@@ -133,7 +133,7 @@ class MediaAdapter(
     private val ITEM_MEDIUM_PHOTO = 2
 
     private val config = activity.config
-    private val viewType = config.getFolderViewType(if (config.showAll) SHOW_ALL else path)
+    private val viewType = config.getFolderViewType(if (config.showAll || path.isEmpty()) SHOW_ALL else path)
     private val isListViewType = viewType == VIEW_TYPE_LIST
     private var rotatedImagePaths = ArrayList<String>()
     private var currentMediaHash = media.hashCode()
@@ -145,7 +145,7 @@ class MediaAdapter(
     private var displayFilenames = config.displayFileNames
     private var showFileTypes = config.showThumbnailFileTypes
 
-    var sorting = config.getFolderSorting(if (config.showAll) SHOW_ALL else path)
+    var sorting = config.getFolderSorting(if (config.showAll || path.isEmpty()) SHOW_ALL else path)
     var dateFormat = config.dateFormat
     var timeFormat = activity.getTimeFormat()
 
@@ -826,7 +826,7 @@ class MediaAdapter(
             activity.getShortcutImage(path, drawable) {
                 val intent = Intent(activity, ViewPagerActivity::class.java).apply {
                     putExtra(PATH, path)
-                    putExtra(SHOW_ALL, config.showAll)
+                    putExtra(SHOW_ALL, config.showAll || this@MediaAdapter.path.isEmpty())
                     putExtra(SHOW_FAVORITES, path == FAVORITES)
                     putExtra(SHOW_RECYCLE_BIN, path == RECYCLE_BIN)
                     action = Intent.ACTION_VIEW

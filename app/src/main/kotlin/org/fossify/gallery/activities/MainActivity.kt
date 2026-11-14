@@ -155,7 +155,12 @@ import org.fossify.gallery.helpers.ON_VAULT_EXIT_HIDE
 import org.fossify.gallery.helpers.ON_VAULT_EXIT_ASK_EVERY_TIME
 import org.fossify.gallery.helpers.PICKED_PATHS
 import org.fossify.gallery.helpers.RECYCLE_BIN
+import org.fossify.gallery.helpers.EXTRA_EXIT_VAULT_KEEP_SHOWING
+import org.fossify.gallery.helpers.EXTRA_FROM_MEDIA_SHOW_ALL
 import org.fossify.gallery.helpers.EXTRA_OPEN_SECRET_VAULT
+import org.fossify.gallery.helpers.EXTRA_OPEN_SECRET_VAULT_FOLDERS
+import org.fossify.gallery.helpers.EXTRA_SECRET_VAULT_FILES
+import org.fossify.gallery.helpers.HOME_VIEW_FILES
 import org.fossify.gallery.helpers.SET_WALLPAPER_INTENT
 import org.fossify.gallery.helpers.SHOW_ALL
 import org.fossify.gallery.helpers.SHOW_TEMP_HIDDEN_DURATION
@@ -237,6 +242,8 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     private var mStoredStyleString = ""
     private var mIsVaultDialogShowing = false
     private var mIsSecretVaultView = false
+    private var mIsSwitchingVaultView = false
+    private var mFromMediaShowAll = false
     private var mHiddenDisplayMode = DISPLAY_NONE
 
     // "Continue where I left off" after the vault keys were wiped (30 min in background / process restart).
@@ -276,6 +283,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         setContentView(binding.root)
         appLaunched(BuildConfig.APPLICATION_ID)
 
+        val preserveVaultOnSwitch = VaultSessionManager.consumePreserveVaultOnSwitch()
         if (savedInstanceState != null) {
             mIsSecretVaultView = savedInstanceState.getBoolean(IS_SECRET_VAULT_VIEW, false)
             mHiddenDisplayMode = savedInstanceState.getInt(HIDDEN_DISPLAY_MODE, DISPLAY_NONE)
@@ -283,11 +291,13 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         } else {
             mIsSecretVaultView = false
             mHiddenDisplayMode = DISPLAY_NONE
-            config.temporarilyShowHidden = false
+            if (!preserveVaultOnSwitch) {
+                config.temporarilyShowHidden = false
+                CryptoManager.lockVault()
+            }
             config.temporarilyShowExcluded = false
             config.tempSkipDeleteConfirmation = false
             config.tempSkipRecycleBin = false
-            CryptoManager.lockVault()
             removeTempFolder()
             checkRecycleBinItems()
             startNewPhotoFetcher()
@@ -310,7 +320,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         setupOptionsMenu()
         refreshMenuItems()
 
-        checkOpenSecretVaultIntent(intent)
+        handleVaultIntent(intent)
         setupEdgeToEdge(
             padBottomImeAndSystem = listOf(binding.directoriesGrid)
         )
@@ -572,7 +582,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             config.tempSkipRecycleBin = false
             // Only a real exit (back press / finish()) wipes the vault right away. If Android merely destroys
             // this activity in the background, the vault stays until the inactivity timeout (VaultSessionManager).
-            if (isFinishing) {
+            if (isFinishing && !mIsSwitchingVaultView) {
                 mIsSecretVaultView = false
                 mHiddenDisplayMode = DISPLAY_NONE
                 config.temporarilyShowHidden = false
@@ -726,9 +736,9 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         if (!mIsThirdPartyIntent) {
             binding.mainMenu.requireToolbar().menu.apply {
                 findItem(R.id.column_count)?.isVisible = config.viewTypeFolders == VIEW_TYPE_GRID
-                findItem(R.id.set_as_default_folder)?.isVisible = !config.defaultFolder.isEmpty()
+                findItem(R.id.set_as_default_folder)?.isVisible = !mIsSecretVaultView && !config.defaultFolder.isEmpty()
                 findItem(R.id.open_recycle_bin)?.isVisible =
-                    config.useRecycleBin && !config.showRecycleBinAtFolders
+                    !mIsSecretVaultView && config.useRecycleBin && !config.showRecycleBinAtFolders
                 findItem(R.id.more_apps_from_us)?.isVisible =
                     resources.getBoolean(org.fossify.commons.R.bool.is_google_play_build)
             }
@@ -737,10 +747,10 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         binding.mainMenu.requireToolbar().menu.apply {
             findItem(R.id.temporarily_show_hidden)?.isVisible = false
             findItem(R.id.stop_showing_hidden)?.isVisible =
-                (!isRPlus() || isExternalStorageManager()) && config.temporarilyShowHidden
+                !mIsSecretVaultView && (!isRPlus() || isExternalStorageManager()) && config.temporarilyShowHidden
 
-            findItem(R.id.temporarily_show_excluded)?.isVisible = !config.temporarilyShowExcluded
-            findItem(R.id.stop_showing_excluded)?.isVisible = config.temporarilyShowExcluded
+            findItem(R.id.temporarily_show_excluded)?.isVisible = !mIsSecretVaultView && !config.temporarilyShowExcluded
+            findItem(R.id.stop_showing_excluded)?.isVisible = !mIsSecretVaultView && config.temporarilyShowExcluded
         }
     }
 
@@ -944,6 +954,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     private fun launchSearchActivity() {
         hideKeyboard()
         Intent(this, SearchActivity::class.java).apply {
+            putExtra(EXTRA_SECRET_VAULT_FILES, mIsSecretVaultView)
             startActivity(this)
         }
 
@@ -977,6 +988,11 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     }
 
     private fun showAllMedia() {
+        if (mIsSecretVaultView) {
+            openVaultFilesView()
+            return
+        }
+
         config.showAll = true
         Intent(this, MediaActivity::class.java).apply {
             putExtra(DIRECTORY, "")
@@ -984,6 +1000,25 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             if (mIsThirdPartyIntent) {
                 handleMediaIntent(this)
             } else {
+                hideKeyboard()
+                startActivity(this)
+                finish()
+            }
+        }
+    }
+
+    private fun openVaultFilesView() {
+        config.showAll = false
+        Intent(this, MediaActivity::class.java).apply {
+            putExtra(DIRECTORY, "")
+            putExtra(EXTRA_SECRET_VAULT_FILES, true)
+            putExtra(SKIP_AUTHENTICATION, true)
+
+            if (mIsThirdPartyIntent) {
+                handleMediaIntent(this)
+            } else {
+                VaultSessionManager.markPreserveVaultOnSwitch()
+                mIsSwitchingVaultView = true
                 hideKeyboard()
                 startActivity(this)
                 finish()
@@ -1003,10 +1038,36 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        checkOpenSecretVaultIntent(intent)
+        handleVaultIntent(intent)
+        updateVaultModeUi()
+        refreshMenuItems()
     }
 
-    private fun checkOpenSecretVaultIntent(intent: Intent?) {
+    private fun handleVaultIntent(intent: Intent?) {
+        val canRestoreVault = CryptoManager.isVaultUnlocked && config.temporarilyShowHidden
+        if (intent?.getBooleanExtra(EXTRA_OPEN_SECRET_VAULT_FOLDERS, false) == true) {
+            intent.removeExtra(EXTRA_OPEN_SECRET_VAULT_FOLDERS)
+            mFromMediaShowAll = false
+            if (canRestoreVault) {
+                mIsSecretVaultView = true
+                mHiddenDisplayMode = DISPLAY_SECRET_VAULT
+            }
+        } else if (intent?.getBooleanExtra(EXTRA_EXIT_VAULT_KEEP_SHOWING, false) == true) {
+            intent.removeExtra(EXTRA_EXIT_VAULT_KEEP_SHOWING)
+            mFromMediaShowAll = false
+            if (canRestoreVault) {
+                mIsSecretVaultView = false
+                mHiddenDisplayMode = DISPLAY_ENCRYPTED_ONLY
+            }
+        } else if (!mIsSecretVaultView && mHiddenDisplayMode == DISPLAY_NONE && canRestoreVault) {
+            mHiddenDisplayMode = DISPLAY_ENCRYPTED_ONLY
+        }
+
+        if (intent?.getBooleanExtra(EXTRA_FROM_MEDIA_SHOW_ALL, false) == true) {
+            intent.removeExtra(EXTRA_FROM_MEDIA_SHOW_ALL)
+            mFromMediaShowAll = true
+        }
+
         if (intent?.getBooleanExtra(EXTRA_OPEN_SECRET_VAULT, false) == true) {
             intent.removeExtra(EXTRA_OPEN_SECRET_VAULT)
             binding.directoriesGrid.post {
@@ -1047,19 +1108,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         }
 
         if (vaultExists && config.temporarilyShowHidden && CryptoManager.isVaultUnlocked) {
-            if (!mIsSecretVaultView) {
-                mIsSecretVaultView = true
-                mHiddenDisplayMode = DISPLAY_SECRET_VAULT
-                toast(R.string.secret_vault)
-                updateVaultModeUi()
-                binding.directoriesGrid.adapter = null
-                ensureBackgroundThread {
-                    CryptoManager.getOrCreateDefaultHiddenAlbum(this)
-                    runOnUiThread {
-                        getDirectories()
-                    }
-                }
-            }
+            enterSecretVault(alreadyUnlocked = true)
             return
         }
 
@@ -1085,15 +1134,10 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                 mIsVaultDialogShowing = false
                 if (success) {
                     config.hiddenProtectionType = type
-                    mIsSecretVaultView = true
-                    mHiddenDisplayMode = DISPLAY_SECRET_VAULT
-                    toast(R.string.secret_vault)
-                    ensureBackgroundThread {
-                        CryptoManager.getOrCreateDefaultHiddenAlbum(this)
-                        runOnUiThread {
-                            toggleTemporarilyShowHidden(true)
-                        }
-                    }
+                    enterSecretVault(alreadyUnlocked = false)
+                } else if (mFromMediaShowAll) {
+                    mFromMediaShowAll = false
+                    showAllMedia()
                 }
             }
         } else {
@@ -1101,14 +1145,58 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             promptCreateVault(
                 onCreated = {
                     mIsVaultDialogShowing = false
-                    mIsSecretVaultView = true
-                    mHiddenDisplayMode = DISPLAY_SECRET_VAULT
-                    toggleTemporarilyShowHidden(true)
+                    enterSecretVault(alreadyUnlocked = false)
                 },
                 onCancelled = {
                     mIsVaultDialogShowing = false
+                    if (mFromMediaShowAll) {
+                        mFromMediaShowAll = false
+                        showAllMedia()
+                    }
                 }
             )
+        }
+    }
+
+    private fun enterSecretVault(alreadyUnlocked: Boolean) {
+        mFromMediaShowAll = false
+        if (alreadyUnlocked && mIsSecretVaultView) {
+            return
+        }
+
+        if (config.homeScreenViewOnLaunch == HOME_VIEW_FILES) {
+            mIsSecretVaultView = true
+            mHiddenDisplayMode = DISPLAY_SECRET_VAULT
+            toast(R.string.secret_vault)
+            ensureBackgroundThread {
+                CryptoManager.getOrCreateDefaultHiddenAlbum(this)
+                runOnUiThread {
+                    config.temporarilyShowHidden = true
+                    openVaultFilesView()
+                }
+            }
+            return
+        }
+
+        mIsSecretVaultView = true
+        mHiddenDisplayMode = DISPLAY_SECRET_VAULT
+        toast(R.string.secret_vault)
+        if (alreadyUnlocked) {
+            updateVaultModeUi()
+            binding.directoriesGrid.adapter = null
+            ensureBackgroundThread {
+                CryptoManager.getOrCreateDefaultHiddenAlbum(this)
+                runOnUiThread {
+                    getDirectories()
+                }
+            }
+        } else {
+            ensureBackgroundThread {
+                CryptoManager.getOrCreateDefaultHiddenAlbum(this)
+                runOnUiThread {
+                    toggleTemporarilyShowHidden(true)
+                }
+            }
         }
     }
 

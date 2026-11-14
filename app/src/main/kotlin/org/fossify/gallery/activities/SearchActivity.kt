@@ -17,10 +17,12 @@ import org.fossify.gallery.asynctasks.GetMediaAsynctask
 import org.fossify.gallery.databinding.ActivitySearchBinding
 import org.fossify.gallery.extensions.*
 import org.fossify.gallery.helpers.CryptoManager
+import org.fossify.gallery.helpers.EXTRA_SECRET_VAULT_FILES
 import org.fossify.gallery.helpers.GridSpacingItemDecoration
 import org.fossify.gallery.helpers.MediaFetcher
 import org.fossify.gallery.helpers.PATH
 import org.fossify.gallery.helpers.SHOW_ALL
+import org.fossify.gallery.helpers.SKIP_AUTHENTICATION
 import org.fossify.gallery.helpers.VIDEO_PLAYER_APP
 import org.fossify.gallery.helpers.VIDEO_PLAYER_SYSTEM
 import org.fossify.gallery.interfaces.MediaOperationsListener
@@ -32,6 +34,7 @@ class SearchActivity : SimpleActivity(), MediaOperationsListener {
     override var isSearchBarEnabled = true
     
     private var mLastSearchedText = ""
+    private var mIsVaultFilesView = false
 
     private var mCurrAsyncTask: GetMediaAsynctask? = null
     private var mAllMedia = ArrayList<ThumbnailItem>()
@@ -41,6 +44,7 @@ class SearchActivity : SimpleActivity(), MediaOperationsListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
+        mIsVaultFilesView = intent.getBooleanExtra(EXTRA_SECRET_VAULT_FILES, false)
         setupOptionsMenu()
         setupEdgeToEdge(
             padTopSystem = listOf(binding.searchMenu),
@@ -53,6 +57,11 @@ class SearchActivity : SimpleActivity(), MediaOperationsListener {
 
     override fun onResume() {
         super.onResume()
+        applyVaultScreenProtection(mIsVaultFilesView)
+        if (mIsVaultFilesView && (!canAccessHiddenVirtualAlbums() || !CryptoManager.isVaultUnlocked)) {
+            finish()
+            return
+        }
         updateMenuColors()
     }
 
@@ -177,6 +186,10 @@ class SearchActivity : SimpleActivity(), MediaOperationsListener {
         Intent(this, ViewPagerActivity::class.java).apply {
             putExtra(PATH, path)
             putExtra(SHOW_ALL, false)
+            putExtra(EXTRA_SECRET_VAULT_FILES, mIsVaultFilesView)
+            if (mIsVaultFilesView) {
+                putExtra(SKIP_AUTHENTICATION, true)
+            }
             startActivity(this)
         }
     }
@@ -226,6 +239,12 @@ class SearchActivity : SimpleActivity(), MediaOperationsListener {
     }
 
     private fun getAllMedia() {
+        if (mIsVaultFilesView) {
+            setupAdapter()
+            startAsyncTask(true)
+            return
+        }
+
         getCachedMedia("") {
             if (it.isNotEmpty()) {
                 mAllMedia = it.clone() as ArrayList<ThumbnailItem>
@@ -239,7 +258,12 @@ class SearchActivity : SimpleActivity(), MediaOperationsListener {
 
     private fun startAsyncTask(updateItems: Boolean) {
         mCurrAsyncTask?.stopFetching()
-        mCurrAsyncTask = GetMediaAsynctask(applicationContext, "", showAll = true) {
+        mCurrAsyncTask = GetMediaAsynctask(
+            context = applicationContext,
+            mPath = "",
+            showAll = true,
+            isSecretVaultView = mIsVaultFilesView
+        ) {
             mAllMedia = it.clone() as ArrayList<ThumbnailItem>
             if (updateItems) {
                 textChanged(mLastSearchedText)

@@ -67,6 +67,7 @@ import org.fossify.gallery.dialogs.FilterMediaDialog
 import org.fossify.gallery.dialogs.GrantAllFilesDialog
 import org.fossify.gallery.extensions.canAccessHiddenVirtualAlbums
 import org.fossify.gallery.extensions.applyVaultScreenProtection
+import org.fossify.gallery.extensions.askVaultExitOption
 import org.fossify.gallery.extensions.captureScrollOffset
 import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.promptVaultUnlock
@@ -114,7 +115,13 @@ import org.fossify.gallery.helpers.MediaFetcher
 import org.fossify.gallery.helpers.PATH
 import org.fossify.gallery.helpers.PICKED_PATHS
 import org.fossify.gallery.helpers.RECYCLE_BIN
+import org.fossify.gallery.helpers.EXTRA_EXIT_VAULT_KEEP_SHOWING
+import org.fossify.gallery.helpers.EXTRA_FROM_MEDIA_SHOW_ALL
 import org.fossify.gallery.helpers.EXTRA_OPEN_SECRET_VAULT
+import org.fossify.gallery.helpers.EXTRA_OPEN_SECRET_VAULT_FOLDERS
+import org.fossify.gallery.helpers.EXTRA_SECRET_VAULT_FILES
+import org.fossify.gallery.helpers.HOME_VIEW_FILES
+import org.fossify.gallery.helpers.ON_VAULT_EXIT_KEEP_SHOWING
 import org.fossify.gallery.helpers.SET_WALLPAPER_INTENT
 import org.fossify.gallery.helpers.SHOW_ALL
 import org.fossify.gallery.helpers.SHOW_FAVORITES
@@ -126,6 +133,7 @@ import org.fossify.gallery.helpers.SLIDESHOW_START_ON_ENTER
 import org.fossify.gallery.helpers.VIDEO_PLAYER_APP
 import org.fossify.gallery.helpers.VIDEO_PLAYER_SYSTEM
 import org.fossify.gallery.helpers.VaultPullGestureHandler
+import org.fossify.gallery.helpers.VaultSessionManager
 import org.fossify.gallery.interfaces.MediaOperationsListener
 import org.fossify.gallery.models.Medium
 import org.fossify.gallery.models.ThumbnailItem
@@ -156,6 +164,8 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     private var mCurrAsyncTask: GetMediaAsynctask? = null
     private var mZoomListener: MyRecyclerView.MyZoomListener? = null
     private var mIsVaultOpening = false
+    private var mIsVaultFilesView = false
+    private var mIsSwitchingVaultView = false
 
     // "Continue where I left off" after the vault keys were wiped from RAM (30 min in background / process restart).
     // mVaultResumeBlob is the encrypted state from savedInstanceState, mVaultResume the decrypted/live one.
@@ -212,6 +222,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             mIsGetVideoIntent = getBooleanExtra(GET_VIDEO_INTENT, false)
             mIsGetAnyIntent = getBooleanExtra(GET_ANY_INTENT, false)
             mAllowPickingMultiple = getBooleanExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
+            mIsVaultFilesView = getBooleanExtra(EXTRA_SECRET_VAULT_FILES, false)
         }
 
         binding.mediaRefreshLayout.setOnRefreshListener { getMedia() }
@@ -247,10 +258,16 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
 
     override fun onResume() {
         super.onResume()
-        val requiresVault = (mPath.isVirtualAlbumPath() && isHiddenVirtualAlbumPath(mPath)) ||
-            (mPath.isNotEmpty() && !mPath.isVirtualAlbumPath() && CryptoManager.isEncryptedFolderPath(this, mPath))
+        if (mIsVaultFilesView) {
+            config.showAll = false
+        }
+        val requiresVault = requiresVaultAccess()
         applyVaultScreenProtection(requiresVault)
-        if (requiresVault && !canAccessHiddenVirtualAlbums()) {
+        if (requiresVault && (!canAccessHiddenVirtualAlbums() || !CryptoManager.isVaultUnlocked)) {
+            if (VaultSessionManager.consumeUnlockDeclined()) {
+                exitLockedVaultFilesView()
+                return
+            }
             // The vault keys were wiped from RAM: hide stale content, ask for the password again and continue
             // in this album instead of closing it.
             resumeAfterVaultWipe()
@@ -361,7 +378,8 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     }
 
     private fun requiresVaultAccess() =
-        (mPath.isVirtualAlbumPath() && isHiddenVirtualAlbumPath(mPath)) ||
+        mIsVaultFilesView ||
+            (mPath.isVirtualAlbumPath() && isHiddenVirtualAlbumPath(mPath)) ||
             (mPath.isNotEmpty() && !mPath.isVirtualAlbumPath() && CryptoManager.isEncryptedFolderPath(this, mPath))
 
     private fun buildVaultResumeState(): VaultResumeState {
@@ -398,7 +416,8 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
         promptVaultUnlock { success ->
             mIsVaultResumePrompting = false
             if (!success) {
-                finish()
+                VaultSessionManager.markUnlockDeclined()
+                exitLockedVaultFilesView()
                 return@promptVaultUnlock
             }
 
@@ -433,7 +452,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     override fun onDestroy() {
         unregisterFileUpdateListener()
         // only a real exit wipes the vault right away; a system-initiated destroy keeps it until the timeout
-        if (config.showAll && !isChangingConfigurations && isFinishing) {
+        if ((config.showAll || mIsVaultFilesView) && !mIsSwitchingVaultView && !isChangingConfigurations && isFinishing) {
             config.temporarilyShowHidden = false
             config.tempSkipDeleteConfirmation = false
             config.tempSkipRecycleBin = false
@@ -464,6 +483,9 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
         return if (binding.mediaMenu.isSearchOpen) {
             binding.mediaMenu.closeSearch()
             true
+        } else if (mIsVaultFilesView && !isThirdPartyPickIntent()) {
+            handleVaultExit()
+            true
         } else {
             if (config.showAll) {
                 appLockManager.lock()
@@ -471,6 +493,61 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
 
             false
         }
+    }
+
+    private fun isThirdPartyPickIntent() =
+        mIsGetImageIntent || mIsGetVideoIntent || mIsGetAnyIntent
+
+    private fun handleVaultExit() {
+        askVaultExitOption(
+            encryptedAlbumCount = { CryptoManager.getVaultDestinationAlbums(this).size }
+        ) { option ->
+            applyVaultExitOption(option)
+        }
+    }
+
+    private fun applyVaultExitOption(option: Int) {
+        val keepShowing = option == ON_VAULT_EXIT_KEEP_SHOWING
+        exitVaultToNormalGallery(keepShowing)
+    }
+
+    private fun exitLockedVaultFilesView() {
+        if (mIsVaultFilesView && !isThirdPartyPickIntent()) {
+            exitVaultToNormalGallery(keepShowing = false)
+        } else {
+            finish()
+        }
+    }
+
+    private fun exitVaultToNormalGallery(keepShowing: Boolean) {
+        hideKeyboard()
+        mIsSwitchingVaultView = true
+        if (keepShowing) {
+            VaultSessionManager.markPreserveVaultOnSwitch()
+        } else {
+            config.temporarilyShowHidden = false
+            config.tempSkipDeleteConfirmation = false
+            config.tempSkipRecycleBin = false
+            CryptoManager.lockVault()
+        }
+
+        if (config.homeScreenViewOnLaunch == HOME_VIEW_FILES) {
+            config.showAll = true
+            Intent(this, MediaActivity::class.java).apply {
+                putExtra(DIRECTORY, "")
+                startActivity(this)
+            }
+        } else {
+            config.showAll = false
+            Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                if (keepShowing) {
+                    putExtra(EXTRA_EXIT_VAULT_KEEP_SHOWING, true)
+                }
+                startActivity(this)
+            }
+        }
+        finish()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
@@ -496,18 +573,21 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             findItem(R.id.restore_all_files).isVisible = mPath == RECYCLE_BIN || isVaultRecycleBin
 
             findItem(R.id.folder_view).isVisible = mShowAll
-            findItem(R.id.open_camera).isVisible = mShowAll
-            findItem(R.id.about).isVisible = mShowAll
+            findItem(R.id.open_camera).isVisible = mShowAll && !mIsVaultFilesView
+            findItem(R.id.about).isVisible = mShowAll && !mIsVaultFilesView
             findItem(R.id.create_new_folder).isVisible =
                 !mShowAll && mPath != RECYCLE_BIN && !isVaultRecycleBin && mPath != FAVORITES && !mPath.isVirtualAlbumPath()
-            findItem(R.id.open_recycle_bin).isVisible = config.useRecycleBin && mPath != RECYCLE_BIN && !isVaultRecycleBin
+            findItem(R.id.open_recycle_bin).isVisible =
+                config.useRecycleBin && mPath != RECYCLE_BIN && !isVaultRecycleBin && !mIsVaultFilesView
 
             findItem(R.id.temporarily_show_hidden).isVisible = false
             findItem(R.id.stop_showing_hidden).isVisible =
-                (!isRPlus() || isExternalStorageManager()) && config.temporarilyShowHidden
+                !mIsVaultFilesView && (!isRPlus() || isExternalStorageManager()) && config.temporarilyShowHidden
 
-            findItem(R.id.set_as_default_folder).isVisible = !isDefaultFolder && !mPath.isVirtualAlbumPath() && !isVaultRecycleBin
-            findItem(R.id.unset_as_default_folder).isVisible = isDefaultFolder && !isVaultRecycleBin
+            findItem(R.id.set_as_default_folder).isVisible =
+                !isDefaultFolder && !mPath.isVirtualAlbumPath() && !isVaultRecycleBin && !mIsVaultFilesView
+            findItem(R.id.unset_as_default_folder).isVisible =
+                isDefaultFolder && !isVaultRecycleBin && !mIsVaultFilesView
 
             val viewType = config.getFolderViewType(if (mShowAll) SHOW_ALL else mPath)
             findItem(R.id.column_count).isVisible = viewType == VIEW_TYPE_GRID
@@ -566,6 +646,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
                 putExtra(SKIP_AUTHENTICATION, shouldSkipAuthentication())
                 putExtra(PATH, item.path)
                 putExtra(SHOW_ALL, mShowAll)
+                putExtra(EXTRA_SECRET_VAULT_FILES, mIsVaultFilesView)
                 putExtra(SLIDESHOW_START_ON_ENTER, true)
                 startActivity(this)
             }
@@ -587,7 +668,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             mStoredMarkFavoriteItems = markFavoriteItems
             mStoredThumbnailSpacing = thumbnailSpacing
             mStoredRoundedCorners = fileRoundedCorners
-            mShowAll = showAll && mPath != RECYCLE_BIN
+            mShowAll = (showAll || mIsVaultFilesView) && mPath != RECYCLE_BIN
         }
     }
 
@@ -816,6 +897,17 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     private fun switchToFolderView() {
         hideKeyboard()
         config.showAll = false
+        if (mIsVaultFilesView) {
+            VaultSessionManager.markPreserveVaultOnSwitch()
+            mIsSwitchingVaultView = true
+            Intent(this, MainActivity::class.java).apply {
+                putExtra(EXTRA_OPEN_SECRET_VAULT_FOLDERS, true)
+                startActivity(this)
+            }
+            finish()
+            return
+        }
+
         startActivity(Intent(this, MainActivity::class.java))
         finish()
     }
@@ -856,7 +948,10 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
         }
 
         mIsGettingMedia = true
-        if (mLoadedInitialPhotos) {
+        if (mLoadedInitialPhotos || mIsVaultFilesView) {
+            if (!mLoadedInitialPhotos) {
+                binding.mediaRefreshLayout.isRefreshing = true
+            }
             startAsyncTask()
         } else {
             getCachedMedia(
@@ -886,7 +981,8 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             mPath = mPath,
             isPickImage = mIsGetImageIntent && !mIsGetVideoIntent,
             isPickVideo = mIsGetVideoIntent && !mIsGetImageIntent,
-            showAll = mShowAll
+            showAll = mShowAll,
+            isSecretVaultView = mIsVaultFilesView
         ) {
             ensureBackgroundThread {
                 val oldMedia = mMedia.clone() as ArrayList<ThumbnailItem>
@@ -903,7 +999,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
                             if (mPath == FAVORITES && getDoesFilePathExist(it.path)) {
                                 favoritesDB.deleteFavoritePath(it.path)
                                 mediaDB.updateFavorite(it.path, false)
-                            } else if (!mPath.isVirtualAlbumPath()) {
+                            } else if (!mPath.isVirtualAlbumPath() && !mIsVaultFilesView) {
                                 // items disappearing from a virtual album were only un-referenced, the files are still valid
                                 mediaDB.deleteMediumPath(it.path)
                             }
@@ -1203,6 +1299,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             putExtra(SKIP_AUTHENTICATION, shouldSkipAuthentication())
             putExtra(PATH, path)
             putExtra(SHOW_ALL, mShowAll)
+            putExtra(EXTRA_SECRET_VAULT_FILES, mIsVaultFilesView)
             putExtra(SHOW_FAVORITES, mPath == FAVORITES)
             putExtra(SHOW_VIRTUAL_ALBUM, if (mPath.isVirtualAlbumPath()) mPath else "")
             putExtra(SHOW_RECYCLE_BIN, mPath == RECYCLE_BIN)
@@ -1243,7 +1340,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
 
         mLatestMediaId = getLatestMediaId()
         mLatestMediaDateId = getLatestMediaByDateId()
-        if (!isFromCache && !mPath.isVirtualAlbumPath()) {
+        if (!isFromCache && !mPath.isVirtualAlbumPath() && !mIsVaultFilesView) {
             val mediaToInsert = mMedia
                 .filter { it is Medium && it.deletedTS == 0L && !isPathHiddenOrEncrypted(it.path) }
                 .map { it as Medium }
@@ -1348,9 +1445,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
                         }
                     }
                     if (mMedia.isEmpty()) {
-                        deleteDirectoryIfEmpty()
-                        deleteDBDirectory()
-                        finish()
+                        handleEmptyMediaAfterDelete()
                     }
                 }
             }
@@ -1403,12 +1498,22 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
                         }
                     }
                     if (mMedia.isEmpty()) {
-                        deleteDirectoryIfEmpty()
-                        deleteDBDirectory()
-                        finish()
+                        handleEmptyMediaAfterDelete()
                     }
                 }
             }
+        }
+    }
+
+    private fun handleEmptyMediaAfterDelete() {
+        if (mIsVaultFilesView) {
+            runOnUiThread {
+                gotMedia(ArrayList(), false)
+            }
+        } else {
+            deleteDirectoryIfEmpty()
+            deleteDBDirectory()
+            finish()
         }
     }
 
@@ -1435,9 +1540,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             }
 
             if (mMedia.isEmpty()) {
-                deleteDirectoryIfEmpty()
-                deleteDBDirectory()
-                finish()
+                handleEmptyMediaAfterDelete()
             }
         }
     }
@@ -1485,7 +1588,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
         val isVaultFolder = (mPath.isNotEmpty() && !mPath.isVirtualAlbumPath() && CryptoManager.isEncryptedFolderPath(this, mPath)) ||
             CryptoManager.isVaultRecycleBinPath(this, mPath)
 
-        if (mShowAll && !mIsVaultOpening && !isVaultFolder && !config.scrollHorizontally) {
+        if (mShowAll && !mIsVaultFilesView && !mIsVaultOpening && !isVaultFolder && !config.scrollHorizontally) {
             if (vaultPullGesture.handleTouchEvent(ev)) {
                 return true
             }
@@ -1494,10 +1597,14 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
     }
 
     private fun openSecretVaultFromMedia() {
+        val fromShowAll = mShowAll && !mIsVaultFilesView
         config.showAll = false
         Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             putExtra(EXTRA_OPEN_SECRET_VAULT, true)
+            if (fromShowAll) {
+                putExtra(EXTRA_FROM_MEDIA_SHOW_ALL, true)
+            }
             startActivity(this)
         }
         finish()

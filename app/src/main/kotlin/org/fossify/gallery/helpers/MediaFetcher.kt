@@ -87,6 +87,27 @@ class MediaFetcher(val context: Context, var isSecretVaultView: Boolean = false)
     fun getFoldersToScan(): ArrayList<String> {
         return try {
             val OTGPath = context.config.OTGPath
+            val config = context.config
+            if (isSecretVaultView) {
+                val vaultFolders = LinkedHashSet<String>()
+                if (CryptoManager.isVaultUnlocked && config.temporarilyShowHidden) {
+                    val vaultRoot = CryptoManager.findVaultRoot(context)
+                    if (vaultRoot != null && vaultRoot.exists()) {
+                        vaultRoot.listFiles()?.forEach { child ->
+                            if (child.isDirectory && CryptoManager.isEncryptedFolder(child)) {
+                                vaultFolders.add(child.absolutePath)
+                            }
+                        }
+                    }
+                    config.encryptedFolders.forEach { encFolder ->
+                        if (context.getDoesFilePathExist(encFolder, OTGPath)) {
+                            vaultFolders.add(encFolder)
+                        }
+                    }
+                }
+                return vaultFolders.filter { context.isEncryptedVaultAlbum(it) }.toMutableList() as ArrayList<String>
+            }
+
             val folders = getLatestFileFolders()
             folders.addAll(arrayListOf(
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString(),
@@ -102,7 +123,6 @@ class MediaFetcher(val context: Context, var isSecretVaultView: Boolean = false)
             val cursor = context.contentResolver.query(uri, projection, selection, selectionArgs, null)
             folders.addAll(parseCursor(cursor!!))
 
-            val config = context.config
             val shouldShowHidden = config.shouldShowHidden
             val excludedPaths = if (config.temporarilyShowExcluded) {
                 HashSet()
@@ -941,7 +961,13 @@ class MediaFetcher(val context: Context, var isSecretVaultView: Boolean = false)
             grouping and GROUP_BY_LAST_MODIFIED_MONTHLY != 0 || grouping and GROUP_BY_DATE_TAKEN_MONTHLY != 0 -> formatDate(key, false)
             grouping and GROUP_BY_FILE_TYPE != 0 -> getFileTypeString(key)
             grouping and GROUP_BY_EXTENSION != 0 -> key.uppercase(Locale.getDefault())
-            grouping and GROUP_BY_FOLDER != 0 -> context.humanizePath(key)
+            grouping and GROUP_BY_FOLDER != 0 -> {
+                if (CryptoManager.isEncryptedFolderPath(context, key)) {
+                    context.getFolderNameFromPath(key)
+                } else {
+                    context.humanizePath(key)
+                }
+            }
             else -> key
         }
 

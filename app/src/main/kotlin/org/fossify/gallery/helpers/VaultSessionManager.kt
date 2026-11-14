@@ -45,6 +45,19 @@ object VaultSessionManager {
     @Volatile
     private var autoWiped = false
 
+    @Volatile
+    private var preserveVaultOnSwitch = false
+
+    fun markPreserveVaultOnSwitch() {
+        preserveVaultOnSwitch = true
+    }
+
+    fun consumePreserveVaultOnSwitch(): Boolean {
+        val preserve = preserveVaultOnSwitch
+        preserveVaultOnSwitch = false
+        return preserve
+    }
+
     private fun timeoutMs() = VAULT_AUTO_LOCK_TIMEOUT_MS
 
     private fun isExpired(): Boolean {
@@ -81,6 +94,7 @@ object VaultSessionManager {
             if (CryptoManager.isVaultUnlocked) {
                 autoWiped = true
             }
+            preserveVaultOnSwitch = false
             CryptoManager.lockVault()
             CryptoManager.clearAppImageCaches(context)
             context.applicationContext.config.temporarilyShowHidden = false
