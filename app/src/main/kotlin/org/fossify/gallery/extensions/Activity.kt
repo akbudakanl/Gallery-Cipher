@@ -43,6 +43,7 @@ import org.fossify.gallery.activities.SimpleActivity
 import org.fossify.gallery.activities.VideoPlayerActivity
 import org.fossify.gallery.dialogs.AllFilesPermissionDialog
 import org.fossify.gallery.dialogs.CryptoProgressDialog
+import org.fossify.gallery.dialogs.GrantAllFilesDialog
 import org.fossify.gallery.dialogs.PickDirectoryDialog
 import org.fossify.gallery.dialogs.PickVaultAlbumDialog
 import org.fossify.gallery.dialogs.ResizeMultipleImagesDialog
@@ -305,6 +306,69 @@ fun BaseSimpleActivity.hasVaultCreated(): Boolean {
     // credentials, the biometric key and the in-memory keys are wiped, so the user is offered
     // "create vault" instead of a password prompt for a vault that does not exist.
     return CryptoManager.verifyVaultOnDisk(this)
+}
+
+/**
+ * Handles the pull-to-open vault entry flow (verifying on-disk vault existence, storage permission,
+ * password prompt or vault creation) while keeping the calling activity visible behind the dialog.
+ */
+fun BaseSimpleActivity.openSecretVaultPrompt(
+    onDialogShowingChanged: (Boolean) -> Unit = {},
+    onMissingVaultReset: () -> Unit = {},
+    onCancelled: () -> Unit = {},
+    onVaultReady: (alreadyUnlocked: Boolean) -> Unit
+) {
+    val vaultExists = hasVaultCreated()
+    if (!vaultExists) {
+        onMissingVaultReset()
+    }
+
+    if (vaultExists && config.temporarilyShowHidden && CryptoManager.isVaultUnlocked) {
+        onVaultReady(true)
+        return
+    }
+
+    if (isRPlus() && !isExternalStorageManager()) {
+        onDialogShowingChanged(false)
+        onCancelled()
+        GrantAllFilesDialog(this)
+        return
+    }
+
+    onDialogShowingChanged(true)
+    if (vaultExists) {
+        val initialType = CryptoManager.getVaultProtectionType(this)
+            ?: if (config.hiddenProtectionType == PROTECTION_PASSWORD) {
+                PROTECTION_PASSWORD
+            } else {
+                PROTECTION_PIN
+            }
+        VaultSecurityDialog(
+            activity = this,
+            requiredHash = config.hiddenPasswordHash,
+            showTabIndex = initialType,
+            minimalist = true
+        ) { _, type, success ->
+            onDialogShowingChanged(false)
+            if (success) {
+                config.hiddenProtectionType = type
+                onVaultReady(false)
+            } else {
+                onCancelled()
+            }
+        }
+    } else {
+        promptCreateVault(
+            onCreated = {
+                onDialogShowingChanged(false)
+                onVaultReady(false)
+            },
+            onCancelled = {
+                onDialogShowingChanged(false)
+                onCancelled()
+            }
+        )
+    }
 }
 
 fun BaseSimpleActivity.promptCreateVault(

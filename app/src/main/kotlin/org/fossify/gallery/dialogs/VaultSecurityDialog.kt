@@ -117,7 +117,11 @@ class VaultSecurityDialog(
         builder.apply {
             activity.setupDialogStuff(binding.root, this) { alertDialog ->
                 dialog = alertDialog
-                alertDialog.window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                alertDialog.window?.apply {
+                    addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                    addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+                    setDimAmount(1.0f)
+                }
                 binding.root.filterTouchesWhenObscured = true
                 binding.vaultPinHolder.filterTouchesWhenObscured = true
                 binding.vaultPasswordHolder.filterTouchesWhenObscured = true

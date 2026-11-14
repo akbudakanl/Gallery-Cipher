@@ -62,9 +62,6 @@ import org.fossify.commons.extensions.toast
 import org.fossify.commons.extensions.underlineText
 import org.fossify.commons.extensions.viewBinding
 import org.fossify.commons.helpers.DAY_SECONDS
-import org.fossify.commons.helpers.PROTECTION_PATTERN
-import org.fossify.commons.helpers.PROTECTION_PIN
-import org.fossify.gallery.helpers.PROTECTION_PASSWORD
 import org.fossify.commons.helpers.FAVORITES
 import org.fossify.commons.helpers.PERMISSION_READ_STORAGE
 import org.fossify.commons.helpers.SORT_BY_DATE_MODIFIED
@@ -88,8 +85,6 @@ import org.fossify.gallery.databinding.ActivityMainBinding
 import org.fossify.gallery.dialogs.ChangeSortingDialog
 import org.fossify.gallery.dialogs.ChangeViewTypeDialog
 import org.fossify.gallery.dialogs.FilterMediaDialog
-import org.fossify.gallery.dialogs.GrantAllFilesDialog
-import org.fossify.gallery.dialogs.VaultSecurityDialog
 import org.fossify.gallery.dialogs.VaultExitDialog
 import org.fossify.gallery.extensions.addTempFolderIfNeeded
 import org.fossify.gallery.extensions.applyVaultScreenProtection
@@ -109,7 +104,7 @@ import org.fossify.gallery.extensions.getVirtualAlbumDirectories
 import org.fossify.gallery.extensions.handleExcludedFolderPasswordProtection
 import org.fossify.gallery.extensions.handleMediaManagementPrompt
 import org.fossify.gallery.extensions.captureScrollOffset
-import org.fossify.gallery.extensions.hasVaultCreated
+import org.fossify.gallery.extensions.openSecretVaultPrompt
 import org.fossify.gallery.extensions.promptVaultUnlock
 import org.fossify.gallery.extensions.restoreScrollOffset
 import org.fossify.gallery.extensions.isDownloadsFolder
@@ -126,7 +121,6 @@ import org.fossify.gallery.extensions.repairReferencesAfterExternalChange
 import org.fossify.gallery.extensions.movePathsInRecycleBin
 import org.fossify.gallery.extensions.movePinnedDirectoriesToFront
 import org.fossify.gallery.extensions.openRecycleBin
-import org.fossify.gallery.extensions.promptCreateVault
 import org.fossify.gallery.extensions.removeInvalidDBDirectories
 import org.fossify.gallery.extensions.storeDirectoryItems
 import org.fossify.gallery.extensions.tryDeleteFileDirItem
@@ -155,12 +149,8 @@ import org.fossify.gallery.helpers.ON_VAULT_EXIT_HIDE
 import org.fossify.gallery.helpers.ON_VAULT_EXIT_ASK_EVERY_TIME
 import org.fossify.gallery.helpers.PICKED_PATHS
 import org.fossify.gallery.helpers.RECYCLE_BIN
-import org.fossify.gallery.helpers.EXTRA_EXIT_VAULT_KEEP_SHOWING
-import org.fossify.gallery.helpers.EXTRA_FROM_MEDIA_SHOW_ALL
-import org.fossify.gallery.helpers.EXTRA_OPEN_SECRET_VAULT
 import org.fossify.gallery.helpers.EXTRA_OPEN_SECRET_VAULT_FOLDERS
 import org.fossify.gallery.helpers.EXTRA_SECRET_VAULT_FILES
-import org.fossify.gallery.helpers.HOME_VIEW_FILES
 import org.fossify.gallery.helpers.SET_WALLPAPER_INTENT
 import org.fossify.gallery.helpers.SHOW_ALL
 import org.fossify.gallery.helpers.SHOW_TEMP_HIDDEN_DURATION
@@ -171,6 +161,7 @@ import org.fossify.gallery.helpers.TYPE_RAWS
 import org.fossify.gallery.helpers.TYPE_SVGS
 import org.fossify.gallery.helpers.TYPE_VIDEOS
 import org.fossify.gallery.helpers.VaultPullGestureHandler
+import org.fossify.gallery.helpers.VaultViewPolicy
 import org.fossify.gallery.helpers.getDefaultFileFilter
 import org.fossify.gallery.helpers.getPermissionToRequest
 import org.fossify.gallery.helpers.getPermissionsToRequest
@@ -243,7 +234,6 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     private var mIsVaultDialogShowing = false
     private var mIsSecretVaultView = false
     private var mIsSwitchingVaultView = false
-    private var mFromMediaShowAll = false
     private var mHiddenDisplayMode = DISPLAY_NONE
 
     // "Continue where I left off" after the vault keys were wiped (30 min in background / process restart).
@@ -676,6 +666,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
     private fun applyVaultExitOption(option: Int) {
         mIsSecretVaultView = false
+        config.showAll = VaultViewPolicy.shouldExitVaultToFilesView(isExitingFromFilesView = false)
         when (option) {
             ON_VAULT_EXIT_KEEP_SHOWING -> {
                 mHiddenDisplayMode = DISPLAY_ENCRYPTED_ONLY
@@ -990,6 +981,10 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             return
         }
 
+        if (CryptoManager.isVaultUnlocked && config.temporarilyShowHidden) {
+            VaultSessionManager.markPreserveVaultOnSwitch()
+            mIsSwitchingVaultView = true
+        }
         config.showAll = true
         Intent(this, MediaActivity::class.java).apply {
             putExtra(DIRECTORY, "")
@@ -1044,32 +1039,12 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         val canRestoreVault = CryptoManager.isVaultUnlocked && config.temporarilyShowHidden
         if (intent?.getBooleanExtra(EXTRA_OPEN_SECRET_VAULT_FOLDERS, false) == true) {
             intent.removeExtra(EXTRA_OPEN_SECRET_VAULT_FOLDERS)
-            mFromMediaShowAll = false
             if (canRestoreVault) {
                 mIsSecretVaultView = true
                 mHiddenDisplayMode = DISPLAY_SECRET_VAULT
             }
-        } else if (intent?.getBooleanExtra(EXTRA_EXIT_VAULT_KEEP_SHOWING, false) == true) {
-            intent.removeExtra(EXTRA_EXIT_VAULT_KEEP_SHOWING)
-            mFromMediaShowAll = false
-            if (canRestoreVault) {
-                mIsSecretVaultView = false
-                mHiddenDisplayMode = DISPLAY_ENCRYPTED_ONLY
-            }
         } else if (!mIsSecretVaultView && mHiddenDisplayMode == DISPLAY_NONE && canRestoreVault) {
             mHiddenDisplayMode = DISPLAY_ENCRYPTED_ONLY
-        }
-
-        if (intent?.getBooleanExtra(EXTRA_FROM_MEDIA_SHOW_ALL, false) == true) {
-            intent.removeExtra(EXTRA_FROM_MEDIA_SHOW_ALL)
-            mFromMediaShowAll = true
-        }
-
-        if (intent?.getBooleanExtra(EXTRA_OPEN_SECRET_VAULT, false) == true) {
-            intent.removeExtra(EXTRA_OPEN_SECRET_VAULT)
-            binding.directoriesGrid.post {
-                triggerSecretVaultMenu()
-            }
         }
     }
 
@@ -1096,82 +1071,27 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     }
 
     private fun triggerSecretVaultMenu() {
-        // Verify the vault folder on disk on EVERY attempt, before the "already unlocked" shortcut
-        // and before any password prompt. If it is gone this also locks the vault and clears state.
-        val vaultExists = hasVaultCreated()
-        if (!vaultExists && (mIsSecretVaultView || mHiddenDisplayMode != DISPLAY_NONE)) {
-            mIsSecretVaultView = false
-            mHiddenDisplayMode = DISPLAY_NONE
-        }
-
-        if (vaultExists && config.temporarilyShowHidden && CryptoManager.isVaultUnlocked) {
-            enterSecretVault(alreadyUnlocked = true)
-            return
-        }
-
-        if (isRPlus() && !isExternalStorageManager()) {
-            GrantAllFilesDialog(this)
-            return
-        }
-
-        if (vaultExists) {
-            mIsVaultDialogShowing = true
-            val initialType = CryptoManager.getVaultProtectionType(this)
-                ?: if (config.hiddenProtectionType == PROTECTION_PASSWORD) {
-                    PROTECTION_PASSWORD
-                } else {
-                    PROTECTION_PIN
+        openSecretVaultPrompt(
+            onDialogShowingChanged = { mIsVaultDialogShowing = it },
+            onMissingVaultReset = {
+                if (mIsSecretVaultView || mHiddenDisplayMode != DISPLAY_NONE) {
+                    mIsSecretVaultView = false
+                    mHiddenDisplayMode = DISPLAY_NONE
                 }
-            VaultSecurityDialog(
-                activity = this,
-                requiredHash = config.hiddenPasswordHash,
-                showTabIndex = initialType,
-                minimalist = true
-            ) { _, type, success ->
-                mIsVaultDialogShowing = false
-                if (success) {
-                    config.hiddenProtectionType = type
-                    enterSecretVault(alreadyUnlocked = false)
-                } else if (mFromMediaShowAll) {
-                    mFromMediaShowAll = false
-                    showAllMedia()
-                }
+            },
+            onVaultReady = { alreadyUnlocked ->
+                enterSecretVault(alreadyUnlocked = alreadyUnlocked)
             }
-        } else {
-            mIsVaultDialogShowing = true
-            promptCreateVault(
-                onCreated = {
-                    mIsVaultDialogShowing = false
-                    enterSecretVault(alreadyUnlocked = false)
-                },
-                onCancelled = {
-                    mIsVaultDialogShowing = false
-                    if (mFromMediaShowAll) {
-                        mFromMediaShowAll = false
-                        showAllMedia()
-                    }
-                }
-            )
-        }
+        )
     }
 
     private fun enterSecretVault(alreadyUnlocked: Boolean) {
-        mFromMediaShowAll = false
         if (alreadyUnlocked && mIsSecretVaultView) {
             return
         }
 
-        if (config.homeScreenViewOnLaunch == HOME_VIEW_FILES) {
-            mIsSecretVaultView = true
-            mHiddenDisplayMode = DISPLAY_SECRET_VAULT
-            toast(R.string.secret_vault)
-            ensureBackgroundThread {
-                CryptoManager.getOrCreateDefaultHiddenAlbum(this)
-                runOnUiThread {
-                    config.temporarilyShowHidden = true
-                    openVaultFilesView()
-                }
-            }
+        if (VaultViewPolicy.shouldOpenVaultInFilesView(isFromFilesView = false)) {
+            openVaultFilesView()
             return
         }
 

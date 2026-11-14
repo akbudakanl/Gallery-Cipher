@@ -70,6 +70,7 @@ import org.fossify.gallery.extensions.applyVaultScreenProtection
 import org.fossify.gallery.extensions.askVaultExitOption
 import org.fossify.gallery.extensions.captureScrollOffset
 import org.fossify.gallery.extensions.config
+import org.fossify.gallery.extensions.openSecretVaultPrompt
 import org.fossify.gallery.extensions.promptVaultUnlock
 import org.fossify.gallery.extensions.restoreScrollOffset
 import org.fossify.gallery.extensions.deleteDBPath
@@ -115,12 +116,8 @@ import org.fossify.gallery.helpers.MediaFetcher
 import org.fossify.gallery.helpers.PATH
 import org.fossify.gallery.helpers.PICKED_PATHS
 import org.fossify.gallery.helpers.RECYCLE_BIN
-import org.fossify.gallery.helpers.EXTRA_EXIT_VAULT_KEEP_SHOWING
-import org.fossify.gallery.helpers.EXTRA_FROM_MEDIA_SHOW_ALL
-import org.fossify.gallery.helpers.EXTRA_OPEN_SECRET_VAULT
 import org.fossify.gallery.helpers.EXTRA_OPEN_SECRET_VAULT_FOLDERS
 import org.fossify.gallery.helpers.EXTRA_SECRET_VAULT_FILES
-import org.fossify.gallery.helpers.HOME_VIEW_FILES
 import org.fossify.gallery.helpers.ON_VAULT_EXIT_KEEP_SHOWING
 import org.fossify.gallery.helpers.SET_WALLPAPER_INTENT
 import org.fossify.gallery.helpers.SHOW_ALL
@@ -134,6 +131,7 @@ import org.fossify.gallery.helpers.VIDEO_PLAYER_APP
 import org.fossify.gallery.helpers.VIDEO_PLAYER_SYSTEM
 import org.fossify.gallery.helpers.VaultPullGestureHandler
 import org.fossify.gallery.helpers.VaultSessionManager
+import org.fossify.gallery.helpers.VaultViewPolicy
 import org.fossify.gallery.interfaces.MediaOperationsListener
 import org.fossify.gallery.models.Medium
 import org.fossify.gallery.models.ThumbnailItem
@@ -185,7 +183,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             dispatchToChildren = { event -> super.dispatchTouchEvent(event) },
             onVaultOpen = {
                 mIsVaultOpening = true
-                openSecretVaultFromMedia()
+                triggerSecretVaultMenu()
             },
             onListRefresh = {
                 if (config.enablePullToRefresh) {
@@ -521,14 +519,15 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
         hideKeyboard()
         mIsSwitchingVaultView = true
         if (keepShowing) {
-            VaultSessionManager.markPreserveVaultOnSwitch()
+            config.temporarilyShowHidden = true
         } else {
             config.temporarilyShowHidden = false
             config.resetTempDeleteConfirmation()
             CryptoManager.lockVault()
+            CryptoManager.clearAppImageCaches(this)
         }
 
-        if (config.homeScreenViewOnLaunch == HOME_VIEW_FILES) {
+        if (VaultViewPolicy.shouldExitVaultToFilesView(isExitingFromFilesView = true)) {
             config.showAll = true
             Intent(this, MediaActivity::class.java).apply {
                 putExtra(DIRECTORY, "")
@@ -538,9 +537,6 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             config.showAll = false
             Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                if (keepShowing) {
-                    putExtra(EXTRA_EXIT_VAULT_KEEP_SHOWING, true)
-                }
                 startActivity(this)
             }
         }
@@ -905,6 +901,10 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             return
         }
 
+        if (CryptoManager.isVaultUnlocked && config.temporarilyShowHidden) {
+            VaultSessionManager.markPreserveVaultOnSwitch()
+            mIsSwitchingVaultView = true
+        }
         startActivity(Intent(this, MainActivity::class.java))
         finish()
     }
@@ -1593,17 +1593,47 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
         return super.dispatchTouchEvent(ev)
     }
 
-    private fun openSecretVaultFromMedia() {
-        val fromShowAll = mShowAll && !mIsVaultFilesView
-        config.showAll = false
-        Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            putExtra(EXTRA_OPEN_SECRET_VAULT, true)
-            if (fromShowAll) {
-                putExtra(EXTRA_FROM_MEDIA_SHOW_ALL, true)
+    private fun triggerSecretVaultMenu() {
+        openSecretVaultPrompt(
+            onCancelled = { mIsVaultOpening = false },
+            onVaultReady = {
+                if (VaultViewPolicy.shouldOpenVaultInFilesView(isFromFilesView = true)) {
+                    openVaultFilesView()
+                } else {
+                    mIsVaultOpening = false
+                }
             }
-            startActivity(this)
+        )
+    }
+
+    private fun openVaultFilesView() {
+        toast(R.string.secret_vault)
+        ensureBackgroundThread {
+            CryptoManager.getOrCreateDefaultHiddenAlbum(this)
+            runOnUiThread {
+                if (isDestroyed || isFinishing) {
+                    mIsVaultOpening = false
+                    return@runOnUiThread
+                }
+                mIsSwitchingVaultView = true
+                config.showAll = false
+                config.temporarilyShowHidden = true
+                Intent(this, MediaActivity::class.java).apply {
+                    putExtra(DIRECTORY, "")
+                    putExtra(EXTRA_SECRET_VAULT_FILES, true)
+                    putExtra(SKIP_AUTHENTICATION, true)
+                    if (isThirdPartyPickIntent()) {
+                        if (mIsGetImageIntent) putExtra(GET_IMAGE_INTENT, true)
+                        if (mIsGetVideoIntent) putExtra(GET_VIDEO_INTENT, true)
+                        if (mIsGetAnyIntent) putExtra(GET_ANY_INTENT, true)
+                        putExtra(Intent.EXTRA_ALLOW_MULTIPLE, mAllowPickingMultiple)
+                        addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT)
+                    }
+                    hideKeyboard()
+                    startActivity(this)
+                    finish()
+                }
+            }
         }
-        finish()
     }
 }
