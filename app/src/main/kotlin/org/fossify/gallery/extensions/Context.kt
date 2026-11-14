@@ -1200,16 +1200,30 @@ fun Context.updateReferenceIdentitiesForPath(path: String, mediaStoreId: Long = 
     }
 
     try {
-        val identity = MediaIdentity.of(this, file, mediaStoreId)
+        val identity = MediaIdentity.ofWithFolder(this, file, mediaStoreId)
         if (!identity.isUsable) {
             return
         }
 
         favoritesDB.updateFavoriteIdentity(
-            path, identity.mediaStoreId, identity.size, identity.lastModified, identity.fingerprint
+            path = path,
+            mediaStoreId = identity.mediaStoreId,
+            fileSize = identity.size,
+            lastModified = identity.lastModified,
+            fingerprint = identity.fingerprint,
+            folderInode = identity.folderInode,
+            folderSignature = identity.folderSignature,
+            capturedAtSec = identity.capturedAtSec
         )
         virtualAlbumsDB.updateItemIdentity(
-            path, identity.mediaStoreId, identity.size, identity.lastModified, identity.fingerprint
+            path = path,
+            mediaStoreId = identity.mediaStoreId,
+            fileSize = identity.size,
+            lastModified = identity.lastModified,
+            fingerprint = identity.fingerprint,
+            folderInode = identity.folderInode,
+            folderSignature = identity.folderSignature,
+            capturedAtSec = identity.capturedAtSec
         )
     } catch (_: Exception) {
     }

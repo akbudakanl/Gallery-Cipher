@@ -34,7 +34,10 @@ data class VirtualAlbumItemBackup(
     @SerializedName(value = "fileSize", alternate = ["file_size"]) val fileSize: Long? = null,
     @SerializedName(value = "lastModified", alternate = ["last_modified"]) val lastModified: Long? = null,
     @SerializedName(value = "fingerprint") val fingerprint: String? = null,
-    @SerializedName(value = "state") val state: String? = null
+    @SerializedName(value = "state") val state: String? = null,
+    @SerializedName(value = "folderInode", alternate = ["folder_inode"]) val folderInode: Long? = null,
+    @SerializedName(value = "folderSignature", alternate = ["folder_signature"]) val folderSignature: String? = null,
+    @SerializedName(value = "capturedAtSec", alternate = ["captured_at_sec"]) val capturedAtSec: Long? = null
 )
 
 object VirtualAlbumSyncManager {
@@ -110,7 +113,10 @@ object VirtualAlbumSyncManager {
                 fileSize = it.fileSize,
                 lastModified = it.lastModified,
                 fingerprint = it.fingerprint,
-                state = it.state
+                state = it.state,
+                folderInode = it.folderInode.takeIf { inode -> inode > 0L },
+                folderSignature = it.folderSignature.ifEmpty { null },
+                capturedAtSec = it.capturedAtSec.takeIf { ts -> ts > 0L }
             )
         }
     }
@@ -397,7 +403,10 @@ object VirtualAlbumSyncManager {
                                         fileSize = entry.fileSize ?: 0L,
                                         lastModified = entry.lastModified ?: 0L,
                                         fingerprint = entry.fingerprint ?: "",
-                                        state = if (exists) ITEM_STATE_OK else ITEM_STATE_UNRESOLVED
+                                        state = if (exists) ITEM_STATE_OK else ITEM_STATE_UNRESOLVED,
+                                        folderInode = entry.folderInode ?: 0L,
+                                        folderSignature = entry.folderSignature ?: "",
+                                        capturedAtSec = entry.capturedAtSec ?: 0L
                                     )
                                 )
                                 existingPaths.add(path.lowercase())

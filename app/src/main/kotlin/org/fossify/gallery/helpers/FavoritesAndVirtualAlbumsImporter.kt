@@ -86,7 +86,10 @@ internal object FavoritesAndVirtualAlbumsImporter {
             mediaStoreId = entry.mediaStoreId ?: 0L,
             size = entry.fileSize ?: 0L,
             lastModified = entry.lastModified ?: 0L,
-            fingerprint = entry.fingerprint ?: ""
+            fingerprint = entry.fingerprint ?: "",
+            folderInode = entry.folderInode ?: 0L,
+            folderSignature = entry.folderSignature ?: "",
+            capturedAtSec = entry.capturedAtSec ?: 0L
         )
         val resolvedPath = resolveExistingPath(
             context = context,
@@ -114,19 +117,27 @@ internal object FavoritesAndVirtualAlbumsImporter {
                         mediaStoreId = identity.mediaStoreId,
                         fileSize = identity.size,
                         lastModified = identity.lastModified,
-                        fingerprint = identity.fingerprint
+                        fingerprint = identity.fingerprint,
+                        folderInode = identity.folderInode,
+                        folderSignature = identity.folderSignature,
+                        capturedAtSec = identity.capturedAtSec
                     )
                 )
                 context.mediaDB.updateFavorite(resolvedPath, true)
                 FavoriteImportOutcome(inserted = true, processed = true)
             } else {
-                if (existing.fingerprint.isEmpty() && !entry.fingerprint.isNullOrEmpty()) {
+                if ((existing.fingerprint.isEmpty() && !entry.fingerprint.isNullOrEmpty()) ||
+                    (existing.folderSignature.isEmpty() && !entry.folderSignature.isNullOrEmpty())
+                ) {
                     context.favoritesDB.updateFavoriteIdentity(
-                        resolvedPath,
-                        entry.mediaStoreId ?: existing.mediaStoreId,
-                        entry.fileSize ?: existing.fileSize,
-                        entry.lastModified ?: existing.lastModified,
-                        entry.fingerprint
+                        path = resolvedPath,
+                        mediaStoreId = entry.mediaStoreId ?: existing.mediaStoreId,
+                        fileSize = entry.fileSize ?: existing.fileSize,
+                        lastModified = entry.lastModified ?: existing.lastModified,
+                        fingerprint = entry.fingerprint ?: existing.fingerprint,
+                        folderInode = entry.folderInode ?: existing.folderInode,
+                        folderSignature = entry.folderSignature ?: existing.folderSignature,
+                        capturedAtSec = entry.capturedAtSec ?: existing.capturedAtSec
                     )
                 }
                 context.mediaDB.updateFavorite(resolvedPath, true)
@@ -240,7 +251,10 @@ internal object FavoritesAndVirtualAlbumsImporter {
             mediaStoreId = entry.mediaStoreId ?: 0L,
             size = entry.fileSize ?: 0L,
             lastModified = entry.lastModified ?: 0L,
-            fingerprint = entry.fingerprint ?: ""
+            fingerprint = entry.fingerprint ?: "",
+            folderInode = entry.folderInode ?: 0L,
+            folderSignature = entry.folderSignature ?: "",
+            capturedAtSec = entry.capturedAtSec ?: ((entry.addedTs ?: 0L) / 1000L)
         )
         val resolvedPath = resolveExistingPath(
             context = context,
@@ -267,7 +281,10 @@ internal object FavoritesAndVirtualAlbumsImporter {
             mediaStoreId = identity.mediaStoreId,
             fileSize = identity.size,
             lastModified = identity.lastModified,
-            fingerprint = identity.fingerprint
+            fingerprint = identity.fingerprint,
+            folderInode = identity.folderInode,
+            folderSignature = identity.folderSignature,
+            capturedAtSec = identity.capturedAtSec
         )
     }
 
@@ -296,12 +313,15 @@ internal object FavoritesAndVirtualAlbumsImporter {
         if (!file.isFile) {
             return fallback
         }
-        val computed = MediaIdentity.of(file, fallback.mediaStoreId)
+        val computed = MediaIdentity.of(file, fallback.mediaStoreId).withFolder(FolderIdentity.captureForFile(file))
         return MediaIdentity(
             mediaStoreId = if (computed.mediaStoreId != 0L) computed.mediaStoreId else fallback.mediaStoreId,
             size = if (computed.size > 0L) computed.size else fallback.size,
             lastModified = if (computed.lastModified > 0L) computed.lastModified else fallback.lastModified,
-            fingerprint = if (computed.hasFingerprint) computed.fingerprint else fallback.fingerprint
+            fingerprint = if (computed.hasFingerprint) computed.fingerprint else fallback.fingerprint,
+            folderInode = if (computed.folderInode > 0L) computed.folderInode else fallback.folderInode,
+            folderSignature = computed.folderSignature.ifEmpty { fallback.folderSignature },
+            capturedAtSec = if (fallback.capturedAtSec > 0L) fallback.capturedAtSec else computed.capturedAtSec
         )
     }
 }

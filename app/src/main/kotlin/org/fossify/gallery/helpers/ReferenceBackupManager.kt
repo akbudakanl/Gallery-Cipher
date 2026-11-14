@@ -39,7 +39,10 @@ object ReferenceBackupManager {
                     mediaStoreId = favorite.mediaStoreId,
                     fileSize = favorite.fileSize,
                     lastModified = favorite.lastModified,
-                    fingerprint = favorite.fingerprint
+                    fingerprint = favorite.fingerprint,
+                    folderInode = favorite.folderInode,
+                    folderSignature = favorite.folderSignature.ifEmpty { null },
+                    capturedAtSec = favorite.capturedAtSec.takeIf { it > 0L }
                 )
             }
         )
@@ -57,7 +60,10 @@ object ReferenceBackupManager {
         @SerializedName("mediaStoreId") val mediaStoreId: Long? = null,
         @SerializedName("fileSize") val fileSize: Long? = null,
         @SerializedName("lastModified") val lastModified: Long? = null,
-        @SerializedName("fingerprint") val fingerprint: String? = null
+        @SerializedName("fingerprint") val fingerprint: String? = null,
+        @SerializedName("folderInode") val folderInode: Long? = null,
+        @SerializedName("folderSignature") val folderSignature: String? = null,
+        @SerializedName("capturedAtSec") val capturedAtSec: Long? = null
     )
 
     /**
@@ -177,7 +183,8 @@ object ReferenceBackupManager {
                 try {
                     val existing = context.favoritesDB.getFavorite(path)
                     if (existing == null) {
-                        val identity = MediaIdentity.of(
+                        val identity = MediaIdentity.ofWithFolder(
+                            context,
                             File(path),
                             entry.mediaStoreId ?: 0L
                         )
@@ -190,7 +197,10 @@ object ReferenceBackupManager {
                                 mediaStoreId = identity.mediaStoreId,
                                 fileSize = if (identity.size > 0) identity.size else entry.fileSize ?: 0L,
                                 lastModified = if (identity.lastModified > 0) identity.lastModified else entry.lastModified ?: 0L,
-                                fingerprint = if (identity.hasFingerprint) identity.fingerprint else entry.fingerprint ?: ""
+                                fingerprint = if (identity.hasFingerprint) identity.fingerprint else entry.fingerprint ?: "",
+                                folderInode = if (identity.folderInode > 0L) identity.folderInode else entry.folderInode ?: 0L,
+                                folderSignature = identity.folderSignature.ifEmpty { entry.folderSignature ?: "" },
+                                capturedAtSec = entry.capturedAtSec ?: identity.capturedAtSec
                             )
                         )
                         try {
@@ -200,13 +210,19 @@ object ReferenceBackupManager {
                         restored++
                     } else {
                         // The favorite exists, but the backup may know its identity better.
-                        if (existing.fingerprint.isEmpty() && !entry.fingerprint.isNullOrEmpty()) {
+                        if ((existing.fingerprint.isEmpty() && !entry.fingerprint.isNullOrEmpty()) ||
+                            (existing.folderSignature.isEmpty() && !entry.folderSignature.isNullOrEmpty()) ||
+                            (existing.folderInode == 0L && (entry.folderInode ?: 0L) > 0L)
+                        ) {
                             context.favoritesDB.updateFavoriteIdentity(
-                                path,
-                                entry.mediaStoreId ?: existing.mediaStoreId,
-                                entry.fileSize ?: existing.fileSize,
-                                entry.lastModified ?: existing.lastModified,
-                                entry.fingerprint
+                                path = path,
+                                mediaStoreId = entry.mediaStoreId ?: existing.mediaStoreId,
+                                fileSize = entry.fileSize ?: existing.fileSize,
+                                lastModified = entry.lastModified ?: existing.lastModified,
+                                fingerprint = entry.fingerprint?.ifEmpty { existing.fingerprint } ?: existing.fingerprint,
+                                folderInode = entry.folderInode ?: existing.folderInode,
+                                folderSignature = entry.folderSignature ?: existing.folderSignature,
+                                capturedAtSec = entry.capturedAtSec ?: existing.capturedAtSec
                             )
                         }
                     }

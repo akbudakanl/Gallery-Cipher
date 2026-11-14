@@ -570,8 +570,9 @@ fun Context.addFileDirItemsToVirtualAlbum(
         }
 
         val now = System.currentTimeMillis()
+        val folderSession = FolderIdentity.CaptureSession()
         val items = allowedItems.map { item ->
-            val identity = MediaIdentity.of(this, File(item.path), item.mediaStoreId)
+            val identity = MediaIdentity.ofWithFolder(this, File(item.path), item.mediaStoreId, folderSession)
             VirtualAlbumItem(
                 id = null,
                 albumId = albumId,
@@ -582,7 +583,10 @@ fun Context.addFileDirItemsToVirtualAlbum(
                 mediaStoreId = identity.mediaStoreId,
                 fileSize = identity.size,
                 lastModified = identity.lastModified,
-                fingerprint = identity.fingerprint
+                fingerprint = identity.fingerprint,
+                folderInode = identity.folderInode,
+                folderSignature = identity.folderSignature,
+                capturedAtSec = identity.capturedAtSec
             )
         }
         virtualAlbumsDB.insertItems(items)

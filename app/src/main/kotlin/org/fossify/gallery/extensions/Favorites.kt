@@ -18,7 +18,7 @@ import java.io.File
 /** Builds a favorite including the identity of the file it points to. */
 fun Context.getFavoriteFromPath(path: String, mediaStoreId: Long = 0L): Favorite {
     val file = File(path)
-    val identity = MediaIdentity.of(this, file, mediaStoreId)
+    val identity = MediaIdentity.ofWithFolder(this, file, mediaStoreId)
     return Favorite(
         id = null,
         fullPath = path,
@@ -27,13 +27,23 @@ fun Context.getFavoriteFromPath(path: String, mediaStoreId: Long = 0L): Favorite
         mediaStoreId = identity.mediaStoreId,
         fileSize = identity.size,
         lastModified = identity.lastModified,
-        fingerprint = identity.fingerprint
+        fingerprint = identity.fingerprint,
+        folderInode = identity.folderInode,
+        folderSignature = identity.folderSignature,
+        capturedAtSec = identity.capturedAtSec
     )
 }
 
 /** Builds a favorite for a known medium, reusing the MediaStore id it already carries. */
 fun Context.getFavoriteFromMedium(medium: Medium): Favorite {
-    val identity = MediaIdentity.of(this, medium)
+    val base = MediaIdentity.of(this, medium)
+    val file = File(medium.path)
+    val identity = if (file.isFile) {
+        base.withFolder(org.fossify.gallery.helpers.FolderIdentity.captureForFile(file))
+            .copy(capturedAtSec = base.capturedAtSec.takeIf { it > 0L } ?: (System.currentTimeMillis() / 1000L))
+    } else {
+        base
+    }
     return Favorite(
         id = null,
         fullPath = medium.path,
@@ -42,7 +52,10 @@ fun Context.getFavoriteFromMedium(medium: Medium): Favorite {
         mediaStoreId = identity.mediaStoreId,
         fileSize = identity.size,
         lastModified = identity.lastModified,
-        fingerprint = identity.fingerprint
+        fingerprint = identity.fingerprint,
+        folderInode = identity.folderInode,
+        folderSignature = identity.folderSignature,
+        capturedAtSec = identity.capturedAtSec
     )
 }
 
