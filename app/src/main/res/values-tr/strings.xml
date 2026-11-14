@@ -369,4 +369,22 @@
     <string name="encrypt_album">Albümü şifrele</string>
     <string name="decrypt_album">Albümün şifresini çöz</string>
     <string name="auto_backup_prompt_message">Favorilerinizin ve sanal albümlerinizin uygulama hafızası dışında düzenli olarak sistem belleğine yazılmasını istiyor musunuz? Bu, uygulamayı silmeniz durumunda favoriler listenizi ve sanal albümlerinizi kaybetmemenizi sağlayacaktır. İstediğiniz zaman uygulama ayarlarından manuel olarak backup oluşturabilirsiniz</string>
+    <string name="filename_without_zip">Dosya adı (.zip olmadan)</string>
+    <string name="favorites_already_exist">Zaten bir favoriler listeniz var</string>
+    <string name="delete_existing_list">Mevcut listeyi sil</string>
+    <string name="merge_lists">Listeleri birleştir</string>
+    <string name="confirm">Onayla</string>
+    <string name="confirm_encrypt_album">Bu albümü şifrelemek istediğinizden emin misiniz? Albümdeki tüm medya dosyaları şifrelenecek ve şifreli kasaya taşınacaktır. Orijinal dosyalar silinecektir.</string>
+    <string name="confirm_encrypt_albums">Seçilen albümleri şifrelemek istediğinizden emin misiniz? Bu albümlerdeki tüm medya dosyaları şifrelenecek ve şifreli kasaya taşınacaktır. Orijinal dosyalar silinecektir.</string>
+    <string name="confirm_encrypt_file">Bu dosyayı şifrelemek istediğinizden emin misiniz? Dosya şifrelenecek ve şifreli kasaya taşınacaktır. Orijinal dosya silinecektir.</string>
+    <string name="confirm_encrypt_files">Seçilen dosyaları şifrelemek istediğinizden emin misiniz? Dosyalar şifrelenecek ve şifreli kasaya taşınacaktır. Orijinal dosyalar silinecektir.</string>
+    <string name="confirm_encrypt_files_to_vault">Seçilen dosyalar şifreli kasaya kopyalanırken şifrelenecektir. Devam etmek istiyor musunuz?</string>
+    <string name="allow_batch_renaming">Birden fazla dosya seçildiğinde toplu yeniden adlandırmaya izin ver</string>
+    <string name="keep_original_remove_from_virtual_album">Orijinal dosyayı koru, yalnızca bu sanal albümden kaldır</string>
+    <string name="keep_original_remove_from_favorites">Orijinal dosyayı koru, yalnızca favorilerden kaldır</string>
+    <string name="delete_original_from_favorites_and_virtual_albums">Bir dosya favorilerden ve sanal albümlerden silindiğinde orijinal sürümünü de sil</string>
+    <string name="cannot_target_encrypted_album">Bu işlem için şifreli albümler hedef olarak seçilemez</string>
+    <string name="cannot_mix_encrypted_and_unencrypted">Bu işlemde şifreli ve şifresiz öğeler birlikte kullanılamaz</string>
+    <string name="lock_album">Albümü kilitle</string>
+    <string name="unlock_album">Albümün kilidini aç</string>
 </resources>

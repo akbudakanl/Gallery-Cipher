@@ -314,8 +314,8 @@
     <string name="on_vault_exit_hide">Ocultar álbumes cifrados</string>
     <string name="on_vault_exit_ask_every_time">Preguntar siempre</string>
     <string name="vault_exit_dialog_title">Saliendo de la sección cifrada</string>
-    <string name="vault_exit_question_single">¿Mostrar el álbum cifrado junto con otros álbumes?</string>
-    <string name="vault_exit_question_multiple">¿Mostrar los álbumes cifrados junto con otros álbumes?</string>
+    <string name="vault_exit_question_single">¿Mostrar el álbum cifrado junto con otros álbumes?\n\nEn ese caso, durante la sesión de la app, tendrás que desbloquear la bóveda oculta cada vez que envíes la app a segundo plano y vuelvas a ella, o cuando apagues y vuelvas a encender la pantalla.</string>
+    <string name="vault_exit_question_multiple">¿Mostrar los álbumes cifrados junto con otros álbumes?\n\nEn ese caso, durante la sesión de la app, tendrás que desbloquear la bóveda oculta cada vez que envíes la app a segundo plano y vuelvas a ella, o cuando apagues y vuelvas a encender la pantalla.</string>
     <string name="vault_exit_settings_hint">Para más opciones, consulta Configuración &gt; Al salir de la sección cifrada</string>
     <string name="stop_showing_hidden">Dejar de mostrar medios cifrados</string>
     <string name="system_default">Predeterminado del sistema</string>
@@ -368,4 +368,26 @@
     <string name="decrypt">Descifrar</string>
     <string name="encrypt_album">Cifrar el álbum</string>
     <string name="decrypt_album">Descifrar el álbum</string>
+
+    <!-- Respaldos, confirmaciones de cifrado, eliminación y notificaciones -->
+    <string name="filename_without_zip">Nombre de archivo (sin .zip)</string>
+    <string name="favorites_already_exist">Ya tienes una lista de favoritos</string>
+    <string name="delete_existing_list">Eliminar lista existente</string>
+    <string name="merge_lists">Combinar listas</string>
+    <string name="confirm">Confirmar</string>
+    <string name="confirm_encrypt_album">¿Seguro que quieres cifrar este álbum? Todos sus archivos multimedia se cifrarán y se moverán a la bóveda cifrada. Los archivos originales se eliminarán.</string>
+    <string name="confirm_encrypt_albums">¿Seguro que quieres cifrar los álbumes seleccionados? Todos sus archivos multimedia se cifrarán y se moverán a la bóveda cifrada. Los archivos originales se eliminarán.</string>
+    <string name="confirm_encrypt_file">¿Seguro que quieres cifrar este archivo? Se cifrará y se moverá a la bóveda cifrada. El archivo original se eliminará.</string>
+    <string name="confirm_encrypt_files">¿Seguro que quieres cifrar los archivos seleccionados? Se cifrarán y se moverán a la bóveda cifrada. Los archivos originales se eliminarán.</string>
+    <string name="confirm_encrypt_files_to_vault">Los archivos seleccionados se cifrarán al copiarse en la bóveda cifrada. ¿Deseas continuar?</string>
+    <string name="encrypt_decrypt_notifications">Cifrar / Descifrar</string>
+    <string name="allow_batch_renaming">Permitir cambiar el nombre por lotes cuando se seleccionen varios archivos</string>
+    <string name="keep_original_remove_from_virtual_album">Conservar el archivo original, quitarlo solo de este álbum virtual</string>
+    <string name="keep_original_remove_from_favorites">Conservar el archivo original, quitarlo solo de favoritos</string>
+    <string name="delete_original_from_favorites_and_virtual_albums">Eliminar la versión original de un archivo al eliminarlo de favoritos y álbumes virtuales</string>
+    <string name="cannot_target_encrypted_album">No se pueden seleccionar álbumes cifrados como destino para esta operación</string>
+    <string name="cannot_mix_encrypted_and_unencrypted">No se pueden combinar elementos cifrados y sin cifrar en esta operación</string>
+    <string name="lock_album">Bloquear álbum</string>
+    <string name="unlock_album">Desbloquear álbum</string>
+    <string name="auto_backup_prompt_message">¿Quieres que tus favoritos y álbumes virtuales se guarden periódicamente en el almacenamiento del sistema fuera de la memoria de la aplicación? Esto garantizará que no pierdas tu lista de favoritos ni tus álbumes virtuales si desinstalas la aplicación. Puedes crear una copia de seguridad manualmente desde la configuración de la aplicación en cualquier momento.</string>
 </resources>

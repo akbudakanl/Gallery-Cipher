@@ -310,8 +310,8 @@
     <string name="on_vault_exit_hide">隱藏加密相簿</string>
     <string name="on_vault_exit_ask_every_time">每次詢問</string>
     <string name="vault_exit_dialog_title">正在離開加密區域</string>
-    <string name="vault_exit_question_single">是否將加密相簿與其他相簿一起顯示？</string>
-    <string name="vault_exit_question_multiple">是否將加密相簿與其他相簿一起顯示？</string>
+    <string name="vault_exit_question_single">是否將加密相簿與其他相簿一起顯示？\n\n在此情況下，於應用程式工作階段期間，每當您將應用程式切換至背景後再返回，或是關閉螢幕後再重新開啟時，都需要解鎖隱藏保險箱。</string>
+    <string name="vault_exit_question_multiple">是否將加密相簿與其他相簿一起顯示？\n\n在此情況下，於應用程式工作階段期間，每當您將應用程式切換至背景後再返回，或是關閉螢幕後再重新開啟時，都需要解鎖隱藏保險箱。</string>
     <string name="vault_exit_settings_hint">如需更多選項，請前往「設定」&gt;「離開加密區域時」</string>
     <string name="stop_showing_hidden">停止顯示已加密媒體</string>
     <string name="system_default">系統預設</string>
@@ -360,4 +360,26 @@
     <string name="decrypt">解密</string>
     <string name="encrypt_album">加密相簿</string>
     <string name="decrypt_album">解密相簿</string>
+
+    <!-- 備份、加密確認、刪除選項與通知 -->
+    <string name="filename_without_zip">檔案名稱（不含 .zip）</string>
+    <string name="favorites_already_exist">您已經有一個我的最愛清單</string>
+    <string name="delete_existing_list">刪除現有清單</string>
+    <string name="merge_lists">合併清單</string>
+    <string name="confirm">確認</string>
+    <string name="confirm_encrypt_album">確定要加密此相簿嗎？其中的所有媒體檔案都會被加密並移至加密保險箱，原始檔案將會被刪除。</string>
+    <string name="confirm_encrypt_albums">確定要加密所選相簿嗎？其中的所有媒體檔案都會被加密並移至加密保險箱，原始檔案將會被刪除。</string>
+    <string name="confirm_encrypt_file">確定要加密此檔案嗎？它將會被加密並移至加密保險箱，原始檔案將會被刪除。</string>
+    <string name="confirm_encrypt_files">確定要加密所選檔案嗎？它們將會被加密並移至加密保險箱，原始檔案將會被刪除。</string>
+    <string name="confirm_encrypt_files_to_vault">所選檔案複製到加密保險箱時將會被加密。是否要繼續？</string>
+    <string name="encrypt_decrypt_notifications">加密 / 解密</string>
+    <string name="allow_batch_renaming">選取多個檔案時允許批次重新命名</string>
+    <string name="keep_original_remove_from_virtual_album">保留原始檔案，僅從此虛擬相簿中移除</string>
+    <string name="keep_original_remove_from_favorites">保留原始檔案，僅從我的最愛中移除</string>
+    <string name="delete_original_from_favorites_and_virtual_albums">從我的最愛和虛擬相簿刪除檔案時，一併刪除原始檔案</string>
+    <string name="cannot_target_encrypted_album">加密相簿無法作為此操作的目標</string>
+    <string name="cannot_mix_encrypted_and_unencrypted">此操作無法同時結合已加密與未加密的項目</string>
+    <string name="lock_album">鎖定相簿</string>
+    <string name="unlock_album">解鎖相簿</string>
+    <string name="auto_backup_prompt_message">是否要定期將您的我的最愛和虛擬相簿寫入應用程式記憶體以外的系統儲存空間？這可確保您在解除安裝應用程式時不會遺失我的最愛清單和虛擬相簿。您隨時可以從應用程式設定手動建立備份。</string>
 </resources>

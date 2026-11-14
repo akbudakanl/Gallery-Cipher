@@ -346,8 +346,8 @@
     <string name="on_vault_exit_hide">Skjul krypterte album</string>
     <string name="on_vault_exit_ask_every_time">Spør alltid</string>
     <string name="vault_exit_dialog_title">Forlèt kryptert seksjon</string>
-    <string name="vault_exit_question_single">Syna kryptert album saman med andre album?</string>
-    <string name="vault_exit_question_multiple">Syna krypterte album saman med andre album?</string>
+    <string name="vault_exit_question_single">Syna kryptert album saman med andre album?\n\nI så fall må du i løpet av appøkta låsa opp det skjulte kvelvet kvar gong du sender appen til bakgrunnen og går tilbake til han, eller slår skjermen av og på att.</string>
+    <string name="vault_exit_question_multiple">Syna krypterte album saman med andre album?\n\nI så fall må du i løpet av appøkta låsa opp det skjulte kvelvet kvar gong du sender appen til bakgrunnen og går tilbake til han, eller slår skjermen av og på att.</string>
     <string name="vault_exit_settings_hint">For fleire alternativ, sjå Innstillingar &gt; Når du forlèt kryptert seksjon</string>
     <string name="stop_showing_hidden">Slutt å syna krypterte medium</string>
     <string name="search">Søk</string>
@@ -430,4 +430,26 @@
     <string name="decrypt">Dekrypter</string>
     <string name="encrypt_album">Krypter album</string>
     <string name="decrypt_album">Dekrypter album</string>
+
+    <!-- Tryggingskopiering, krypteringsstadfestingar, sletting og varsel -->
+    <string name="filename_without_zip">Filnamn (utan .zip)</string>
+    <string name="favorites_already_exist">Du har allereie ei favorittliste</string>
+    <string name="delete_existing_list">Slett eksisterande liste</string>
+    <string name="merge_lists">Slå saman lister</string>
+    <string name="confirm">Stadfest</string>
+    <string name="confirm_encrypt_album">Er du sikker på at du vil kryptera dette albumet? Alle mediefilene i det vert krypterte og flytte til det krypterte kvelvet. Originalfilene vert sletta.</string>
+    <string name="confirm_encrypt_albums">Er du sikker på at du vil kryptera dei valde albuma? Alle mediefilene i dei vert krypterte og flytte til det krypterte kvelvet. Originalfilene vert sletta.</string>
+    <string name="confirm_encrypt_file">Er du sikker på at du vil kryptera denne fila? Ho vert kryptert og flytt til det krypterte kvelvet. Originalfila vert sletta.</string>
+    <string name="confirm_encrypt_files">Er du sikker på at du vil kryptera dei valde filene? Dei vert krypterte og flytte til det krypterte kvelvet. Originalfilene vert sletta.</string>
+    <string name="confirm_encrypt_files_to_vault">Dei valde filene vert krypterte når dei vert kopierte til det krypterte kvelvet. Vil du halda fram?</string>
+    <string name="encrypt_decrypt_notifications">Krypter / Dekrypter</string>
+    <string name="allow_batch_renaming">Tillat masseendring av namn når fleire filer er valde</string>
+    <string name="keep_original_remove_from_virtual_album">Behald originalfila, fjern henne berre frå dette virtuelle albumet</string>
+    <string name="keep_original_remove_from_favorites">Behald originalfila, fjern henne berre frå favorittar</string>
+    <string name="delete_original_from_favorites_and_virtual_albums">Slett originalversjonen av ei fil når ho vert sletta frå favorittar og virtuelle album</string>
+    <string name="cannot_target_encrypted_album">Krypterte album kan ikkje veljast som mål for denne handlinga</string>
+    <string name="cannot_mix_encrypted_and_unencrypted">Kan ikkje kombinera krypterte og ukrypterte element i denne handlinga</string>
+    <string name="lock_album">Lås album</string>
+    <string name="unlock_album">Lås opp album</string>
+    <string name="auto_backup_prompt_message">Vil du at favorittane og dei virtuelle albuma dine skal lagrast regelmessig i systemlagringa utanfor appminnet? Dette sikrar at du ikkje mistar favorittlista og dei virtuelle albuma dine om du avinstallerer appen. Du kan når som helst laga ei tryggingskopi manuelt frå appinnstillingane.</string>
 </resources>

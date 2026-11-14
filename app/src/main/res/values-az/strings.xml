@@ -346,8 +346,8 @@
     <string name="on_vault_exit_hide">Şifrələnmiş albomları gizlət</string>
     <string name="on_vault_exit_ask_every_time">Hər dəfə soruş</string>
     <string name="vault_exit_dialog_title">Şifrələnmiş Bölmədən Çıxış</string>
-    <string name="vault_exit_question_single">Şifrələnmiş albom digər albomlarla birlikdə göstərilsin?</string>
-    <string name="vault_exit_question_multiple">Şifrələnmiş albomlar digər albomlarla birlikdə göstərilsin?</string>
+    <string name="vault_exit_question_single">Şifrələnmiş albom digər albomlarla birlikdə göstərilsin?\n\nBu halda tətbiq sessiyası ərzində tətbiqi arxa plana göndərib yenidən qayıtdığınızda və ya ekranı söndürüb yenidən yandırdığınızda gizli seyfin kilidini açmalısınız.</string>
+    <string name="vault_exit_question_multiple">Şifrələnmiş albomlar digər albomlarla birlikdə göstərilsin?\n\nBu halda tətbiq sessiyası ərzində tətbiqi arxa plana göndərib yenidən qayıtdığınızda və ya ekranı söndürüb yenidən yandırdığınızda gizli seyfin kilidini açmalısınız.</string>
     <string name="vault_exit_settings_hint">Əlavə seçimlər üçün Parametrlər &gt; Şifrələnmiş bölmədən çıxarkən bölməsinə baxın</string>
     <string name="stop_showing_hidden">Şifrələnmiş medianı göstərməyi dayandır</string>
     <string name="search">Axtar</string>
@@ -429,4 +429,26 @@
     <string name="decrypt">Şifrəni aç</string>
     <string name="encrypt_album">Albomu şifrələ</string>
     <string name="decrypt_album">Albomun şifrəsini aç</string>
+
+    <!-- Yedəkləmə, şifrələmə təsdiqləri, silmə seçimləri və bildirişlər -->
+    <string name="filename_without_zip">Fayl adı (.zip olmadan)</string>
+    <string name="favorites_already_exist">Artıq sevimlilər siyahınız var</string>
+    <string name="delete_existing_list">Mövcud siyahını sil</string>
+    <string name="merge_lists">Siyahıları birləşdir</string>
+    <string name="confirm">Təsdiq et</string>
+    <string name="confirm_encrypt_album">Bu albomu şifrələmək istədiyinizə əminsiniz? Daxilindəki bütün media faylları şifrələnəcək və şifrəli seyfə köçürüləcək. Orijinal fayllar silinəcək.</string>
+    <string name="confirm_encrypt_albums">Seçilmiş albomları şifrələmək istədiyinizə əminsiniz? Daxilindəki bütün media faylları şifrələnəcək və şifrəli seyfə köçürüləcək. Orijinal fayllar silinəcək.</string>
+    <string name="confirm_encrypt_file">Bu faylı şifrələmək istədiyinizə əminsiniz? Fayl şifrələnəcək və şifrəli seyfə köçürüləcək. Orijinal fayl silinəcək.</string>
+    <string name="confirm_encrypt_files">Seçilmiş faylları şifrələmək istədiyinizə əminsiniz? Fayllar şifrələnəcək və şifrəli seyfə köçürüləcək. Orijinal fayllar silinəcək.</string>
+    <string name="confirm_encrypt_files_to_vault">Seçilmiş fayllar şifrəli seyfə kopyalanarkən şifrələnəcək. Davam etmək istəyirsiniz?</string>
+    <string name="encrypt_decrypt_notifications">Şifrələmə / Şifrəni açma</string>
+    <string name="allow_batch_renaming">Birdən çox fayl seçildikdə toplu ad dəyişməyə icazə ver</string>
+    <string name="keep_original_remove_from_virtual_album">Orijinal faylı saxla, yalnız bu virtual albomdan çıxar</string>
+    <string name="keep_original_remove_from_favorites">Orijinal faylı saxla, yalnız sevimlilərdən çıxar</string>
+    <string name="delete_original_from_favorites_and_virtual_albums">Fayl sevimlilərdən və virtual albomlardan silindikdə onun orijinal versiyasını da sil</string>
+    <string name="cannot_target_encrypted_album">Bu əməliyyat üçün şifrəli albomlar hədəf seçilə bilməz</string>
+    <string name="cannot_mix_encrypted_and_unencrypted">Bu əməliyyatda şifrəli və şifrəsiz elementləri birləşdirmək olmaz</string>
+    <string name="lock_album">Albomu kilidlə</string>
+    <string name="unlock_album">Albomun kilidini aç</string>
+    <string name="auto_backup_prompt_message">Sevimlilərinizin və virtual albomlarınızın tətbiq yaddaşından kənarda sistem yaddaşına müntəzəm olaraq yazılmasını istəyirsiniz? Bu, tətbiqi sildiyiniz halda sevimlilər siyahınızı və virtual albomlarınızı itirməməyinizi təmin edəcək. İstənilən vaxt tətbiq parametrlərindən əl ilə ehtiyat nüsxə yarada bilərsiniz.</string>
 </resources>

@@ -312,8 +312,8 @@
     <string name="on_vault_exit_hide">Verschlüsselte Alben ausblenden</string>
     <string name="on_vault_exit_ask_every_time">Immer fragen</string>
     <string name="vault_exit_dialog_title">Verschlüsselten Bereich verlassen</string>
-    <string name="vault_exit_question_single">Verschlüsseltes Album zusammen mit anderen Alben anzeigen?</string>
-    <string name="vault_exit_question_multiple">Verschlüsselte Alben zusammen mit anderen Alben anzeigen?</string>
+    <string name="vault_exit_question_single">Verschlüsseltes Album zusammen mit anderen Alben anzeigen?\n\nIn diesem Fall musst du während der App-Sitzung den versteckten Tresor jedes Mal entsperren, wenn du die App in den Hintergrund verschiebst und zu ihr zurückkehrst oder den Bildschirm aus- und wieder einschaltest.</string>
+    <string name="vault_exit_question_multiple">Verschlüsselte Alben zusammen mit anderen Alben anzeigen?\n\nIn diesem Fall musst du während der App-Sitzung den versteckten Tresor jedes Mal entsperren, wenn du die App in den Hintergrund verschiebst und zu ihr zurückkehrst oder den Bildschirm aus- und wieder einschaltest.</string>
     <string name="vault_exit_settings_hint">Weitere Optionen findest du unter Einstellungen &gt; Beim Verlassen des verschlüsselten Bereichs</string>
     <string name="stop_showing_hidden">Verschlüsselte Medien nicht mehr anzeigen</string>
     <string name="system_default">Systemvorgabe</string>
@@ -362,4 +362,26 @@
     <string name="decrypt">Entschlüsseln</string>
     <string name="encrypt_album">Album verschlüsseln</string>
     <string name="decrypt_album">Album entschlüsseln</string>
+
+    <!-- Sicherung, Verschlüsselungsbestätigungen, Löschoptionen und Benachrichtigungen -->
+    <string name="filename_without_zip">Dateiname (ohne .zip)</string>
+    <string name="favorites_already_exist">Du hast bereits eine Favoritenliste</string>
+    <string name="delete_existing_list">Vorhandene Liste löschen</string>
+    <string name="merge_lists">Listen zusammenführen</string>
+    <string name="confirm">Bestätigen</string>
+    <string name="confirm_encrypt_album">Möchtest du dieses Album wirklich verschlüsseln? Alle darin enthaltenen Mediendateien werden verschlüsselt und in den verschlüsselten Tresor verschoben. Die Originaldateien werden gelöscht.</string>
+    <string name="confirm_encrypt_albums">Möchtest du die ausgewählten Alben wirklich verschlüsseln? Alle darin enthaltenen Mediendateien werden verschlüsselt und in den verschlüsselten Tresor verschoben. Die Originaldateien werden gelöscht.</string>
+    <string name="confirm_encrypt_file">Möchtest du diese Datei wirklich verschlüsseln? Sie wird verschlüsselt und in den verschlüsselten Tresor verschoben. Die Originaldatei wird gelöscht.</string>
+    <string name="confirm_encrypt_files">Möchtest du die ausgewählten Dateien wirklich verschlüsseln? Sie werden verschlüsselt und in den verschlüsselten Tresor verschoben. Die Originaldateien werden gelöscht.</string>
+    <string name="confirm_encrypt_files_to_vault">Die ausgewählten Dateien werden beim Kopieren in den verschlüsselten Tresor verschlüsselt. Möchtest du fortfahren?</string>
+    <string name="encrypt_decrypt_notifications">Verschlüsseln / Entschlüsseln</string>
+    <string name="allow_batch_renaming">Stapelumbenennung erlauben, wenn mehrere Dateien ausgewählt sind</string>
+    <string name="keep_original_remove_from_virtual_album">Originaldatei behalten, nur aus diesem virtuellen Album entfernen</string>
+    <string name="keep_original_remove_from_favorites">Originaldatei behalten, nur aus den Favoriten entfernen</string>
+    <string name="delete_original_from_favorites_and_virtual_albums">Originalversion einer Datei löschen, wenn sie aus Favoriten und virtuellen Alben entfernt wird</string>
+    <string name="cannot_target_encrypted_album">Verschlüsselte Alben können für diesen Vorgang nicht als Ziel ausgewählt werden</string>
+    <string name="cannot_mix_encrypted_and_unencrypted">Verschlüsselte und unverschlüsselte Elemente können bei diesem Vorgang nicht kombiniert werden</string>
+    <string name="lock_album">Album sperren</string>
+    <string name="unlock_album">Album entsperren</string>
+    <string name="auto_backup_prompt_message">Möchtest du, dass deine Favoriten und virtuellen Alben regelmäßig außerhalb des App-Speichers im Systemspeicher gesichert werden? So gehen deine Favoritenliste und virtuellen Alben nicht verloren, wenn du die App deinstallierst. Du kannst jederzeit in den App-Einstellungen manuell eine Sicherung erstellen.</string>
 </resources>

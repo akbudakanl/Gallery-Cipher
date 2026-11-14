@@ -310,8 +310,8 @@
     <string name="on_vault_exit_hide">暗号化アルバムを非表示</string>
     <string name="on_vault_exit_ask_every_time">毎回確認する</string>
     <string name="vault_exit_dialog_title">暗号化セクションの終了</string>
-    <string name="vault_exit_question_single">暗号化アルバムを他のアルバムと一緒に表示しますか？</string>
-    <string name="vault_exit_question_multiple">暗号化アルバムを他のアルバムと一緒に表示しますか？</string>
+    <string name="vault_exit_question_single">暗号化アルバムを他のアルバムと一緒に表示しますか？\n\nこの場合、アプリのセッション中、アプリをバックグラウンドに移動してから再び戻ったときや、画面をオフにしてから再びオンにしたときに、非表示の保管庫のロックを解除する必要があります。</string>
+    <string name="vault_exit_question_multiple">暗号化アルバムを他のアルバムと一緒に表示しますか？\n\nこの場合、アプリのセッション中、アプリをバックグラウンドに移動してから再び戻ったときや、画面をオフにしてから再びオンにしたときに、非表示の保管庫のロックを解除する必要があります。</string>
     <string name="vault_exit_settings_hint">詳細なオプションは、[設定] &gt; [暗号化セクションを離れるとき] を参照してください</string>
     <string name="stop_showing_hidden">暗号化メディアの表示を停止</string>
     <string name="system_default">システムのデフォルト</string>
@@ -363,4 +363,26 @@
     <string name="decrypt">復号</string>
     <string name="encrypt_album">アルバムを暗号化</string>
     <string name="decrypt_album">アルバムを復号</string>
+
+    <!-- Backup, encryption confirmations, deletion options, and notifications -->
+    <string name="filename_without_zip">ファイル名（.zip を除く）</string>
+    <string name="favorites_already_exist">お気に入りリストはすでに存在します</string>
+    <string name="delete_existing_list">既存のリストを削除</string>
+    <string name="merge_lists">リストを統合</string>
+    <string name="confirm">確認</string>
+    <string name="confirm_encrypt_album">このアルバムを暗号化してもよろしいですか？中のメディアファイルはすべて暗号化され、暗号化された保管庫に移動されます。元のファイルは削除されます。</string>
+    <string name="confirm_encrypt_albums">選択したアルバムを暗号化してもよろしいですか？中のメディアファイルはすべて暗号化され、暗号化された保管庫に移動されます。元のファイルは削除されます。</string>
+    <string name="confirm_encrypt_file">このファイルを暗号化してもよろしいですか？暗号化されて、暗号化された保管庫に移動されます。元のファイルは削除されます。</string>
+    <string name="confirm_encrypt_files">選択したファイルを暗号化してもよろしいですか？暗号化されて、暗号化された保管庫に移動されます。元のファイルは削除されます。</string>
+    <string name="confirm_encrypt_files_to_vault">選択したファイルは、暗号化された保管庫にコピーされるときに暗号化されます。続行しますか？</string>
+    <string name="encrypt_decrypt_notifications">暗号化 / 復号</string>
+    <string name="allow_batch_renaming">複数のファイルが選択されているときに一括で名前変更を許可</string>
+    <string name="keep_original_remove_from_virtual_album">元のファイルを保持し、この仮想アルバムからのみ削除する</string>
+    <string name="keep_original_remove_from_favorites">元のファイルを保持し、お気に入りからのみ削除する</string>
+    <string name="delete_original_from_favorites_and_virtual_albums">お気に入りおよび仮想アルバムから削除するときに元のファイルも削除する</string>
+    <string name="cannot_target_encrypted_album">この操作では暗号化されたアルバムを対象にできません</string>
+    <string name="cannot_mix_encrypted_and_unencrypted">この操作では暗号化された項目と暗号化されていない項目を混在させることはできません</string>
+    <string name="lock_album">アルバムをロック</string>
+    <string name="unlock_album">アルバムのロックを解除</string>
+    <string name="auto_backup_prompt_message">お気に入りと仮想アルバムを、アプリメモリ外のシステムストレージに定期的に書き出しますか？これにより、アプリをアンインストールしてもお気に入りリストや仮想アルバムを失わずに済みます。アプリの設定からいつでも手動でバックアップを作成できます。</string>
 </resources>
