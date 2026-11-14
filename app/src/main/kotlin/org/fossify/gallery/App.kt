@@ -1,6 +1,10 @@
 package org.fossify.gallery
 
 import android.app.Activity
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import com.github.ajalt.reprint.core.Reprint
 import com.squareup.picasso.Downloader
@@ -8,6 +12,8 @@ import com.squareup.picasso.Picasso
 import okhttp3.Request
 import okhttp3.Response
 import org.fossify.commons.FossifyApp
+import org.fossify.gallery.activities.SplashActivity
+import org.fossify.gallery.activities.VaultLockActivity
 import org.fossify.gallery.helpers.VaultSessionManager
 import java.io.IOException
 import java.net.Proxy
@@ -33,6 +39,14 @@ class App : FossifyApp() {
             override fun shutdown() {}
         }).build())
 
+        registerReceiver(object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent?) {
+                if (intent?.action == Intent.ACTION_SCREEN_OFF) {
+                    VaultSessionManager.onScreenOff(this@App)
+                }
+            }
+        }, IntentFilter(Intent.ACTION_SCREEN_OFF))
+
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
             override fun onActivityStarted(activity: Activity) {
@@ -41,8 +55,11 @@ class App : FossifyApp() {
                     // Back in the foreground: wipe only if the 30 minute background deadline has passed.
                     VaultSessionManager.onAppForegrounded(this@App)
                 }
+                maybeLaunchVaultLockScreen(activity)
             }
-            override fun onActivityResumed(activity: Activity) {}
+            override fun onActivityResumed(activity: Activity) {
+                maybeLaunchVaultLockScreen(activity)
+            }
             override fun onActivityPaused(activity: Activity) {}
             override fun onActivityStopped(activity: Activity) {
                 startedActivities--
@@ -62,6 +79,23 @@ class App : FossifyApp() {
         try {
             org.fossify.gallery.helpers.CryptoManager.processPendingWipeJournal(this)
         } catch (_: Throwable) {}
+    }
+
+    private fun maybeLaunchVaultLockScreen(activity: Activity) {
+        if (activity.isFinishing || activity.isDestroyed) return
+        if (VaultSessionManager.shouldShowLockScreen(
+                isLockScreenActivity = activity is VaultLockActivity,
+                isSplashActivity = activity is SplashActivity
+            )
+        ) {
+            VaultSessionManager.markLockScreenLaunching()
+            val intent = Intent(activity, VaultLockActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            }
+            activity.startActivity(intent)
+            @Suppress("DEPRECATION")
+            activity.overridePendingTransition(0, 0)
+        }
     }
 
     /**

@@ -25,6 +25,7 @@ import org.fossify.gallery.helpers.SHOW_ALL
 import org.fossify.gallery.helpers.SKIP_AUTHENTICATION
 import org.fossify.gallery.helpers.VIDEO_PLAYER_APP
 import org.fossify.gallery.helpers.VIDEO_PLAYER_SYSTEM
+import org.fossify.gallery.helpers.VaultSessionManager
 import org.fossify.gallery.interfaces.MediaOperationsListener
 import org.fossify.gallery.models.Medium
 import org.fossify.gallery.models.ThumbnailItem
@@ -57,6 +58,9 @@ class SearchActivity : SimpleActivity(), MediaOperationsListener {
 
     override fun onResume() {
         super.onResume()
+        if (VaultSessionManager.isReauthPending()) {
+            return
+        }
         applyVaultScreenProtection(mIsVaultFilesView)
         if (mIsVaultFilesView && (!canAccessHiddenVirtualAlbums() || !CryptoManager.isVaultUnlocked)) {
             finish()

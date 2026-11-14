@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/vault_lock_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:id="@+id/vault_lock_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="@dimen/big_margin">
+
+        <ImageView
+            android:id="@+id/vault_lock_icon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginBottom="@dimen/normal_margin"
+            android:contentDescription="@string/biometric_unlock_vault"
+            android:src="@drawable/ic_lock_vector" />
+
+        <org.fossify.commons.views.MyTextView
+            android:id="@+id/vault_lock_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/normal_margin"
+            android:gravity="center"
+            android:text="@string/biometric_unlock_vault"
+            android:textSize="@dimen/bigger_text_size"
+            android:textStyle="bold" />
+
+        <include
+            android:id="@+id/vault_security_content"
+            layout="@layout/dialog_vault_security"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+</ScrollView>

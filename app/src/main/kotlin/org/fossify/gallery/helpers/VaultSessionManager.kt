@@ -48,6 +48,18 @@ object VaultSessionManager {
     @Volatile
     private var preserveVaultOnSwitch = false
 
+    @Volatile
+    private var requiresVaultReauth = false
+
+    @Volatile
+    private var lockScreenOpen = false
+
+    @Volatile
+    private var lockScreenLaunching = false
+
+    @Volatile
+    private var restoreTemporarilyShowHidden = false
+
     fun markPreserveVaultOnSwitch() {
         preserveVaultOnSwitch = true
     }
@@ -65,6 +77,16 @@ object VaultSessionManager {
         return timeout > 0 && SystemClock.elapsedRealtime() - lastActiveAt >= timeout
     }
 
+    private fun armReauthIfNeeded(context: Context) {
+        val appContext = context.applicationContext
+        if (VaultLockPolicy.shouldArmReauth(CryptoManager.isVaultUnlocked, CryptoManager.hasExistingVault(appContext))) {
+            requiresVaultReauth = true
+            if (appContext.config.temporarilyShowHidden) {
+                restoreTemporarilyShowHidden = true
+            }
+        }
+    }
+
     /** Called when the first activity of the app becomes visible. */
     fun onAppForegrounded(context: Context) {
         handler.removeCallbacksAndMessages(null)
@@ -77,6 +99,7 @@ object VaultSessionManager {
 
     /** Called when the last visible activity of the app stopped (not for rotation / theme changes). */
     fun onAppBackgrounded(context: Context) {
+        armReauthIfNeeded(context)
         isInBackground = true
         lastActiveAt = SystemClock.elapsedRealtime()
         handler.removeCallbacksAndMessages(null)
@@ -88,16 +111,56 @@ object VaultSessionManager {
         }
     }
 
+    /** Called when the device screen turns off while the app is running. */
+    fun onScreenOff(context: Context) {
+        armReauthIfNeeded(context)
+    }
+
+    fun isReauthPending(): Boolean = requiresVaultReauth
+
+    fun shouldShowLockScreen(isLockScreenActivity: Boolean, isSplashActivity: Boolean): Boolean {
+        return VaultLockPolicy.shouldShowLockScreen(
+            requiresVaultReauth = requiresVaultReauth,
+            isLockScreenActivity = isLockScreenActivity,
+            isSplashActivity = isSplashActivity,
+            isLockScreenAlreadyActive = lockScreenOpen || lockScreenLaunching
+        )
+    }
+
+    fun markLockScreenLaunching() {
+        lockScreenLaunching = true
+    }
+
+    fun setLockScreenOpen(open: Boolean) {
+        lockScreenOpen = open
+        lockScreenLaunching = false
+    }
+
+    fun onVaultReauthenticated(context: Context) {
+        requiresVaultReauth = false
+        autoWiped = false
+        lockScreenOpen = false
+        lockScreenLaunching = false
+        if (restoreTemporarilyShowHidden) {
+            context.applicationContext.config.temporarilyShowHidden = true
+            restoreTemporarilyShowHidden = false
+        }
+    }
+
     /** Wipes the keys and the decrypted caches from RAM right now. */
     fun lockNow(context: Context) {
         try {
+            val appContext = context.applicationContext
             if (CryptoManager.isVaultUnlocked) {
                 autoWiped = true
+                if (appContext.config.temporarilyShowHidden) {
+                    restoreTemporarilyShowHidden = true
+                }
             }
             preserveVaultOnSwitch = false
             CryptoManager.lockVault()
             CryptoManager.clearAppImageCaches(context)
-            context.applicationContext.config.temporarilyShowHidden = false
+            appContext.config.temporarilyShowHidden = false
         } catch (_: Throwable) {
         }
     }

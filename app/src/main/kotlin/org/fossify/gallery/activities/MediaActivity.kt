@@ -256,6 +256,9 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
 
     override fun onResume() {
         super.onResume()
+        if (VaultSessionManager.isReauthPending()) {
+            return
+        }
         if (mIsVaultFilesView) {
             config.showAll = false
         }

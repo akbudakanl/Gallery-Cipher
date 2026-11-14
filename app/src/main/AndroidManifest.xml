@@ -77,6 +77,12 @@
             android:theme="@style/SplashTheme" />
 
         <activity
+            android:name=".activities.VaultLockActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="false"
+            android:launchMode="singleTop" />
+
+        <activity
             android:name=".activities.MainActivity"
             android:configChanges="orientation"
             android:exported="true"

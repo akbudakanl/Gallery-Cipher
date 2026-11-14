@@ -105,6 +105,7 @@ import org.fossify.gallery.extensions.canAccessHiddenVirtualAlbums
 import org.fossify.gallery.extensions.applyVaultScreenProtection
 import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.promptVaultUnlock
+import org.fossify.gallery.helpers.VaultSessionManager
 import org.fossify.gallery.extensions.deleteDBPath
 import org.fossify.gallery.extensions.deleteVirtualAlbumItemFromAllAlbums
 import org.fossify.gallery.extensions.favoritesDB
@@ -288,6 +289,9 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
 
     override fun onResume() {
         super.onResume()
+        if (VaultSessionManager.isReauthPending()) {
+            return
+        }
         if (!hasPermission(getPermissionToRequest())) {
             finish()
             return

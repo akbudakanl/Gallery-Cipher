@@ -371,6 +371,9 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
     override fun onResume() {
         super.onResume()
+        if (VaultSessionManager.isReauthPending()) {
+            return
+        }
         updateMenuColors()
         config.isThirdPartyIntent = false
         mDateFormat = config.dateFormat
