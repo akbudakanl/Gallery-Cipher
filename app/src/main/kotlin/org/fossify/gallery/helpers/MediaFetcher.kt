@@ -105,7 +105,10 @@ class MediaFetcher(val context: Context, var isSecretVaultView: Boolean = false)
                         }
                     }
                 }
-                return vaultFolders.filter { context.isEncryptedVaultAlbum(it) }.toMutableList() as ArrayList<String>
+                return vaultFolders.filter {
+                    context.isEncryptedVaultAlbum(it) &&
+                        (config.temporarilyShowVaultExcluded || !context.isEncryptedAlbumExcluded(it))
+                }.toMutableList() as ArrayList<String>
             }
 
             val folders = getLatestFileFolders()
@@ -151,8 +154,9 @@ class MediaFetcher(val context: Context, var isSecretVaultView: Boolean = false)
             }
 
             distinctPaths.filter {
-                if (CryptoManager.isEncryptedFolderPath(context, it) && (!config.temporarilyShowHidden || !CryptoManager.isVaultUnlocked)) {
-                    false
+                if (CryptoManager.isEncryptedFolderPath(context, it)) {
+                    config.temporarilyShowHidden && CryptoManager.isVaultUnlocked &&
+                        (config.temporarilyShowExcluded || !context.isEncryptedAlbumExcluded(it))
                 } else if (isSecretVaultView) {
                     context.isEncryptedVaultAlbum(it)
                 } else {
@@ -319,10 +323,22 @@ class MediaFetcher(val context: Context, var isSecretVaultView: Boolean = false)
         if (config.temporarilyShowExcluded) {
             val noMediaFolders = context.getNoMediaFoldersSync()
             noMediaFolders.forEach { noMediaFolder ->
-                if (context.getDoesFilePathExist(noMediaFolder, OTGPath)) {
+                if (!context.isCipherSystemPath(noMediaFolder) && context.getDoesFilePathExist(noMediaFolder, OTGPath)) {
                     foldersToScan.add(noMediaFolder)
                 }
             }
+            config.excludedFolders.forEach { excludedFolder ->
+                val clean = excludedFolder.trimEnd('/')
+                if (clean.isNotEmpty() &&
+                    clean != "/" &&
+                    !clean.equals(context.internalStoragePath.trimEnd('/'), ignoreCase = true) &&
+                    !context.isCipherSystemPath(clean) &&
+                    context.getDoesFilePathExist(clean, OTGPath)
+                ) {
+                    foldersToScan.add(clean)
+                }
+            }
+            foldersToScan.addAll(context.findHiddenSubfoldersForExcludedView(foldersToScan))
         }
 
         if (isSecretVaultView) {

@@ -289,6 +289,7 @@ class SettingsActivity : SimpleActivity() {
                 binding.settingsOnVaultExit.text = getOnVaultExitText()
                 if (newChoice == ON_VAULT_EXIT_HIDE) {
                     config.temporarilyShowHidden = false
+                    config.temporarilyShowVaultExcluded = false
                     CryptoManager.lockVault()
                     CryptoManager.clearAppImageCaches(this@SettingsActivity)
                 }
@@ -619,6 +620,7 @@ class SettingsActivity : SimpleActivity() {
             if (config.isVaultBiometricEnabled) {
                 CryptoManager.clearBiometricKey(this)
                 config.temporarilyShowHidden = false
+                config.temporarilyShowVaultExcluded = false
                 CryptoManager.lockVault()
                 CryptoManager.clearAppImageCaches(this)
                 applyVaultScreenProtection(false)

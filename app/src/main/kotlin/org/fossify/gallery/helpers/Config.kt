@@ -95,6 +95,10 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(TEMPORARILY_SHOW_EXCLUDED, false)
         set(temporarilyShowExcluded) = prefs.edit().putBoolean(TEMPORARILY_SHOW_EXCLUDED, temporarilyShowExcluded).apply()
 
+    var temporarilyShowVaultExcluded: Boolean
+        get() = prefs.getBoolean(TEMPORARILY_SHOW_VAULT_EXCLUDED, false)
+        set(temporarilyShowVaultExcluded) = prefs.edit().putBoolean(TEMPORARILY_SHOW_VAULT_EXCLUDED, temporarilyShowVaultExcluded).apply()
+
     var wasNotificationPermissionAsked: Boolean
         get() = prefs.getBoolean(WAS_NOTIFICATION_PERMISSION_ASKED, false)
         set(asked) = prefs.edit().putBoolean(WAS_NOTIFICATION_PERMISSION_ASKED, asked).apply()
@@ -140,6 +144,19 @@ class Config(context: Context) : BaseConfig(context) {
         val currExcludedFolders = HashSet<String>(excludedFolders)
         currExcludedFolders.remove(path)
         excludedFolders = currExcludedFolders
+    }
+
+    fun replaceExactExcludedFolder(oldPath: String, newPath: String) {
+        val cleanOld = oldPath.trimEnd('/')
+        val cleanNew = newPath.trimEnd('/')
+        if (cleanOld.isEmpty()) return
+        val currExcluded = HashSet(excludedFolders)
+        if (currExcluded.removeAll { it.trimEnd('/').equals(cleanOld, ignoreCase = true) }) {
+            if (cleanNew.isNotEmpty()) {
+                currExcluded.add(cleanNew)
+            }
+            excludedFolders = currExcluded
+        }
     }
 
     var excludedFolders: MutableSet<String>

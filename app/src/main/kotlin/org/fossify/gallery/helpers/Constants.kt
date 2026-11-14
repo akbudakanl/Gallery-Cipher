@@ -21,6 +21,7 @@ const val ON_VAULT_EXIT_SHOW_ENCRYPTED_ONLY = ON_VAULT_EXIT_KEEP_SHOWING
 const val ON_VAULT_EXIT_SHOW_OTHER_ONLY = ON_VAULT_EXIT_HIDE
 const val ON_VAULT_EXIT_HIDE_ALL = ON_VAULT_EXIT_HIDE
 const val TEMPORARILY_SHOW_EXCLUDED = "temporarily_show_excluded"
+const val TEMPORARILY_SHOW_VAULT_EXCLUDED = "temporarily_show_vault_excluded"
 const val EXTRA_SECRET_VAULT_FILES = "secret_vault_files"
 const val EXTRA_OPEN_SECRET_VAULT_FOLDERS = "open_secret_vault_folders"
 const val EXCLUDED_PASSWORD_PROTECTION = "excluded_password_protection"

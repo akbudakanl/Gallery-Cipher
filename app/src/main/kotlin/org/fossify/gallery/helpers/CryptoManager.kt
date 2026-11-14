@@ -1,5 +1,6 @@
 package org.fossify.gallery.helpers
 
+import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -21,6 +22,7 @@ import org.fossify.gallery.R
 import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.deleteVirtualAlbumItemFromAllAlbums
 import org.fossify.gallery.extensions.directoryDB
+import org.fossify.gallery.extensions.isThisOrParentIncluded
 import org.fossify.gallery.extensions.mediaDB
 import org.fossify.gallery.extensions.updateVirtualAlbumItemPath
 import org.fossify.gallery.extensions.updateVirtualAlbumItemPathOnDecrypt
@@ -516,6 +518,7 @@ object CryptoManager {
         cfg.isHiddenPasswordProtectionOn = false
         cfg.isVaultBiometricEnabled = false
         cfg.temporarilyShowHidden = false
+        cfg.temporarilyShowVaultExcluded = false
     }
 
     /**
@@ -583,6 +586,7 @@ object CryptoManager {
         context.config.isHiddenPasswordProtectionOn = false
         context.config.isVaultBiometricEnabled = false
         context.config.temporarilyShowHidden = false
+        context.config.temporarilyShowVaultExcluded = false
         clearAppImageCaches(context)
     }
 
@@ -1347,15 +1351,21 @@ object CryptoManager {
             return null
         }
         val vaultRoot = findVaultRoot(context) ?: return null
+        val vaultNoMedia = File(vaultRoot, NOMEDIA)
+        if (!vaultNoMedia.exists()) {
+            try { vaultNoMedia.createNewFile() } catch (_: Exception) {}
+        }
         var subfolder = File(vaultRoot, randomHex(6))
         while (subfolder.exists()) {
             subfolder = File(vaultRoot, randomHex(6))
         }
         if (!subfolder.mkdirs()) return null
 
-        val noMedia = File(subfolder, NOMEDIA)
-        if (!noMedia.exists()) {
-            try { noMedia.createNewFile() } catch (_: Exception) {}
+        if (originalName.startsWith('.') && !isDefaultAlbumRawName(originalName) && originalName != VAULT_RECYCLE_BIN_NAME) {
+            val noMedia = File(subfolder, NOMEDIA)
+            if (!noMedia.exists()) {
+                try { noMedia.createNewFile() } catch (_: Exception) {}
+            }
         }
 
         writeEncryptedFolderMeta(context, subfolder, originalName)
@@ -1538,6 +1548,10 @@ object CryptoManager {
         val subfolders = vaultRoot.listFiles()?.filter { it.isDirectory && !it.name.startsWith(".") } ?: emptyList()
         for (sub in subfolders) {
             if (isDefaultHiddenAlbum(sub)) {
+                val legacyNoMedia = File(sub, NOMEDIA)
+                if (legacyNoMedia.exists()) {
+                    try { legacyNoMedia.delete() } catch (_: Exception) {}
+                }
                 return sub
             }
         }
@@ -1775,7 +1789,6 @@ object CryptoManager {
                         newSub = File(vaultRoot, randomHex(6))
                     }
                     newSub.mkdirs()
-                    try { File(newSub, NOMEDIA).createNewFile() } catch (_: Exception) {}
                     writeEncryptedFolderMeta(context, newSub, "Restored")
                     newSub
                 }
@@ -2562,6 +2575,22 @@ object CryptoManager {
 
         val rawFolderName = getDecryptedFolderName(folder) ?: folder.name
         val vaultRoot = findVaultRoot(context) ?: return null
+        val vaultNoMedia = File(vaultRoot, NOMEDIA)
+        if (!vaultNoMedia.exists()) {
+            try { vaultNoMedia.createNewFile() } catch (_: Exception) {}
+        }
+
+        val isExplicitlyIncluded = folder.absolutePath.isThisOrParentIncluded(context.config.includedFolders)
+        val isHiddenParent = !isExplicitlyIncluded && (
+            folder.absolutePath.contains("/.") ||
+                folder.absolutePath.doesThisOrParentHaveNoMedia(HashMap(), null)
+            )
+        val shouldAddNoMedia = ExcludedMenuPolicy.shouldAddNoMediaOnEncrypt(
+            folderName = folder.name,
+            decryptedName = rawFolderName,
+            hasNoMediaFile = File(folder, NOMEDIA).exists(),
+            isPathOrParentHidden = isHiddenParent
+        )
 
         val existingEncryptedNames = vaultRoot.listFiles()
             ?.filter { it.isDirectory }
@@ -2583,9 +2612,11 @@ object CryptoManager {
         }
         if (!subfolder.mkdirs()) return null
 
-        val noMedia = File(subfolder, NOMEDIA)
-        if (!noMedia.exists()) {
-            try { noMedia.createNewFile() } catch (_: Exception) {}
+        if (shouldAddNoMedia) {
+            val noMedia = File(subfolder, NOMEDIA)
+            if (!noMedia.exists()) {
+                try { noMedia.createNewFile() } catch (_: Exception) {}
+            }
         }
 
         writeEncryptedFolderMeta(context, subfolder, originalFolderName)
@@ -2782,6 +2813,9 @@ object CryptoManager {
 
         context.config.removeEncryptedFolder(folder.absolutePath)
         context.config.addEncryptedFolder(subfolder.absolutePath)
+        if (!folder.exists()) {
+            context.config.replaceExactExcludedFolder(folder.absolutePath, subfolder.absolutePath)
+        }
         context.directoryDB.deleteDirPath(folder.absolutePath)
         folderNameCache[subfolder.absolutePath] = originalFolderName
         encryptedFolderCache[folder.absolutePath] = false
@@ -2805,6 +2839,7 @@ object CryptoManager {
         if (!folder.exists() || !folder.isDirectory) return folderPath
         if (!isVaultUnlocked) return folderPath
 
+        val hadNoMedia = File(folder, NOMEDIA).exists()
         val targetExistedBefore = targetFolderOverride?.exists() == true
         val targetFolder = if (targetFolderOverride != null) {
             targetFolderOverride
@@ -2893,13 +2928,41 @@ object CryptoManager {
         folderNameCache.remove(folder.absolutePath)
 
         context.config.removeEncryptedFolder(folder.absolutePath)
+        context.config.replaceExactExcludedFolder(folder.absolutePath, targetFolder.absolutePath)
         context.directoryDB.deleteDirPath(folder.absolutePath)
         encryptedFolderCache[folder.absolutePath] = false
         encryptedFolderCache[targetFolder.absolutePath] = false
 
-        val restoredPaths = targetFolder.listFiles()?.filter { it.isFile }?.map { it.absolutePath } ?: emptyList()
-        if (restoredPaths.isNotEmpty()) {
-            context.rescanPaths(ArrayList(restoredPaths))
+        if (hadNoMedia) {
+            val targetNoMedia = File(targetFolder, NOMEDIA)
+            if (!targetNoMedia.exists()) {
+                try {
+                    targetNoMedia.createNewFile()
+                } catch (_: Exception) {}
+            }
+            if (targetNoMedia.exists()) {
+                try {
+                    val content = ContentValues().apply {
+                        put(MediaStore.Files.FileColumns.TITLE, NOMEDIA)
+                        put(MediaStore.Files.FileColumns.DATA, targetNoMedia.absolutePath)
+                        put(MediaStore.Files.FileColumns.MEDIA_TYPE, MediaStore.Files.FileColumns.MEDIA_TYPE_NONE)
+                    }
+                    context.contentResolver.insert(MediaStore.Files.getContentUri("external"), content)
+                } catch (_: Exception) {}
+            }
+        }
+
+        val isHiddenTarget = hadNoMedia || targetFolder.name.startsWith('.')
+        if (!isHiddenTarget) {
+            val restoredPaths = targetFolder.listFiles()?.filter { it.isFile }?.map { it.absolutePath } ?: emptyList()
+            if (restoredPaths.isNotEmpty()) {
+                context.rescanPaths(ArrayList(restoredPaths))
+            }
+        } else if (hadNoMedia) {
+            val targetNoMedia = File(targetFolder, NOMEDIA)
+            if (targetNoMedia.exists()) {
+                context.rescanPaths(arrayListOf(targetNoMedia.absolutePath))
+            }
         }
         return targetFolder.absolutePath
     }

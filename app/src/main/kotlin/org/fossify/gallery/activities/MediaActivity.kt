@@ -456,6 +456,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
         // only a real exit wipes the vault right away; a system-initiated destroy keeps it until the timeout
         if ((config.showAll || mIsVaultFilesView) && !mIsSwitchingVaultView && !isChangingConfigurations && isFinishing) {
             config.temporarilyShowHidden = false
+            config.temporarilyShowVaultExcluded = false
             config.resetTempDeleteConfirmation()
             CryptoManager.lockVault()
             GalleryDatabase.destroyInstance()
@@ -531,6 +532,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
             config.temporarilyShowHidden = true
         } else {
             config.temporarilyShowHidden = false
+            config.temporarilyShowVaultExcluded = false
             config.resetTempDeleteConfirmation()
             CryptoManager.lockVault()
             CryptoManager.clearAppImageCaches(this)
@@ -1095,6 +1097,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
         mLoadedInitialPhotos = false
         config.temporarilyShowHidden = show
         if (!show) {
+            config.temporarilyShowVaultExcluded = false
             CryptoManager.lockVault()
             if ((mPath.isVirtualAlbumPath() && isHiddenVirtualAlbumPath(mPath)) ||
                 (mPath.isNotEmpty() && !mPath.isVirtualAlbumPath() && CryptoManager.isEncryptedFolderPath(this, mPath))

@@ -107,8 +107,11 @@ import org.fossify.gallery.extensions.captureScrollOffset
 import org.fossify.gallery.extensions.openSecretVaultPrompt
 import org.fossify.gallery.extensions.promptVaultUnlock
 import org.fossify.gallery.extensions.restoreScrollOffset
+import org.fossify.gallery.extensions.hasExcludedNormalFolders
+import org.fossify.gallery.extensions.hasExcludedVaultFolders
 import org.fossify.gallery.extensions.isDownloadsFolder
 import org.fossify.gallery.extensions.isFolderOrAlbumHidden
+import org.fossify.gallery.extensions.isEncryptedAlbumExcluded
 import org.fossify.gallery.extensions.isEncryptedVaultAlbum
 import org.fossify.gallery.extensions.isPathHiddenOrEncrypted
 import org.fossify.gallery.extensions.isVirtualAlbum
@@ -127,6 +130,7 @@ import org.fossify.gallery.extensions.tryDeleteFileDirItem
 import org.fossify.gallery.extensions.updateDBDirectory
 import org.fossify.gallery.extensions.updateWidgets
 import org.fossify.gallery.helpers.CryptoManager
+import org.fossify.gallery.helpers.ExcludedMenuPolicy
 import org.fossify.gallery.helpers.VAULT_RESUME_STATE
 import org.fossify.gallery.helpers.VaultResumeState
 import org.fossify.gallery.helpers.VaultSessionManager
@@ -241,6 +245,11 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     private var mVaultResumeBlob: String? = null
     private var mVaultResume: VaultResumeState? = null
     private val mFetchGeneration = AtomicLong(0L)
+    private val mExcludedCheckGeneration = AtomicLong(0L)
+    @Volatile
+    private var mHasNormalExcludedFolders = false
+    @Volatile
+    private var mHasVaultExcludedFolders = false
     private var mLastOpenedDirectoryPath: String? = null
     private val mPendingPrioritizedPaths = LinkedHashSet<String>()
 
@@ -283,6 +292,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             mHiddenDisplayMode = DISPLAY_NONE
             if (!preserveVaultOnSwitch) {
                 config.temporarilyShowHidden = false
+                config.temporarilyShowVaultExcluded = false
                 CryptoManager.lockVault()
             }
             config.temporarilyShowExcluded = false
@@ -466,6 +476,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
         if (!binding.mainMenu.isSearchOpen) {
             refreshMenuItems()
+            updateExcludedFoldersAvailability()
             tryLoadGallery()
         }
 
@@ -555,9 +566,10 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     override fun onStop() {
         super.onStop()
 
-        if (config.tempSkipDeleteConfirmation || config.temporarilyShowExcluded) {
+        if (config.tempSkipDeleteConfirmation || config.temporarilyShowExcluded || config.temporarilyShowVaultExcluded) {
             mTempShowHiddenHandler.postDelayed({
                 config.temporarilyShowExcluded = false
+                config.temporarilyShowVaultExcluded = false
                 config.resetTempDeleteConfirmation()
             }, SHOW_TEMP_HIDDEN_DURATION)
         } else {
@@ -569,6 +581,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         super.onDestroy()
         if (!isChangingConfigurations) {
             config.temporarilyShowExcluded = false
+            config.temporarilyShowVaultExcluded = false
             config.resetTempDeleteConfirmation()
             // Only a real exit (back press / finish()) wipes the vault right away. If Android merely destroys
             // this activity in the background, the vault stays until the inactivity timeout (VaultSessionManager).
@@ -576,6 +589,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                 mIsSecretVaultView = false
                 mHiddenDisplayMode = DISPLAY_NONE
                 config.temporarilyShowHidden = false
+                config.temporarilyShowVaultExcluded = false
                 CryptoManager.lockVault()
                 CryptoManager.clearAppImageCaches(this)
             }
@@ -678,9 +692,13 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             ON_VAULT_EXIT_HIDE -> {
                 mHiddenDisplayMode = DISPLAY_NONE
                 config.temporarilyShowHidden = false
+                config.temporarilyShowVaultExcluded = false
                 CryptoManager.lockVault()
                 CryptoManager.clearAppImageCaches(this)
             }
+        }
+        if (option == ON_VAULT_EXIT_KEEP_SHOWING) {
+            config.temporarilyShowVaultExcluded = false
         }
         updateVaultModeUi()
         binding.directoriesGrid.adapter = null
@@ -740,8 +758,14 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
             findItem(R.id.stop_showing_hidden)?.isVisible =
                 !mIsSecretVaultView && (!isRPlus() || isExternalStorageManager()) && config.temporarilyShowHidden
 
-            findItem(R.id.temporarily_show_excluded)?.isVisible = !mIsSecretVaultView && !config.temporarilyShowExcluded
-            findItem(R.id.stop_showing_excluded)?.isVisible = !mIsSecretVaultView && config.temporarilyShowExcluded
+            val hasExcludedInScope = if (mIsSecretVaultView) mHasVaultExcludedFolders else mHasNormalExcludedFolders
+            val isShowingExcludedInScope = if (mIsSecretVaultView) config.temporarilyShowVaultExcluded else config.temporarilyShowExcluded
+            val excludedMenuVisibility = ExcludedMenuPolicy.resolve(
+                hasExcludedInCurrentScope = hasExcludedInScope,
+                isCurrentlyShowingExcluded = isShowingExcludedInScope
+            )
+            findItem(R.id.temporarily_show_excluded)?.isVisible = excludedMenuVisibility.showTemporarilyShowExcluded
+            findItem(R.id.stop_showing_excluded)?.isVisible = excludedMenuVisibility.showStopShowingExcluded
         }
     }
 
@@ -896,6 +920,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     }
 
     private fun getDirectories(prioritizedPaths: Collection<String> = emptyList(), forceRepair: Boolean = false) {
+        updateExcludedFoldersAvailability()
         val prioritySet = LinkedHashSet<String>()
         mLastOpenedDirectoryPath?.let {
             prioritySet.add(it)
@@ -1130,6 +1155,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         if (!show) {
             mIsSecretVaultView = false
             mHiddenDisplayMode = DISPLAY_NONE
+            config.temporarilyShowVaultExcluded = false
             CryptoManager.lockVault()
             CryptoManager.clearAppImageCaches(this)
         }
@@ -1140,7 +1166,8 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
     }
 
     private fun tryToggleTemporarilyShowExcluded() {
-        if (config.temporarilyShowExcluded) {
+        val isShowingInScope = if (mIsSecretVaultView) config.temporarilyShowVaultExcluded else config.temporarilyShowExcluded
+        if (isShowingInScope) {
             toggleTemporarilyShowExcluded(false)
         } else {
             handleExcludedFolderPasswordProtection {
@@ -1151,10 +1178,50 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
     private fun toggleTemporarilyShowExcluded(show: Boolean) {
         mLoadedInitialPhotos = false
-        config.temporarilyShowExcluded = show
+        if (mIsSecretVaultView) {
+            config.temporarilyShowVaultExcluded = show
+        } else {
+            config.temporarilyShowExcluded = show
+        }
         binding.directoriesGrid.adapter = null
         getDirectories()
         refreshMenuItems()
+    }
+
+    private fun updateExcludedFoldersAvailability() {
+        val generation = mExcludedCheckGeneration.incrementAndGet()
+        ensureBackgroundThread {
+            if (isDestroyed || isFinishing) {
+                return@ensureBackgroundThread
+            }
+            val hasNormal = hasExcludedNormalFolders()
+            val hasVault = if (CryptoManager.isVaultUnlocked) hasExcludedVaultFolders() else false
+            runOnUiThread {
+                if (generation != mExcludedCheckGeneration.get() || isDestroyed || isFinishing) {
+                    return@runOnUiThread
+                }
+                mHasNormalExcludedFolders = hasNormal
+                mHasVaultExcludedFolders = hasVault
+                var needsReload = false
+                if (!hasNormal && config.temporarilyShowExcluded) {
+                    config.temporarilyShowExcluded = false
+                    if (!mIsSecretVaultView) {
+                        needsReload = true
+                    }
+                }
+                if (CryptoManager.isVaultUnlocked && !hasVault && config.temporarilyShowVaultExcluded) {
+                    config.temporarilyShowVaultExcluded = false
+                    if (mIsSecretVaultView) {
+                        needsReload = true
+                    }
+                }
+                refreshMenuItems()
+                if (needsReload && !mIsGettingDirs) {
+                    binding.directoriesGrid.adapter = null
+                    getDirectories()
+                }
+            }
+        }
     }
 
     override fun deleteFolders(folders: ArrayList<File>) {
@@ -1527,13 +1594,27 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         }
 
         if (mIsSecretVaultView) {
-            newDirs.retainAll { isEncryptedVaultAlbum(it.path) || CryptoManager.isVaultRecycleBinPath(this, it.path) }
+            newDirs.retainAll {
+                if (CryptoManager.isVaultRecycleBinPath(this, it.path)) {
+                    true
+                } else if (isEncryptedVaultAlbum(it.path)) {
+                    config.temporarilyShowVaultExcluded || !isEncryptedAlbumExcluded(it.path)
+                } else {
+                    false
+                }
+            }
         } else {
             if (!CryptoManager.isVaultUnlocked || (!config.temporarilyShowHidden && mHiddenDisplayMode != DISPLAY_ENCRYPTED_ONLY)) {
                 newDirs.removeAll { isEncryptedVaultAlbum(it.path) }
             }
             if (!config.temporarilyShowExcluded) {
-                newDirs.removeAll { isFolderOrAlbumHidden(it.path) && !isEncryptedVaultAlbum(it.path) }
+                newDirs.removeAll {
+                    if (isEncryptedVaultAlbum(it.path)) {
+                        isEncryptedAlbumExcluded(it.path)
+                    } else {
+                        isFolderOrAlbumHidden(it.path)
+                    }
+                }
             }
         }
         mIsGettingDirs = false
@@ -1670,15 +1751,17 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
         // Phase 1: check newly discovered / uncached folders FIRST so new albums appear immediately
         for (folder in newFolders) {
-            if (mIsSecretVaultView && !isEncryptedVaultAlbum(folder)) {
-                continue
-            }
-            if (!mIsSecretVaultView) {
-                if (!CryptoManager.isVaultUnlocked || (!config.temporarilyShowHidden && mHiddenDisplayMode != DISPLAY_ENCRYPTED_ONLY)) {
-                    if (isEncryptedVaultAlbum(folder)) continue
-                }
-                if (!config.temporarilyShowExcluded) {
-                    if (isFolderOrAlbumHidden(folder) && !isEncryptedVaultAlbum(folder)) continue
+            if (mIsSecretVaultView) {
+                if (!isEncryptedVaultAlbum(folder)) continue
+                if (!config.temporarilyShowVaultExcluded && isEncryptedAlbumExcluded(folder)) continue
+            } else {
+                if (isEncryptedVaultAlbum(folder)) {
+                    if (!CryptoManager.isVaultUnlocked || (!config.temporarilyShowHidden && mHiddenDisplayMode != DISPLAY_ENCRYPTED_ONLY)) {
+                        continue
+                    }
+                    if (!config.temporarilyShowExcluded && isEncryptedAlbumExcluded(folder)) continue
+                } else if (!config.temporarilyShowExcluded && isFolderOrAlbumHidden(folder)) {
+                    continue
                 }
             }
             if (generation != mFetchGeneration.get() || mShouldStopFetching || isDestroyed || isFinishing) {
@@ -2007,15 +2090,18 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                 dirsCopy.filter { dir ->
                     if (CryptoManager.isVaultRecycleBinPath(this, dir.path)) {
                         config.showRecycleBinAtFolders && dir.mediaCnt > 0
+                    } else if (isEncryptedVaultAlbum(dir.path)) {
+                        config.temporarilyShowVaultExcluded || !isEncryptedAlbumExcluded(dir.path)
                     } else {
-                        isEncryptedVaultAlbum(dir.path)
+                        false
                     }
                 }
             } else {
                 val nonVaultDirs = dirsCopy.filterNot { CryptoManager.isVaultRecycleBinPath(this, it.path) }
                 nonVaultDirs.filter { dir ->
                     if (isEncryptedVaultAlbum(dir.path)) {
-                        CryptoManager.isVaultUnlocked && (config.temporarilyShowHidden || mHiddenDisplayMode == DISPLAY_ENCRYPTED_ONLY)
+                        val shownAsEncrypted = CryptoManager.isVaultUnlocked && (config.temporarilyShowHidden || mHiddenDisplayMode == DISPLAY_ENCRYPTED_ONLY)
+                        shownAsEncrypted && (config.temporarilyShowExcluded || !isEncryptedAlbumExcluded(dir.path))
                     } else if (isFolderOrAlbumHidden(dir.path)) {
                         config.temporarilyShowExcluded
                     } else {
@@ -2246,6 +2332,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                         config.addExcludedFolder(file.absolutePath)
                     }
                 }
+                updateExcludedFoldersAvailability()
             } catch (e: Exception) {
             }
         }

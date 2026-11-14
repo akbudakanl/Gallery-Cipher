@@ -161,6 +161,7 @@ object VaultSessionManager {
             CryptoManager.lockVault()
             CryptoManager.clearAppImageCaches(context)
             appContext.config.temporarilyShowHidden = false
+            appContext.config.temporarilyShowVaultExcluded = false
         } catch (_: Throwable) {
         }
     }
