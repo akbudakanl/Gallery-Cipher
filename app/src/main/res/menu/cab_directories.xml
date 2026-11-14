@@ -23,9 +23,10 @@
         app:showAsAction="always" />
     <item
         android:id="@+id/cab_unpin"
-        android:icon="@drawable/ic_pin_vector"
+        android:icon="@drawable/ic_unpin_vector"
+        android:showAsAction="always"
         android:title="@string/unpin_folder"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="always" />
     <item
         android:id="@+id/cab_move_to_top"
         android:icon="@drawable/ic_move_to_top_vector"

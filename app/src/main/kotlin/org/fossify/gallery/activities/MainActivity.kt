@@ -2284,8 +2284,9 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
 
     override fun recheckPinnedFolders() {
         val generation = mFetchGeneration.incrementAndGet()
+        val currentDirs = ArrayList(getCurrentlyDisplayedDirs())
         ensureBackgroundThread {
-            gotDirectories(movePinnedDirectoriesToFront(getCurrentlyDisplayedDirs()), generation)
+            gotDirectories(movePinnedDirectoriesToFront(currentDirs), generation)
         }
     }
 

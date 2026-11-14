@@ -116,6 +116,7 @@ import org.fossify.gallery.helpers.FOLDER_STYLE_SQUARE
 import org.fossify.gallery.helpers.LOCATION_INTERNAL
 import org.fossify.gallery.helpers.LOCATION_SD
 import org.fossify.gallery.helpers.PATH
+import org.fossify.gallery.helpers.PinMenuPolicy
 import org.fossify.gallery.helpers.RECYCLE_BIN
 import org.fossify.gallery.helpers.ROUNDED_CORNERS_BIG
 import org.fossify.gallery.helpers.ROUNDED_CORNERS_NONE
@@ -376,9 +377,9 @@ class DirectoryAdapter(
     }
 
     private fun checkPinBtnVisibility(menu: Menu, selectedPaths: ArrayList<String>) {
-        val pinnedFolders = config.pinnedFolders
-        menu.findItem(R.id.cab_pin).isVisible = selectedPaths.any { !pinnedFolders.contains(it) }
-        menu.findItem(R.id.cab_unpin).isVisible = selectedPaths.any { pinnedFolders.contains(it) }
+        val visibility = PinMenuPolicy.resolve(selectedPaths, config.pinnedFolders)
+        menu.findItem(R.id.cab_pin).isVisible = visibility.showPin
+        menu.findItem(R.id.cab_unpin).isVisible = visibility.showUnpin
     }
 
     private fun moveSelectedItemsToTop() {
@@ -1203,6 +1204,7 @@ class DirectoryAdapter(
         if (directories.hashCode() != currentDirectoriesHash) {
             currentDirectoriesHash = directories.hashCode()
             dirs = directories
+            pinnedFolders = config.pinnedFolders
             fillLockedFolders()
             notifyDataSetChanged()
             finishActMode()
