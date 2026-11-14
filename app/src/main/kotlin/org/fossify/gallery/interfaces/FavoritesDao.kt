@@ -91,8 +91,10 @@ interface FavoritesDao {
     @Query(
         """
         UPDATE OR REPLACE favorites
-         SET media_store_id = :mediaStoreId, file_size = :fileSize,
-             last_modified = :lastModified, fingerprint = :fingerprint
+         SET media_store_id = CASE WHEN :mediaStoreId > 0 THEN :mediaStoreId ELSE media_store_id END,
+             file_size = :fileSize,
+             last_modified = :lastModified,
+             fingerprint = :fingerprint
          WHERE full_path = :path COLLATE NOCASE
         """
     )

@@ -1,5 +1,7 @@
 package org.fossify.gallery.helpers
 
+import android.content.Context
+import android.provider.MediaStore
 import org.fossify.gallery.models.Medium
 import java.io.File
 import java.io.RandomAccessFile
@@ -47,12 +49,24 @@ data class MediaIdentity(
         }
 
         /**
-         * Captures the identity of an already known medium. The MediaStore id comes for free, the
-         * fingerprint is read from disk.
+         * Captures the identity of a file on disk, looking up its MediaStore id when needed.
          */
-        fun of(context: android.content.Context, medium: Medium): MediaIdentity {
+        fun of(context: Context, file: File, mediaStoreId: Long = 0L): MediaIdentity {
+            val resolvedId = if (mediaStoreId > 0L || !file.isFile || CryptoManager.isEncryptedFile(file.name)) {
+                mediaStoreId
+            } else {
+                findMediaStoreId(context, file.absolutePath)
+            }
+            return of(file, resolvedId)
+        }
+
+        /**
+         * Captures the identity of an already known medium. The MediaStore id is reused when
+         * present, or looked up once from MediaStore when missing.
+         */
+        fun of(context: Context, medium: Medium): MediaIdentity {
             val file = File(medium.path)
-            val identity = of(file, medium.mediaStoreId)
+            val identity = of(context, file, medium.mediaStoreId)
             return if (identity.hasFingerprint) {
                 identity
             } else {
@@ -60,6 +74,25 @@ data class MediaIdentity(
                     size = medium.size,
                     lastModified = medium.modified
                 )
+            }
+        }
+
+        /**
+         * Looks up the MediaStore `_ID` for an existing file path. Returns 0 when not indexed.
+         */
+        fun findMediaStoreId(context: Context, path: String): Long {
+            if (path.isEmpty() || CryptoManager.isEncryptedFile(path)) {
+                return 0L
+            }
+            return try {
+                val uri = MediaStore.Files.getContentUri("external")
+                val projection = arrayOf(MediaStore.MediaColumns._ID)
+                val selection = "${MediaStore.MediaColumns.DATA} = ?"
+                context.contentResolver.query(uri, projection, selection, arrayOf(path), null)?.use { cursor ->
+                    if (cursor.moveToFirst()) cursor.getLong(0) else 0L
+                } ?: 0L
+            } catch (_: Exception) {
+                0L
             }
         }
 
