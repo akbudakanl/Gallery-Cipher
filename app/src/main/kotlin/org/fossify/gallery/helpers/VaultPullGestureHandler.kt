@@ -92,9 +92,6 @@ class VaultPullGestureHandler(
 
                             val progress = (translation / holdThreshold).coerceIn(0f, 1f)
                             indicatorView.alpha = (progress * 1.4f).coerceIn(0.1f, 1f)
-                            if (!thresholdMet) {
-                                iconView.rotation = progress * 180f
-                            }
 
                             if (translation >= holdThreshold) {
                                 if (!thresholdMet) {
@@ -163,8 +160,8 @@ class VaultPullGestureHandler(
             duration = VAULT_HOLD_OPEN_MS
             interpolator = LinearInterpolator()
             addUpdateListener { animator ->
-                // the lock icon keeps rotating one full turn while the pull is held
-                iconView.rotation = 180f + (animator.animatedValue as Float) * 360f
+                // the lock icon rotates one full turn while the pull is held
+                iconView.rotation = (animator.animatedValue as Float) * 360f
             }
             addListener(object : AnimatorListenerAdapter() {
                 private var cancelled = false
@@ -209,6 +206,7 @@ class VaultPullGestureHandler(
         thresholdMetAt = 0L
         holdLongEnough = false
         cancelHoldAnimator()
+        iconView.rotation = 0f
         iconView.scaleX = 1f
         iconView.scaleY = 1f
     }
