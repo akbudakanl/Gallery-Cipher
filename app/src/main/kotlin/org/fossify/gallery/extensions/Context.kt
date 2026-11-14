@@ -569,7 +569,7 @@ fun Context.rescanFolderMediaSync(path: String) {
                         if (!newMedia.contains(thumbnailItem)) {
                             val mediumPath = (thumbnailItem as? Medium)?.path
                             if (mediumPath != null) {
-                                deleteDBPath(mediumPath)
+                                deleteMediumWithPath(mediumPath)
                             }
                         }
                     }
@@ -1057,7 +1057,8 @@ fun Context.getCachedMedia(
 
         var media = ArrayList<Medium>()
         if (path == FAVORITES) {
-            media.addAll(mediaDB.getFavorites())
+            val validFavoritePaths = getFavoritePaths().toHashSet()
+            media.addAll(mediaDB.getFavorites().filter { it.path in validFavoritePaths })
         }
 
         if (path == RECYCLE_BIN) {
@@ -1138,14 +1139,6 @@ fun Context.getCachedMedia(
                 if (mediaToDelete.isNotEmpty()) {
                     try {
                         mediaDB.deleteMedia(*mediaToDelete.toTypedArray())
-
-                        mediaToDelete.filter { it.isFavorite }.forEach {
-                            favoritesDB.deleteFavoritePath(it.path)
-                        }
-
-                        mediaToDelete.forEach {
-                            deleteVirtualAlbumItemFromAllAlbums(it.path)
-                        }
                     } catch (ignored: Exception) {
                     }
                 }
@@ -1200,14 +1193,14 @@ fun Context.updateDBMediaPath(oldPath: String, newPath: String) {
  * Stores the identity of the file at [path] for every reference that points to it, so it can be
  * found again after a rename or move.
  */
-fun Context.updateReferenceIdentitiesForPath(path: String) {
+fun Context.updateReferenceIdentitiesForPath(path: String, mediaStoreId: Long = 0L) {
     val file = File(path)
     if (!file.isFile) {
         return
     }
 
     try {
-        val identity = MediaIdentity.of(file)
+        val identity = MediaIdentity.of(this, file, mediaStoreId)
         if (!identity.isUsable) {
             return
         }
@@ -1268,9 +1261,11 @@ fun Context.updateFavorite(path: String, isFavorite: Boolean) {
                 return
             }
             favoritesDB.insert(getFavoriteFromPath(path))
+            mediaDB.updateFavorite(path, true)
             ReferenceBackupManager.saveFavorites(this)
         } else {
             favoritesDB.deleteFavoritePath(path)
+            mediaDB.updateFavorite(path, false)
             ReferenceBackupManager.saveFavorites(this)
         }
     } catch (e: Exception) {

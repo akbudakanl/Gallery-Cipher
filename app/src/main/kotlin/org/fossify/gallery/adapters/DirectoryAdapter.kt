@@ -103,6 +103,8 @@ import org.fossify.gallery.extensions.showRecycleBinEmptyingDialog
 import org.fossify.gallery.extensions.tryCopyMoveFilesTo
 import org.fossify.gallery.extensions.isHiddenVirtualAlbumPath
 import org.fossify.gallery.extensions.tryDecryptFolders
+import org.fossify.gallery.extensions.repairReferencesAfterExternalChange
+import org.fossify.gallery.extensions.updateFavoritePaths
 import org.fossify.gallery.extensions.updateReferencesForFolderRename
 import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.DIRECTORY
@@ -476,7 +478,12 @@ class DirectoryAdapter(
         } else {
             val paths = getSelectedPaths().filter { !activity.isAStorageRootFolder(it) && !config.isFolderProtected(it) } as ArrayList<String>
             RenameItemsDialog(activity, paths) {
-                listener?.refreshItems()
+                ensureBackgroundThread {
+                    activity.repairReferencesAfterExternalChange(force = true)
+                    activity.runOnUiThread {
+                        listener?.refreshItems()
+                    }
+                }
             }
         }
     }
@@ -915,6 +922,10 @@ class DirectoryAdapter(
                         listener?.refreshPaths(affectedFolders)
                     }
                 }
+            }
+
+            if (!isCopyOperation && !destinationPath.isVirtualAlbumPath()) {
+                activity.updateFavoritePaths(fileDirItems, destinationPath)
             }
 
             config.tempFolderPath = ""

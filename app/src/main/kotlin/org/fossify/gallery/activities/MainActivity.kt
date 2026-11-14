@@ -315,7 +315,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         )
 
 
-        binding.directoriesRefreshLayout.setOnRefreshListener { getDirectories() }
+        binding.directoriesRefreshLayout.setOnRefreshListener { getDirectories(forceRepair = true) }
         storeStateVariables()
         checkWhatsNewDialog()
         setupLatestMediaId()
@@ -895,7 +895,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         }
     }
 
-    private fun getDirectories(prioritizedPaths: Collection<String> = emptyList()) {
+    private fun getDirectories(prioritizedPaths: Collection<String> = emptyList(), forceRepair: Boolean = false) {
         val prioritySet = LinkedHashSet<String>()
         mLastOpenedDirectoryPath?.let {
             prioritySet.add(it)
@@ -912,12 +912,6 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         mShouldStopFetching = false
         mIsGettingDirs = true
 
-        // Files that were renamed or moved outside of the app are looked up by their identity, so
-        // the favorites and the virtual albums keep pointing at them.
-        ensureBackgroundThread {
-            repairReferencesAfterExternalChange()
-        }
-
         val getImages = mIsPickImageIntent || mIsGetImageContentIntent
         val getVideos = mIsPickVideoIntent || mIsGetVideoContentIntent
 
@@ -927,7 +921,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                 if (generation != mFetchGeneration.get() || isDestroyed || isFinishing) {
                     return@getCachedDirectories
                 }
-                gotDirectories(addTempFolderIfNeeded(it), generation, prioritySet, isIncremental = false)
+                gotDirectories(addTempFolderIfNeeded(it), generation, prioritySet, isIncremental = false, forceRepair = forceRepair)
             }
         } else {
             val currentDirsSnapshot = mDirs.map { it.copy() } as ArrayList<Directory>
@@ -935,9 +929,10 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
                 if (generation != mFetchGeneration.get() || isDestroyed || isFinishing) {
                     return@ensureBackgroundThread
                 }
+                repairReferencesAfterExternalChange(force = forceRepair)
                 val liveDirs = currentDirsSnapshot.filterNot { it.isVirtualAlbum() }.toMutableList() as ArrayList<Directory>
                 liveDirs.addAll(getVirtualAlbumDirectories(isSecretVaultView = mIsSecretVaultView))
-                gotDirectories(addTempFolderIfNeeded(liveDirs), generation, prioritySet, isIncremental = true)
+                gotDirectories(addTempFolderIfNeeded(liveDirs), generation, prioritySet, isIncremental = true, forceRepair = false)
             }
         }
     }
@@ -1524,7 +1519,8 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         newDirs: ArrayList<Directory>,
         generation: Long = mFetchGeneration.get(),
         prioritizedPaths: Set<String> = emptySet(),
-        isIncremental: Boolean = false
+        isIncremental: Boolean = false,
+        forceRepair: Boolean = false
     ) {
         if (generation != mFetchGeneration.get() || isDestroyed || isFinishing) {
             return
@@ -1576,6 +1572,21 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         val getVideos = mIsPickVideoIntent || mIsGetVideoContentIntent
         val getImagesOnly = getImages && !getVideos
         val getVideosOnly = getVideos && !getImages
+        // Repair stale references sequentially before scanning FAVORITES / virtual albums so both
+        // reflect externally moved folders immediately without racing against the cache load.
+        if (!isIncremental) {
+            val repaired = repairReferencesAfterExternalChange(force = forceRepair)
+            if (repaired > 0 && generation == mFetchGeneration.get() && !isDestroyed && !isFinishing) {
+                dirs.removeAll { it.isVirtualAlbum() }
+                dirs.addAll(getVirtualAlbumDirectories(isSecretVaultView = mIsSecretVaultView))
+                val resorted = getSortedDirectories(dirs)
+                dirs.clear()
+                dirs.addAll(resorted)
+                mDirs = dirs.clone() as ArrayList<Directory>
+                setupAdapter(dirs)
+            }
+        }
+
         val favoritePaths = getFavoritePaths()
         val hiddenString = getString(R.string.hidden)
         val albumCovers = config.parseAlbumCovers()
@@ -1609,7 +1620,7 @@ class MainActivity : SimpleActivity(), DirectoryOperationsListener {
         }
 
         if (!mIsSecretVaultView && !dirs.map { it.path }.contains(FAVORITES)) {
-            if (mediaDB.getFavoritesCount() > 0) {
+            if (favoritePaths.isNotEmpty() || mediaDB.getFavoritesCount() > 0) {
                 val favorites = Directory().apply {
                     path = FAVORITES
                     name = getString(org.fossify.commons.R.string.favorites)

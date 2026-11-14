@@ -1,10 +1,23 @@
 package org.fossify.gallery.extensions
 
 import android.content.Context
+import org.fossify.gallery.helpers.MediaIdentity
 import org.fossify.gallery.helpers.MediaIdentityResolver
 import org.fossify.gallery.helpers.ReferenceBackupManager
 import org.fossify.gallery.helpers.VirtualAlbumSyncManager
+import org.fossify.gallery.models.ITEM_STATE_UNRESOLVED
 import java.io.File
+
+private const val MIN_REPAIR_INTERVAL_MS = 5_000L
+private const val MIN_FALLBACK_SCAN_INTERVAL_MS = 30_000L
+
+@Volatile
+private var lastRepairPassTs = 0L
+
+@Volatile
+private var lastFallbackScanTs = 0L
+
+private val repairLock = Any()
 
 /**
  * Repairs the references to files that were renamed or moved outside of the app.
@@ -13,44 +26,95 @@ import java.io.File
  * manager, by another app or by a desktop tool, the cached path becomes stale. The identity of the
  * reference is what makes it possible to find the file again.
  *
- * Nothing is deleted here. A file that cannot be found stays in the album as unresolved, so the
- * user still sees it and can repair it manually.
+ * Nothing is deleted here: unresolvable favorites and virtual album items stay preserved so a
+ * temporarily moved or unmounted folder can be recovered later. Backups are only rewritten when
+ * something actually changed.
  */
-fun Context.repairReferencesAfterExternalChange(): Int {
-    var repaired = 0
+fun Context.repairReferencesAfterExternalChange(force: Boolean = false): Int {
+    synchronized(repairLock) {
+        val now = System.currentTimeMillis()
+        if (!force && now - lastRepairPassTs < MIN_REPAIR_INTERVAL_MS) {
+            return 0
+        }
+        lastRepairPassTs = now
 
-    try {
-        repaired += repairFavorites()
-    } catch (_: Exception) {
-    }
+        val allowFallback = force || (now - lastFallbackScanTs >= MIN_FALLBACK_SCAN_INTERVAL_MS)
 
-    // A favorite whose file was deleted outside of the app is removed, so it does not come back
-    // when the backups are restored.
-    try {
-        removeFavoritesOfDeletedFiles()
-    } catch (_: Exception) {
-    }
+        val missingFavorites = try {
+            favoritesDB.getAll().filter { !File(it.fullPath).isFile }
+        } catch (_: Exception) {
+            emptyList()
+        }
 
-    try {
-        val albums = virtualAlbumsDB.getAllAlbums()
-        for (album in albums) {
-            val albumId = album.id ?: continue
+        val albums = try {
+            virtualAlbumsDB.getAllAlbums()
+        } catch (_: Exception) {
+            emptyList()
+        }
+
+        val allItems = try {
+            virtualAlbumsDB.getAllItems()
+        } catch (_: Exception) {
+            emptyList()
+        }
+
+        val missingItems = allItems.filter { !File(it.fullPath).isFile }
+        val reappearedAlbumIds = allItems
+            .filter { it.state == ITEM_STATE_UNRESOLVED && File(it.fullPath).isFile }
+            .mapTo(HashSet()) { it.albumId }
+
+        if (missingFavorites.isEmpty() && missingItems.isEmpty() && reappearedAlbumIds.isEmpty()) {
+            return 0
+        }
+
+        val missingIdentities = ArrayList<MediaIdentity>(missingFavorites.size + missingItems.size)
+        missingFavorites.forEach { missingIdentities.add(it.toIdentity()) }
+        missingItems.forEach { missingIdentities.add(it.toIdentity()) }
+
+        val session = MediaIdentityResolver.ResolutionSession(allowFilesystemFallback = allowFallback)
+        if (missingIdentities.isNotEmpty()) {
+            session.preloadMediaStore(this, missingIdentities)
+        }
+
+        var favoritesRepaired = 0
+        if (missingFavorites.isNotEmpty()) {
             try {
-                repaired += repairVirtualAlbumItems(albumId)
+                favoritesRepaired = repairFavorites(session = session)
             } catch (_: Exception) {
             }
         }
-    } catch (_: Exception) {
-    }
 
-    // The backups are rewritten in any case, so a file that was deleted outside of the app does
-    // not come back the next time the app data is cleared.
-    try {
-        saveReferenceBackups()
-    } catch (_: Exception) {
-    }
+        val candidateAlbumIds = LinkedHashSet<Long>()
+        missingItems.forEach { candidateAlbumIds.add(it.albumId) }
+        candidateAlbumIds.addAll(reappearedAlbumIds)
 
-    return repaired
+        var albumsRepaired = 0
+        for (album in albums) {
+            val albumId = album.id ?: continue
+            if (albumId !in candidateAlbumIds) continue
+            try {
+                val repairedInAlbum = repairVirtualAlbumItems(albumId, session = session, saveBackup = false)
+                if (repairedInAlbum > 0) {
+                    albumsRepaired += repairedInAlbum
+                    VirtualAlbumSyncManager.saveAlbumToFile(this, albumId)
+                }
+            } catch (_: Exception) {
+            }
+        }
+
+        if (allowFallback && missingIdentities.isNotEmpty()) {
+            lastFallbackScanTs = System.currentTimeMillis()
+        }
+
+        if (favoritesRepaired > 0) {
+            try {
+                ReferenceBackupManager.saveFavorites(this)
+            } catch (_: Exception) {
+            }
+        }
+
+        return favoritesRepaired + albumsRepaired
+    }
 }
 
 /**

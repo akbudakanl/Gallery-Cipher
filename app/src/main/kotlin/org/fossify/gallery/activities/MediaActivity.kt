@@ -996,8 +996,7 @@ class MediaActivity : SimpleActivity(), MediaOperationsListener {
                         .mapNotNull { it as? Medium }
                         .filter { !newPaths.contains(it.path) }
                         .forEach {
-                            if (mPath == FAVORITES && getDoesFilePathExist(it.path)) {
-                                favoritesDB.deleteFavoritePath(it.path)
+                            if (mPath == FAVORITES && !favoritesDB.isFavorite(it.path)) {
                                 mediaDB.updateFavorite(it.path, false)
                             } else if (!mPath.isVirtualAlbumPath() && !mIsVaultFilesView) {
                                 // items disappearing from a virtual album were only un-referenced, the files are still valid

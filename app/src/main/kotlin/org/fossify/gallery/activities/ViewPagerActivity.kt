@@ -1391,9 +1391,11 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
                         fingerprint = identity.fingerprint
                     )
                 )
+                mediaDB.updateFavorite(medium.path, true)
                 ReferenceBackupManager.saveFavorites(this)
             } else {
                 favoritesDB.deleteFavoritePath(medium.path)
+                mediaDB.updateFavorite(medium.path, false)
                 ReferenceBackupManager.saveFavorites(this)
             }
             if (medium.isFavorite) {

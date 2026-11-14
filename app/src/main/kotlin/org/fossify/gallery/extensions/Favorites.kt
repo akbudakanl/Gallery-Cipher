@@ -18,7 +18,7 @@ import java.io.File
 /** Builds a favorite including the identity of the file it points to. */
 fun Context.getFavoriteFromPath(path: String, mediaStoreId: Long = 0L): Favorite {
     val file = File(path)
-    val identity = MediaIdentity.of(file, mediaStoreId)
+    val identity = MediaIdentity.of(this, file, mediaStoreId)
     return Favorite(
         id = null,
         fullPath = path,
@@ -52,7 +52,10 @@ fun Context.getFavoriteFromMedium(medium: Medium): Favorite {
  * The cached path is tried first. When the file is gone from there, the identity is used to find
  * it at its new location. Returns null when the file cannot be found with certainty.
  */
-fun Context.resolveFavorite(favorite: Favorite): Favorite? {
+fun Context.resolveFavorite(
+    favorite: Favorite,
+    session: MediaIdentityResolver.ResolutionSession? = null
+): Favorite? {
     val cached = File(favorite.fullPath)
     if (cached.isFile) {
         return favorite
@@ -67,13 +70,15 @@ fun Context.resolveFavorite(favorite: Favorite): Favorite? {
         context = this,
         identity = identity,
         hintPaths = listOf(favorite.fullPath),
-        searchRoots = listOf(favorite.parentPath)
+        searchRoots = listOf(favorite.parentPath),
+        session = session
     ) ?: return null
 
     val updated = favorite.copy(
         fullPath = resolution.path,
         filename = resolution.path.getFilenameFromPath(),
-        parentPath = resolution.path.getParentPath()
+        parentPath = resolution.path.getParentPath(),
+        mediaStoreId = if (resolution.mediaStoreId > 0L) resolution.mediaStoreId else favorite.mediaStoreId
     )
 
     favoritesDB.updateFavorite(
@@ -82,6 +87,14 @@ fun Context.resolveFavorite(favorite: Favorite): Favorite? {
         updated.parentPath,
         favorite.fullPath
     )
+    if (updated.mediaStoreId != favorite.mediaStoreId && updated.mediaStoreId > 0L) {
+        updateReferenceIdentitiesForPath(updated.fullPath, updated.mediaStoreId)
+    }
+    try {
+        mediaDB.updateFavorite(favorite.fullPath, false)
+        mediaDB.updateFavorite(updated.fullPath, true)
+    } catch (_: Exception) {
+    }
 
     return updated
 }
@@ -90,20 +103,27 @@ fun Context.resolveFavorite(favorite: Favorite): Favorite? {
  * Goes through all favorites and points the ones whose file was renamed or moved to their new
  * location. Returns how many favorites were repaired.
  */
-fun Context.repairFavorites(): Int {
+fun Context.repairFavorites(
+    session: MediaIdentityResolver.ResolutionSession? = null
+): Int {
     val favorites = try {
         favoritesDB.getAll()
     } catch (_: Exception) {
         return 0
     }
 
-    var repaired = 0
-    for (favorite in favorites) {
-        if (File(favorite.fullPath).isFile) {
-            continue
-        }
+    val missing = favorites.filter { !File(it.fullPath).isFile }
+    if (missing.isEmpty()) {
+        return 0
+    }
 
-        val resolved = resolveFavorite(favorite)
+    val activeSession = session ?: MediaIdentityResolver.ResolutionSession().apply {
+        preloadMediaStore(this@repairFavorites, missing.map { it.toIdentity() })
+    }
+
+    var repaired = 0
+    for (favorite in missing) {
+        val resolved = resolveFavorite(favorite, activeSession)
         if (resolved != null && resolved.fullPath != favorite.fullPath) {
             repaired++
         }
@@ -113,10 +133,10 @@ fun Context.repairFavorites(): Int {
 }
 
 /**
- * Removes the favorites whose file no longer exists.
+ * Removes the favorites whose file no longer exists on an accessible folder.
  *
- * A file that was deleted outside of the app leaves a favorite behind that can never be shown
- * again. The reference is removed so the backup does not keep it alive.
+ * Favorites whose parent folder does not exist (moved physical folder or unmounted storage) are
+ * preserved so they can still be resolved later.
  *
  * @return how many favorites were removed
  */
@@ -127,19 +147,36 @@ fun Context.removeFavoritesOfDeletedFiles(): Int {
         return 0
     }
 
+    val missing = favorites.filter { !File(it.fullPath).isFile }
+    if (missing.isEmpty()) {
+        return 0
+    }
+
+    val session = MediaIdentityResolver.ResolutionSession().apply {
+        preloadMediaStore(this@removeFavoritesOfDeletedFiles, missing.map { it.toIdentity() })
+    }
+
     var removed = 0
-    for (favorite in favorites) {
-        if (File(favorite.fullPath).isFile) {
+    for (favorite in missing) {
+        val file = File(favorite.fullPath)
+        if (file.isFile) {
             continue
         }
 
         // The file may still be found at a new location, in that case it is repaired instead.
-        if (resolveFavorite(favorite) != null) {
+        if (resolveFavorite(favorite, session) != null) {
+            continue
+        }
+
+        // Only remove if the original parent folder still exists on disk; if the folder itself
+        // moved or storage is unmounted, keep the reference so it can be recovered.
+        if (file.parentFile?.exists() != true) {
             continue
         }
 
         try {
             favoritesDB.deleteFavoritePath(favorite.fullPath)
+            mediaDB.updateFavorite(favorite.fullPath, false)
             removed++
         } catch (_: Exception) {
         }

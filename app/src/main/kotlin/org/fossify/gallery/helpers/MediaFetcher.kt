@@ -462,7 +462,7 @@ class MediaFetcher(val context: Context, var isSecretVaultView: Boolean = false)
                 continue
             }
 
-            if (checkFileExistence && (!file.exists() || !file.isFile)) {
+            if ((checkFileExistence || folder == FAVORITES) && (!file.exists() || !file.isFile)) {
                 continue
             }
 

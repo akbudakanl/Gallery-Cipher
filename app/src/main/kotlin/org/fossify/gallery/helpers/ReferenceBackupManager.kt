@@ -7,6 +7,7 @@ import com.google.gson.annotations.SerializedName
 import org.fossify.commons.extensions.getFilenameFromPath
 import org.fossify.commons.extensions.getParentPath
 import org.fossify.gallery.extensions.favoritesDB
+import org.fossify.gallery.extensions.mediaDB
 import org.fossify.gallery.extensions.virtualAlbumsDB
 import java.io.File
 
@@ -192,6 +193,10 @@ object ReferenceBackupManager {
                                 fingerprint = if (identity.hasFingerprint) identity.fingerprint else entry.fingerprint ?: ""
                             )
                         )
+                        try {
+                            context.mediaDB.updateFavorite(path, true)
+                        } catch (_: Exception) {
+                        }
                         restored++
                     } else {
                         // The favorite exists, but the backup may know its identity better.

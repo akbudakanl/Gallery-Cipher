@@ -927,7 +927,7 @@ fun BaseSimpleActivity.tryCopyMoveFilesTo(
                                 srcFile.copyTo(targetFile, overwrite = true)
                                 targetFile.setLastModified(srcFile.lastModified())
                                 if (!isCopyOperation) {
-                                    updateVirtualAlbumItemPath(oldSrcPath, targetFile.absolutePath)
+                                    updateDBMediaPath(oldSrcPath, targetFile.absolutePath)
                                     if (isEnc) {
                                         CryptoManager.moveMetadataCacheEntry(oldSrcPath, targetFile.absolutePath)
                                         srcFile.delete()
