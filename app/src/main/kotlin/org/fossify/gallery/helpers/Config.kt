@@ -626,6 +626,10 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(SHOW_PERMISSION_RATIONALE, false)
         set(showPermissionRationale) = prefs.edit().putBoolean(SHOW_PERMISSION_RATIONALE, showPermissionRationale).apply()
 
+    var allowBatchRenaming: Boolean
+        get() = prefs.getBoolean(ALLOW_BATCH_RENAMING, false)
+        set(allowBatchRenaming) = prefs.edit().putBoolean(ALLOW_BATCH_RENAMING, allowBatchRenaming).apply()
+
     var vaultWrappedKeyData: String
         get() = prefs.getString(VAULT_WRAPPED_KEY_DATA, "")!!
         set(value) = prefs.edit().putString(VAULT_WRAPPED_KEY_DATA, value).apply()

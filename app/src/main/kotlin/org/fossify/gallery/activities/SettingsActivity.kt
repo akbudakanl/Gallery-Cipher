@@ -115,6 +115,7 @@ class SettingsActivity : SimpleActivity() {
         setupHideExtendedDetails()
         setupManageExtendedDetails()
         setupSkipDeleteConfirmation()
+        setupAllowBatchRenaming()
         setupManageBottomActions()
         setupUseRecycleBin()
         setupShowRecycleBin()
@@ -961,6 +962,14 @@ class SettingsActivity : SimpleActivity() {
         }
     }
 
+    private fun setupAllowBatchRenaming() {
+        binding.settingsAllowBatchRenaming.isChecked = config.allowBatchRenaming
+        binding.settingsAllowBatchRenamingHolder.setOnClickListener {
+            binding.settingsAllowBatchRenaming.toggle()
+            config.allowBatchRenaming = binding.settingsAllowBatchRenaming.isChecked
+        }
+    }
+
     private fun setupScreenRotation() {
         binding.settingsScreenRotation.text = getScreenRotationText()
         binding.settingsScreenRotationHolder.setOnClickListener {
@@ -1256,6 +1265,7 @@ class SettingsActivity : SimpleActivity() {
                 put(DELETE_EMPTY_FOLDERS, config.deleteEmptyFolders)
                 put(KEEP_LAST_MODIFIED, config.keepLastModified)
                 put(SKIP_DELETE_CONFIRMATION, config.skipDeleteConfirmation)
+                put(ALLOW_BATCH_RENAMING, config.allowBatchRenaming)
                 put(BOTTOM_ACTIONS, config.bottomActions)
                 put(VISIBLE_BOTTOM_ACTIONS, config.visibleBottomActions)
                 put(USE_RECYCLE_BIN, config.useRecycleBin)
@@ -1404,6 +1414,7 @@ class SettingsActivity : SimpleActivity() {
                 DELETE_EMPTY_FOLDERS -> config.deleteEmptyFolders = value.toBoolean()
                 KEEP_LAST_MODIFIED -> config.keepLastModified = value.toBoolean()
                 SKIP_DELETE_CONFIRMATION -> config.skipDeleteConfirmation = value.toBoolean()
+                ALLOW_BATCH_RENAMING -> config.allowBatchRenaming = value.toBoolean()
                 BOTTOM_ACTIONS -> config.bottomActions = value.toBoolean()
                 VISIBLE_BOTTOM_ACTIONS -> config.visibleBottomActions = value.toInt()
                 USE_RECYCLE_BIN -> config.useRecycleBin = value.toBoolean()

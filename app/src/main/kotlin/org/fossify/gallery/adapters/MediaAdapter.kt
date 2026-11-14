@@ -210,10 +210,10 @@ class MediaAdapter(
         val selectedPaths = selectedItems.map { it.path } as ArrayList<String>
         val isInRecycleBin = selectedItems.firstOrNull()?.getIsInRecycleBin() == true || CryptoManager.isVaultRecycleBinPath(activity, path)
         menu.apply {
-            findItem(R.id.cab_rename).isVisible = !isInRecycleBin
+            findItem(R.id.cab_rotate).isVisible = selectedItems.all { it.isImage() }
+            findItem(R.id.cab_rename).isVisible = !isInRecycleBin && (isOneItemSelected || config.allowBatchRenaming)
             findItem(R.id.cab_add_to_favorites).isVisible = !isInRecycleBin
             findItem(R.id.cab_remove_from_virtual_album).isVisible = path.isVirtualAlbumPath()
-            findItem(R.id.cab_fix_date_taken).isVisible = !isInRecycleBin
             findItem(R.id.cab_move_to).isVisible = !isInRecycleBin && !path.isVirtualAlbumPath()
             findItem(R.id.cab_open_with).isVisible = isOneItemSelected
             findItem(R.id.cab_edit).isVisible = isOneItemSelected
@@ -241,7 +241,6 @@ class MediaAdapter(
                 findItem(R.id.cab_edit).isVisible = false
                 findItem(R.id.cab_add_to_favorites).isVisible = false
                 findItem(R.id.cab_remove_from_favorites).isVisible = false
-                findItem(R.id.cab_fix_date_taken).isVisible = false
             }
         }
     }
@@ -271,7 +270,6 @@ class MediaAdapter(
             R.id.cab_create_shortcut -> createShortcut()
             R.id.cab_select_all -> selectAll()
             R.id.cab_open_with -> openPath()
-            R.id.cab_fix_date_taken -> fixDateTaken()
             R.id.cab_set_as -> setAs()
             R.id.cab_resize -> resize()
             R.id.cab_delete -> checkDeleteConfirmation()
@@ -840,15 +838,6 @@ class MediaAdapter(
                     .build()
 
                 manager.requestPinShortcut(shortcut, null)
-            }
-        }
-    }
-
-    private fun fixDateTaken() {
-        ensureBackgroundThread {
-            activity.fixDateTaken(getSelectedPaths(), true) {
-                listener?.refreshItems()
-                finishActMode()
             }
         }
     }

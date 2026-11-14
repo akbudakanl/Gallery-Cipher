@@ -126,6 +126,7 @@ const val HOME_VIEW_FOLDERS = 0
 const val HOME_VIEW_FILES = 1
 const val LAST_EXPORTED_FAVORITES_FOLDER = "last_exported_favorites_folder"
 const val SHOW_PERMISSION_RATIONALE = "show_permission_rationale"
+const val ALLOW_BATCH_RENAMING = "allow_batch_renaming"
 
 // AES-256 Vault Encryption
 const val PROTECTION_PASSWORD = 3
