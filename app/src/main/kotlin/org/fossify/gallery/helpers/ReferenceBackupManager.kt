@@ -21,11 +21,28 @@ import java.io.File
  * the folder cannot be read or written, and nothing is attempted.
  */
 object ReferenceBackupManager {
-    private const val FAVORITES_DIR_NAME = "Favorites"
-    private const val FAVORITES_FILE_NAME = "favorites.json"
+    internal const val FAVORITES_DIR_NAME = "Favorites"
+    internal const val FAVORITES_FILE_NAME = "favorites.json"
 
     /** The backup format version, bumped when the structure changes. */
     private const val BACKUP_VERSION = 1
+
+    fun buildFavoritesBackup(favorites: List<org.fossify.gallery.models.Favorite>): FavoritesBackup {
+        return FavoritesBackup(
+            version = BACKUP_VERSION,
+            favorites = favorites.map { favorite ->
+                FavoriteBackup(
+                    fullPath = favorite.fullPath,
+                    filename = favorite.filename,
+                    parentPath = favorite.parentPath,
+                    mediaStoreId = favorite.mediaStoreId,
+                    fileSize = favorite.fileSize,
+                    lastModified = favorite.lastModified,
+                    fingerprint = favorite.fingerprint
+                )
+            }
+        )
+    }
 
     data class FavoritesBackup(
         @SerializedName("version") val version: Int = BACKUP_VERSION,
@@ -102,20 +119,7 @@ object ReferenceBackupManager {
 
         try {
             val favorites = context.favoritesDB.getAll()
-            val backup = FavoritesBackup(
-                version = BACKUP_VERSION,
-                favorites = favorites.map { favorite ->
-                    FavoriteBackup(
-                        fullPath = favorite.fullPath,
-                        filename = favorite.filename,
-                        parentPath = favorite.parentPath,
-                        mediaStoreId = favorite.mediaStoreId,
-                        fileSize = favorite.fileSize,
-                        lastModified = favorite.lastModified,
-                        fingerprint = favorite.fingerprint
-                    )
-                }
-            )
+            val backup = buildFavoritesBackup(favorites)
 
             CryptoManager.ensureCipherRootDirectory()
 

@@ -98,6 +98,30 @@ object VirtualAlbumSyncManager {
         }
     }
 
+    fun toBackupItems(items: List<VirtualAlbumItem>): List<VirtualAlbumItemBackup> {
+        return items.map {
+            VirtualAlbumItemBackup(
+                fullPath = it.fullPath,
+                addedTs = it.addedTS,
+                mediaStoreId = it.mediaStoreId,
+                fileSize = it.fileSize,
+                lastModified = it.lastModified,
+                fingerprint = it.fingerprint
+            )
+        }
+    }
+
+    fun buildPublicAlbumBackup(album: VirtualAlbum, items: List<VirtualAlbumItem>): VirtualAlbumBackup {
+        return VirtualAlbumBackup(
+            version = 1,
+            name = album.name,
+            createdTs = album.createdTs,
+            isHidden = false,
+            parentPhysicalPath = album.parentPhysicalPath,
+            items = toBackupItems(items)
+        )
+    }
+
     fun saveAlbumToFile(context: Context, albumId: Long) {
         try {
             val album = context.virtualAlbumsDB.getAlbumById(albumId) ?: return
@@ -105,16 +129,7 @@ object VirtualAlbumSyncManager {
 
             // Include items whose files exist or whose parent directories exist
             val validItems = items.filter { File(it.fullPath).exists() || File(it.fullPath).parentFile?.exists() != true }
-            val backupItems = validItems.map {
-                VirtualAlbumItemBackup(
-                    fullPath = it.fullPath,
-                    addedTs = it.addedTS,
-                    mediaStoreId = it.mediaStoreId,
-                    fileSize = it.fileSize,
-                    lastModified = it.lastModified,
-                    fingerprint = it.fingerprint
-                )
-            }
+            val backupItems = toBackupItems(validItems)
 
             val gson = GsonBuilder().setPrettyPrinting().create()
 
@@ -164,14 +179,7 @@ object VirtualAlbumSyncManager {
                 val targetFile = File(targetDir, getPublicAlbumFileName(album.name, album.id))
                 val tempFile = File(targetDir, "${targetFile.name}.${System.currentTimeMillis()}.tmp")
 
-                val backup = VirtualAlbumBackup(
-                    version = 1,
-                    name = album.name,
-                    createdTs = album.createdTs,
-                    isHidden = false,
-                    parentPhysicalPath = album.parentPhysicalPath,
-                    items = backupItems
-                )
+                val backup = buildPublicAlbumBackup(album, validItems)
 
                 tempFile.writeText(gson.toJson(backup), Charsets.UTF_8)
                 if (tempFile.exists()) {

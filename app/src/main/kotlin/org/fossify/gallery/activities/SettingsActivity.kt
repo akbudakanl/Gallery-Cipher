@@ -1105,30 +1105,46 @@ class SettingsActivity : SimpleActivity() {
 
     private fun setupExportFavorites() {
         binding.settingsExportFavoritesHolder.setOnClickListener {
-            if (isQPlus()) {
-                ExportFavoritesDialog(this, getExportFavoritesFilename(), true) { path, filename ->
-                    Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TITLE, filename)
-                        addCategory(Intent.CATEGORY_OPENABLE)
+            ensureBackgroundThread {
+                val hasExportData = FavoritesAndVirtualAlbumsBackupManager.hasDataToExport(this)
+                runOnUiThread {
+                    if (isFinishing || isDestroyed) {
+                        return@runOnUiThread
+                    }
+                    if (!hasExportData) {
+                        toast(org.fossify.commons.R.string.no_items_found)
+                        return@runOnUiThread
+                    }
+                    startExportFavoritesFlow()
+                }
+            }
+        }
+    }
 
-                        try {
-                            startActivityForResult(this, SELECT_EXPORT_FAVORITES_FILE_INTENT)
-                        } catch (e: ActivityNotFoundException) {
-                            toast(org.fossify.commons.R.string.system_service_disabled, Toast.LENGTH_LONG)
-                        } catch (e: Exception) {
-                            showErrorToast(e)
-                        }
+    private fun startExportFavoritesFlow() {
+        if (isQPlus()) {
+            ExportFavoritesDialog(this, getExportFavoritesFilename(), true) { _, filename ->
+                Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                    type = "application/zip"
+                    putExtra(Intent.EXTRA_TITLE, filename)
+                    addCategory(Intent.CATEGORY_OPENABLE)
+
+                    try {
+                        startActivityForResult(this, SELECT_EXPORT_FAVORITES_FILE_INTENT)
+                    } catch (_: ActivityNotFoundException) {
+                        toast(org.fossify.commons.R.string.system_service_disabled, Toast.LENGTH_LONG)
+                    } catch (e: Exception) {
+                        showErrorToast(e)
                     }
                 }
-            } else {
-                handlePermission(PERMISSION_WRITE_STORAGE) {
-                    if (it) {
-                        ExportFavoritesDialog(this, getExportFavoritesFilename(), false) { path, filename ->
-                            val file = File(path)
-                            getFileOutputStream(file.toFileDirItem(this), true) {
-                                exportFavoritesTo(it)
-                            }
+            }
+        } else {
+            handlePermission(PERMISSION_WRITE_STORAGE) {
+                if (it) {
+                    ExportFavoritesDialog(this, getExportFavoritesFilename(), false) { path, _ ->
+                        val file = File(path)
+                        getFileOutputStream(file.toFileDirItem(this), true) { stream ->
+                            exportFavoritesTo(stream)
                         }
                     }
                 }
@@ -1143,17 +1159,17 @@ class SettingsActivity : SimpleActivity() {
         }
 
         ensureBackgroundThread {
-            val favoritePaths = favoritesDB.getValidFavoritePaths()
-            if (favoritePaths.isNotEmpty()) {
-                outputStream.bufferedWriter().use { out ->
-                    favoritePaths.forEach { path ->
-                        out.writeLn(path)
+            try {
+                val exported = FavoritesAndVirtualAlbumsBackupManager.exportToStream(this, outputStream)
+                toast(
+                    if (exported) {
+                        org.fossify.commons.R.string.exporting_successful
+                    } else {
+                        org.fossify.commons.R.string.no_items_found
                     }
-                }
-
-                toast(org.fossify.commons.R.string.exporting_successful)
-            } else {
-                toast(org.fossify.commons.R.string.no_items_found)
+                )
+            } catch (e: Exception) {
+                showErrorToast(e)
             }
         }
     }
@@ -1168,8 +1184,23 @@ class SettingsActivity : SimpleActivity() {
             if (isQPlus()) {
                 Intent(Intent.ACTION_GET_CONTENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "text/plain"
-                    startActivityForResult(this, SELECT_IMPORT_FAVORITES_FILE_INTENT)
+                    type = "*/*"
+                    putExtra(
+                        Intent.EXTRA_MIME_TYPES,
+                        arrayOf(
+                            "application/zip",
+                            "application/x-zip-compressed",
+                            "application/octet-stream",
+                            "text/plain"
+                        )
+                    )
+                    try {
+                        startActivityForResult(this, SELECT_IMPORT_FAVORITES_FILE_INTENT)
+                    } catch (_: ActivityNotFoundException) {
+                        toast(org.fossify.commons.R.string.system_service_disabled, Toast.LENGTH_LONG)
+                    } catch (e: Exception) {
+                        showErrorToast(e)
+                    }
                 }
             } else {
                 handlePermission(PERMISSION_READ_STORAGE) {
@@ -1192,23 +1223,50 @@ class SettingsActivity : SimpleActivity() {
         }
 
         ensureBackgroundThread {
-            var importedItems = 0
-            inputStream.bufferedReader().use {
-                while (true) {
-                    try {
-                        val line = it.readLine() ?: break
-                        if (getDoesFilePathExist(line)) {
-                            val favorite = getFavoriteFromPath(line)
-                            favoritesDB.insert(favorite)
-                            importedItems++
-                        }
-                    } catch (e: Exception) {
-                        showErrorToast(e)
-                    }
-                }
+            val bytes = try {
+                inputStream.use { it.readBytes() }
+            } catch (e: Exception) {
+                showErrorToast(e)
+                return@ensureBackgroundThread
             }
 
-            toast(if (importedItems > 0) org.fossify.commons.R.string.importing_successful else org.fossify.commons.R.string.no_entries_for_importing)
+            val pkg = FavoritesAndVirtualAlbumsBackupManager.parseImportPackage(bytes)
+            if (pkg.favorites.isEmpty() && pkg.virtualAlbums.isEmpty()) {
+                toast(org.fossify.commons.R.string.no_entries_for_importing)
+                return@ensureBackgroundThread
+            }
+
+            val shouldPromptConflict =
+                pkg.favorites.isNotEmpty() && FavoritesAndVirtualAlbumsBackupManager.hasExistingFavorites(this)
+
+            if (shouldPromptConflict) {
+                runOnUiThread {
+                    if (isFinishing || isDestroyed) {
+                        return@runOnUiThread
+                    }
+                    ImportFavoritesConflictDialog(
+                        activity = this,
+                        onConfirm = { mode -> applyFavoritesAndAlbumsImport(pkg, mode) }
+                    )
+                }
+            } else {
+                applyFavoritesAndAlbumsImport(pkg, FavoritesImportMode.MERGE)
+            }
+        }
+    }
+
+    private fun applyFavoritesAndAlbumsImport(pkg: ParsedImportPackage, favoritesMode: FavoritesImportMode) {
+        ensureBackgroundThread {
+            val result = FavoritesAndVirtualAlbumsBackupManager.applyImport(this, pkg, favoritesMode)
+            val hasImportedAnything =
+                result.processedFavoritesCount > 0 || result.importedVirtualAlbumsCount > 0
+            toast(
+                if (hasImportedAnything) {
+                    org.fossify.commons.R.string.importing_successful
+                } else {
+                    org.fossify.commons.R.string.no_entries_for_importing
+                }
+            )
         }
     }
 

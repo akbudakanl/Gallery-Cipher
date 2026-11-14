@@ -232,6 +232,11 @@
     <string name="rounded_corners">Rounded corners</string>
     <string name="export_favorite_paths">Export favorites and virtual albums</string>
     <string name="import_favorite_paths">Import favorites and virtual albums</string>
+    <string name="filename_without_zip">Filename (without .zip)</string>
+    <string name="favorites_already_exist">You already have a favorites list</string>
+    <string name="delete_existing_list">Delete existing list</string>
+    <string name="merge_lists">Merge lists</string>
+    <string name="confirm">Confirm</string>
     <string name="paths_imported_successfully">Paths imported successfully</string>
     <string name="media_management_prompt">To make sure that all file operations work reliably, please make this app a Media management app in your device settings.</string>
     <string name="password_protect_excluded">Password protect excluded folder visibility</string>

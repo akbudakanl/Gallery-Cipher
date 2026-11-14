@@ -22,7 +22,7 @@ class ExportFavoritesDialog(
         }
 
         val binding = DialogExportFavoritesBinding.inflate(activity.layoutInflater).apply {
-            exportFavoritesFilename.setText(defaultFilename.removeSuffix(".txt"))
+            exportFavoritesFilename.setText(defaultFilename.removeSuffix(".zip"))
 
             if (hidePath) {
                 exportFavoritesPathLabel.beGone()
@@ -50,7 +50,7 @@ class ExportFavoritesDialog(
                             return@setOnClickListener
                         }
 
-                        filename += ".txt"
+                        filename += ".zip"
                         val newPath = "${folder.trimEnd('/')}/$filename"
                         if (!newPath.getFilenameFromPath().isAValidFilename()) {
                             activity.toast(org.fossify.commons.R.string.filename_invalid_characters)
