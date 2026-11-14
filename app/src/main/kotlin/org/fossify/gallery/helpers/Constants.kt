@@ -125,6 +125,7 @@ const val LAST_EXPORTED_FAVORITES_FOLDER = "last_exported_favorites_folder"
 const val SHOW_PERMISSION_RATIONALE = "show_permission_rationale"
 const val ALLOW_BATCH_RENAMING = "allow_batch_renaming"
 const val DELETE_ORIGINAL_FROM_FAVORITES_AND_VIRTUAL_ALBUMS = "delete_original_from_favorites_and_virtual_albums"
+const val WAS_NOTIFICATION_PERMISSION_ASKED = "was_notification_permission_asked"
 
 // AES-256 Vault Encryption
 const val PROTECTION_PASSWORD = 3

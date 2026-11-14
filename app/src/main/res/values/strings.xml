@@ -354,6 +354,7 @@
     <string name="file_decrypted_successfully">File decrypted successfully</string>
     <string name="files_decrypted_successfully">Files decrypted successfully</string>
     <string name="decrypting_files">Decrypting files…</string>
+    <string name="encrypt_decrypt_notifications">Encrypt / Decrypt</string>
     <string name="place_finger_prompt">Please place your finger on the fingerprint sensor</string>
     <string name="connect_at_least_4_dots_prompt">Connect at least 4 dots</string>
     <string name="access_existing_cipher_secrets_prompt">Do you want to access your existing Cipher_Secrets folder?</string>

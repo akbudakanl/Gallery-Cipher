@@ -303,6 +303,7 @@
     <string name="file_decrypted_successfully">Dosyanın şifresi başarıyla çözüldü</string>
     <string name="files_decrypted_successfully">Dosyaların şifresi başarıyla çözüldü</string>
     <string name="decrypting_files">Şifre çözülüyor…</string>
+    <string name="encrypt_decrypt_notifications">Şifreleme / Şifre Çözme</string>
     <string name="place_finger_prompt">Lütfen parmağınızı parmak izi sensörüne yerleştirin</string>
     <string name="connect_at_least_4_dots_prompt">En az 4 noktayı birleştirin</string>
     <string name="access_existing_cipher_secrets_prompt">Mevcut Cipher_Secrets klasörünüze erişmek istiyor musunuz?</string>

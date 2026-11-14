@@ -63,6 +63,8 @@ import org.fossify.gallery.helpers.PickDirectoryMode
 import org.fossify.gallery.helpers.RECYCLE_BIN
 import org.fossify.gallery.helpers.TEMP_FOLDER_NAME
 import org.fossify.gallery.helpers.VirtualAlbumSyncManager
+import org.fossify.gallery.helpers.copyMoveFilesWithProgress
+import org.fossify.gallery.helpers.ensureNotificationPermissionThenRun
 import org.fossify.gallery.models.DateTaken
 import java.io.*
 import java.text.SimpleDateFormat
@@ -467,29 +469,36 @@ fun BaseSimpleActivity.toggleFileVisibility(oldPath: String, hide: Boolean, call
             }
 
             // Block the UI with a progress bar until decryption finishes, same as during encryption.
-            val progressDialog = CryptoProgressDialog(this, 1, R.string.decrypting_files)
-            ensureBackgroundThread {
-                val decryptedFile = try {
-                    CryptoManager.decryptFileToDirectory(
-                        context = this,
-                        encryptedFile = srcFile,
-                        targetDir = targetDir,
-                        deleteEncryptedSource = true
-                    )
-                } catch (e: Exception) {
-                    null
-                }
-                val resultPath = decryptedFile?.absolutePath ?: oldPath
-                CryptoManager.clearAppImageCaches(this)
-                runOnUiThread {
-                    progressDialog.updateProgress(if (decryptedFile != null) 1 else 0, 1)
-                    progressDialog.dismiss()
-                    if (decryptedFile != null && decryptedFile.exists()) {
-                        toast(R.string.file_decrypted_successfully)
-                    } else {
-                        toast(org.fossify.commons.R.string.unknown_error_occurred)
+            ensureNotificationPermissionThenRun { notificationsAllowed ->
+                val progressDialog = CryptoProgressDialog(
+                    activity = this,
+                    max = 1,
+                    titleId = R.string.decrypting_files,
+                    enableNotification = notificationsAllowed
+                )
+                ensureBackgroundThread {
+                    val decryptedFile = try {
+                        CryptoManager.decryptFileToDirectory(
+                            context = this,
+                            encryptedFile = srcFile,
+                            targetDir = targetDir,
+                            deleteEncryptedSource = true
+                        )
+                    } catch (e: Exception) {
+                        null
                     }
-                    callback?.invoke(resultPath)
+                    val resultPath = decryptedFile?.absolutePath ?: oldPath
+                    CryptoManager.clearAppImageCaches(this)
+                    runOnUiThread {
+                        progressDialog.updateProgress(if (decryptedFile != null) 1 else 0, 1)
+                        progressDialog.dismiss()
+                        if (decryptedFile != null && decryptedFile.exists()) {
+                            toast(R.string.file_decrypted_successfully)
+                        } else {
+                            toast(org.fossify.commons.R.string.unknown_error_occurred)
+                        }
+                        callback?.invoke(resultPath)
+                    }
                 }
             }
         } else if (srcFile.name.startsWith('.')) {
@@ -553,22 +562,32 @@ private fun BaseSimpleActivity.encryptFileToVault(oldPath: String, callback: ((n
     }
 
     PickVaultAlbumDialog(this) { targetDir, albumName ->
-        ensureBackgroundThread {
-            val encryptedFile = CryptoManager.encryptFileToDirectory(
-                context = this,
-                sourceFile = srcFile,
-                targetDir = targetDir,
-                wipeSource = true,
-                clearCachesNow = true
+        ensureNotificationPermissionThenRun { notificationsAllowed ->
+            val progressDialog = CryptoProgressDialog(
+                activity = this,
+                max = 1,
+                titleId = R.string.encrypting_files,
+                enableNotification = notificationsAllowed
             )
-            val resultPath = encryptedFile?.absolutePath ?: oldPath
-            runOnUiThread {
-                if (encryptedFile != null && encryptedFile.exists()) {
-                    toast(getString(R.string.file_hidden_to_album, albumName))
-                } else {
-                    toast(org.fossify.commons.R.string.unknown_error_occurred)
+            ensureBackgroundThread {
+                val encryptedFile = CryptoManager.encryptFileToDirectory(
+                    context = this,
+                    sourceFile = srcFile,
+                    targetDir = targetDir,
+                    wipeSource = true,
+                    clearCachesNow = true
+                )
+                val resultPath = encryptedFile?.absolutePath ?: oldPath
+                runOnUiThread {
+                    progressDialog.updateProgress(if (encryptedFile != null && encryptedFile.exists()) 1 else 0, 1)
+                    progressDialog.dismiss()
+                    if (encryptedFile != null && encryptedFile.exists()) {
+                        toast(getString(R.string.file_hidden_to_album, albumName))
+                    } else {
+                        toast(org.fossify.commons.R.string.unknown_error_occurred)
+                    }
+                    callback?.invoke(resultPath)
                 }
-                callback?.invoke(resultPath)
             }
         }
     }
@@ -631,59 +650,66 @@ fun BaseSimpleActivity.tryDecryptFilesTo(
                 .setMessage(R.string.confirm_decrypt_hidden_file)
                 .setPositiveButton(org.fossify.commons.R.string.no, null)
                 .setNegativeButton(org.fossify.commons.R.string.yes) { _, _ ->
-                    val progressDialog = CryptoProgressDialog(this, fileDirItems.size, R.string.decrypting_files)
-                    ensureBackgroundThread {
-                        val destDir = File(destination)
-                        var processedCount = 0
-                        var allSuccess = true
+                    ensureNotificationPermissionThenRun { notificationsAllowed ->
+                        val progressDialog = CryptoProgressDialog(
+                            activity = this,
+                            max = fileDirItems.size,
+                            titleId = R.string.decrypting_files,
+                            enableNotification = notificationsAllowed
+                        )
+                        ensureBackgroundThread {
+                            val destDir = File(destination)
+                            var processedCount = 0
+                            var allSuccess = true
 
-                        for (item in fileDirItems) {
-                            val srcFile = File(item.path)
-                            if (!srcFile.exists()) continue
+                            for (item in fileDirItems) {
+                                val srcFile = File(item.path)
+                                if (!srcFile.exists()) continue
 
-                            val decFile = if (CryptoManager.isEncryptedFile(srcFile.name)) {
-                                CryptoManager.decryptFileToDirectory(
-                                    context = this,
-                                    encryptedFile = srcFile,
-                                    targetDir = destDir,
-                                    deleteEncryptedSource = true
-                                )
-                            } else if (srcFile.name.startsWith('.')) {
-                                val target = File(destDir, srcFile.name.substring(1))
-                                if (srcFile.renameTo(target)) {
-                                    updateDBMediaPath(srcFile.absolutePath, target.absolutePath)
-                                    rescanPaths(arrayListOf(target.absolutePath))
-                                    target
+                                val decFile = if (CryptoManager.isEncryptedFile(srcFile.name)) {
+                                    CryptoManager.decryptFileToDirectory(
+                                        context = this,
+                                        encryptedFile = srcFile,
+                                        targetDir = destDir,
+                                        deleteEncryptedSource = true
+                                    )
+                                } else if (srcFile.name.startsWith('.')) {
+                                    val target = File(destDir, srcFile.name.substring(1))
+                                    if (srcFile.renameTo(target)) {
+                                        updateDBMediaPath(srcFile.absolutePath, target.absolutePath)
+                                        rescanPaths(arrayListOf(target.absolutePath))
+                                        target
+                                    } else {
+                                        null
+                                    }
                                 } else {
                                     null
                                 }
-                            } else {
-                                null
+
+                                if (decFile != null && decFile.exists()) {
+                                    processedCount++
+                                } else {
+                                    allSuccess = false
+                                }
+
+                                runOnUiThread {
+                                    progressDialog.updateProgress(processedCount, fileDirItems.size)
+                                }
                             }
 
-                            if (decFile != null && decFile.exists()) {
-                                processedCount++
-                            } else {
-                                allSuccess = false
-                            }
-
+                            CryptoManager.clearAppImageCaches(this)
                             runOnUiThread {
-                                progressDialog.updateProgress(processedCount, fileDirItems.size)
-                            }
-                        }
+                                try {
+                                    progressDialog.dismiss()
+                                } catch (_: Exception) {}
 
-                        CryptoManager.clearAppImageCaches(this)
-                        runOnUiThread {
-                            try {
-                                progressDialog.dismiss()
-                            } catch (_: Exception) {}
-
-                            if (allSuccess && processedCount > 0) {
-                                toast(if (processedCount == 1) R.string.file_decrypted_successfully else R.string.files_decrypted_successfully)
-                            } else {
-                                toast(org.fossify.commons.R.string.unknown_error_occurred)
+                                if (allSuccess && processedCount > 0) {
+                                    toast(if (processedCount == 1) R.string.file_decrypted_successfully else R.string.files_decrypted_successfully)
+                                } else {
+                                    toast(org.fossify.commons.R.string.unknown_error_occurred)
+                                }
+                                callback(destination)
                             }
-                            callback(destination)
                         }
                     }
                 }
@@ -743,54 +769,61 @@ private fun BaseSimpleActivity.confirmAndDecryptFolders(
         .setMessage(R.string.confirm_decrypt_hidden_file)
         .setPositiveButton(org.fossify.commons.R.string.no, null)
         .setNegativeButton(org.fossify.commons.R.string.yes) { _, _ ->
-            val totalFilesCount = folderPaths.sumOf { folderPath ->
-                File(folderPath).listFiles()?.count { it.isFile && CryptoManager.isEncryptedFile(it.name) } ?: 0
-            }
-            val progressDialog = CryptoProgressDialog(this, totalFilesCount, R.string.decrypting_folder)
-            ensureBackgroundThread {
-                var globalProcessed = 0
-                var allSuccess = true
-                var lastDestination = targetDir?.absolutePath ?: ""
+            ensureNotificationPermissionThenRun { notificationsAllowed ->
+                val totalFilesCount = folderPaths.sumOf { folderPath ->
+                    File(folderPath).listFiles()?.count { it.isFile && CryptoManager.isEncryptedFile(it.name) } ?: 0
+                }
+                val progressDialog = CryptoProgressDialog(
+                    activity = this,
+                    max = totalFilesCount,
+                    titleId = R.string.decrypting_folder,
+                    enableNotification = notificationsAllowed
+                )
+                ensureBackgroundThread {
+                    var globalProcessed = 0
+                    var allSuccess = true
+                    var lastDestination = targetDir?.absolutePath ?: ""
 
-                for (folderPath in folderPaths) {
-                    var folderLastCurrent = 0
-                    val result = try {
-                        CryptoManager.decryptFolder(
-                            context = this,
-                            folderPath = folderPath,
-                            targetFolderOverride = targetDir
-                        ) { current, _ ->
-                            val diff = current - folderLastCurrent
-                            if (diff > 0) {
-                                globalProcessed += diff
-                                folderLastCurrent = current
-                                runOnUiThread {
-                                    progressDialog.updateProgress(globalProcessed, totalFilesCount)
+                    for (folderPath in folderPaths) {
+                        var folderLastCurrent = 0
+                        val result = try {
+                            CryptoManager.decryptFolder(
+                                context = this,
+                                folderPath = folderPath,
+                                targetFolderOverride = targetDir
+                            ) { current, _ ->
+                                val diff = current - folderLastCurrent
+                                if (diff > 0) {
+                                    globalProcessed += diff
+                                    folderLastCurrent = current
+                                    runOnUiThread {
+                                        progressDialog.updateProgress(globalProcessed, totalFilesCount)
+                                    }
                                 }
                             }
+                        } catch (_: Exception) {
+                            null
                         }
-                    } catch (_: Exception) {
-                        null
+                        if (result == null) {
+                            allSuccess = false
+                        } else if (lastDestination.isEmpty()) {
+                            lastDestination = result
+                        }
                     }
-                    if (result == null) {
-                        allSuccess = false
-                    } else if (lastDestination.isEmpty()) {
-                        lastDestination = result
-                    }
-                }
 
-                CryptoManager.clearAppImageCaches(this)
-                runOnUiThread {
-                    try {
-                        progressDialog.dismiss()
-                    } catch (_: Exception) {}
+                    CryptoManager.clearAppImageCaches(this)
+                    runOnUiThread {
+                        try {
+                            progressDialog.dismiss()
+                        } catch (_: Exception) {}
 
-                    if (allSuccess) {
-                        toast(R.string.folder_decrypted_successfully)
-                    } else {
-                        toast(org.fossify.commons.R.string.unknown_error_occurred)
+                        if (allSuccess) {
+                            toast(R.string.folder_decrypted_successfully)
+                        } else {
+                            toast(org.fossify.commons.R.string.unknown_error_occurred)
+                        }
+                        callback(lastDestination)
                     }
-                    callback(lastDestination)
                 }
             }
         }
@@ -882,70 +915,79 @@ fun BaseSimpleActivity.tryCopyMoveFilesTo(
                     // only formats supported by the gallery may ever be encrypted
                     !isDestEncrypted || CryptoManager.isEncryptedFile(it.name) || CryptoManager.isSupportedMediaName(it.name)
                 }
-                val progressDialog = CryptoProgressDialog(
-                    this,
-                    cryptoItems.size,
-                    if (isDestEncrypted) R.string.encrypting_files else R.string.decrypting_files
-                )
-                ensureBackgroundThread {
-                    val destDir = File(destination)
-                    var anyPlaintextWiped = false
-                    for ((itemIndex, item) in cryptoItems.withIndex()) {
-                        val srcFile = File(item.path)
-                        runOnUiThread { progressDialog.updateProgress(itemIndex, cryptoItems.size) }
-                        if (!srcFile.exists()) continue
+                val hasUnencryptedToEncrypt = isDestEncrypted && cryptoItems.any { !CryptoManager.isEncryptedFile(it.name) }
+                val progressTitleId = when {
+                    hasUnencryptedToEncrypt -> R.string.encrypting_files
+                    isDestEncrypted -> if (isCopyOperation) org.fossify.commons.R.string.copying else org.fossify.commons.R.string.moving
+                    else -> R.string.decrypting_files
+                }
+                ensureNotificationPermissionThenRun { notificationsAllowed ->
+                    val progressDialog = CryptoProgressDialog(
+                        activity = this,
+                        max = cryptoItems.size,
+                        titleId = progressTitleId,
+                        enableNotification = notificationsAllowed
+                    )
+                    ensureBackgroundThread {
+                        val destDir = File(destination)
+                        var anyPlaintextWiped = false
+                        for ((itemIndex, item) in cryptoItems.withIndex()) {
+                            val srcFile = File(item.path)
+                            runOnUiThread { progressDialog.updateProgress(itemIndex, cryptoItems.size) }
+                            if (!srcFile.exists()) continue
 
-                        if (isDestEncrypted && !CryptoManager.isEncryptedFile(srcFile.name)) {
-                            CryptoManager.encryptFileToDirectory(
-                                context = this,
-                                sourceFile = srcFile,
-                                targetDir = destDir,
-                                wipeSource = !isCopyOperation,
-                                clearCachesNow = false
-                            )
-                            if (!isCopyOperation) {
-                                anyPlaintextWiped = true
-                            }
-                        } else if (!isDestEncrypted && CryptoManager.isEncryptedFile(srcFile.name)) {
-                            CryptoManager.decryptFileToDirectory(
-                                context = this,
-                                encryptedFile = srcFile,
-                                targetDir = destDir,
-                                deleteEncryptedSource = !isCopyOperation
-                            )
-                        } else {
-                            // Encrypted-to-encrypted or normal-to-normal within a mixed batch
-                            val isEnc = CryptoManager.isEncryptedFile(srcFile.name)
-                            var targetFile = File(destDir, srcFile.name)
-                            if (isEnc) {
-                                while (targetFile.exists() && srcFile.absolutePath != targetFile.absolutePath) {
-                                    targetFile = File(destDir, "${CryptoManager.randomHex(8)}$ENCRYPTED_BIN_EXT")
-                                }
-                            }
-                            if (srcFile.absolutePath != targetFile.absolutePath) {
-                                val oldSrcPath = srcFile.absolutePath
-                                srcFile.copyTo(targetFile, overwrite = true)
-                                targetFile.setLastModified(srcFile.lastModified())
+                            if (isDestEncrypted && !CryptoManager.isEncryptedFile(srcFile.name)) {
+                                CryptoManager.encryptFileToDirectory(
+                                    context = this,
+                                    sourceFile = srcFile,
+                                    targetDir = destDir,
+                                    wipeSource = !isCopyOperation,
+                                    clearCachesNow = false
+                                )
                                 if (!isCopyOperation) {
-                                    updateDBMediaPath(oldSrcPath, targetFile.absolutePath)
-                                    if (isEnc) {
-                                        CryptoManager.moveMetadataCacheEntry(oldSrcPath, targetFile.absolutePath)
-                                        srcFile.delete()
-                                    } else {
-                                        CryptoManager.secureWipeAndDeleteFile(this, srcFile)
-                                        anyPlaintextWiped = true
+                                    anyPlaintextWiped = true
+                                }
+                            } else if (!isDestEncrypted && CryptoManager.isEncryptedFile(srcFile.name)) {
+                                CryptoManager.decryptFileToDirectory(
+                                    context = this,
+                                    encryptedFile = srcFile,
+                                    targetDir = destDir,
+                                    deleteEncryptedSource = !isCopyOperation
+                                )
+                            } else {
+                                // Encrypted-to-encrypted or normal-to-normal within a mixed batch
+                                val isEnc = CryptoManager.isEncryptedFile(srcFile.name)
+                                var targetFile = File(destDir, srcFile.name)
+                                if (isEnc) {
+                                    while (targetFile.exists() && srcFile.absolutePath != targetFile.absolutePath) {
+                                        targetFile = File(destDir, "${CryptoManager.randomHex(8)}$ENCRYPTED_BIN_EXT")
+                                    }
+                                }
+                                if (srcFile.absolutePath != targetFile.absolutePath) {
+                                    val oldSrcPath = srcFile.absolutePath
+                                    srcFile.copyTo(targetFile, overwrite = true)
+                                    targetFile.setLastModified(srcFile.lastModified())
+                                    if (!isCopyOperation) {
+                                        updateDBMediaPath(oldSrcPath, targetFile.absolutePath)
+                                        if (isEnc) {
+                                            CryptoManager.moveMetadataCacheEntry(oldSrcPath, targetFile.absolutePath)
+                                            srcFile.delete()
+                                        } else {
+                                            CryptoManager.secureWipeAndDeleteFile(this, srcFile)
+                                            anyPlaintextWiped = true
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                    if (anyPlaintextWiped) {
-                        CryptoManager.clearAppImageCaches(this)
-                    }
-                    runOnUiThread {
-                        progressDialog.updateProgress(cryptoItems.size, cryptoItems.size)
-                        progressDialog.dismiss()
-                        callback(destination)
+                        if (anyPlaintextWiped) {
+                            CryptoManager.clearAppImageCaches(this)
+                        }
+                        runOnUiThread {
+                            progressDialog.updateProgress(cryptoItems.size, cryptoItems.size)
+                            progressDialog.dismiss()
+                            callback(destination)
+                        }
                     }
                 }
             } else {
@@ -956,7 +998,7 @@ fun BaseSimpleActivity.tryCopyMoveFilesTo(
                 }
                 handleSAFDialog(physicalSource) {
                     if (it) {
-                        copyMoveFilesTo(fileDirItems, physicalSource.trimEnd('/'), destination, isCopyOperation, true, config.shouldShowHidden, callback)
+                        copyMoveFilesWithProgress(fileDirItems, physicalSource.trimEnd('/'), destination, isCopyOperation, true, config.shouldShowHidden, callback)
                     }
                 }
             }

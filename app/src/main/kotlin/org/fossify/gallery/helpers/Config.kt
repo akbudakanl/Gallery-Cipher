@@ -95,6 +95,10 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(TEMPORARILY_SHOW_EXCLUDED, false)
         set(temporarilyShowExcluded) = prefs.edit().putBoolean(TEMPORARILY_SHOW_EXCLUDED, temporarilyShowExcluded).apply()
 
+    var wasNotificationPermissionAsked: Boolean
+        get() = prefs.getBoolean(WAS_NOTIFICATION_PERMISSION_ASKED, false)
+        set(asked) = prefs.edit().putBoolean(WAS_NOTIFICATION_PERMISSION_ASKED, asked).apply()
+
     var isThirdPartyIntent: Boolean
         get() = prefs.getBoolean(IS_THIRD_PARTY_INTENT, false)
         set(isThirdPartyIntent) = prefs.edit().putBoolean(IS_THIRD_PARTY_INTENT, isThirdPartyIntent).apply()

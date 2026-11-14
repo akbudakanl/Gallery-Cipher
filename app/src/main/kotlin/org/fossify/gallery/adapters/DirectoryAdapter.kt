@@ -108,6 +108,7 @@ import org.fossify.gallery.extensions.updateFavoritePaths
 import org.fossify.gallery.extensions.updateReferencesForFolderRename
 import org.fossify.gallery.helpers.CryptoManager
 import org.fossify.gallery.helpers.DIRECTORY
+import org.fossify.gallery.helpers.ensureNotificationPermissionThenRun
 import org.fossify.gallery.helpers.FOLDER_MEDIA_CNT_BRACKETS
 import org.fossify.gallery.helpers.FOLDER_MEDIA_CNT_LINE
 import org.fossify.gallery.helpers.FOLDER_STYLE_ROUNDED_CORNERS
@@ -608,38 +609,45 @@ class DirectoryAdapter(
             File(path).listFiles()?.count { CryptoManager.isEncryptableMediaFile(it) } ?: 0
         }
 
-        val progressDialog = CryptoProgressDialog(activity, totalFilesCount, R.string.encrypting_folder)
+        activity.ensureNotificationPermissionThenRun { notificationsAllowed ->
+            val progressDialog = CryptoProgressDialog(
+                activity = activity,
+                max = totalFilesCount,
+                titleId = R.string.encrypting_folder,
+                enableNotification = notificationsAllowed
+            )
 
-        ensureBackgroundThread {
-            var globalProcessed = 0
-            var allSuccess = true
-            for (path in paths) {
-                var folderLastCurrent = 0
-                val result = CryptoManager.encryptFolder(activity, path) { current, _ ->
-                    val diff = current - folderLastCurrent
-                    if (diff > 0) {
-                        globalProcessed += diff
-                        folderLastCurrent = current
-                        activity.runOnUiThread {
-                            progressDialog.updateProgress(globalProcessed, totalFilesCount)
+            ensureBackgroundThread {
+                var globalProcessed = 0
+                var allSuccess = true
+                for (path in paths) {
+                    var folderLastCurrent = 0
+                    val result = CryptoManager.encryptFolder(activity, path) { current, _ ->
+                        val diff = current - folderLastCurrent
+                        if (diff > 0) {
+                            globalProcessed += diff
+                            folderLastCurrent = current
+                            activity.runOnUiThread {
+                                progressDialog.updateProgress(globalProcessed, totalFilesCount)
+                            }
                         }
                     }
+                    if (result == null) {
+                        allSuccess = false
+                    }
                 }
-                if (result == null) {
-                    allSuccess = false
+                activity.runOnUiThread {
+                    try {
+                        progressDialog.dismiss()
+                    } catch (_: Exception) {}
+                    if (allSuccess) {
+                        activity.toast(R.string.folder_encrypted_successfully)
+                    } else {
+                        activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
+                    }
+                    finishActMode()
+                    listener?.refreshItems()
                 }
-            }
-            activity.runOnUiThread {
-                try {
-                    progressDialog.dismiss()
-                } catch (_: Exception) {}
-                if (allSuccess) {
-                    activity.toast(R.string.folder_encrypted_successfully)
-                } else {
-                    activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
-                }
-                finishActMode()
-                listener?.refreshItems()
             }
         }
     }
@@ -734,25 +742,32 @@ class DirectoryAdapter(
         val folder = File(path)
         val filesToEncrypt = folder.listFiles()?.filter { CryptoManager.isEncryptableMediaFile(it) } ?: emptyList()
 
-        val progressDialog = CryptoProgressDialog(activity, filesToEncrypt.size, R.string.encrypting_folder)
+        activity.ensureNotificationPermissionThenRun { notificationsAllowed ->
+            val progressDialog = CryptoProgressDialog(
+                activity = activity,
+                max = filesToEncrypt.size,
+                titleId = R.string.encrypting_folder,
+                enableNotification = notificationsAllowed
+            )
 
-        ensureBackgroundThread {
-            val result = CryptoManager.encryptFolder(activity, path) { current, total ->
+            ensureBackgroundThread {
+                val result = CryptoManager.encryptFolder(activity, path) { current, total ->
+                    activity.runOnUiThread {
+                        progressDialog.updateProgress(current, total)
+                    }
+                }
                 activity.runOnUiThread {
-                    progressDialog.updateProgress(current, total)
+                    try {
+                        progressDialog.dismiss()
+                    } catch (_: Exception) {}
+                    if (result != null) {
+                        activity.toast(R.string.folder_encrypted_successfully)
+                    } else {
+                        activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
+                    }
+                    finishActMode()
+                    listener?.refreshItems()
                 }
-            }
-            activity.runOnUiThread {
-                try {
-                    progressDialog.dismiss()
-                } catch (_: Exception) {}
-                if (result != null) {
-                    activity.toast(R.string.folder_encrypted_successfully)
-                } else {
-                    activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
-                }
-                finishActMode()
-                listener?.refreshItems()
             }
         }
     }
