@@ -24,7 +24,10 @@ class ReferenceBackupTest {
                     mediaStoreId = 41233,
                     fileSize = 2841923,
                     lastModified = 1700000000000L,
-                    fingerprint = "a3f1c2d4"
+                    fingerprint = "a3f1c2d4",
+                    folderInode = 98765L,
+                    folderSignature = "5000:deadbeef",
+                    capturedAtSec = 1700000100L
                 )
             )
         )
@@ -40,6 +43,9 @@ class ReferenceBackupTest {
         assertEquals("/storage/emulated/0/DCIM/Camera/IMG_001.jpg", parsed.favorites?.get(0)?.fullPath)
         assertEquals(41233L, parsed.favorites?.get(0)?.mediaStoreId)
         assertEquals("a3f1c2d4", parsed.favorites?.get(0)?.fingerprint)
+        assertEquals(98765L, parsed.favorites?.get(0)?.folderInode)
+        assertEquals("5000:deadbeef", parsed.favorites?.get(0)?.folderSignature)
+        assertEquals(1700000100L, parsed.favorites?.get(0)?.capturedAtSec)
     }
 
     @Test
