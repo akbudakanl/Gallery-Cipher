@@ -32,6 +32,23 @@ class VirtualAlbumSyncTest {
         assertEquals(2, parsed.items?.size)
         assertEquals("/storage/emulated/0/Pictures/Album/1.jpg", parsed.items?.get(0)?.fullPath)
         assertEquals(1700000010000L, parsed.items?.get(0)?.addedTs)
+
+        val unresolvedBackup = VirtualAlbumBackup(
+            version = 1,
+            name = "UnresolvedTest",
+            items = listOf(
+                VirtualAlbumItemBackup(
+                    fullPath = "/storage/emulated/0/Pictures/Moved/1.jpg",
+                    addedTs = 1700000010000L,
+                    fileSize = 12345L,
+                    fingerprint = "deadbeef",
+                    state = "UNRESOLVED"
+                )
+            )
+        )
+        val unresolvedParsed = Gson().fromJson(Gson().toJson(unresolvedBackup), VirtualAlbumBackup::class.java)
+        assertEquals("UNRESOLVED", unresolvedParsed.items?.get(0)?.state)
+        assertEquals("deadbeef", unresolvedParsed.items?.get(0)?.fingerprint)
     }
 
     @Test

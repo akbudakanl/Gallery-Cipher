@@ -9,6 +9,8 @@ import com.google.gson.annotations.SerializedName
 import org.fossify.commons.extensions.getParentPath
 import org.fossify.commons.helpers.NOMEDIA
 import org.fossify.gallery.extensions.virtualAlbumsDB
+import org.fossify.gallery.models.ITEM_STATE_OK
+import org.fossify.gallery.models.ITEM_STATE_UNRESOLVED
 import org.fossify.gallery.models.VirtualAlbum
 import org.fossify.gallery.models.VirtualAlbumItem
 import java.io.File
@@ -31,7 +33,8 @@ data class VirtualAlbumItemBackup(
     @SerializedName(value = "mediaStoreId", alternate = ["media_store_id"]) val mediaStoreId: Long? = null,
     @SerializedName(value = "fileSize", alternate = ["file_size"]) val fileSize: Long? = null,
     @SerializedName(value = "lastModified", alternate = ["last_modified"]) val lastModified: Long? = null,
-    @SerializedName(value = "fingerprint") val fingerprint: String? = null
+    @SerializedName(value = "fingerprint") val fingerprint: String? = null,
+    @SerializedName(value = "state") val state: String? = null
 )
 
 object VirtualAlbumSyncManager {
@@ -106,7 +109,8 @@ object VirtualAlbumSyncManager {
                 mediaStoreId = it.mediaStoreId,
                 fileSize = it.fileSize,
                 lastModified = it.lastModified,
-                fingerprint = it.fingerprint
+                fingerprint = it.fingerprint,
+                state = it.state
             )
         }
     }
@@ -127,9 +131,9 @@ object VirtualAlbumSyncManager {
             val album = context.virtualAlbumsDB.getAlbumById(albumId) ?: return
             val items = context.virtualAlbumsDB.getItems(albumId)
 
-            // Include items whose files exist or whose parent directories exist
-            val validItems = items.filter { File(it.fullPath).exists() || File(it.fullPath).parentFile?.exists() != true }
-            val backupItems = toBackupItems(validItems)
+            // Keep all items (including UNRESOLVED) so their MediaIdentity survives in the backup
+            // until the user explicitly removes them or deletes the underlying file.
+            val backupItems = toBackupItems(items)
 
             val gson = GsonBuilder().setPrettyPrinting().create()
 
@@ -179,7 +183,7 @@ object VirtualAlbumSyncManager {
                 val targetFile = File(targetDir, getPublicAlbumFileName(album.name, album.id))
                 val tempFile = File(targetDir, "${targetFile.name}.${System.currentTimeMillis()}.tmp")
 
-                val backup = buildPublicAlbumBackup(album, validItems)
+                val backup = buildPublicAlbumBackup(album, items)
 
                 tempFile.writeText(gson.toJson(backup), Charsets.UTF_8)
                 if (tempFile.exists()) {
@@ -363,16 +367,20 @@ object VirtualAlbumSyncManager {
                         ?: emptyList()
 
                     val itemsToInsert = ArrayList<VirtualAlbumItem>()
-                    var hadMissingFiles = false
+                    var hadNewlyUnresolved = false
 
                     for (entry in rawItems) {
                         try {
                             val path = entry.fullPath ?: continue
                             if (path.isBlank()) continue
                             val targetFile = File(path)
-                            // If file definitely doesn't exist and parent exists, skip it
-                            if (!targetFile.exists() && targetFile.parentFile?.exists() == true) {
-                                hadMissingFiles = true
+                            val exists = targetFile.exists()
+                            val hasUsableIdentity = (entry.mediaStoreId ?: 0L) > 0L ||
+                                !entry.fingerprint.isNullOrEmpty() ||
+                                (entry.fileSize ?: 0L) > 0L
+                            // Legacy path-only entries without identity cannot be relocated if missing.
+                            if (!exists && !hasUsableIdentity && targetFile.parentFile?.exists() == true) {
+                                hadNewlyUnresolved = true
                                 continue
                             }
 
@@ -388,13 +396,14 @@ object VirtualAlbumSyncManager {
                                         mediaStoreId = entry.mediaStoreId ?: 0L,
                                         fileSize = entry.fileSize ?: 0L,
                                         lastModified = entry.lastModified ?: 0L,
-                                        fingerprint = entry.fingerprint ?: ""
+                                        fingerprint = entry.fingerprint ?: "",
+                                        state = if (exists) ITEM_STATE_OK else ITEM_STATE_UNRESOLVED
                                     )
                                 )
                                 existingPaths.add(path.lowercase())
                             }
                         } catch (_: Exception) {
-                            hadMissingFiles = true
+                            hadNewlyUnresolved = true
                         }
                     }
 
@@ -402,18 +411,17 @@ object VirtualAlbumSyncManager {
                         dao.insertItems(itemsToInsert)
                     }
 
-                    val missingDbPaths = existingItems.filter {
-                        val f = File(it.fullPath)
-                        !f.exists() && f.parentFile?.exists() == true
+                    val newlyMissingDbPaths = existingItems.filter {
+                        it.state != ITEM_STATE_UNRESOLVED && !File(it.fullPath).exists() && File(it.fullPath).parentFile?.exists() == true
                     }.map { it.fullPath }
-                    if (missingDbPaths.isNotEmpty()) {
+                    if (newlyMissingDbPaths.isNotEmpty()) {
                         // The item is kept, only marked as unresolved. It may have been renamed or
                         // moved, and the identity is what allows finding it again.
-                        missingDbPaths.forEach { dao.markItemUnresolved(albumId, it) }
-                        hadMissingFiles = true
+                        newlyMissingDbPaths.forEach { dao.markItemUnresolved(albumId, it) }
+                        hadNewlyUnresolved = true
                     }
 
-                    if (hadMissingFiles || itemsToInsert.isNotEmpty()) {
+                    if (hadNewlyUnresolved || itemsToInsert.isNotEmpty()) {
                         saveAlbumToFile(context, albumId)
                     }
                 } catch (_: Exception) {
@@ -492,15 +500,19 @@ object VirtualAlbumSyncManager {
                             ?: emptyList()
 
                         val itemsToInsert = ArrayList<VirtualAlbumItem>()
-                        var hadMissingFiles = false
+                        var hadNewlyUnresolved = false
 
                         for (entry in rawItems) {
                             try {
                                 val path = entry.fullPath ?: continue
                                 if (path.isBlank()) continue
                                 val targetFile = File(path)
-                                if (!targetFile.exists() && targetFile.parentFile?.exists() == true) {
-                                    hadMissingFiles = true
+                                val exists = targetFile.exists()
+                                val hasUsableIdentity = (entry.mediaStoreId ?: 0L) > 0L ||
+                                    !entry.fingerprint.isNullOrEmpty() ||
+                                    (entry.fileSize ?: 0L) > 0L
+                                if (!exists && !hasUsableIdentity && targetFile.parentFile?.exists() == true) {
+                                    hadNewlyUnresolved = true
                                     continue
                                 }
 
@@ -516,13 +528,14 @@ object VirtualAlbumSyncManager {
                                             mediaStoreId = entry.mediaStoreId ?: 0L,
                                             fileSize = entry.fileSize ?: 0L,
                                             lastModified = entry.lastModified ?: 0L,
-                                            fingerprint = entry.fingerprint ?: ""
+                                            fingerprint = entry.fingerprint ?: "",
+                                            state = if (exists) ITEM_STATE_OK else ITEM_STATE_UNRESOLVED
                                         )
                                     )
                                     existingPaths.add(path.lowercase())
                                 }
                             } catch (_: Exception) {
-                                hadMissingFiles = true
+                                hadNewlyUnresolved = true
                             }
                         }
 
@@ -530,17 +543,16 @@ object VirtualAlbumSyncManager {
                             dao.insertItems(itemsToInsert)
                         }
 
-                        val missingDbPaths = existingItems.filter {
-                            val f = File(it.fullPath)
-                            !f.exists() && f.parentFile?.exists() == true
+                        val newlyMissingDbPaths = existingItems.filter {
+                            it.state != ITEM_STATE_UNRESOLVED && !File(it.fullPath).exists() && File(it.fullPath).parentFile?.exists() == true
                         }.map { it.fullPath }
-                        if (missingDbPaths.isNotEmpty()) {
+                        if (newlyMissingDbPaths.isNotEmpty()) {
                             // Kept, only marked as unresolved, so a renamed file can be found again.
-                            missingDbPaths.forEach { dao.markItemUnresolved(albumId, it) }
-                            hadMissingFiles = true
+                            newlyMissingDbPaths.forEach { dao.markItemUnresolved(albumId, it) }
+                            hadNewlyUnresolved = true
                         }
 
-                        if (hadMissingFiles || itemsToInsert.isNotEmpty()) {
+                        if (hadNewlyUnresolved || itemsToInsert.isNotEmpty()) {
                             saveAlbumToFile(context, albumId)
                         }
                     } catch (_: Exception) {

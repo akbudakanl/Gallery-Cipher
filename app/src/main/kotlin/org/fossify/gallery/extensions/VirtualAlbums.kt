@@ -14,6 +14,7 @@ import org.fossify.gallery.helpers.ReferenceBackupManager
 import org.fossify.gallery.helpers.VirtualAlbumSyncManager
 import org.fossify.gallery.interfaces.VirtualAlbumsDao
 import org.fossify.gallery.models.Directory
+import org.fossify.gallery.models.ITEM_STATE_UNRESOLVED
 import org.fossify.gallery.models.Medium
 import org.fossify.gallery.models.VirtualAlbum
 import org.fossify.gallery.models.VirtualAlbumItem
@@ -94,7 +95,22 @@ fun Context.getVirtualAlbumPaths(albumPath: String): ArrayList<String> {
         val deletedPaths = virtualAlbumsDB.getDeletedPathsForAlbum(albumId).toHashSet()
         val canAccessHidden = canAccessHiddenVirtualAlbums()
         val validPaths = ArrayList<String>()
-        val missingPaths = ArrayList<String>()
+        val newlyMissingPaths = ArrayList<String>()
+        var session: MediaIdentityResolver.ResolutionSession? = null
+        var repairedAny = false
+
+        val missingItems = items.filter { item ->
+            val path = item.fullPath
+            !deletedPaths.contains(path) &&
+                !path.startsWith(recycleBinPath) &&
+                !(CryptoManager.isVaultMediaPath(this, path) && !canAccessHidden) &&
+                !File(path).exists()
+        }
+        if (missingItems.isNotEmpty()) {
+            session = MediaIdentityResolver.ResolutionSession().apply {
+                preloadMediaStore(this@getVirtualAlbumPaths, missingItems.map { it.toIdentity() })
+            }
+        }
 
         for (item in items) {
             val path = item.fullPath
@@ -104,24 +120,36 @@ fun Context.getVirtualAlbumPaths(albumPath: String): ArrayList<String> {
             val isVaultContent = CryptoManager.isVaultMediaPath(this, path)
             if (isVaultContent && !canAccessHidden) continue
             if (File(path).exists()) {
+                if (item.state == ITEM_STATE_UNRESOLVED) {
+                    try {
+                        virtualAlbumsDB.markItemResolved(albumId, path)
+                        repairedAny = true
+                    } catch (_: Exception) {
+                    }
+                }
                 validPaths.add(path)
             } else {
                 // The file may have been renamed or moved outside of the app. Its identity allows
                 // finding it again at the new location.
-                val resolved = resolveVirtualAlbumItemPath(item)
+                val resolved = resolveVirtualAlbumItemPath(item, session = session, saveBackup = false)
                 if (resolved != null) {
                     validPaths.add(resolved)
-                } else {
+                    repairedAny = true
+                } else if (item.state != ITEM_STATE_UNRESOLVED) {
                     // The item stays in the album and is only marked as unresolved, so it can be
                     // repaired later. It is never removed behind the user's back.
-                    missingPaths.add(path)
+                    newlyMissingPaths.add(path)
                 }
             }
         }
 
-        if (missingPaths.isNotEmpty()) {
+        if (newlyMissingPaths.isNotEmpty() || repairedAny) {
             ensureBackgroundThread {
-                VirtualAlbumSyncManager.pruneMissingItems(this, albumId, missingPaths)
+                if (newlyMissingPaths.isNotEmpty()) {
+                    VirtualAlbumSyncManager.pruneMissingItems(this, albumId, newlyMissingPaths)
+                } else {
+                    VirtualAlbumSyncManager.saveAlbumToFile(this, albumId)
+                }
             }
         }
 
@@ -155,7 +183,19 @@ fun Context.getVirtualAlbumMedia(albumId: Long, getVideoDurations: Boolean = fal
         }
 
         val result = ArrayList<Medium>()
-        val missingPaths = ArrayList<String>()
+        val newlyMissingPaths = ArrayList<String>()
+        var session: MediaIdentityResolver.ResolutionSession? = null
+        var repairedAny = false
+
+        val missingItems = items.filter { item ->
+            val path = item.fullPath
+            !deletedPaths.contains(path) && !path.startsWith(recycleBinPath) && !File(path).exists()
+        }
+        if (missingItems.isNotEmpty()) {
+            session = MediaIdentityResolver.ResolutionSession().apply {
+                preloadMediaStore(this@getVirtualAlbumMedia, missingItems.map { it.toIdentity() })
+            }
+        }
 
         for (item in items) {
             var path = item.fullPath
@@ -164,13 +204,22 @@ fun Context.getVirtualAlbumMedia(albumId: Long, getVideoDurations: Boolean = fal
             var file = File(path)
             if (!file.exists()) {
                 // The file may have been renamed or moved outside of the app.
-                val resolved = resolveVirtualAlbumItemPath(item)
+                val resolved = resolveVirtualAlbumItemPath(item, session = session, saveBackup = false)
                 if (resolved == null) {
-                    missingPaths.add(path)
+                    if (item.state != ITEM_STATE_UNRESOLVED) {
+                        newlyMissingPaths.add(path)
+                    }
                     continue
                 }
                 path = resolved
                 file = File(path)
+                repairedAny = true
+            } else if (item.state == ITEM_STATE_UNRESOLVED) {
+                try {
+                    virtualAlbumsDB.markItemResolved(albumId, path)
+                    repairedAny = true
+                } catch (_: Exception) {
+                }
             }
 
             if (CryptoManager.isEncryptedFile(path)) {
@@ -239,9 +288,13 @@ fun Context.getVirtualAlbumMedia(albumId: Long, getVideoDurations: Boolean = fal
             }
         }
 
-        if (missingPaths.isNotEmpty()) {
+        if (newlyMissingPaths.isNotEmpty() || repairedAny) {
             ensureBackgroundThread {
-                VirtualAlbumSyncManager.pruneMissingItems(this, albumId, missingPaths)
+                if (newlyMissingPaths.isNotEmpty()) {
+                    VirtualAlbumSyncManager.pruneMissingItems(this, albumId, newlyMissingPaths)
+                } else {
+                    VirtualAlbumSyncManager.saveAlbumToFile(this, albumId)
+                }
             }
         }
 
@@ -528,7 +581,7 @@ fun Context.addFileDirItemsToVirtualAlbum(
 
         val now = System.currentTimeMillis()
         val items = allowedItems.map { item ->
-            val identity = MediaIdentity.of(File(item.path), item.mediaStoreId)
+            val identity = MediaIdentity.of(this, File(item.path), item.mediaStoreId)
             VirtualAlbumItem(
                 id = null,
                 albumId = albumId,
@@ -608,7 +661,11 @@ fun Context.updateReferencesForFolderRename(oldRoot: String, newRoot: String) {
  *
  * @return the current path of the file, or null when it could not be found
  */
-fun Context.resolveVirtualAlbumItemPath(item: VirtualAlbumItem): String? {
+fun Context.resolveVirtualAlbumItemPath(
+    item: VirtualAlbumItem,
+    session: MediaIdentityResolver.ResolutionSession? = null,
+    saveBackup: Boolean = true
+): String? {
     val identity = item.toIdentity()
     if (!identity.isUsable) {
         return null
@@ -618,10 +675,17 @@ fun Context.resolveVirtualAlbumItemPath(item: VirtualAlbumItem): String? {
         context = this,
         identity = identity,
         hintPaths = listOf(item.fullPath),
-        searchRoots = listOf(item.parentPath)
+        searchRoots = listOf(item.parentPath),
+        session = session
     ) ?: return null
 
     if (resolution.path == item.fullPath) {
+        if (item.state == ITEM_STATE_UNRESOLVED) {
+            try {
+                virtualAlbumsDB.markItemResolved(item.albumId, item.fullPath)
+            } catch (_: Exception) {
+            }
+        }
         return item.fullPath
     }
 
@@ -633,7 +697,10 @@ fun Context.resolveVirtualAlbumItemPath(item: VirtualAlbumItem): String? {
             resolution.path.getParentPath()
         )
         virtualAlbumsDB.markItemResolved(item.albumId, resolution.path)
-        updateReferenceIdentitiesForPath(resolution.path)
+        updateReferenceIdentitiesForPath(resolution.path, resolution.mediaStoreId)
+        if (saveBackup) {
+            VirtualAlbumSyncManager.saveAlbumToFile(this, item.albumId)
+        }
     } catch (_: Exception) {
     }
 
@@ -646,42 +713,48 @@ fun Context.resolveVirtualAlbumItemPath(item: VirtualAlbumItem): String? {
  *
  * @return how many items were repaired
  */
-fun Context.repairVirtualAlbumItems(albumId: Long): Int {
+fun Context.repairVirtualAlbumItems(
+    albumId: Long,
+    session: MediaIdentityResolver.ResolutionSession? = null,
+    saveBackup: Boolean = true
+): Int {
     val items = try {
         virtualAlbumsDB.getItems(albumId)
     } catch (_: Exception) {
         return 0
     }
 
+    val missing = ArrayList<VirtualAlbumItem>()
     var repaired = 0
+
     for (item in items) {
         if (File(item.fullPath).isFile) {
-            continue
+            if (item.state == ITEM_STATE_UNRESOLVED) {
+                try {
+                    virtualAlbumsDB.markItemResolved(albumId, item.fullPath)
+                    repaired++
+                } catch (_: Exception) {
+                }
+            }
+        } else {
+            missing.add(item)
         }
-
-        val identity = item.toIdentity()
-        if (!identity.isUsable) {
-            continue
-        }
-
-        val resolution = MediaIdentityResolver.resolve(
-            context = this,
-            identity = identity,
-            hintPaths = listOf(item.fullPath),
-            searchRoots = listOf(item.parentPath)
-        ) ?: continue
-
-        virtualAlbumsDB.updateItemPath(
-            item.fullPath,
-            resolution.path,
-            resolution.path.getFilenameFromPath(),
-            resolution.path.getParentPath()
-        )
-        updateReferenceIdentitiesForPath(resolution.path)
-        repaired++
     }
 
-    if (repaired > 0) {
+    if (missing.isNotEmpty()) {
+        val activeSession = session ?: MediaIdentityResolver.ResolutionSession().apply {
+            preloadMediaStore(this@repairVirtualAlbumItems, missing.map { it.toIdentity() })
+        }
+
+        for (item in missing) {
+            val resolved = resolveVirtualAlbumItemPath(item, session = activeSession, saveBackup = false)
+            if (resolved != null && resolved != item.fullPath) {
+                repaired++
+            }
+        }
+    }
+
+    if (repaired > 0 && saveBackup) {
         VirtualAlbumSyncManager.saveAlbumToFile(this, albumId)
     }
 
