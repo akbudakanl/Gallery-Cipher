@@ -43,13 +43,13 @@ Internal Storage/
 - Contains JSON manifests for virtual albums created from unencrypted, standard physical folders.
 - The filename matches the display name of the virtual album (e.g., `Vacation.json`).
 - Stores references to original file paths on disk without duplicating data. Adding a photo to any number of virtual albums uses zero additional storage space.
-- Every entry also carries the *identity* of the referenced file (MediaStore id, size, modification time and a content fingerprint), so the album is able to find its files again after they were renamed or moved.
+- Every entry carries both the **file identity** (`mediaStoreId`, `fileSize`, `lastModified`, `fingerprint`) and a zero-pollution **folder identity** (`folderInode`, `folderSignature`, `capturedAtSec`), enabling reliable recovery after renames or folder moves while preventing false matches in unrelated directories.
 
 ### A2. `Favorites/` (Favorites Backup)
 - Contains `favorites.json`, the backup of the favorites.
 - It lives on the shared storage, outside of the app sandbox, so it survives a wipe of the app data and is restored when the app starts without any data.
 - The backup is only written while the app may access the shared storage.
-- The entries carry the same identity information as the virtual album manifests, so a favorite survives a rename or a move of its file.
+- The entries carry the same file and folder identity metadata as the virtual album manifests (`mediaStoreId`, `fileSize`, `lastModified`, `fingerprint`, `folderInode`, `folderSignature`, `capturedAtSec`), so a favorite survives external renames and moves without touching user folders.
 
 ### B. `Cipher_Secrets/` (Cryptographic Vault Container)
 Created when the user enables password protection for hidden items in Settings:
@@ -171,17 +171,73 @@ The application transitions through three distinct operational states to balance
 3. **Copy Flows from Virtual Albums:**
    - Media cannot be copied from a virtual album to its own owning physical album (the media already exists there).
    - Creating a new virtual album during a copy flow remembers the source folder as a hint for later copy flows.
-4. **File & Zero-Pollution Folder Identity Instead of Paths:**
-   - The absolute path is only a *cache* of where a referenced file currently lives. Every Favorite and virtual album item captures both the **file identity** (`mediaStoreId`, byte `size`, `lastModified`, and SHA-256 over the first and last 64 KB) and a zero-pollution **folder identity** (`folderInode`, `capturedAtSec`, and up to 5 sibling neighbor size+fingerprint anchors from the source folder—without writing any hidden marker files into shared user directories).
-   - A rename or a move performed outside of the app is detected by looking the file up again across ordered layers: in-session relocated folder cache -> cached path -> MediaStore `_ID` -> batched MediaStore `SIZE` query -> bounded filesystem fallback (handling `.nomedia` and `.fenc` vault files). Candidates are confirmed against the content fingerprint.
-   - A referenced file that cannot be found is **not** removed from the album. It is marked as `UNRESOLVED` and stays in the album and in the JSON backup, so it can be repaired automatically as soon as the file or storage volume reappears.
-   - **Same-Filename & Multi-Copy Handling:**
-     - Database uniqueness constraints and membership checks operate on full paths (`full_path` / `(album_id, full_path)`), not display filenames. Having files with the same name in different folders (e.g. `Pictures/A/photo.jpg` and `Pictures/B/photo.jpg`) never causes adding one to match, display, or duplicate the other.
-     - When a physical folder moves or is renamed outside the app and byte-identical copies exist elsewhere on disk without a distinguishing MediaStore `_ID`, batch repair uses a two-pass `ResolutionSession`: unambiguous sibling files resolve first to map the relocated folder, already-claimed paths in the same album/favorites are excluded so live entries are never overwritten, and remaining duplicate candidates that prove continuity with the source folder are ranked by physical and metadata affinity (`mediaStoreId`, `folderInode`, neighbor anchor matches, trailing folder path, `lastModified`, token-safe folder name similarity, common parent prefix, exact filename) so a valid relocated file is selected rather than leaving the entry empty.
-   - **Existing-Folder & Deleted-Folder Protection (`Pictures/A` vs `Pictures/B`):**
-     - *If `Pictures/A` still sits on disk* (for example, the user deleted `photo.jpg` or emptied `Pictures/A` externally): broad `SIZE` and cross-folder fallback scans are suppressed—only an exact `MediaStore._ID` relocation or an in-folder rename inside `Pictures/A` is accepted, so byte-identical copies in `Pictures/B` are never pulled.
-     - *If `Pictures/A` was completely deleted externally:* candidates in other folders require **positive continuity** (matching `MediaStore._ID`, matching `folderInode`, matching sibling neighbor anchors, preserved folder name / token-prefix similarity without an older pre-existing `MediaStore.DATE_ADDED`). If none of those hold, unrelated copies such as `Pictures/B/photo.jpg` are rejected and the item stays `UNRESOLVED` rather than hijacking another folder's file.
-     - *(Remaining physical limit:)* if a single-file `.nomedia`/unindexed folder with no neighbors, no `MediaStore._ID`, and no preserved inode is renamed to a completely unrelated name *or* duplicated to a sibling folder before deletion, both states look identical on disk; positive continuity prioritizes safety by refusing to jump blindly to an unrelated folder name.
+4. **File & Zero-Pollution Folder Identity Architecture (Room v15 / `MIGRATION_14_15`):**
+   - **Design Principle:** Filesystem paths are treated strictly as a *mutable cache*. Every Favorite (`favorites` table) and virtual album item (`virtual_album_items` table) persists a two-tier identity descriptor without ever writing hidden marker files (such as `.folder_id`) into shared user directories (**Zero-Pollution**):
+
+   ```text
+   ┌───────────────────────────────────────────────────────────────────────────┐
+   │ 1. CAPTURE (MediaIdentity + FolderIdentity + FolderIdentity.CaptureSession)│
+   │    • File:   mediaStoreId, size, lastModified, fingerprint (64KB head+tail)│
+   │    • Folder: folderInode (Os.stat.st_ino), capturedAtSec,                  │
+   │              folderSignature (up to 5 sorted sibling <size>:<sha256>)      │
+   └───────────────────────────────────────┬───────────────────────────────────┘
+                                           ▼
+   ┌───────────────────────────────────────────────────────────────────────────┐
+   │ 2. PERSISTENCE (Room v15 + Automatic JSON Backups)                        │
+   │    • Room tables `favorites` & `virtual_album_items` (MIGRATION_14_15)    │
+   │    • Backups: `favorites.json`, `<Album>.json`, `Cipher_Secrets/JSON/`    │
+   └───────────────────────────────────────┬───────────────────────────────────┘
+                                           ▼
+   ┌───────────────────────────────────────────────────────────────────────────┐
+   │ 3. ORDERED RESOLUTION PIPELINE (MediaIdentityResolver + ResolutionSession)│
+   │    Layer 0a: Cached hint path (if present & not in `excludedPaths`)        │
+   │    Layer 0b: Session relocated-folder cache (+ up to 2 ancestor levels)    │
+   │    Layer 1 : Authoritative `MediaStore._ID` (batched IN-200) + FP check    │
+   │    Guard   : `allHintParentsExist` -> blocks cross-folder scan if source   │
+   │              folder still exists (in-folder rename only)                   │
+   │    Layer 1.5: MediaStore `SIZE` query (+ `DATE_ADDED`) -> FP confirm       │
+   │    Layer 2 : Bounded filesystem fallback (depth<=4, stat<=5000, cap=40)    │
+   └───────────────────────────────────────┬───────────────────────────────────┘
+                                           ▼
+   ┌───────────────────────────────────────────────────────────────────────────┐
+   │ 4. SCORING & CROSS-FOLDER CONTINUITY GATE (`selectBestCandidate`)         │
+   │    • Filter out `excludedPaths` (already claimed live paths)               │
+   │    • Require `hasPositiveContinuity` (rejects foreign & pre-existing copy) │
+   │    • Deterministic precedence (`CandidateScore`):                          │
+   │      ID > Inode > Sibling Anchors > Trailing Path > MTime > NameSim > Path │
+   └───────────────────────────────────────────────────────────────────────────┘
+   ```
+
+   - **Two-Tier Identity Model (`MediaIdentity` & `FolderIdentity`):**
+
+     | Tier | Fields | How It Works & Cost |
+     | :--- | :--- | :--- |
+     | **File Identity** (`MediaIdentity`) | `mediaStoreId`, `fileSize`, `lastModified`, `fingerprint` | `fingerprint` hashes the first 64 KB and last 64 KB via `SHA-256` (`O(1)` I/O regardless of video size). |
+     | **Folder Identity** (`FolderIdentity`) | `folderInode`, `folderSignature`, `capturedAtSec` | Reads `Os.stat(parent).st_ino` plus up to `5` sorted non-hidden sibling `<size>:<sha256>` anchor tokens (excluding the item itself; directory child scan capped at `2000`). `CaptureSession` caches directory metadata per batch so bulk operations hash sibling anchors once per folder. |
+
+   - **Persistence & Non-Destructive Preservation (`GalleryDatabase` v15 & JSON Sync):**
+     - `FavoritesDao.updateFavoriteIdentity` and `VirtualAlbumsDao.updateItemIdentity` update relocated paths and file identity while preserving existing non-zero/non-empty `folder_inode`, `folder_signature`, and `captured_at_sec` values.
+     - Both `ReferenceBackupManager` (`favorites.json`) and `VirtualAlbumSyncManager` (`Virtual Album Saves/*.json` and encrypted `Cipher_Secrets/JSON/*.json` manifests) serialize all folder identity columns with backward-compatible defaults.
+     - Referenced files that cannot be located safely are **not** pruned out of virtual albums or backups; virtual album entries stay in `UNRESOLVED` state until the file or external volume reappears.
+   - **Same-Filename Isolation, Two-Pass Batch Repair & Duplicate Ranking:**
+     - Database uniqueness constraints and membership checks operate on full paths (`full_path` / `(album_id, full_path)`), not display filenames. Having files with the same name in different folders (e.g., `Pictures/A/photo.jpg` and `Pictures/B/photo.jpg`) never causes adding one to match, display, or duplicate the other.
+     - Batch repair uses a shared `ResolutionSession` across two passes (`allowAmbiguous = false`, then `allowAmbiguous = true`):
+       - **Pass 1 (`allowAmbiguous = false`):** Unambiguous items (including `MediaStore._ID` moves and items uniquely proven by `folderInode` / sibling anchors) resolve immediately and populate the session's relocated-folder map (`recordRelocation`, covering the parent folder and up to `2` matching ancestor directory levels). Items with genuinely ambiguous duplicates defer.
+       - **Pass 2 (`allowAmbiguous = true`):** Remaining duplicate entries hit **Layer 0b** in `O(1)` when a sibling revealed the destination folder, or evaluate `selectBestCandidate` after excluding already claimed live paths (`excludedPaths`).
+     - Verified candidates passing the continuity gate are ranked strictly by `CandidateScore`:
+       1. `exactMediaStoreId` (`MediaStore._ID` match)
+       2. `inodeMatches` (parent directory `st_ino` match)
+       3. `matchedAnchorCount` (count of matching sibling `<size>:<sha256>` anchors)
+       4. `trailingFolderMatches` (longest shared trailing path segments)
+       5. `lastModifiedMatch` (exact millisecond mtime match)
+       6. `folderNameSimilarity` (token-aware similarity with word-boundary guards)
+       7. `commonPrefixSegments` -> `exactFileNameMatch` -> shortest normalized path.
+   - **Existing-Folder, Deleted-Folder & Pre-Existing Foreign Copy Protections (`Pictures/A` vs `Pictures/B`):**
+     - **Existing Source Folder Guard (`allHintParentsExist`):** If `Pictures/A` still exists on disk (e.g., `photo.jpg` was deleted or `Pictures/A` was emptied externally), Layers `1.5` (`SIZE` scan) and cross-folder Layer `2` are suppressed. Filesystem resolution inspects only `existingParentDirs` for in-folder file renames, guaranteeing that identical files in `Pictures/B` are never pulled.
+     - **Deleted Source Folder & `hasPositiveContinuity` Gate:** If `Pictures/A` was deleted completely externally, candidates outside the hint path must prove positive continuity—at least one of `exactMediaStoreId`, `inExistingHintParent`, `inodeMatches`, `matchedAnchorCount > 0`, or `!isPreExistingForeignCopy && (trailingFolderMatches > 0 || folderNameSimilarity >= 50)`.
+     - **Temporal Pre-Existing Foreign Copy Rejection:** Layer `1.5` projects `MediaStore.MediaColumns.DATE_ADDED`. A candidate in another folder with a different `MediaStore._ID` whose `dateAddedSec < capturedAtSec - 5` existed *before* the user created the reference and is disqualified as an independent foreign copy.
+     - **Short-Name Boundary Guard:** `computeFolderNameSimilarity` enforces token boundaries and a minimum 3-character length for substring checks so short folder names like `A` never spuriously match unrelated names like `Archive`.
+     - **Known Physical Edge Case:** If a standalone single-file `.nomedia`/unindexed folder with zero sibling anchors, no `MediaStore._ID`, and no preserved inode is renamed to a completely unrelated name *or* duplicated to a sibling folder before deletion, both states are indistinguishable on disk; the resolver prioritizes data safety and keeps the item `UNRESOLVED` rather than hijacking another folder's file.
 5. **Non-Destructive Favorites Deletion:**
    - Deleting the Favorites virtual directory confirms with the same non-destructive prompt as virtual albums and clears only Favorites metadata and `favorites.json`, leaving original media files untouched in their physical folders.
 
