@@ -76,6 +76,8 @@ class VaultLockActivity : SimpleActivity() {
         }
     }
 
+    override fun isVaultAssistProtectionActive(): Boolean = true
+
     override fun onResume() {
         super.onResume()
         applyVaultScreenProtection(true)

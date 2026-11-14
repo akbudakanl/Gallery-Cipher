@@ -1762,8 +1762,35 @@ fun Activity.applyVaultScreenProtection(enable: Boolean) {
         } else {
             window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
         }
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            window.setHideOverlayWindows(enable)
+        }
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             setRecentsScreenshotEnabled(!enable)
+        }
+        val decorView = window.decorView
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            decorView.importantForAutofill = if (enable) {
+                android.view.View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
+            } else {
+                android.view.View.IMPORTANT_FOR_AUTOFILL_AUTO
+            }
+        }
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            decorView.importantForContentCapture = if (enable) {
+                android.view.View.IMPORTANT_FOR_CONTENT_CAPTURE_NO_EXCLUDE_DESCENDANTS
+            } else {
+                android.view.View.IMPORTANT_FOR_CONTENT_CAPTURE_AUTO
+            }
+        }
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            decorView.setAccessibilityDataSensitive(
+                if (enable) {
+                    android.view.View.ACCESSIBILITY_DATA_SENSITIVE_YES
+                } else {
+                    android.view.View.ACCESSIBILITY_DATA_SENSITIVE_AUTO
+                }
+            )
         }
     } catch (_: Throwable) {
     }

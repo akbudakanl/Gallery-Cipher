@@ -1,7 +1,10 @@
 package org.fossify.gallery.activities
 
+import android.app.assist.AssistContent
+import android.content.Intent
 import android.database.ContentObserver
 import android.net.Uri
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore.Images
@@ -21,6 +24,7 @@ import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.isPathHiddenOrEncrypted
 import org.fossify.gallery.extensions.updateDirectoryPath
 import org.fossify.gallery.helpers.CryptoManager
+import org.fossify.gallery.helpers.VaultSessionManager
 import org.fossify.gallery.helpers.getPermissionsToRequest
 
 open class SimpleActivity : BaseSimpleActivity() {
@@ -52,6 +56,31 @@ open class SimpleActivity : BaseSimpleActivity() {
         } else {
             applyVaultScreenProtection(false)
         }
+    }
+
+    protected open fun isVaultAssistProtectionActive(): Boolean {
+        return CryptoManager.isVaultUnlocked || VaultSessionManager.isReauthPending()
+    }
+
+    override fun onProvideAssistData(data: Bundle?) {
+        if (isVaultAssistProtectionActive()) {
+            data?.clear()
+            return
+        }
+        super.onProvideAssistData(data)
+    }
+
+    override fun onProvideAssistContent(outContent: AssistContent?) {
+        if (isVaultAssistProtectionActive()) {
+            outContent?.apply {
+                clipData = null
+                intent = Intent()
+                structuredData = null
+                webUri = null
+            }
+            return
+        }
+        super.onProvideAssistContent(outContent)
     }
 
     override fun onDestroy() {
