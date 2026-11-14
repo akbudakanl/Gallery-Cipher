@@ -37,12 +37,12 @@ class DeleteBehaviorHelperTest {
 
     @Test
     fun keepOriginalDefaultCheckedFollowsSettingForVirtualAlbumsAndFavorites() {
-        // Default setting (enabled = true) -> Keep original checkbox starts unchecked
+        // Setting enabled -> Keep original checkbox starts unchecked
         assertFalse(DeleteBehaviorHelper.getKeepOriginalDefaultChecked(virtualAlbumPath, true))
         assertFalse(DeleteBehaviorHelper.getKeepOriginalDefaultChecked(FAVORITES, true))
         assertFalse(DeleteBehaviorHelper.getKeepOriginalDefaultChecked(physicalFolderPath, true))
 
-        // Setting disabled -> Keep original checkbox starts checked for virtual albums and favorites
+        // Default setting (disabled = false) -> Keep original checkbox starts checked for virtual albums and favorites
         assertTrue(DeleteBehaviorHelper.getKeepOriginalDefaultChecked(virtualAlbumPath, false))
         assertTrue(DeleteBehaviorHelper.getKeepOriginalDefaultChecked(FAVORITES, false))
         assertFalse(DeleteBehaviorHelper.getKeepOriginalDefaultChecked(physicalFolderPath, false))

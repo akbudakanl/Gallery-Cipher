@@ -668,7 +668,7 @@ class Config(context: Context) : BaseConfig(context) {
         set(allowBatchRenaming) = prefs.edit().putBoolean(ALLOW_BATCH_RENAMING, allowBatchRenaming).apply()
 
     var deleteOriginalFromFavoritesAndVirtualAlbums: Boolean
-        get() = prefs.getBoolean(DELETE_ORIGINAL_FROM_FAVORITES_AND_VIRTUAL_ALBUMS, true)
+        get() = prefs.getBoolean(DELETE_ORIGINAL_FROM_FAVORITES_AND_VIRTUAL_ALBUMS, false)
         set(deleteOriginalFromFavoritesAndVirtualAlbums) = prefs.edit()
             .putBoolean(DELETE_ORIGINAL_FROM_FAVORITES_AND_VIRTUAL_ALBUMS, deleteOriginalFromFavoritesAndVirtualAlbums)
             .apply()
