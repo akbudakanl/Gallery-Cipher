@@ -54,7 +54,9 @@ fun Context.getFavoriteFromMedium(medium: Medium): Favorite {
  */
 fun Context.resolveFavorite(
     favorite: Favorite,
-    session: MediaIdentityResolver.ResolutionSession? = null
+    session: MediaIdentityResolver.ResolutionSession? = null,
+    excludedPaths: Set<String> = emptySet(),
+    allowAmbiguous: Boolean = true
 ): Favorite? {
     val cached = File(favorite.fullPath)
     if (cached.isFile) {
@@ -71,7 +73,9 @@ fun Context.resolveFavorite(
         identity = identity,
         hintPaths = listOf(favorite.fullPath),
         searchRoots = listOf(favorite.parentPath),
-        session = session
+        session = session,
+        excludedPaths = excludedPaths,
+        allowAmbiguous = allowAmbiguous
     ) ?: return null
 
     val updated = favorite.copy(
@@ -112,24 +116,7 @@ fun Context.repairFavorites(
         return 0
     }
 
-    val missing = favorites.filter { !File(it.fullPath).isFile }
-    if (missing.isEmpty()) {
-        return 0
-    }
-
-    val activeSession = session ?: MediaIdentityResolver.ResolutionSession().apply {
-        preloadMediaStore(this@repairFavorites, missing.map { it.toIdentity() })
-    }
-
-    var repaired = 0
-    for (favorite in missing) {
-        val resolved = resolveFavorite(favorite, activeSession)
-        if (resolved != null && resolved.fullPath != favorite.fullPath) {
-            repaired++
-        }
-    }
-
-    return repaired
+    return resolveFavoritesTwoPass(favorites, session).repairedCount
 }
 
 /**
@@ -147,27 +134,10 @@ fun Context.removeFavoritesOfDeletedFiles(): Int {
         return 0
     }
 
-    val missing = favorites.filter { !File(it.fullPath).isFile }
-    if (missing.isEmpty()) {
-        return 0
-    }
-
-    val session = MediaIdentityResolver.ResolutionSession().apply {
-        preloadMediaStore(this@removeFavoritesOfDeletedFiles, missing.map { it.toIdentity() })
-    }
-
+    val unresolved = resolveFavoritesTwoPass(favorites, session = null).unresolved
     var removed = 0
-    for (favorite in missing) {
+    for (favorite in unresolved) {
         val file = File(favorite.fullPath)
-        if (file.isFile) {
-            continue
-        }
-
-        // The file may still be found at a new location, in that case it is repaired instead.
-        if (resolveFavorite(favorite, session) != null) {
-            continue
-        }
-
         // Only remove if the original parent folder still exists on disk; if the folder itself
         // moved or storage is unmounted, keep the reference so it can be recovered.
         if (file.parentFile?.exists() != true) {
@@ -183,6 +153,66 @@ fun Context.removeFavoritesOfDeletedFiles(): Int {
     }
 
     return removed
+}
+
+private data class FavoritesBatchResolution(
+    val repairedCount: Int,
+    val unresolved: List<Favorite>
+)
+
+private fun Context.resolveFavoritesTwoPass(
+    favorites: List<Favorite>,
+    session: MediaIdentityResolver.ResolutionSession?
+): FavoritesBatchResolution {
+    val claimedPaths = HashSet<String>(favorites.size)
+    val missing = ArrayList<Favorite>()
+    for (favorite in favorites) {
+        if (File(favorite.fullPath).isFile) {
+            claimedPaths.add(favorite.fullPath.lowercase())
+        } else {
+            missing.add(favorite)
+        }
+    }
+    if (missing.isEmpty()) {
+        return FavoritesBatchResolution(0, emptyList())
+    }
+
+    val activeSession = session ?: MediaIdentityResolver.ResolutionSession().apply {
+        preloadMediaStore(this@resolveFavoritesTwoPass, missing.map { it.toIdentity() })
+    }
+
+    var repaired = 0
+    val deferred = ArrayList<Favorite>()
+    val unresolved = ArrayList<Favorite>()
+    val firstPassAllowAmbiguous = missing.size <= 1
+
+    fun attemptResolve(favorite: Favorite, allowAmbiguous: Boolean): Boolean {
+        val resolved = resolveFavorite(
+            favorite = favorite,
+            session = activeSession,
+            excludedPaths = claimedPaths,
+            allowAmbiguous = allowAmbiguous
+        ) ?: return false
+        claimedPaths.add(resolved.fullPath.lowercase())
+        if (resolved.fullPath != favorite.fullPath) {
+            repaired++
+        }
+        return true
+    }
+
+    for (favorite in missing) {
+        if (!attemptResolve(favorite, firstPassAllowAmbiguous)) {
+            if (firstPassAllowAmbiguous) unresolved.add(favorite) else deferred.add(favorite)
+        }
+    }
+
+    for (favorite in deferred) {
+        if (!attemptResolve(favorite, allowAmbiguous = true)) {
+            unresolved.add(favorite)
+        }
+    }
+
+    return FavoritesBatchResolution(repaired, unresolved)
 }
 
 /**

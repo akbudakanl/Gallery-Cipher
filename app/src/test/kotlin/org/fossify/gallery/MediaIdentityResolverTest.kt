@@ -118,19 +118,24 @@ class MediaIdentityResolverTest {
     }
 
     @Test
-    fun testRefusesAmbiguousDuplicateContentMatch() {
-        val root = createTempDir("duplicate")
+    fun testLoadsOneVerifiedFileWhenAmbiguousDuplicatesTieCompletely() {
+        val root = createTempDir("duplicate_tie")
         try {
             val oldFolder = File(root, "Pictures/Old")
             val original = writeFile(File(oldFolder, "dup.jpg"), 4096, 42)
+            val fixedMtime = 1_700_000_000_000L
+            original.setLastModified(fixedMtime)
             val identity = MediaIdentity.of(original)
             val oldPath = original.absolutePath
             assertTrue(original.delete())
             assertTrue(oldFolder.delete())
 
-            // Two identical files at different locations with no MediaStore ID to disambiguate.
-            writeFile(File(root, "Pictures/Copy1/dup.jpg"), 4096, 42)
-            writeFile(File(root, "Pictures/Copy2/dup.jpg"), 4096, 42)
+            val copy1 = writeFile(File(root, "Pictures/Copy1/dup.jpg"), 4096, 42).apply {
+                setLastModified(fixedMtime)
+            }
+            val copy2 = writeFile(File(root, "Pictures/Copy2/dup.jpg"), 4096, 42).apply {
+                setLastModified(fixedMtime)
+            }
 
             val resolution = MediaIdentityResolver.resolveInFilesystem(
                 identity = identity,
@@ -139,7 +144,233 @@ class MediaIdentityResolverTest {
                 extraRoots = listOf(root.absolutePath)
             )
 
-            assertNull(resolution)
+            assertNotNull(resolution)
+            assertTrue(resolution!!.confirmed)
+            assertTrue(resolution.path == copy1.absolutePath || resolution.path == copy2.absolutePath)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun testPrefersMovedFolderKeepingNameWhenDuplicateContentExistsElsewhere() {
+        val root = createTempDir("moved_folder_dup")
+        try {
+            val fixedMtime = 1_700_000_100_000L
+            val oldFolder = File(root, "Pictures/Vacation")
+            val original = writeFile(File(oldFolder, "dup.jpg"), 4096, 42).apply {
+                setLastModified(fixedMtime)
+            }
+            val identity = MediaIdentity.of(original)
+            val oldPath = original.absolutePath
+
+            // Move the Vacation folder under DCIM while keeping the folder name.
+            val movedFolder = File(root, "DCIM/Vacation").apply { parentFile?.mkdirs() }
+            assertTrue(oldFolder.renameTo(movedFolder))
+
+            // Even with a byte-identical copy inside Pictures/Archive with matching mtime,
+            // DCIM/Vacation wins because the folder name itself matches the relocated source.
+            writeFile(File(root, "Pictures/Archive/dup.jpg"), 4096, 42).apply {
+                setLastModified(fixedMtime)
+            }
+
+            val resolution = MediaIdentityResolver.resolveInFilesystem(
+                identity = identity,
+                hintPaths = listOf(oldPath),
+                searchRoots = listOf(oldFolder.absolutePath),
+                extraRoots = listOf(root.absolutePath)
+            )
+
+            assertNotNull(resolution)
+            assertEquals(File(movedFolder, "dup.jpg").absolutePath, resolution!!.path)
+            assertTrue(resolution.confirmed)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun testPrefersRenamedSimilarFolderWhenDuplicateContentExistsInAnotherTree() {
+        val root = createTempDir("renamed_similar_dup")
+        try {
+            val fixedMtime = 1_700_000_200_000L
+            val oldFolder = File(root, "Pictures/Vacation")
+            val original = writeFile(File(oldFolder, "dup.jpg"), 4096, 42).apply {
+                setLastModified(fixedMtime)
+            }
+            val identity = MediaIdentity.of(original)
+            val oldPath = original.absolutePath
+
+            val renamedFolder = File(root, "Pictures/Vacation_2026")
+            assertTrue(oldFolder.renameTo(renamedFolder))
+
+            writeFile(File(root, "Pictures/Backup/dup.jpg"), 4096, 42).apply {
+                setLastModified(fixedMtime)
+            }
+
+            val resolution = MediaIdentityResolver.resolveInFilesystem(
+                identity = identity,
+                hintPaths = listOf(oldPath),
+                searchRoots = listOf(oldFolder.absolutePath),
+                extraRoots = listOf(root.absolutePath)
+            )
+
+            assertNotNull(resolution)
+            assertEquals(File(renamedFolder, "dup.jpg").absolutePath, resolution!!.path)
+            assertTrue(resolution.confirmed)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun testPrefersMatchingLastModifiedOverOtherDuplicateCopy() {
+        val root = createTempDir("mtime_dup")
+        try {
+            val originalMtime = 1_700_000_300_000L
+            val oldFolder = File(root, "Pictures/Summer")
+            val original = writeFile(File(oldFolder, "dup.jpg"), 4096, 42).apply {
+                setLastModified(originalMtime)
+            }
+            val identity = MediaIdentity.of(original)
+            val oldPath = original.absolutePath
+
+            val renamedFolder = File(root, "Pictures/CompletelyDifferent")
+            assertTrue(oldFolder.renameTo(renamedFolder))
+            val movedFile = File(renamedFolder, "dup.jpg").apply { setLastModified(originalMtime) }
+
+            writeFile(File(root, "Pictures/OlderCopy/dup.jpg"), 4096, 42).apply {
+                setLastModified(originalMtime - 60_000L)
+            }
+
+            val resolution = MediaIdentityResolver.resolveInFilesystem(
+                identity = identity,
+                hintPaths = listOf(oldPath),
+                searchRoots = listOf(oldFolder.absolutePath),
+                extraRoots = listOf(root.absolutePath)
+            )
+
+            assertNotNull(resolution)
+            assertEquals(movedFile.absolutePath, resolution!!.path)
+            assertTrue(resolution.confirmed)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun testRespectsExcludedPathsWhenResolvingDuplicates() {
+        val root = createTempDir("excluded_dup")
+        try {
+            val fixedMtime = 1_700_000_400_000L
+            val oldFolder = File(root, "Pictures/Old")
+            val original = writeFile(File(oldFolder, "dup.jpg"), 4096, 42).apply {
+                setLastModified(fixedMtime)
+            }
+            val identity = MediaIdentity.of(original)
+            val oldPath = original.absolutePath
+            assertTrue(original.delete())
+            assertTrue(oldFolder.delete())
+
+            val existing = writeFile(File(root, "Pictures/Existing/dup.jpg"), 4096, 42).apply {
+                setLastModified(fixedMtime)
+            }
+            val relocated = writeFile(File(root, "DCIM/Relocated/dup.jpg"), 4096, 42).apply {
+                setLastModified(fixedMtime)
+            }
+
+            val resolution = MediaIdentityResolver.resolveInFilesystem(
+                identity = identity,
+                hintPaths = listOf(oldPath),
+                searchRoots = listOf(oldFolder.absolutePath),
+                extraRoots = listOf(root.absolutePath),
+                excludedPaths = setOf(existing.absolutePath)
+            )
+
+            assertNotNull(resolution)
+            assertEquals(relocated.absolutePath, resolution!!.path)
+
+            // If all matching copies on disk are already claimed in the same container, return null
+            // rather than overwriting the existing entry.
+            val blocked = MediaIdentityResolver.resolveInFilesystem(
+                identity = identity,
+                hintPaths = listOf(oldPath),
+                searchRoots = listOf(oldFolder.absolutePath),
+                extraRoots = listOf(root.absolutePath),
+                excludedPaths = setOf(existing.absolutePath, relocated.absolutePath)
+            )
+            assertNull(blocked)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun testTwoPassSessionUsesSiblingRelocationToResolveDuplicateFile() {
+        val root = createTempDir("two_pass_session")
+        try {
+            val fixedMtime = 1_700_000_500_000L
+            val oldFolder = File(root, "Pictures/Album")
+            val dupFile = writeFile(File(oldFolder, "dup.jpg"), 4096, 42).apply {
+                setLastModified(fixedMtime)
+            }
+            val uniqueFile = writeFile(File(oldFolder, "unique.jpg"), 6144, 99)
+
+            val dupIdentity = MediaIdentity.of(dupFile)
+            val uniqueIdentity = MediaIdentity.of(uniqueFile)
+            val oldDupPath = dupFile.absolutePath
+            val oldUniquePath = uniqueFile.absolutePath
+
+            // Rename and move the album across trees to an unrelated folder name.
+            val movedFolder = File(root, "DCIM/UnrelatedNewName").apply { parentFile?.mkdirs() }
+            assertTrue(oldFolder.renameTo(movedFolder))
+            File(movedFolder, "dup.jpg").setLastModified(fixedMtime)
+
+            // Also place an identical copy inside Pictures/Archive with exact same name & mtime.
+            writeFile(File(root, "Pictures/Archive/dup.jpg"), 4096, 42).apply {
+                setLastModified(fixedMtime)
+            }
+
+            val session = MediaIdentityResolver.ResolutionSession().apply {
+                registerMissingSize(dupIdentity.size)
+                registerMissingSize(uniqueIdentity.size)
+            }
+
+            // Pass 1 (allowAmbiguous = false): dup.jpg comes first and is deferred; unique.jpg
+            // resolves and records Pictures/Album -> DCIM/UnrelatedNewName in the session.
+            val pass1Dup = MediaIdentityResolver.resolveInFilesystem(
+                identity = dupIdentity,
+                hintPaths = listOf(oldDupPath),
+                searchRoots = listOf(oldFolder.absolutePath),
+                session = session,
+                extraRoots = listOf(root.absolutePath),
+                allowAmbiguous = false
+            )
+            assertNull(pass1Dup)
+
+            val pass1Unique = MediaIdentityResolver.resolveInFilesystem(
+                identity = uniqueIdentity,
+                hintPaths = listOf(oldUniquePath),
+                searchRoots = listOf(oldFolder.absolutePath),
+                session = session,
+                extraRoots = listOf(root.absolutePath),
+                allowAmbiguous = false
+            )
+            assertNotNull(pass1Unique)
+            assertEquals(File(movedFolder, "unique.jpg").absolutePath, pass1Unique!!.path)
+
+            // Pass 2 (allowAmbiguous = true): dup.jpg now hits Layer 0b (relocated folder cache)
+            // and picks DCIM/UnrelatedNewName/dup.jpg instead of Pictures/Archive/dup.jpg.
+            val pass2Dup = MediaIdentityResolver.resolveInFilesystem(
+                identity = dupIdentity,
+                hintPaths = listOf(oldDupPath),
+                searchRoots = listOf(oldFolder.absolutePath),
+                session = session,
+                extraRoots = listOf(root.absolutePath),
+                allowAmbiguous = true
+            )
+            assertNotNull(pass2Dup)
+            assertEquals(File(movedFolder, "dup.jpg").absolutePath, pass2Dup!!.path)
         } finally {
             root.deleteRecursively()
         }

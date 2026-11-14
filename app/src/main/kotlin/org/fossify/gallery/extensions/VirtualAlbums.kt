@@ -96,7 +96,6 @@ fun Context.getVirtualAlbumPaths(albumPath: String): ArrayList<String> {
         val canAccessHidden = canAccessHiddenVirtualAlbums()
         val validPaths = ArrayList<String>()
         val newlyMissingPaths = ArrayList<String>()
-        var session: MediaIdentityResolver.ResolutionSession? = null
         var repairedAny = false
 
         val missingItems = items.filter { item ->
@@ -106,11 +105,7 @@ fun Context.getVirtualAlbumPaths(albumPath: String): ArrayList<String> {
                 !(CryptoManager.isVaultMediaPath(this, path) && !canAccessHidden) &&
                 !File(path).exists()
         }
-        if (missingItems.isNotEmpty()) {
-            session = MediaIdentityResolver.ResolutionSession().apply {
-                preloadMediaStore(this@getVirtualAlbumPaths, missingItems.map { it.toIdentity() })
-            }
-        }
+        val resolvedMissingMap = resolveVirtualAlbumItemsTwoPass(items, missingItems, session = null)
 
         for (item in items) {
             val path = item.fullPath
@@ -131,7 +126,7 @@ fun Context.getVirtualAlbumPaths(albumPath: String): ArrayList<String> {
             } else {
                 // The file may have been renamed or moved outside of the app. Its identity allows
                 // finding it again at the new location.
-                val resolved = resolveVirtualAlbumItemPath(item, session = session, saveBackup = false)
+                val resolved = resolvedMissingMap[path]
                 if (resolved != null) {
                     validPaths.add(resolved)
                     repairedAny = true
@@ -184,18 +179,13 @@ fun Context.getVirtualAlbumMedia(albumId: Long, getVideoDurations: Boolean = fal
 
         val result = ArrayList<Medium>()
         val newlyMissingPaths = ArrayList<String>()
-        var session: MediaIdentityResolver.ResolutionSession? = null
         var repairedAny = false
 
         val missingItems = items.filter { item ->
             val path = item.fullPath
             !deletedPaths.contains(path) && !path.startsWith(recycleBinPath) && !File(path).exists()
         }
-        if (missingItems.isNotEmpty()) {
-            session = MediaIdentityResolver.ResolutionSession().apply {
-                preloadMediaStore(this@getVirtualAlbumMedia, missingItems.map { it.toIdentity() })
-            }
-        }
+        val resolvedMissingMap = resolveVirtualAlbumItemsTwoPass(items, missingItems, session = null)
 
         for (item in items) {
             var path = item.fullPath
@@ -204,7 +194,7 @@ fun Context.getVirtualAlbumMedia(albumId: Long, getVideoDurations: Boolean = fal
             var file = File(path)
             if (!file.exists()) {
                 // The file may have been renamed or moved outside of the app.
-                val resolved = resolveVirtualAlbumItemPath(item, session = session, saveBackup = false)
+                val resolved = resolvedMissingMap[path]
                 if (resolved == null) {
                     if (item.state != ITEM_STATE_UNRESOLVED) {
                         newlyMissingPaths.add(path)
@@ -664,7 +654,9 @@ fun Context.updateReferencesForFolderRename(oldRoot: String, newRoot: String) {
 fun Context.resolveVirtualAlbumItemPath(
     item: VirtualAlbumItem,
     session: MediaIdentityResolver.ResolutionSession? = null,
-    saveBackup: Boolean = true
+    saveBackup: Boolean = true,
+    excludedPaths: Set<String> = emptySet(),
+    allowAmbiguous: Boolean = true
 ): String? {
     val identity = item.toIdentity()
     if (!identity.isUsable) {
@@ -676,7 +668,9 @@ fun Context.resolveVirtualAlbumItemPath(
         identity = identity,
         hintPaths = listOf(item.fullPath),
         searchRoots = listOf(item.parentPath),
-        session = session
+        session = session,
+        excludedPaths = excludedPaths,
+        allowAmbiguous = allowAmbiguous
     ) ?: return null
 
     if (resolution.path == item.fullPath) {
@@ -705,6 +699,66 @@ fun Context.resolveVirtualAlbumItemPath(
     }
 
     return resolution.path
+}
+
+/**
+ * Resolves missing virtual album items in two passes inside one [MediaIdentityResolver.ResolutionSession]:
+ * first resolving unambiguous items (so sibling folder relocations are discovered before duplicates),
+ * then resolving remaining items using full candidate scoring and scoped path exclusion.
+ */
+private fun Context.resolveVirtualAlbumItemsTwoPass(
+    allItems: List<VirtualAlbumItem>,
+    missingItems: List<VirtualAlbumItem>,
+    session: MediaIdentityResolver.ResolutionSession?
+): Map<String, String> {
+    if (missingItems.isEmpty()) return emptyMap()
+
+    val claimedPaths = HashSet<String>(allItems.size)
+    for (item in allItems) {
+        if (File(item.fullPath).isFile) {
+            claimedPaths.add(item.fullPath.lowercase())
+        }
+    }
+
+    val activeSession = session ?: MediaIdentityResolver.ResolutionSession().apply {
+        preloadMediaStore(this@resolveVirtualAlbumItemsTwoPass, missingItems.map { it.toIdentity() })
+    }
+
+    val resolvedByOldPath = HashMap<String, String>(missingItems.size)
+    val deferred = ArrayList<VirtualAlbumItem>()
+    val firstPassAllowAmbiguous = missingItems.size <= 1
+
+    for (item in missingItems) {
+        val resolved = resolveVirtualAlbumItemPath(
+            item = item,
+            session = activeSession,
+            saveBackup = false,
+            excludedPaths = claimedPaths,
+            allowAmbiguous = firstPassAllowAmbiguous
+        )
+        if (resolved != null) {
+            resolvedByOldPath[item.fullPath] = resolved
+            claimedPaths.add(resolved.lowercase())
+        } else if (!firstPassAllowAmbiguous) {
+            deferred.add(item)
+        }
+    }
+
+    for (item in deferred) {
+        val resolved = resolveVirtualAlbumItemPath(
+            item = item,
+            session = activeSession,
+            saveBackup = false,
+            excludedPaths = claimedPaths,
+            allowAmbiguous = true
+        )
+        if (resolved != null) {
+            resolvedByOldPath[item.fullPath] = resolved
+            claimedPaths.add(resolved.lowercase())
+        }
+    }
+
+    return resolvedByOldPath
 }
 
 /**
@@ -742,13 +796,9 @@ fun Context.repairVirtualAlbumItems(
     }
 
     if (missing.isNotEmpty()) {
-        val activeSession = session ?: MediaIdentityResolver.ResolutionSession().apply {
-            preloadMediaStore(this@repairVirtualAlbumItems, missing.map { it.toIdentity() })
-        }
-
-        for (item in missing) {
-            val resolved = resolveVirtualAlbumItemPath(item, session = activeSession, saveBackup = false)
-            if (resolved != null && resolved != item.fullPath) {
+        val resolvedMap = resolveVirtualAlbumItemsTwoPass(items, missing, session)
+        for ((oldPath, newPath) in resolvedMap) {
+            if (newPath != oldPath) {
                 repaired++
             }
         }

@@ -196,27 +196,70 @@ object MediaIdentityResolver {
         }
     }
 
+    private data class ResolvedCandidate(
+        val path: String,
+        val mediaStoreId: Long,
+        val lastModified: Long,
+        val name: String
+    )
+
+    private data class CandidateSelection(
+        val candidate: ResolvedCandidate,
+        val highConfidenceRelocation: Boolean
+    )
+
+    private data class CandidateScore(
+        val exactMediaStoreId: Int,
+        val trailingFolderMatches: Int,
+        val lastModifiedMatch: Int,
+        val folderNameSimilarity: Int,
+        val commonPrefixSegments: Int,
+        val exactFileNameMatch: Int,
+        val pathLength: Int,
+        val normalizedPath: String
+    ) : Comparable<CandidateScore> {
+        override fun compareTo(other: CandidateScore): Int {
+            if (exactMediaStoreId != other.exactMediaStoreId) return other.exactMediaStoreId.compareTo(exactMediaStoreId)
+            if (trailingFolderMatches != other.trailingFolderMatches) return other.trailingFolderMatches.compareTo(trailingFolderMatches)
+            if (lastModifiedMatch != other.lastModifiedMatch) return other.lastModifiedMatch.compareTo(lastModifiedMatch)
+            if (folderNameSimilarity != other.folderNameSimilarity) return other.folderNameSimilarity.compareTo(folderNameSimilarity)
+            if (commonPrefixSegments != other.commonPrefixSegments) return other.commonPrefixSegments.compareTo(commonPrefixSegments)
+            if (exactFileNameMatch != other.exactFileNameMatch) return other.exactFileNameMatch.compareTo(exactFileNameMatch)
+            if (pathLength != other.pathLength) return pathLength.compareTo(other.pathLength)
+            return normalizedPath.compareTo(other.normalizedPath)
+        }
+    }
+
     /**
      * Resolves the file behind [identity].
      *
      * @param hintPaths paths we already know about, tried first without any scanning.
      * @param searchRoots folders that are scanned for candidates when MediaStore does not resolve.
      * @param session optional shared session that caches relocated folders and MediaStore batches.
+     * @param excludedPaths lowercased/raw paths already claimed in the same target container so they
+     *   are not overwritten or mistakenly bound to another item's moved reference.
+     * @param allowAmbiguous when false, defers items that have multiple matching candidates on disk so
+     *   unambiguous siblings in a batch pass can reveal the relocated parent folder first. When true,
+     *   ranks verified duplicates by folder/metadata affinity so a valid file is still loaded.
      */
     fun resolve(
         context: Context,
         identity: MediaIdentity,
         hintPaths: List<String> = emptyList(),
         searchRoots: List<String> = emptyList(),
-        session: ResolutionSession? = null
+        session: ResolutionSession? = null,
+        excludedPaths: Set<String> = emptySet(),
+        allowAmbiguous: Boolean = true
     ): Resolution? {
         if (!identity.isUsable) {
             return null
         }
 
+        val excludedLower = if (excludedPaths.isEmpty()) emptySet() else excludedPaths.mapTo(HashSet()) { it.lowercase() }
+
         // Layer 0a: the cached path still holds.
         for (path in hintPaths) {
-            if (path.isNotEmpty()) {
+            if (path.isNotEmpty() && path.lowercase() !in excludedLower) {
                 val file = File(path)
                 if (file.isFile) {
                     return Resolution(path, identity, confirmed = false, mediaStoreId = identity.mediaStoreId)
@@ -225,7 +268,11 @@ object MediaIdentityResolver {
         }
 
         // Layer 0b: another item from the same moved physical folder already revealed its new home.
-        session?.resolveFromRelocatedFolder(hintPaths, identity)?.let { return it }
+        session?.resolveFromRelocatedFolder(hintPaths, identity)?.let { res ->
+            if (res.path.lowercase() !in excludedLower) {
+                return res
+            }
+        }
 
         // Layer 1: the MediaStore id is authoritative (verified against size/fingerprint).
         if (identity.mediaStoreId > 0L) {
@@ -234,7 +281,7 @@ object MediaIdentityResolver {
             } else {
                 findByMediaStoreId(context, identity.mediaStoreId)
             }
-            if (msPath != null) {
+            if (msPath != null && msPath.lowercase() !in excludedLower) {
                 val file = File(msPath)
                 if (file.isFile && (identity.size <= 0L || file.length() == identity.size)) {
                     val fpMatches = !identity.hasFingerprint || MediaIdentity.computeFingerprint(file) == identity.fingerprint
@@ -259,8 +306,16 @@ object MediaIdentityResolver {
             } else {
                 queryMediaStoreBySingleSize(context, identity.size)
             }
-            resolveFromMediaStoreCandidates(sizeCandidates, identity, hintPaths)?.let { res ->
-                session?.recordRelocation(hintPaths, res.path)
+            resolveFromMediaStoreCandidates(
+                candidates = sizeCandidates,
+                identity = identity,
+                hintPaths = hintPaths,
+                excludedLower = excludedLower,
+                allowAmbiguous = allowAmbiguous
+            )?.let { (res, highConfidenceRelocation) ->
+                if (highConfidenceRelocation) {
+                    session?.recordRelocation(hintPaths, res.path)
+                }
                 return res
             }
         }
@@ -276,7 +331,9 @@ object MediaIdentityResolver {
             hintPaths = hintPaths,
             searchRoots = searchRoots,
             session = session,
-            extraRoots = extraRoots
+            extraRoots = extraRoots,
+            excludedPaths = excludedPaths,
+            allowAmbiguous = allowAmbiguous
         )
     }
 
@@ -290,19 +347,27 @@ object MediaIdentityResolver {
         hintPaths: List<String> = emptyList(),
         searchRoots: List<String> = emptyList(),
         session: ResolutionSession? = null,
-        extraRoots: List<String> = emptyList()
+        extraRoots: List<String> = emptyList(),
+        excludedPaths: Set<String> = emptySet(),
+        allowAmbiguous: Boolean = true
     ): Resolution? {
         if (!identity.isUsable) {
             return null
         }
 
+        val excludedLower = if (excludedPaths.isEmpty()) emptySet() else excludedPaths.mapTo(HashSet()) { it.lowercase() }
+
         for (path in hintPaths) {
-            if (path.isNotEmpty() && File(path).isFile) {
+            if (path.isNotEmpty() && path.lowercase() !in excludedLower && File(path).isFile) {
                 return Resolution(path, identity, confirmed = false, mediaStoreId = identity.mediaStoreId)
             }
         }
 
-        session?.resolveFromRelocatedFolder(hintPaths, identity)?.let { return it }
+        session?.resolveFromRelocatedFolder(hintPaths, identity)?.let { res ->
+            if (res.path.lowercase() !in excludedLower) {
+                return res
+            }
+        }
 
         val roots = expandSearchRoots(hintPaths, searchRoots, extraRoots)
         if (roots.isEmpty()) {
@@ -332,8 +397,8 @@ object MediaIdentityResolver {
             candidates
         }
 
-        var confirmedMatch: String? = null
-        var unconfirmedMatch: String? = null
+        val confirmedMatches = ArrayList<ResolvedCandidate>(2)
+        val unconfirmedMatches = ArrayList<ResolvedCandidate>(2)
 
         for (file in ordered) {
             if (!file.isFile) continue
@@ -341,40 +406,50 @@ object MediaIdentityResolver {
 
             if (identity.hasFingerprint) {
                 if (MediaIdentity.computeFingerprint(file) == identity.fingerprint) {
-                    if (confirmedMatch == null) {
-                        confirmedMatch = file.absolutePath
-                    } else {
-                        // Two files share the fingerprint; refuse to guess.
-                        return null
-                    }
+                    confirmedMatches.add(
+                        ResolvedCandidate(
+                            path = file.absolutePath,
+                            mediaStoreId = identity.mediaStoreId,
+                            lastModified = file.lastModified(),
+                            name = file.name
+                        )
+                    )
                 }
             } else if (matchesCheapSignature(file, identity)) {
-                if (unconfirmedMatch == null) {
-                    unconfirmedMatch = file.absolutePath
-                } else {
-                    return null
-                }
+                unconfirmedMatches.add(
+                    ResolvedCandidate(
+                        path = file.absolutePath,
+                        mediaStoreId = identity.mediaStoreId,
+                        lastModified = file.lastModified(),
+                        name = file.name
+                    )
+                )
             }
         }
 
-        confirmedMatch?.let {
-            session?.recordRelocation(hintPaths, it)
-            return Resolution(it, identity, confirmed = true, mediaStoreId = identity.mediaStoreId)
-        }
+        val resolved = resolveMatchLists(
+            confirmedMatches = confirmedMatches,
+            unconfirmedMatches = unconfirmedMatches,
+            identity = identity,
+            hintPaths = hintPaths,
+            excludedLower = excludedLower,
+            allowAmbiguous = allowAmbiguous
+        ) ?: return null
 
-        unconfirmedMatch?.let {
-            session?.recordRelocation(hintPaths, it)
-            return Resolution(it, identity, confirmed = false, mediaStoreId = identity.mediaStoreId)
+        val (res, highConfidenceRelocation) = resolved
+        if (highConfidenceRelocation) {
+            session?.recordRelocation(hintPaths, res.path)
         }
-
-        return null
+        return res
     }
 
     private fun resolveFromMediaStoreCandidates(
         candidates: List<MediaStoreCandidate>,
         identity: MediaIdentity,
-        hintPaths: List<String>
-    ): Resolution? {
+        hintPaths: List<String>,
+        excludedLower: Set<String>,
+        allowAmbiguous: Boolean
+    ): Pair<Resolution, Boolean>? {
         if (candidates.isEmpty()) return null
 
         val preferredName = hintPaths.firstOrNull { it.isNotEmpty() }?.let { File(it).name } ?: ""
@@ -384,38 +459,245 @@ object MediaIdentityResolver {
             candidates
         }
 
-        val confirmedMatches = ArrayList<MediaStoreCandidate>(2)
-        val unconfirmedMatches = ArrayList<MediaStoreCandidate>(2)
+        val confirmedMatches = ArrayList<ResolvedCandidate>(2)
+        val unconfirmedMatches = ArrayList<ResolvedCandidate>(2)
 
         for (candidate in ordered) {
             val file = File(candidate.path)
             if (!file.isFile || file.length() != identity.size) continue
 
+            val entry = ResolvedCandidate(
+                path = candidate.path,
+                mediaStoreId = candidate.mediaStoreId,
+                lastModified = file.lastModified(),
+                name = file.name
+            )
             if (identity.hasFingerprint) {
                 if (MediaIdentity.computeFingerprint(file) == identity.fingerprint) {
-                    confirmedMatches.add(candidate)
+                    confirmedMatches.add(entry)
                 }
             } else if (matchesCheapSignature(file, identity)) {
-                unconfirmedMatches.add(candidate)
+                unconfirmedMatches.add(entry)
             }
         }
 
-        if (confirmedMatches.size == 1) {
-            val match = confirmedMatches[0]
-            return Resolution(match.path, identity, confirmed = true, mediaStoreId = match.mediaStoreId)
+        return resolveMatchLists(
+            confirmedMatches = confirmedMatches,
+            unconfirmedMatches = unconfirmedMatches,
+            identity = identity,
+            hintPaths = hintPaths,
+            excludedLower = excludedLower,
+            allowAmbiguous = allowAmbiguous
+        )
+    }
+
+    private fun resolveMatchLists(
+        confirmedMatches: List<ResolvedCandidate>,
+        unconfirmedMatches: List<ResolvedCandidate>,
+        identity: MediaIdentity,
+        hintPaths: List<String>,
+        excludedLower: Set<String>,
+        allowAmbiguous: Boolean
+    ): Pair<Resolution, Boolean>? {
+        val activeConfirmed = confirmedMatches.filter { it.path.lowercase() !in excludedLower }
+        if (activeConfirmed.isNotEmpty()) {
+            val selected = selectBestCandidate(
+                candidates = activeConfirmed,
+                identity = identity,
+                hintPaths = hintPaths,
+                allowAmbiguous = allowAmbiguous
+            ) ?: return null
+            val match = selected.candidate
+            return Resolution(
+                path = match.path,
+                identity = identity,
+                confirmed = true,
+                mediaStoreId = match.mediaStoreId
+            ) to selected.highConfidenceRelocation
         }
-        if (confirmedMatches.size > 1 && identity.mediaStoreId > 0L) {
-            val exactIdMatch = confirmedMatches.firstOrNull { it.mediaStoreId == identity.mediaStoreId }
-            if (exactIdMatch != null) {
-                return Resolution(exactIdMatch.path, identity, confirmed = true, mediaStoreId = exactIdMatch.mediaStoreId)
+
+        if (confirmedMatches.isEmpty()) {
+            val activeUnconfirmed = unconfirmedMatches.filter { it.path.lowercase() !in excludedLower }
+            if (activeUnconfirmed.isNotEmpty()) {
+                val canDisambiguateUnconfirmed = activeUnconfirmed.size == 1 ||
+                    (identity.size > 0L && identity.lastModified > 0L)
+                if (!canDisambiguateUnconfirmed) {
+                    return null
+                }
+                val selected = selectBestCandidate(
+                    candidates = activeUnconfirmed,
+                    identity = identity,
+                    hintPaths = hintPaths,
+                    allowAmbiguous = allowAmbiguous
+                ) ?: return null
+                val match = selected.candidate
+                return Resolution(
+                    path = match.path,
+                    identity = identity,
+                    confirmed = false,
+                    mediaStoreId = match.mediaStoreId
+                ) to selected.highConfidenceRelocation
             }
-        }
-        if (confirmedMatches.isEmpty() && unconfirmedMatches.size == 1) {
-            val match = unconfirmedMatches[0]
-            return Resolution(match.path, identity, confirmed = false, mediaStoreId = match.mediaStoreId)
         }
 
         return null
+    }
+
+    private fun selectBestCandidate(
+        candidates: List<ResolvedCandidate>,
+        identity: MediaIdentity,
+        hintPaths: List<String>,
+        allowAmbiguous: Boolean
+    ): CandidateSelection? {
+        if (candidates.isEmpty()) return null
+        if (candidates.size == 1) {
+            return CandidateSelection(candidates[0], highConfidenceRelocation = true)
+        }
+
+        if (identity.mediaStoreId > 0L) {
+            val idMatches = candidates.filter { it.mediaStoreId == identity.mediaStoreId }
+            if (idMatches.size == 1) {
+                return CandidateSelection(idMatches[0], highConfidenceRelocation = true)
+            }
+        }
+
+        if (!allowAmbiguous) {
+            return null
+        }
+
+        var bestCandidate = candidates[0]
+        var bestScore = scoreCandidate(bestCandidate, identity, hintPaths)
+        for (i in 1 until candidates.size) {
+            val candidate = candidates[i]
+            val score = scoreCandidate(candidate, identity, hintPaths)
+            if (score < bestScore) {
+                bestScore = score
+                bestCandidate = candidate
+            }
+        }
+
+        val highConfidenceRelocation = bestScore.exactMediaStoreId > 0 ||
+            bestScore.trailingFolderMatches > 0 ||
+            (bestScore.folderNameSimilarity > 0 && bestScore.commonPrefixSegments > 0)
+        return CandidateSelection(bestCandidate, highConfidenceRelocation = highConfidenceRelocation)
+    }
+
+    private fun scoreCandidate(
+        candidate: ResolvedCandidate,
+        identity: MediaIdentity,
+        hintPaths: List<String>
+    ): CandidateScore {
+        val exactMediaStoreId = if (identity.mediaStoreId > 0L && candidate.mediaStoreId == identity.mediaStoreId) 1 else 0
+        val lastModifiedMatch = if (identity.lastModified > 0L && candidate.lastModified == identity.lastModified) 1 else 0
+
+        val candFile = File(candidate.path)
+        val candParentSegs = splitPathSegments(candFile.parent ?: "")
+        val candParentName = candParentSegs.lastOrNull().orEmpty()
+
+        var bestTrailing = 0
+        var bestNameSim = 0
+        var bestPrefix = 0
+        var bestExactFileName = 0
+
+        for (hint in hintPaths) {
+            if (hint.isEmpty()) continue
+            val hintFile = File(hint)
+            val hintParentSegs = splitPathSegments(hintFile.parent ?: "")
+            val hintParentName = hintParentSegs.lastOrNull().orEmpty()
+
+            val trailing = countTrailingMatchingSegments(hintParentSegs, candParentSegs)
+            val nameSim = computeFolderNameSimilarity(hintParentName, candParentName)
+            val prefix = countCommonPrefixSegments(hintParentSegs, candParentSegs)
+            val exactName = if (hintFile.name.isNotEmpty() && candidate.name.equals(hintFile.name, ignoreCase = true)) 1 else 0
+
+            if (trailing > bestTrailing ||
+                (trailing == bestTrailing && nameSim > bestNameSim) ||
+                (trailing == bestTrailing && nameSim == bestNameSim && prefix > bestPrefix) ||
+                (trailing == bestTrailing && nameSim == bestNameSim && prefix == bestPrefix && exactName > bestExactFileName)
+            ) {
+                bestTrailing = trailing
+                bestNameSim = nameSim
+                bestPrefix = prefix
+                bestExactFileName = exactName
+            }
+        }
+
+        val normalized = candidate.path.replace('\\', '/').lowercase()
+        return CandidateScore(
+            exactMediaStoreId = exactMediaStoreId,
+            trailingFolderMatches = bestTrailing,
+            lastModifiedMatch = lastModifiedMatch,
+            folderNameSimilarity = bestNameSim,
+            commonPrefixSegments = bestPrefix,
+            exactFileNameMatch = bestExactFileName,
+            pathLength = normalized.length,
+            normalizedPath = normalized
+        )
+    }
+
+    private fun splitPathSegments(path: String): List<String> {
+        if (path.isEmpty()) return emptyList()
+        return path.replace('\\', '/')
+            .trimEnd('/')
+            .split('/')
+            .filter { it.isNotEmpty() }
+    }
+
+    private fun countTrailingMatchingSegments(a: List<String>, b: List<String>): Int {
+        var count = 0
+        var ia = a.size - 1
+        var ib = b.size - 1
+        while (ia >= 0 && ib >= 0 && a[ia].equals(b[ib], ignoreCase = true)) {
+            count++
+            ia--
+            ib--
+        }
+        return count
+    }
+
+    private fun countCommonPrefixSegments(a: List<String>, b: List<String>): Int {
+        val limit = minOf(a.size, b.size)
+        var count = 0
+        while (count < limit && a[count].equals(b[count], ignoreCase = true)) {
+            count++
+        }
+        return count
+    }
+
+    private fun computeFolderNameSimilarity(aRaw: String, bRaw: String): Int {
+        if (aRaw.isEmpty() || bRaw.isEmpty()) return 0
+        val a = aRaw.lowercase()
+        val b = bRaw.lowercase()
+        if (a == b) return 100
+
+        val minLen = minOf(a.length, b.length)
+        val maxLen = maxOf(a.length, b.length)
+        if (a.startsWith(b) || b.startsWith(a)) {
+            return 70 + (minLen * 20) / maxLen
+        }
+        if (minLen >= 3 && (a.contains(b) || b.contains(a))) {
+            return 50 + (minLen * 20) / maxLen
+        }
+
+        var commonPrefix = 0
+        while (commonPrefix < minLen && a[commonPrefix] == b[commonPrefix]) {
+            commonPrefix++
+        }
+        if (commonPrefix >= 3) {
+            return 20 + (commonPrefix * 30) / maxLen
+        }
+
+        val tokenRegex = Regex("[^a-z0-9]+")
+        val tokensA = a.split(tokenRegex).filter { it.isNotEmpty() }.toHashSet()
+        val tokensB = b.split(tokenRegex).filter { it.isNotEmpty() }.toHashSet()
+        if (tokensA.isNotEmpty() && tokensB.isNotEmpty()) {
+            val shared = tokensA.intersect(tokensB).size
+            if (shared > 0) {
+                return 15 + (shared * 30) / maxOf(tokensA.size, tokensB.size)
+            }
+        }
+
+        return 0
     }
 
     private fun matchesFile(file: File, identity: MediaIdentity): Boolean {
