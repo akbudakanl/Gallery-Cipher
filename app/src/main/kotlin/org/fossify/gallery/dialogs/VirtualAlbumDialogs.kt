@@ -65,13 +65,25 @@ class CreateVirtualAlbumDialog(
                                 return@ensureBackgroundThread
                             }
 
-                            val albumId = activity.createVirtualAlbum(name, isHidden = isHidden, parentPhysicalPath = parentPhysicalPath)
+                            val proceedCreate = {
+                                ensureBackgroundThread {
+                                    val albumId = activity.createVirtualAlbum(name, isHidden = isHidden, parentPhysicalPath = parentPhysicalPath)
+                                    activity.runOnUiThread {
+                                        if (albumId == -1L) {
+                                            activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
+                                        } else {
+                                            callback(albumId)
+                                        }
+                                    }
+                                }
+                            }
+
                             activity.runOnUiThread {
-                                if (albumId == -1L) {
-                                    activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
+                                alertDialog.dismiss()
+                                if (!isHidden) {
+                                    activity.promptAutoBackupIfNeeded(proceedCreate)
                                 } else {
-                                    alertDialog.dismiss()
-                                    callback(albumId)
+                                    proceedCreate()
                                 }
                             }
                         }

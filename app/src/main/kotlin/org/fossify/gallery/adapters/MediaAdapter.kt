@@ -88,6 +88,7 @@ import org.fossify.gallery.extensions.rescanFolderMedia
 import java.io.File
 import org.fossify.commons.extensions.rescanPaths
 import org.fossify.gallery.dialogs.PickVaultAlbumDialog
+import org.fossify.gallery.dialogs.promptAutoBackupIfNeeded
 import org.fossify.gallery.extensions.restoreRecycleBinPaths
 import org.fossify.gallery.extensions.saveRotatedImageToFile
 import org.fossify.gallery.extensions.setAs
@@ -725,37 +726,44 @@ class MediaAdapter(
     }
 
     private fun toggleFavorites(add: Boolean) {
-        ensureBackgroundThread {
-            if (add) {
-                getSelectedItems().forEach { item ->
-                    // The MediaStore id is known for the medium, so the favorite can be found again
-                    // even after the file was renamed or moved.
-                    val identity = MediaIdentity.of(activity, item)
-                    activity.favoritesDB.insert(
-                        Favorite(
-                            id = null,
-                            fullPath = item.path,
-                            filename = item.name,
-                            parentPath = item.parentPath.ifEmpty { item.path.getParentPath() },
-                            mediaStoreId = identity.mediaStoreId,
-                            fileSize = identity.size,
-                            lastModified = identity.lastModified,
-                            fingerprint = identity.fingerprint
+        val applyToggle = {
+            ensureBackgroundThread {
+                if (add) {
+                    getSelectedItems().forEach { item ->
+                        // The MediaStore id is known for the medium, so the favorite can be found again
+                        // even after the file was renamed or moved.
+                        val identity = MediaIdentity.of(activity, item)
+                        activity.favoritesDB.insert(
+                            Favorite(
+                                id = null,
+                                fullPath = item.path,
+                                filename = item.name,
+                                parentPath = item.parentPath.ifEmpty { item.path.getParentPath() },
+                                mediaStoreId = identity.mediaStoreId,
+                                fileSize = identity.size,
+                                lastModified = identity.lastModified,
+                                fingerprint = identity.fingerprint
+                            )
                         )
-                    )
-                    activity.mediaDB.updateFavorite(item.path, true)
-                    item.isFavorite = true
+                        activity.mediaDB.updateFavorite(item.path, true)
+                        item.isFavorite = true
+                    }
+                    ReferenceBackupManager.saveFavorites(activity)
+                } else {
+                    val items = getSelectedItems()
+                    activity.removeFavoritePaths(items.map { it.path })
+                    items.forEach { it.isFavorite = false }
                 }
-                ReferenceBackupManager.saveFavorites(activity)
-            } else {
-                val items = getSelectedItems()
-                activity.removeFavoritePaths(items.map { it.path })
-                items.forEach { it.isFavorite = false }
+                activity.runOnUiThread {
+                    listener?.refreshItems()
+                    finishActMode()
+                }
             }
-            activity.runOnUiThread {
-                listener?.refreshItems()
-                finishActMode()
-            }
+        }
+        if (add) {
+            activity.promptAutoBackupIfNeeded(applyToggle)
+        } else {
+            applyToggle()
         }
     }
 

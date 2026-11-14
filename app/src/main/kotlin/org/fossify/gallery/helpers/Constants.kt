@@ -126,6 +126,8 @@ const val SHOW_PERMISSION_RATIONALE = "show_permission_rationale"
 const val ALLOW_BATCH_RENAMING = "allow_batch_renaming"
 const val DELETE_ORIGINAL_FROM_FAVORITES_AND_VIRTUAL_ALBUMS = "delete_original_from_favorites_and_virtual_albums"
 const val WAS_NOTIFICATION_PERMISSION_ASKED = "was_notification_permission_asked"
+const val WAS_AUTO_BACKUP_PROMPT_SHOWN = "was_auto_backup_prompt_shown"
+const val AUTO_BACKUP_FAVORITES_AND_VIRTUAL_ALBUMS = "auto_backup_favorites_and_virtual_albums"
 
 // AES-256 Vault Encryption
 const val PROTECTION_PASSWORD = 3

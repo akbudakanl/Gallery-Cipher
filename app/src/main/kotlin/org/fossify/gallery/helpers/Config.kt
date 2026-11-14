@@ -643,6 +643,14 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(AVOID_SHOWING_ALL_FILES_PROMPT, false)
         set(avoidShowingAllFilesPrompt) = prefs.edit().putBoolean(AVOID_SHOWING_ALL_FILES_PROMPT, avoidShowingAllFilesPrompt).apply()
 
+    var wasAutoBackupPromptShown: Boolean
+        get() = prefs.getBoolean(WAS_AUTO_BACKUP_PROMPT_SHOWN, false)
+        set(wasAutoBackupPromptShown) = prefs.edit().putBoolean(WAS_AUTO_BACKUP_PROMPT_SHOWN, wasAutoBackupPromptShown).apply()
+
+    var autoBackupFavoritesAndVirtualAlbums: Boolean
+        get() = prefs.getBoolean(AUTO_BACKUP_FAVORITES_AND_VIRTUAL_ALBUMS, false)
+        set(autoBackupFavoritesAndVirtualAlbums) = prefs.edit().putBoolean(AUTO_BACKUP_FAVORITES_AND_VIRTUAL_ALBUMS, autoBackupFavoritesAndVirtualAlbums).apply()
+
     var homeScreenViewOnLaunch: Int
         get() = prefs.getInt(HOME_SCREEN_VIEW_ON_LAUNCH, HOME_VIEW_FOLDERS)
         set(homeScreenViewOnLaunch) = prefs.edit().putInt(HOME_SCREEN_VIEW_ON_LAUNCH, homeScreenViewOnLaunch).apply()

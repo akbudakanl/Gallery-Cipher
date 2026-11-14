@@ -117,6 +117,7 @@ import org.fossify.gallery.extensions.isPathHiddenOrEncrypted
 import org.fossify.gallery.extensions.isVirtualAlbumPath
 import org.fossify.gallery.extensions.removeFavoritePaths
 import org.fossify.gallery.extensions.removePathsFromVirtualAlbum
+import org.fossify.gallery.dialogs.promptAutoBackupIfNeeded
 import org.fossify.gallery.extensions.getShortcutImage
 import org.fossify.gallery.extensions.handleMediaManagementPrompt
 import org.fossify.gallery.extensions.hideSystemUI
@@ -1374,39 +1375,47 @@ class ViewPagerActivity : BaseViewerActivity(), ViewPager.OnPageChangeListener, 
 
     private fun toggleFavorite() {
         val medium = getCurrentMedium() ?: return
-        medium.isFavorite = !medium.isFavorite
-        ensureBackgroundThread {
-            if (medium.isFavorite) {
-                // The MediaStore id is known here, so the favorite survives a rename or a move.
-                val identity = MediaIdentity.of(this, medium)
-                favoritesDB.insert(
-                    Favorite(
-                        id = null,
-                        fullPath = medium.path,
-                        filename = medium.name,
-                        parentPath = medium.parentPath.ifEmpty { medium.path.getParentPath() },
-                        mediaStoreId = identity.mediaStoreId,
-                        fileSize = identity.size,
-                        lastModified = identity.lastModified,
-                        fingerprint = identity.fingerprint
+        val newFavoriteState = !medium.isFavorite
+        val applyToggle = {
+            medium.isFavorite = newFavoriteState
+            ensureBackgroundThread {
+                if (newFavoriteState) {
+                    // The MediaStore id is known here, so the favorite survives a rename or a move.
+                    val identity = MediaIdentity.of(this, medium)
+                    favoritesDB.insert(
+                        Favorite(
+                            id = null,
+                            fullPath = medium.path,
+                            filename = medium.name,
+                            parentPath = medium.parentPath.ifEmpty { medium.path.getParentPath() },
+                            mediaStoreId = identity.mediaStoreId,
+                            fileSize = identity.size,
+                            lastModified = identity.lastModified,
+                            fingerprint = identity.fingerprint
+                        )
                     )
-                )
-                mediaDB.updateFavorite(medium.path, true)
-                ReferenceBackupManager.saveFavorites(this)
-            } else {
-                favoritesDB.deleteFavoritePath(medium.path)
-                mediaDB.updateFavorite(medium.path, false)
-                ReferenceBackupManager.saveFavorites(this)
-            }
-            if (medium.isFavorite) {
-                mFavoritePaths.add(medium.path)
-            } else {
-                mFavoritePaths.remove(medium.path)
-            }
+                    mediaDB.updateFavorite(medium.path, true)
+                    ReferenceBackupManager.saveFavorites(this)
+                } else {
+                    favoritesDB.deleteFavoritePath(medium.path)
+                    mediaDB.updateFavorite(medium.path, false)
+                    ReferenceBackupManager.saveFavorites(this)
+                }
+                if (newFavoriteState) {
+                    mFavoritePaths.add(medium.path)
+                } else {
+                    mFavoritePaths.remove(medium.path)
+                }
 
-            runOnUiThread {
-                refreshMenuItems()
+                runOnUiThread {
+                    refreshMenuItems()
+                }
             }
+        }
+        if (newFavoriteState) {
+            promptAutoBackupIfNeeded(applyToggle)
+        } else {
+            applyToggle()
         }
     }
 

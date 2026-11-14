@@ -190,11 +190,8 @@ fun BaseSimpleActivity.handleMediaManagementPrompt(callback: () -> Unit) {
                     launchGrantAllFilesIntent()
                 }
             }, neutralPressed = {
-                if (isSPlus()) {
-                    launchMediaManagementIntent(callback)
-                } else {
-                    config.avoidShowingAllFilesPrompt = true
-                }
+                config.avoidShowingAllFilesPrompt = true
+                callback()
             })
         }
     } else {

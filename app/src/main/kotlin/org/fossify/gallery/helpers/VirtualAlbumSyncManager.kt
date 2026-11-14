@@ -8,6 +8,7 @@ import com.google.gson.GsonBuilder
 import com.google.gson.annotations.SerializedName
 import org.fossify.commons.extensions.getParentPath
 import org.fossify.commons.helpers.NOMEDIA
+import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.virtualAlbumsDB
 import org.fossify.gallery.models.ITEM_STATE_OK
 import org.fossify.gallery.models.ITEM_STATE_UNRESOLVED
@@ -135,6 +136,9 @@ object VirtualAlbumSyncManager {
     fun saveAlbumToFile(context: Context, albumId: Long) {
         try {
             val album = context.virtualAlbumsDB.getAlbumById(albumId) ?: return
+            if (!album.isHidden && !context.config.autoBackupFavoritesAndVirtualAlbums) {
+                return
+            }
             val items = context.virtualAlbumsDB.getItems(albumId)
 
             // Keep all items (including UNRESOLVED) so their MediaIdentity survives in the backup

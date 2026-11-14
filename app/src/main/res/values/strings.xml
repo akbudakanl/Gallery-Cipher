@@ -417,4 +417,5 @@
     <string name="cannot_mix_encrypted_and_unencrypted">Cannot combine encrypted and unencrypted items in this operation</string>
     <string name="lock_album">Lock album</string>
     <string name="unlock_album">Unlock album</string>
+    <string name="auto_backup_prompt_message">Do you want your favorites and virtual albums to be regularly written to system storage outside of app memory? This will ensure that you do not lose your favorites list and virtual albums if you uninstall the app. You can manually create a backup from app settings at any time.</string>
 </resources>

@@ -368,4 +368,5 @@
     <string name="decrypt">Şifre çöz</string>
     <string name="encrypt_album">Albümü şifrele</string>
     <string name="decrypt_album">Albümün şifresini çöz</string>
+    <string name="auto_backup_prompt_message">Favorilerinizin ve sanal albümlerinizin uygulama hafızası dışında düzenli olarak sistem belleğine yazılmasını istiyor musunuz? Bu, uygulamayı silmeniz durumunda favoriler listenizi ve sanal albümlerinizi kaybetmemenizi sağlayacaktır. İstediğiniz zaman uygulama ayarlarından manuel olarak backup oluşturabilirsiniz</string>
 </resources>

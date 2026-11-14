@@ -6,6 +6,7 @@ import com.google.gson.GsonBuilder
 import com.google.gson.annotations.SerializedName
 import org.fossify.commons.extensions.getFilenameFromPath
 import org.fossify.commons.extensions.getParentPath
+import org.fossify.gallery.extensions.config
 import org.fossify.gallery.extensions.favoritesDB
 import org.fossify.gallery.extensions.mediaDB
 import org.fossify.gallery.extensions.virtualAlbumsDB
@@ -120,7 +121,7 @@ object ReferenceBackupManager {
      * be accessed.
      */
     fun saveFavorites(context: Context) {
-        if (!canAccessSharedStorage(context)) {
+        if (!canAccessSharedStorage(context) || !context.config.autoBackupFavoritesAndVirtualAlbums) {
             return
         }
 
